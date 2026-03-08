@@ -292,6 +292,23 @@ const Conta = () => {
         </div>
       </div>
 
+      {/* Sobre o app */}
+      <div className="px-4 mt-8 pb-8 flex flex-col items-center animate-fade-up" style={{ animationDelay: "0.1s" }}>
+        <div className="w-full h-[1px] bg-[#1e2433] mb-6" />
+        <h2 className="text-white font-bold text-lg mb-1">FeFin</h2>
+        <p className="text-[#475569] text-[12px]">Versão 1.0.0</p>
+        <p className="text-[#475569] text-[12px] mb-4">Atualizado em 08/03/2026</p>
+        <button 
+          onClick={() => {
+            // @ts-ignore
+            window.location.reload(true);
+          }}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/50 text-foreground text-sm font-medium hover:bg-secondary/50 transition-colors"
+        >
+          <span>🔄</span> Forçar atualização
+        </button>
+      </div>
+
       <CartaoModal
         open={cartaoModalOpen}
         onClose={() => { setCartaoModalOpen(false); setEditingCartao(null); }}

@@ -8,6 +8,7 @@ const pct = (v: number) => `${v.toFixed(1)}%`;
 
 /* Data */
 const previdencia = { valor: 82450.0, rentAnual: 11.2, aporteFeito: true, aporteMensal: 1020 };
+const fgts = { saldo: 18400.0, ultimaAtualizacao: "01 Mar 2026" };
 const aplicacao = { saldo: 24800.0, rendMensal: 198.4 };
 const resgates = [
   { data: "02 Mar", valor: 1200, motivo: "Emergência" as const },

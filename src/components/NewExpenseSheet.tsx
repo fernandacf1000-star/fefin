@@ -188,7 +188,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
               {/* Para quem */}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Para quem</label>
+                <label className="text-xs font-medium text-muted-foreground">Tipo de gasto</label>
                 <div className="flex gap-2">
                   {paraQuemOptions.map((opt) => (
                     <button

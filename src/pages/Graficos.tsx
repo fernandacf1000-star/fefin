@@ -6,7 +6,7 @@ import {
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
-import { SUBCATEGORIA_GROUPS, getGroupEmoji, CAT_COLORS } from "@/lib/subcategorias";
+import { SUBCATEGORIA_GROUPS, getGroupEmoji, CAT_COLORS, normalizeMacro } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

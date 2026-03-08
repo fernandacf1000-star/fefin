@@ -127,7 +127,7 @@ const Dashboard = () => {
     if (base === 0) return 0;
     // Exclude Investimentos from gastos for meta calculation
     const gastosParaMeta = despesas
-      .filter(d => d.categoria_macro !== 'Investimentos')
+      .filter(d => normalizeMacro(d.categoria_macro) !== 'Investimentos')
       .reduce((s, d) => {
         const reemb = getTotalReembolsado(allReembolsos, d.id);
         return s + Math.max(0, Number(d.valor) - reemb);

@@ -332,7 +332,7 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="h-px bg-border/30 mb-2" />
-          <button className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors">
+          <button onClick={() => { setProfileOpen(false); navigate("/conta"); }} className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors">
             <Settings size={18} className="text-foreground" />
             <span className="text-sm font-medium text-foreground">Minha conta</span>
           </button>

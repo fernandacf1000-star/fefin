@@ -249,6 +249,160 @@ const Despesas = () => {
 
   const draftPreviewTotal = draftFiltered.reduce((s, d) => s + Number(d.valor), 0);
 
+  // Inline filter helpers for tablet sidebar (apply immediately)
+  const toggleInlineCat = (cat: string) => {
+    setCatFilters(p => p.includes(cat) ? p.filter(c => c !== cat) : [...p, cat]);
+    setSubcatFilters([]);
+  };
+  const toggleInlineSubcat = (sub: string) => {
+    setSubcatFilters(p => p.includes(sub) ? p.filter(s => s !== sub) : [...p, sub]);
+  };
+  const inlineAvailableSubcats = useMemo(() => {
+    if (catFilters.length === 0) return [];
+    return SUBCATEGORIA_GROUPS.filter(g => catFilters.includes(g.group)).flatMap(g => g.items);
+  }, [catFilters]);
+
+  const filterPanel = (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-semibold text-foreground">Filtros</h3>
+        <button onClick={() => { setTipoFilter("Todas"); setCatFilters([]); setSubcatFilters([]); }} className="text-[10px] font-semibold text-destructive">Limpar</button>
+      </div>
+      {/* Tipo */}
+      <div>
+        <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">TIPO</p>
+        <div className="flex flex-wrap gap-1.5">
+          {(["Todas", "Despesas", "Parceladas", "Pais"] as TipoFilter[]).map(t => (
+            <button key={t} onClick={() => setTipoFilter(t)} className={`px-2.5 py-1.5 rounded-full text-[10px] font-semibold transition-all ${tipoFilter === t ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary/60 text-muted-foreground"}`}>
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* Categoria */}
+      <div>
+        <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">CATEGORIA</p>
+        <div className="grid grid-cols-1 gap-1.5">
+          {SUBCATEGORIA_GROUPS.map(g => {
+            const selected = catFilters.includes(g.group);
+            return (
+              <button key={g.group} onClick={() => toggleInlineCat(g.group)} className={`flex items-center gap-2 p-2 rounded-lg text-left text-[10px] font-medium transition-all ${selected ? "ring-1 ring-primary bg-secondary/50 text-foreground font-semibold" : "bg-secondary/30 text-muted-foreground"}`}>
+                <span className="text-sm">{g.emoji}</span>
+                <span>{g.group}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {/* Subcategoria */}
+      {inlineAvailableSubcats.length > 0 && (
+        <div>
+          <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">SUBCATEGORIA</p>
+          <div className="flex flex-wrap gap-1">
+            {inlineAvailableSubcats.map(sub => {
+              const selected = subcatFilters.includes(sub);
+              return (
+                <button key={sub} onClick={() => toggleInlineSubcat(sub)} className={`px-2 py-1 rounded-full text-[10px] font-medium transition-all ${selected ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground"}`}>
+                  {sub}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const transactionList = (
+    <>
+      {/* Despesas regulares */}
+      {regulares.length > 0 && (
+        <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Home size={14} className="text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">Despesas</h2>
+          </div>
+          <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
+            {regulares.map((bill) =>
+              renderItem(
+                bill,
+                bill.pago ? <CheckCircle2 size={18} className="text-primary" /> : <Clock size={18} className="text-yellow-400" />,
+                <p className="text-[11px] text-muted-foreground">
+                  {new Date(bill.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} · <span className={bill.pago ? "text-primary" : "text-yellow-400"}>{bill.pago ? "Pago" : "Pendente"}</span>
+                </p>
+              )
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Parceladas */}
+      {parceladas.length > 0 && (
+        <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <CreditCard size={14} className="text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">Parceladas</h2>
+          </div>
+          <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
+            {parceladas.map((item) =>
+              renderItem(
+                item,
+                <Receipt size={18} className="text-muted-foreground" />,
+                <p className="text-[11px] text-muted-foreground">
+                  {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                </p>
+              )
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Pais */}
+      {pais.length > 0 && (
+        <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Users size={14} className="text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">Pais</h2>
+          </div>
+          <div className="glass-card p-4 space-y-3 mb-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] text-muted-foreground">Custo total</p>
+              <p className="text-sm font-bold text-foreground tabular-nums">{fmt(paisTotals.custoTotal)}</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] text-muted-foreground">Eu paguei</p>
+              <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(paisTotals.euPaguei)}</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] text-muted-foreground">Reembolsado</p>
+              <p className="text-sm font-semibold text-primary tabular-nums">+{fmt(paisTotals.reembolsado)}</p>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-border/30">
+              <p className="text-xs font-semibold text-muted-foreground">Subsídio líquido</p>
+              <p className="text-sm font-bold text-primary tabular-nums">{fmt(paisTotals.subsidioLiquido)}</p>
+            </div>
+          </div>
+          <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
+            {pais.map((item) =>
+              renderItem(
+                item,
+                <Users size={18} className="text-muted-foreground" />,
+                <p className="text-[11px] text-muted-foreground">{new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</p>,
+                "-"
+              )
+            )}
+          </div>
+        </div>
+      )}
+
+      {filteredDespesas.length === 0 && hasData && (
+        <div className="text-center py-8">
+          <p className="text-sm text-muted-foreground">Nenhum lançamento com esses filtros</p>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
       <div className="px-4 pt-12 w-full">
@@ -271,14 +425,14 @@ const Despesas = () => {
           </button>
         </div>
 
-        {/* Summary + Filter Button */}
+        {/* Summary + Filter Button (mobile only) */}
         <div className="flex items-center justify-between mb-3 animate-fade-up" style={{ animationDelay: "0.05s" }}>
           <p className="text-xs text-muted-foreground">
             {filteredDespesas.length} lançamentos · {fmt(totalFiltrado)}
           </p>
           <button
             onClick={openFilterSheet}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+            className={`md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
               activeFilterCount > 0
                 ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                 : "text-primary border border-primary"
@@ -292,9 +446,9 @@ const Despesas = () => {
           </button>
         </div>
 
-        {/* Active Filter Chips */}
+        {/* Active Filter Chips (mobile only) */}
         {activeFilterCount > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-3 animate-fade-up">
+          <div className="flex flex-wrap gap-1.5 mb-3 animate-fade-up md:hidden">
             {tipoFilter !== "Todas" && (
               <button onClick={() => removeFilter("tipo")} className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium bg-secondary text-primary">
                 {tipoFilter} <X size={10} />
@@ -316,93 +470,18 @@ const Despesas = () => {
         {!hasData && !isLoading ? (
           <EmptyState title="Nenhum gasto por aqui! 🎉" />
         ) : (
-          <>
-            {/* Despesas regulares */}
-            {regulares.length > 0 && (
-              <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Home size={14} className="text-primary" />
-                  <h2 className="text-sm font-semibold text-foreground">Despesas</h2>
-                </div>
-                <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
-                  {regulares.map((bill) =>
-                    renderItem(
-                      bill,
-                      bill.pago ? <CheckCircle2 size={18} className="text-primary" /> : <Clock size={18} className="text-yellow-400" />,
-                      <p className="text-[11px] text-muted-foreground">
-                        {new Date(bill.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} · <span className={bill.pago ? "text-primary" : "text-yellow-400"}>{bill.pago ? "Pago" : "Pendente"}</span>
-                      </p>
-                    )
-                  )}
-                </div>
+          <div className="md:flex md:gap-4">
+            {/* Tablet: Filter sidebar */}
+            <div className="hidden md:block md:w-[220px] md:shrink-0">
+              <div className="glass-card p-3 sticky top-4 max-h-[calc(100vh-120px)] overflow-y-auto">
+                {filterPanel}
               </div>
-            )}
-
-            {/* Parceladas */}
-            {parceladas.length > 0 && (
-              <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <CreditCard size={14} className="text-primary" />
-                  <h2 className="text-sm font-semibold text-foreground">Parceladas</h2>
-                </div>
-                <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
-                  {parceladas.map((item) =>
-                    renderItem(
-                      item,
-                      <Receipt size={18} className="text-muted-foreground" />,
-                      <p className="text-[11px] text-muted-foreground">
-                        {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-                      </p>
-                    )
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Pais */}
-            {pais.length > 0 && (
-              <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Users size={14} className="text-primary" />
-                  <h2 className="text-sm font-semibold text-foreground">Pais</h2>
-                </div>
-                <div className="glass-card p-4 space-y-3 mb-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-muted-foreground">Custo total</p>
-                    <p className="text-sm font-bold text-foreground tabular-nums">{fmt(paisTotals.custoTotal)}</p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-muted-foreground">Eu paguei</p>
-                    <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(paisTotals.euPaguei)}</p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-muted-foreground">Reembolsado</p>
-                    <p className="text-sm font-semibold text-primary tabular-nums">+{fmt(paisTotals.reembolsado)}</p>
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                    <p className="text-xs font-semibold text-muted-foreground">Subsídio líquido</p>
-                    <p className="text-sm font-bold text-primary tabular-nums">{fmt(paisTotals.subsidioLiquido)}</p>
-                  </div>
-                </div>
-                <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
-                  {pais.map((item) =>
-                    renderItem(
-                      item,
-                      <Users size={18} className="text-muted-foreground" />,
-                      <p className="text-[11px] text-muted-foreground">{new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</p>,
-                      "-"
-                    )
-                  )}
-                </div>
-              </div>
-            )}
-
-            {filteredDespesas.length === 0 && hasData && (
-              <div className="text-center py-8">
-                <p className="text-sm text-muted-foreground">Nenhum lançamento com esses filtros</p>
-              </div>
-            )}
-          </>
+            </div>
+            {/* Content */}
+            <div className="md:flex-1 md:min-w-0">
+              {transactionList}
+            </div>
+          </div>
         )}
       </div>
 

@@ -42,8 +42,8 @@ const transactions = [
 
 const categoryCards = [
   { icon: Home, label: "Fixas", value: 2350, color: "text-primary" },
-  { icon: CreditCard, label: "Parceladas", value: 890, color: "text-accent-foreground" },
-  { icon: Gift, label: "Extras", value: 415, color: "text-destructive" },
+  { icon: CreditCard, label: "Parceladas", value: 890, color: "text-[#F59E0B]" },
+  { icon: Zap, label: "Extras", value: 415, color: "text-[#F87171]" },
   { icon: Users, label: "Pais", value: 600, color: "text-primary" },
 ];
 

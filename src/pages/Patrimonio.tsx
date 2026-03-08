@@ -159,7 +159,7 @@ const Patrimonio = () => (
           <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/15 mb-3">
             <AlertOctagon size={16} className="text-destructive shrink-0" />
             <p className="text-xs text-destructive font-medium">
-              Resgate de emergência em aplicação de longo prazo — considere reforçar sua reserva de liquidez diária para evitar isso.
+              ⚠️ Resgate de emergência — reforce sua reserva de liquidez.
             </p>
           </div>
         )}

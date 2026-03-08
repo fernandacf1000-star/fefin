@@ -71,9 +71,42 @@ const Despesas = () => {
     <div className="min-h-screen gradient-bg pb-24">
       <div className="max-w-md mx-auto px-4 pt-12">
         {/* Header */}
-        <h1 className="text-xl font-semibold text-foreground mb-6 animate-fade-up">
+        <h1 className="text-xl font-semibold text-foreground mb-4 animate-fade-up">
           Despesas
         </h1>
+
+        {/* Month Selector */}
+        <div className="flex items-center justify-center gap-3 mb-5 animate-fade-up" style={{ animationDelay: "0.03s" }}>
+          <button
+            onClick={() => setSelectedMonth((p) => Math.max(0, p - 1))}
+            disabled={selectedMonth === 0}
+            className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <div className="flex items-center gap-2">
+            {months.map((m, i) => (
+              <button
+                key={m.key}
+                onClick={() => setSelectedMonth(i)}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
+                  i === selectedMonth
+                    ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setSelectedMonth((p) => Math.min(months.length - 1, p + 1))}
+            disabled={selectedMonth === months.length - 1}
+            className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
 
         {/* Filter Pills */}
         <div className="flex gap-2 overflow-x-auto pb-4 mb-4 animate-fade-up scrollbar-none" style={{ animationDelay: "0.05s" }}>

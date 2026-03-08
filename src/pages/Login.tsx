@@ -16,12 +16,20 @@ const Login = () => {
   const saved = (() => {
     try {
       const raw = localStorage.getItem(REMEMBER_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      // Migration: strip any previously stored passwords
+      if (parsed?.password) {
+        const clean = { email: parsed.email };
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify(clean));
+        return clean;
+      }
+      return parsed;
     } catch { return null; }
   })();
 
   const [email, setEmail] = useState(saved?.email ?? "");
-  const [password, setPassword] = useState(saved?.password ?? "");
+  const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(!!saved);
 
   const handleLogin = async (e: React.FormEvent) => {

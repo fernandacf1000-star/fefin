@@ -2,6 +2,7 @@ import BottomNav from "@/components/BottomNav";
 import {
   FileText, TrendingDown, TrendingUp, CheckCircle2, Award,
   Heart, ShieldCheck, Gift, Info, Calendar, ArrowDown, ArrowUp,
+  RotateCcw,
 } from "lucide-react";
 
 const fmt = (v: number) =>
@@ -40,10 +41,42 @@ const saldoDisponivel = limiteCriancaIdoso + limiteCulturaEsporte - jaDoado;
 
 /* Histórico DARF */
 const historicoDARF = [
-  { ano: 2025, status: "Restituição recebida", cor: "text-primary" },
-  { ano: 2024, status: "Entregue", cor: "text-muted-foreground" },
-  { ano: 2023, status: "Entregue", cor: "text-muted-foreground" },
-  { ano: 2022, status: "A pagar", cor: "text-destructive" },
+  {
+    ano: 2025,
+    status: "Restituição recebida" as const,
+    darfTotal: 5200,
+    impostoNormal: 3700,
+    doacaoIncentivada: 1500,
+    restituicao: 1820,
+    ganhoSelic: 180,
+  },
+  {
+    ano: 2024,
+    status: "Entregue" as const,
+    darfTotal: 4800,
+    impostoNormal: 4800,
+    doacaoIncentivada: 0,
+    restituicao: 920,
+    ganhoSelic: 0,
+  },
+  {
+    ano: 2023,
+    status: "Entregue" as const,
+    darfTotal: 4200,
+    impostoNormal: 4200,
+    doacaoIncentivada: 0,
+    restituicao: 650,
+    ganhoSelic: 0,
+  },
+  {
+    ano: 2022,
+    status: "A pagar" as const,
+    darfTotal: 3900,
+    impostoNormal: 3900,
+    doacaoIncentivada: 0,
+    restituicao: 0,
+    ganhoSelic: 0,
+  },
 ];
 
 const IR = () => (
@@ -206,13 +239,69 @@ const IR = () => (
           <h2 className="text-sm font-semibold text-foreground">Histórico de Pagamentos DARF</h2>
         </div>
 
-        <div className="space-y-2">
-          {historicoDARF.map((h) => (
-            <div key={h.ano} className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/30 transition-colors">
-              <p className="text-sm font-medium text-foreground">{h.ano}</p>
-              <span className={`text-xs font-semibold ${h.cor}`}>{h.status}</span>
-            </div>
-          ))}
+        <div className="space-y-3">
+          {historicoDARF.map((h) => {
+            const statusColor = h.status === "A pagar" ? "text-destructive" : h.status === "Restituição recebida" ? "text-primary" : "text-muted-foreground";
+            return (
+              <div key={h.ano} className="rounded-xl bg-secondary/30 p-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold text-foreground">{h.ano}</p>
+                  <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${h.status === "A pagar" ? "bg-destructive/15 text-destructive" : h.status === "Restituição recebida" ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"}`}>
+                    {h.status}
+                  </span>
+                </div>
+
+                {/* DARF total */}
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] text-muted-foreground">DARF total pago</p>
+                  <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(h.darfTotal)}</p>
+                </div>
+
+                {/* Imposto normal */}
+                <div className="flex items-center justify-between pl-3 border-l-2 border-border/30">
+                  <p className="text-[11px] text-muted-foreground">Imposto normal</p>
+                  <p className="text-xs font-medium text-foreground tabular-nums">{fmt(h.impostoNormal)}</p>
+                </div>
+
+                {/* Doação incentivada */}
+                {h.doacaoIncentivada > 0 && (
+                  <div className="flex items-center justify-between pl-3 border-l-2 border-primary/40">
+                    <div className="flex items-center gap-1.5">
+                      <RotateCcw size={12} className="text-primary" />
+                      <p className="text-[11px] text-primary font-medium">Doação incentivada (retorna na restituição)</p>
+                    </div>
+                    <p className="text-xs font-medium text-primary tabular-nums">{fmt(h.doacaoIncentivada)}</p>
+                  </div>
+                )}
+
+                {/* Restituição */}
+                {h.restituicao > 0 && (
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-primary/10">
+                    <p className="text-[11px] text-primary font-medium">Restituição recebida</p>
+                    <p className="text-sm font-bold text-primary tabular-nums">+{fmt(h.restituicao)}</p>
+                  </div>
+                )}
+
+                {/* Ganho Selic */}
+                {h.ganhoSelic > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                      Corrigido pela Selic 📈
+                    </span>
+                    <p className="text-xs font-semibold text-primary tabular-nums">+{fmt(h.ganhoSelic)}</p>
+                  </div>
+                )}
+
+                {/* A pagar sem restituição */}
+                {h.status === "A pagar" && (
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-destructive/10">
+                    <Info size={12} className="text-destructive shrink-0" />
+                    <p className="text-[11px] text-destructive font-medium">Pendente — sem restituição</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
     </div>

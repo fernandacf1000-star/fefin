@@ -6,7 +6,7 @@ import {
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
-import { SUBCATEGORIA_GROUPS, getGroupEmoji, CAT_COLORS, normalizeMacro } from "@/lib/subcategorias";
+import { SUBCATEGORIA_GROUPS, getGroupEmoji, CAT_COLORS, normalizeMacro, getSubcategoriaColor } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -77,7 +77,7 @@ const Graficos = () => {
         name,
         value,
         macro,
-        color: CAT_COLORS[macro] || "#475569",
+        color: getSubcategoriaColor(name, macro),
         emoji: getGroupEmoji(macro),
       }))
       .sort((a, b) => b.value - a.value);
@@ -209,12 +209,12 @@ const Graficos = () => {
             <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <h2 className="text-sm font-semibold text-foreground mb-2">Gastos por Subcategoria</h2>
 
-              <div className="flex gap-1.5 flex-wrap pb-3">
+              <div className="grid grid-cols-4 gap-1.5 pb-3">
                 {catFilterOptions.map((opt) => (
                   <button
                     key={opt.label}
                     onClick={() => setSubcatCatFilter(opt.key)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${subcatCatFilter === opt.key ? "bg-foreground/10 text-foreground" : "bg-secondary/40 text-muted-foreground hover:text-foreground"}`}
+                    className={`px-2 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all text-center ${subcatCatFilter === opt.key ? "bg-foreground/10 text-foreground" : "bg-secondary/40 text-muted-foreground hover:text-foreground"}`}
                   >
                     {opt.label}
                   </button>
@@ -224,7 +224,7 @@ const Graficos = () => {
               {subcatData.length > 0 ? (
                 <div className="space-y-2">
                   {subcatData.map((item) => {
-                    const pct = subcatMax > 0 ? (item.value / subcatMax) * 100 : 0;
+                    const pct = subcatMax > 0 ? Math.max(6, (item.value / subcatMax) * 100) : 6;
                     const pctTotal = subcatTotal > 0 ? Math.round((item.value / subcatTotal) * 100) : 0;
                     return (
                       <div key={item.name} className="space-y-1">
@@ -237,7 +237,7 @@ const Graficos = () => {
                             <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pctTotal}%</span>
                           </div>
                         </div>
-                        <div className="relative w-full h-[8px] rounded-full bg-secondary/40 overflow-hidden">
+                        <div className="relative w-full h-[8px] rounded-full overflow-hidden" style={{ background: "#1e2433" }}>
                           <div
                             className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
                             style={{ width: `${pct}%`, background: item.color }}

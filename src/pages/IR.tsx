@@ -98,7 +98,7 @@ const IR = () => {
         <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.05s" }}>
           <div className="flex items-center gap-2 mb-3">
             <FileText size={16} className="text-primary" />
-            <span className="text-xs text-muted-foreground font-medium">Ano fiscal 2026</span>
+            <span className="text-xs text-muted-foreground font-medium">Ano fiscal 2025</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">

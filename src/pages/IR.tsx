@@ -120,13 +120,25 @@ const IR = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10">
-            <ArrowUp size={16} className="text-destructive shrink-0" />
-            <p className="text-sm font-bold tabular-nums text-destructive">
-              Estimativa a pagar: {fmt(saldoPagar)}
-            </p>
-          </div>
-        </section>
+          {saldoPagar > 0 ? (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10">
+              <ArrowUp size={16} className="text-destructive shrink-0" />
+              <p className="text-sm font-bold tabular-nums text-destructive">
+                Estimativa a pagar: {fmt(saldoPagar)}
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/10">
+              <ArrowDown size={16} className="text-primary shrink-0" />
+              <p className="text-sm font-bold tabular-nums text-primary">
+                Estimativa a restituir: {fmt(Math.abs(saldoPagar))}
+              </p>
+            </div>
+          )}
+
+          <p className="text-[10px] mt-2" style={{ color: "#475569" }}>
+            Tabela IRPF 2025 — atualizada em jan/2025
+          </p>
 
         {/* 2 — Modelo de Declaração */}
         <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.1s" }}>

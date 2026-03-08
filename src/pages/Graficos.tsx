@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
+import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -30,19 +31,21 @@ const tooltipStyle = {
   fontSize: 12,
 };
 
+const CAT_COLORS: Record<string, string> = {
+  "Moradia": "hsl(var(--primary))",
+  "Alimentação": "hsl(45 93% 58%)",
+  "Transporte": "hsl(var(--destructive))",
+  "Saúde": "hsl(200 80% 60%)",
+  "Pessoal": "hsl(280 70% 60%)",
+  "Lazer": "hsl(330 70% 60%)",
+  "Investimentos/Patrimônio": "hsl(160 60% 50%)",
+};
+
 const SUBCAT_COLORS = [
-  "hsl(var(--primary))",
-  "hsl(45 93% 58%)",
-  "hsl(var(--destructive))",
-  "hsl(200 80% 60%)",
-  "hsl(280 70% 60%)",
-  "hsl(330 70% 60%)",
-  "hsl(160 60% 50%)",
-  "hsl(20 80% 55%)",
-  "hsl(60 70% 50%)",
-  "hsl(240 60% 60%)",
-  "hsl(100 50% 50%)",
-  "hsl(350 65% 55%)",
+  "hsl(var(--primary))", "hsl(45 93% 58%)", "hsl(var(--destructive))",
+  "hsl(200 80% 60%)", "hsl(280 70% 60%)", "hsl(330 70% 60%)",
+  "hsl(160 60% 50%)", "hsl(20 80% 55%)", "hsl(60 70% 50%)",
+  "hsl(240 60% 60%)", "hsl(100 50% 50%)", "hsl(350 65% 55%)",
 ];
 
 const Graficos = () => {
@@ -60,21 +63,22 @@ const Graficos = () => {
     [lancamentos]
   );
 
+  // Composição por categoria macro
   const composicao = useMemo(() => {
-    const cats = [
-      { name: "Fixas", key: "fixa", color: "hsl(var(--primary))" },
-      { name: "Parceladas", key: "parcelada", color: "hsl(45 93% 58%)" },
-      { name: "Extras", key: "extra", color: "hsl(var(--destructive))" },
-      { name: "Pais", key: "pais", color: "hsl(200 80% 60%)" },
-    ];
-    return cats
-      .map((c) => ({
-        ...c,
-        value: lancamentos
-          .filter((l) => l.tipo === "despesa" && l.categoria === c.key)
-          .reduce((s, l) => s + Number(l.valor), 0),
+    const despesas = lancamentos.filter((l) => l.tipo === "despesa");
+    const map: Record<string, number> = {};
+    despesas.forEach(d => {
+      const key = d.categoria_macro || (d.categoria === "parcelada" ? "Parceladas" : d.categoria === "pais" ? "Pais" : "Sem categoria");
+      map[key] = (map[key] || 0) + Number(d.valor);
+    });
+    return Object.entries(map)
+      .map(([name, value]) => ({
+        name,
+        value,
+        color: CAT_COLORS[name] || SUBCAT_COLORS[Object.keys(map).indexOf(name) % SUBCAT_COLORS.length],
       }))
-      .filter((c) => c.value > 0);
+      .filter(c => c.value > 0)
+      .sort((a, b) => b.value - a.value);
   }, [lancamentos]);
 
   const totalMes = composicao.reduce((s, c) => s + c.value, 0);
@@ -83,7 +87,7 @@ const Graficos = () => {
   const subcatData = useMemo(() => {
     let despesas = lancamentos.filter((l) => l.tipo === "despesa" && l.subcategoria);
     if (subcatCatFilter) {
-      despesas = despesas.filter((l) => l.categoria === subcatCatFilter);
+      despesas = despesas.filter((l) => l.categoria_macro === subcatCatFilter);
     }
     const map: Record<string, number> = {};
     despesas.forEach((d) => {
@@ -99,10 +103,7 @@ const Graficos = () => {
 
   const catFilterOptions = [
     { key: null, label: "Todas" },
-    { key: "fixa", label: "Fixas" },
-    { key: "parcelada", label: "Parceladas" },
-    { key: "extra", label: "Extras" },
-    { key: "pais", label: "Pais" },
+    ...SUBCATEGORIA_GROUPS.map(g => ({ key: g.group, label: `${g.emoji} ${g.group}` })),
   ];
 
   const hasData = lancamentos.length > 0;
@@ -150,10 +151,10 @@ const Graficos = () => {
               </div>
             </section>
 
-            {/* Composição do mês */}
+            {/* Composição por Categoria */}
             {composicao.length > 0 && (
               <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-                <h2 className="text-sm font-semibold text-foreground">Composição do Mês</h2>
+                <h2 className="text-sm font-semibold text-foreground">Composição por Categoria</h2>
                 <p className="text-[11px] text-muted-foreground mb-4">{months[selectedMonth]?.label}</p>
                 <div className="relative h-52 flex items-center justify-center">
                   <ResponsiveContainer width="100%" height="100%">
@@ -171,11 +172,19 @@ const Graficos = () => {
                     <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalMes)}</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-4 mt-2">
+                <div className="space-y-1.5 mt-3">
                   {composicao.map((c) => (
-                    <div key={c.name} className="flex items-center gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-sm" style={{ background: c.color }} />
-                      <span className="text-[11px] text-muted-foreground">{c.name}</span>
+                    <div key={c.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: c.color }} />
+                        <span className="text-[11px] text-foreground">{getGroupEmoji(c.name)} {c.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-semibold text-foreground tabular-nums">{fmt(c.value)}</span>
+                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                          {totalMes > 0 ? `${Math.round((c.value / totalMes) * 100)}%` : "0%"}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -186,7 +195,6 @@ const Graficos = () => {
             <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <h2 className="text-sm font-semibold text-foreground mb-2">Gastos por Subcategoria</h2>
 
-              {/* Category filter */}
               <div className="flex gap-1.5 overflow-x-auto pb-3 scrollbar-none">
                 {catFilterOptions.map((opt) => (
                   <button
@@ -218,7 +226,6 @@ const Graficos = () => {
                     </div>
                   </div>
 
-                  {/* Legend */}
                   <div className="space-y-1.5 mt-3">
                     {subcatData.map((item) => (
                       <div key={item.name} className="flex items-center justify-between">

@@ -14,19 +14,12 @@ import EditLancamentoModal from "@/components/EditLancamentoModal";
 import ReembolsoModal from "@/components/ReembolsoModal";
 import type { Lancamento } from "@/hooks/useLancamentos";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { SUBCATEGORIA_GROUPS } from "@/lib/subcategorias";
+import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  "Casa": "🏠", "Alimentação fora": "🍽️", "Transporte": "🚗", "Saúde": "💊",
-  "Moda e Beleza": "👗", "Compras Online": "📦", "Serviços Fixos": "🏛️",
-  "Lazer e Viagem": "✈️", "Arte e Decoração": "🎨", "Educação": "📚", "Outros": "🎲",
-};
-
-type TipoFilter = "Todas" | "Fixas" | "Parceladas" | "Extras" | "Pais";
-type PeriodoFilter = "mes_atual" | "3_meses" | "ano" | "personalizado";
+type TipoFilter = "Todas" | "Despesas" | "Parceladas" | "Pais";
 
 const now = new Date();
 const generateMonths = () => {
@@ -41,23 +34,20 @@ const generateMonths = () => {
 };
 const months = generateMonths();
 
-const tipoToCat = (t: TipoFilter): string | null => {
-  if (t === "Fixas") return "fixa";
-  if (t === "Parceladas") return "parcelada";
-  if (t === "Extras") return "extra";
-  if (t === "Pais") return "pais";
+const tipoToCats = (t: TipoFilter): string[] | null => {
+  if (t === "Despesas") return ["extra", "fixa"];
+  if (t === "Parceladas") return ["parcelada"];
+  if (t === "Pais") return ["pais"];
   return null;
 };
 
 const Despesas = () => {
-  // Filters state
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("Todas");
   const [catFilters, setCatFilters] = useState<string[]>([]);
   const [subcatFilters, setSubcatFilters] = useState<string[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
-  // Draft filters (applied only on "Ver resultados")
   const [draftTipo, setDraftTipo] = useState<TipoFilter>("Todas");
   const [draftCats, setDraftCats] = useState<string[]>([]);
   const [draftSubcats, setDraftSubcats] = useState<string[]>([]);
@@ -77,40 +67,24 @@ const Despesas = () => {
 
   const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
 
-  // Apply filters
-  const filteredDespesas = useMemo(() => {
-    let filtered = despesas;
-    const catKey = tipoToCat(tipoFilter);
-    if (catKey) filtered = filtered.filter(d => d.categoria === catKey);
-    if (catFilters.length > 0) {
-      // Map group names to subcategorias within those groups
-      const subsInGroups = SUBCATEGORIA_GROUPS.filter(g => catFilters.includes(g.group)).flatMap(g => g.items);
-      filtered = filtered.filter(d => d.subcategoria && subsInGroups.includes(d.subcategoria));
+  const applyFiltersToList = useCallback((list: Lancamento[], tipo: TipoFilter, cats: string[], subcats: string[]) => {
+    let filtered = list;
+    const catKeys = tipoToCats(tipo);
+    if (catKeys) filtered = filtered.filter(d => catKeys.includes(d.categoria));
+    if (cats.length > 0) {
+      filtered = filtered.filter(d => d.categoria_macro && cats.includes(d.categoria_macro));
     }
-    if (subcatFilters.length > 0) {
-      filtered = filtered.filter(d => d.subcategoria && subcatFilters.includes(d.subcategoria));
+    if (subcats.length > 0) {
+      filtered = filtered.filter(d => d.subcategoria && subcats.includes(d.subcategoria));
     }
     return filtered;
-  }, [despesas, tipoFilter, catFilters, subcatFilters]);
+  }, []);
 
-  // Preview count for draft filters
-  const draftFiltered = useMemo(() => {
-    let filtered = despesas;
-    const catKey = tipoToCat(draftTipo);
-    if (catKey) filtered = filtered.filter(d => d.categoria === catKey);
-    if (draftCats.length > 0) {
-      const subsInGroups = SUBCATEGORIA_GROUPS.filter(g => draftCats.includes(g.group)).flatMap(g => g.items);
-      filtered = filtered.filter(d => d.subcategoria && subsInGroups.includes(d.subcategoria));
-    }
-    if (draftSubcats.length > 0) {
-      filtered = filtered.filter(d => d.subcategoria && draftSubcats.includes(d.subcategoria));
-    }
-    return filtered;
-  }, [despesas, draftTipo, draftCats, draftSubcats]);
+  const filteredDespesas = useMemo(() => applyFiltersToList(despesas, tipoFilter, catFilters, subcatFilters), [despesas, tipoFilter, catFilters, subcatFilters, applyFiltersToList]);
+  const draftFiltered = useMemo(() => applyFiltersToList(despesas, draftTipo, draftCats, draftSubcats), [despesas, draftTipo, draftCats, draftSubcats, applyFiltersToList]);
 
-  const fixas = useMemo(() => filteredDespesas.filter((d) => d.categoria === "fixa"), [filteredDespesas]);
+  const regulares = useMemo(() => filteredDespesas.filter((d) => d.categoria === "fixa" || d.categoria === "extra"), [filteredDespesas]);
   const parceladas = useMemo(() => filteredDespesas.filter((d) => d.categoria === "parcelada"), [filteredDespesas]);
-  const extras = useMemo(() => filteredDespesas.filter((d) => d.categoria === "extra"), [filteredDespesas]);
   const pais = useMemo(() => filteredDespesas.filter((d) => d.categoria === "pais"), [filteredDespesas]);
 
   const paisTotals = useMemo(() => {
@@ -135,13 +109,15 @@ const Despesas = () => {
   }, [tipoFilter, catFilters, subcatFilters]);
 
   const hasData = despesas.length > 0;
-  const showSection = (cat: string) => {
+  const showSection = (cats: string[]) => {
     if (tipoFilter === "Todas" && catFilters.length === 0 && subcatFilters.length === 0) return true;
-    if (tipoFilter !== "Todas") return tipoToCat(tipoFilter) === cat;
-    return true; // when only cat/subcat filters, show all sections
+    if (tipoFilter !== "Todas") {
+      const allowed = tipoToCats(tipoFilter);
+      return allowed ? cats.some(c => allowed.includes(c)) : true;
+    }
+    return true;
   };
 
-  // Filter sheet handlers
   const openFilterSheet = () => {
     setDraftTipo(tipoFilter);
     setDraftCats([...catFilters]);
@@ -170,14 +146,13 @@ const Despesas = () => {
 
   const toggleDraftCat = (cat: string) => {
     setDraftCats(p => p.includes(cat) ? p.filter(c => c !== cat) : [...p, cat]);
-    setDraftSubcats([]); // reset subcats when cats change
+    setDraftSubcats([]);
   };
 
   const toggleDraftSubcat = (sub: string) => {
     setDraftSubcats(p => p.includes(sub) ? p.filter(s => s !== sub) : [...p, sub]);
   };
 
-  // Available subcats for selected draft cats
   const draftAvailableSubcats = useMemo(() => {
     if (draftCats.length === 0) return [];
     return SUBCATEGORIA_GROUPS.filter(g => draftCats.includes(g.group)).flatMap(g => g.items);
@@ -227,7 +202,7 @@ const Despesas = () => {
     const valorOriginal = Number(item.valor);
     const isTotal = totalReemb >= valorOriginal;
     return (
-      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5" style={{ backgroundColor: "rgba(16,185,129,0.15)", color: "#10B981" }}>
+      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-primary/15 text-primary">
         {isTotal ? "↩️ Reembolso total · Quitado ✓" : `↩️ Reembolso parcial: ${fmt(totalReemb)}`}
       </span>
     );
@@ -249,8 +224,11 @@ const Despesas = () => {
   };
 
   const renderSubcatLabel = (item: Lancamento) => {
-    if (!item.subcategoria) return null;
-    return <span className="text-[11px] ml-1" style={{ color: "#475569" }}>· {item.subcategoria}</span>;
+    const parts: string[] = [];
+    if (item.categoria_macro) parts.push(`${getGroupEmoji(item.categoria_macro)} ${item.categoria_macro}`);
+    if (item.subcategoria) parts.push(item.subcategoria);
+    if (parts.length === 0) return null;
+    return <span className="text-[11px] ml-1 text-muted-foreground">· {parts.join(" · ")}</span>;
   };
 
   const renderItem = (item: Lancamento, icon: React.ReactNode, subtitle: React.ReactNode, valuePrefix = "") => (
@@ -298,25 +276,21 @@ const Despesas = () => {
 
         {/* Summary + Filter Button */}
         <div className="flex items-center justify-between mb-3 animate-fade-up" style={{ animationDelay: "0.05s" }}>
-          <p className="text-xs" style={{ color: "#475569" }}>
+          <p className="text-xs text-muted-foreground">
             {filteredDespesas.length} lançamentos · {fmt(totalFiltrado)}
           </p>
           <button
             onClick={openFilterSheet}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
               activeFilterCount > 0
-                ? "text-primary-foreground shadow-lg shadow-primary/20"
-                : "text-foreground border"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                : "text-primary border border-primary"
             }`}
-            style={activeFilterCount > 0
-              ? { backgroundColor: "#10B981" }
-              : { borderColor: "#10B981", color: "#10B981" }
-            }
           >
             <SlidersHorizontal size={12} />
             Filtrar
             {activeFilterCount > 0 && (
-              <span className="text-[10px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full">✦ {activeFilterCount}</span>
+              <span className="text-[10px] font-bold bg-primary-foreground/20 px-1.5 py-0.5 rounded-full">✦ {activeFilterCount}</span>
             )}
           </button>
         </div>
@@ -325,31 +299,17 @@ const Despesas = () => {
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-3 animate-fade-up">
             {tipoFilter !== "Todas" && (
-              <button
-                onClick={() => removeFilter("tipo")}
-                className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium"
-                style={{ backgroundColor: "#1a1a2e", color: "#10B981" }}
-              >
+              <button onClick={() => removeFilter("tipo")} className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium bg-secondary text-primary">
                 {tipoFilter} <X size={10} />
               </button>
             )}
             {catFilters.map(c => (
-              <button
-                key={c}
-                onClick={() => removeFilter("cat", c)}
-                className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium"
-                style={{ backgroundColor: "#1a1a2e", color: "#10B981" }}
-              >
-                {CATEGORY_EMOJIS[c] || ""} {c} <X size={10} />
+              <button key={c} onClick={() => removeFilter("cat", c)} className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium bg-secondary text-primary">
+                {getGroupEmoji(c)} {c} <X size={10} />
               </button>
             ))}
             {subcatFilters.map(s => (
-              <button
-                key={s}
-                onClick={() => removeFilter("subcat", s)}
-                className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium"
-                style={{ backgroundColor: "#1a1a2e", color: "#10B981" }}
-              >
+              <button key={s} onClick={() => removeFilter("subcat", s)} className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium bg-secondary text-primary">
                 {s} <X size={10} />
               </button>
             ))}
@@ -360,20 +320,20 @@ const Despesas = () => {
           <EmptyState title="Nenhum gasto por aqui! 🎉" />
         ) : (
           <>
-            {/* Fixas */}
-            {showSection("fixa") && fixas.length > 0 && (
+            {/* Despesas regulares (fixa + extra) */}
+            {showSection(["fixa", "extra"]) && regulares.length > 0 && (
               <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <Home size={14} className="text-primary" />
-                  <h2 className="text-sm font-semibold text-foreground">Contas Fixas</h2>
+                  <h2 className="text-sm font-semibold text-foreground">Despesas</h2>
                 </div>
                 <div className="space-y-1">
-                  {fixas.map((bill) =>
+                  {regulares.map((bill) =>
                     renderItem(
                       bill,
                       bill.pago ? <CheckCircle2 size={18} className="text-primary" /> : <Clock size={18} className="text-yellow-400" />,
                       <p className="text-[11px] text-muted-foreground">
-                        Vence {new Date(bill.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} · <span className={bill.pago ? "text-primary" : "text-yellow-400"}>{bill.pago ? "Pago" : "Pendente"}</span>
+                        {new Date(bill.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} · <span className={bill.pago ? "text-primary" : "text-yellow-400"}>{bill.pago ? "Pago" : "Pendente"}</span>
                       </p>
                     )
                   )}
@@ -382,7 +342,7 @@ const Despesas = () => {
             )}
 
             {/* Parceladas */}
-            {showSection("parcelada") && parceladas.length > 0 && (
+            {showSection(["parcelada"]) && parceladas.length > 0 && (
               <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <CreditCard size={14} className="text-primary" />
@@ -399,12 +359,11 @@ const Despesas = () => {
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
                             {item.parcela_atual != null && item.parcela_total != null && item.parcela_atual === item.parcela_total && (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0" style={{ backgroundColor: "rgba(245,158,11,0.15)", color: "#F59E0B" }}>🏁 Última parcela!</span>
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 bg-yellow-500/15 text-yellow-500">🏁 Última parcela!</span>
                             )}
                           </div>
                           <div className="flex items-center gap-2">
                             <p className="text-[11px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas</p>
-                            {renderSubcatLabel(item)}
                           </div>
                           {item.parcela_atual && item.parcela_total && (
                             <div className="w-full h-1 rounded-full bg-secondary/60 mt-1.5">
@@ -421,29 +380,9 @@ const Despesas = () => {
               </div>
             )}
 
-            {/* Extras */}
-            {showSection("extra") && extras.length > 0 && (
-              <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Gift size={14} className="text-primary" />
-                  <h2 className="text-sm font-semibold text-foreground">Extras</h2>
-                </div>
-                <div className="space-y-1">
-                  {extras.map((item) =>
-                    renderItem(
-                      item,
-                      <Gift size={18} className="text-muted-foreground" />,
-                      <p className="text-[11px] text-muted-foreground">{new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</p>,
-                      "-"
-                    )
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Pais */}
-            {showSection("pais") && pais.length > 0 && (
-              <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.25s" }}>
+            {showSection(["pais"]) && pais.length > 0 && (
+              <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <Users size={14} className="text-primary" />
                   <h2 className="text-sm font-semibold text-foreground">Pais</h2>
@@ -492,7 +431,6 @@ const Despesas = () => {
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto pb-24">
           <div className="space-y-5 pt-2">
-            {/* Header */}
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-foreground">Filtrar despesas</h2>
               <button onClick={clearAllFilters} className="text-xs font-semibold text-destructive">Limpar tudo</button>
@@ -502,14 +440,13 @@ const Despesas = () => {
             <div>
               <p className="text-[11px] font-semibold text-muted-foreground mb-2">TIPO</p>
               <div className="flex flex-wrap gap-2">
-                {(["Todas", "Fixas", "Parceladas", "Extras", "Pais"] as TipoFilter[]).map(t => (
+                {(["Todas", "Despesas", "Parceladas", "Pais"] as TipoFilter[]).map(t => (
                   <button
                     key={t}
                     onClick={() => setDraftTipo(t)}
                     className={`px-3.5 py-2 rounded-full text-xs font-semibold transition-all ${
-                      draftTipo === t ? "text-primary-foreground shadow-md" : "bg-secondary/60 text-muted-foreground"
+                      draftTipo === t ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary/60 text-muted-foreground"
                     }`}
-                    style={draftTipo === t ? { backgroundColor: "#10B981" } : undefined}
                   >
                     {t}
                   </button>
@@ -528,12 +465,11 @@ const Despesas = () => {
                       key={g.group}
                       onClick={() => toggleDraftCat(g.group)}
                       className={`flex items-center gap-2 p-3 rounded-xl text-left text-xs font-medium transition-all ${
-                        selected ? "ring-2 bg-secondary/50" : "bg-secondary/30 text-muted-foreground"
+                        selected ? "ring-2 ring-primary bg-secondary/50 text-foreground font-semibold" : "bg-secondary/30 text-muted-foreground"
                       }`}
-                      style={selected ? { outline: "2px solid #10B981", outlineOffset: "-2px" } : undefined}
                     >
-                      <span className="text-base">{CATEGORY_EMOJIS[g.group] || "📋"}</span>
-                      <span className={selected ? "text-foreground font-semibold" : ""}>{g.group}</span>
+                      <span className="text-base">{g.emoji}</span>
+                      <span>{g.group}</span>
                     </button>
                   );
                 })}
@@ -552,9 +488,8 @@ const Despesas = () => {
                         key={sub}
                         onClick={() => toggleDraftSubcat(sub)}
                         className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
-                          selected ? "text-primary-foreground" : "bg-secondary/50 text-muted-foreground"
+                          selected ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground"
                         }`}
-                        style={selected ? { backgroundColor: "#10B981" } : undefined}
                       >
                         {sub}
                       </button>
@@ -565,12 +500,10 @@ const Despesas = () => {
             )}
           </div>
 
-          {/* Fixed footer button */}
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border/30">
             <button
               onClick={applyFilters}
-              className="w-full py-3 rounded-xl text-sm font-semibold text-primary-foreground shadow-lg"
-              style={{ backgroundColor: "#10B981" }}
+              className="w-full py-3 rounded-xl text-sm font-semibold bg-primary text-primary-foreground shadow-lg"
             >
               Ver {draftFiltered.length} lançamentos · {fmt(draftPreviewTotal)}
             </button>
@@ -602,6 +535,7 @@ const Despesas = () => {
             data: selectedLanc.data,
             subcategoria_pais: selectedLanc.subcategoria_pais,
             subcategoria: selectedLanc.subcategoria,
+            categoria_macro: selectedLanc.categoria_macro,
             parcela_atual: selectedLanc.parcela_atual,
             parcela_total: selectedLanc.parcela_total,
           }}

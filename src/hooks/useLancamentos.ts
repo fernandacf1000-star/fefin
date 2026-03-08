@@ -9,6 +9,7 @@ export interface Lancamento {
   valor: number;
   tipo: "despesa" | "receita";
   categoria: string;
+  categoria_macro: string | null;
   subcategoria_pais: string | null;
   subcategoria: string | null;
   data: string;

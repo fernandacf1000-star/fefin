@@ -37,10 +37,9 @@ const categoryCards = [
 ];
 
 const upcomingBills = [
-  { label: "Aluguel", date: "10 Mar", value: 1800 },
-  { label: "Cartão Nubank", date: "12 Mar", value: 1243.5 },
-  { label: "Internet", date: "15 Mar", value: 119.9 },
-  { label: "Academia", date: "20 Mar", value: 189 },
+  { label: "Aluguel", date: "10 Mar", value: 1800, daysLeft: 2, icon: Home },
+  { label: "Cartão Nubank", date: "12 Mar", value: 1243.5, daysLeft: 4, icon: CreditCard },
+  { label: "Internet", date: "15 Mar", value: 119.9, daysLeft: 7, icon: Zap },
 ];
 
 const HEALTH_SCORE = 74;
@@ -144,10 +143,26 @@ const Dashboard = () => {
           </div>
           <div className="space-y-1">
             {upcomingBills.map((bill) => (
-              <div key={bill.label} className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/30 transition-colors">
-                <div>
+              <div key={bill.label} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors">
+                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                  <bill.icon size={18} className="text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">{bill.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{bill.date}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[11px] text-muted-foreground">{bill.date}</p>
+                    <span
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        bill.daysLeft <= 2
+                          ? "bg-destructive/20 text-destructive"
+                          : bill.daysLeft <= 7
+                          ? "bg-yellow-500/20 text-yellow-400"
+                          : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      {bill.daysLeft <= 2 ? "Urgente" : `${bill.daysLeft} dias`}
+                    </span>
+                  </div>
                 </div>
                 <p className="text-sm font-semibold text-foreground tabular-nums">
                   {showBalance

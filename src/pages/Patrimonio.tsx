@@ -18,10 +18,9 @@ const resgates = [
 ];
 const emergencias6m = resgates.filter((r) => r.motivo === "Emergência").length;
 
-const longoPrazo = { total: 12000, alocado: 7200, reserva: 3600, taxas: 1200 };
-const longoPrazoPctReserva = (longoPrazo.reserva / longoPrazo.total) * 100;
+const longoPrazo = { saldo: 12000, rentAnual: 9.8, ultimoAporte: "15 Fev 2026" };
 
-const totalInvestido = previdencia.valor + aplicacao.saldo + fgts.saldo + longoPrazo.total;
+const totalInvestido = previdencia.valor + aplicacao.saldo + fgts.saldo + longoPrazo.saldo;
 const rendMes = aplicacao.rendMensal + 756.2;
 const rendAno = 4820.5;
 
@@ -131,30 +130,23 @@ const Patrimonio = () => (
             <Lock size={16} className="text-primary" />
             <h2 className="text-sm font-semibold text-foreground">Aplicação Sem Liquidez — Longo Prazo</h2>
           </div>
+          <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-yellow-400/15 text-yellow-400">
+            Evitar resgates ⚠️
+          </span>
         </div>
-        <p className="text-xl font-bold text-foreground tabular-nums mb-4">{fmt(longoPrazo.total)}</p>
-
-        <div className="space-y-2 mb-4">
-          <div className="flex justify-between text-[11px]">
-            <span className="text-primary font-medium">Alocado {fmt(longoPrazo.alocado)}</span>
-            <span className="text-destructive font-medium">Reserva {fmt(longoPrazo.reserva)}</span>
-          </div>
-          <div className="w-full h-2.5 rounded-full bg-secondary/60 flex overflow-hidden">
-            <div className="h-full bg-primary" style={{ width: `${(longoPrazo.alocado / longoPrazo.total) * 100}%` }} />
-            <div className="h-full bg-destructive" style={{ width: `${(longoPrazo.reserva / longoPrazo.total) * 100}%` }} />
-            <div className="h-full bg-muted-foreground/30" style={{ width: `${(longoPrazo.taxas / longoPrazo.total) * 100}%` }} />
-          </div>
-          <p className="text-[11px] text-muted-foreground">Taxas e custos: {fmt(longoPrazo.taxas)}</p>
+        <p className="text-xl font-bold text-foreground tabular-nums">{fmt(longoPrazo.saldo)}</p>
+        <p className="text-[11px] text-muted-foreground mt-1">
+          Rentabilidade anual estimada: <span className="text-primary font-semibold">{pct(longoPrazo.rentAnual)}</span>
+        </p>
+        <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">
+          Último aporte: {longoPrazo.ultimoAporte}
+        </p>
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary/40">
+          <Info size={14} className="text-muted-foreground shrink-0 mt-0.5" />
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Aplicações de longo prazo — priorize não resgatar.
+          </p>
         </div>
-
-        {longoPrazoPctReserva > 20 && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-500/10">
-            <AlertTriangle size={16} className="text-orange-400 shrink-0" />
-            <p className="text-xs text-orange-300">
-              {pct(longoPrazoPctReserva)} da aplicação está em reserva — acima do limite ideal de 20%.
-            </p>
-          </div>
-        )}
       </section>
 
       {/* 5 — FGTS */}

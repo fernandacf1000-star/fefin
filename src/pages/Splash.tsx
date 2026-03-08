@@ -1,18 +1,14 @@
 import { useState, useEffect } from "react";
 
 const Splash = ({ onFinish }: { onFinish: () => void }) => {
-  const [progress, setProgress] = useState(0);
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((p) => Math.min(p + 4, 100));
-    }, 80);
     const timer = setTimeout(() => {
       setFadeOut(true);
       setTimeout(onFinish, 600);
     }, 2500);
-    return () => { clearInterval(interval); clearTimeout(timer); };
+    return () => clearTimeout(timer);
   }, [onFinish]);
 
   return (
@@ -20,7 +16,7 @@ const Splash = ({ onFinish }: { onFinish: () => void }) => {
       className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-opacity duration-500 ${fadeOut ? "opacity-0" : "opacity-100"}`}
       style={{ background: "linear-gradient(180deg, #0d1117 0%, #0a1628 100%)" }}
     >
-      {/* Green glow behind mascot */}
+      {/* Green glow */}
       <div
         className="absolute rounded-full blur-3xl opacity-20"
         style={{
@@ -34,7 +30,7 @@ const Splash = ({ onFinish }: { onFinish: () => void }) => {
       />
 
       {/* Mascot */}
-      <div className="relative z-10 mascot-float">
+      <div className="relative z-10 splash-float">
         <svg width="110" height="138" viewBox="0 0 100 130" fill="none">
           <ellipse cx="50" cy="42" rx="34" ry="36" fill="#2C1810"/>
           <path d="M74 45 Q88 55 85 80 Q82 95 75 100 Q80 80 76 65 Q74 55 74 45Z" fill="#2C1810"/>
@@ -46,7 +42,7 @@ const Splash = ({ onFinish }: { onFinish: () => void }) => {
           <ellipse cx="38" cy="47" rx="5" ry="5.5" fill="white"/>
           <ellipse cx="62" cy="47" rx="5" ry="5.5" fill="white"/>
           <ellipse cx="38.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314"/>
-          <ellipse className="eye-blink" cx="62.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314"/>
+          <ellipse className="splash-eye-blink" cx="62.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314"/>
           <circle cx="40" cy="46" r="1.2" fill="white"/>
           <circle cx="64" cy="46" r="1.2" fill="white"/>
           <path d="M38 63 Q50 72 62 63" stroke="#C68642" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
@@ -55,7 +51,7 @@ const Splash = ({ onFinish }: { onFinish: () => void }) => {
           <circle cx="22" cy="56" r="4" fill="#F7D070"/>
           <circle cx="78" cy="56" r="4" fill="#F7D070"/>
           <path d="M22 92 Q20 115 22 130 L78 130 Q80 115 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#10B981"/>
-          <g className="coin-bounce">
+          <g className="splash-coin-bounce">
             <circle cx="76" cy="95" r="10" fill="#F7D070" stroke="#E8B800" strokeWidth="1.5"/>
             <text x="76" y="99" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#B8860B">$</text>
           </g>
@@ -64,47 +60,49 @@ const Splash = ({ onFinish }: { onFinish: () => void }) => {
       </div>
 
       {/* Logo */}
-      <h1 className="relative z-10 mt-6 text-4xl font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>
+      <h1 className="relative z-10 mt-6" style={{ fontFamily: "'Playfair Display', serif", fontSize: 42, fontWeight: 900 }}>
         <span className="text-white">Fe</span>
         <span style={{ color: "#10B981" }}>Fin</span>
       </h1>
 
       {/* Tagline */}
-      <p className="relative z-10 mt-2 text-xs tracking-[0.25em] uppercase" style={{ color: "#475569" }}>
-        Suas finanças, seu controle
+      <p
+        className="relative z-10 mt-2 uppercase"
+        style={{ color: "#475569", fontSize: 10, letterSpacing: "2.5px", whiteSpace: "nowrap", fontFamily: "'Nunito', sans-serif" }}
+      >
+        Minhas finanças, minhas regras
       </p>
 
       {/* Progress bar */}
       <div className="relative z-10 mt-6 w-48 h-[3px] rounded-full overflow-hidden" style={{ backgroundColor: "rgba(16,185,129,0.15)" }}>
         <div
-          className="h-full rounded-full transition-all duration-100"
-          style={{ width: `${progress}%`, background: "linear-gradient(90deg, #10B981, #34D399)" }}
+          className="h-full rounded-full splash-progress"
+          style={{ background: "linear-gradient(90deg, #10B981, #34D399)" }}
         />
       </div>
 
       <style>{`
-        .mascot-float {
-          animation: mascotFloat 3s ease-in-out infinite;
+        .splash-float { animation: splashFloat 3s ease-in-out infinite; }
+        @keyframes splashFloat {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
         }
-        @keyframes mascotFloat {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
+        .splash-coin-bounce { animation: splashCoinBounce 1.8s ease-in-out infinite; transform-origin: 76px 95px; }
+        @keyframes splashCoinBounce {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          40% { transform: translateY(-10px) rotate(12deg); }
+          60% { transform: translateY(-6px) rotate(-6deg); }
         }
-        .coin-bounce {
-          animation: coinBounce 1.8s ease-in-out infinite;
-          transform-origin: 76px 95px;
+        .splash-eye-blink { animation: splashWink 4.5s ease-in-out infinite; transform-origin: 62.5px 47.5px; }
+        @keyframes splashWink {
+          0%, 88%, 100% { transform: scaleY(1); }
+          93% { transform: scaleY(0.08); }
         }
-        @keyframes coinBounce {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          30% { transform: translateY(-6px) rotate(8deg); }
-          60% { transform: translateY(2px) rotate(-3deg); }
-        }
-        .eye-blink {
-          animation: eyeBlink 4.5s ease-in-out infinite;
-        }
-        @keyframes eyeBlink {
-          0%, 90%, 100% { ry: 4; }
-          95% { ry: 0.5; }
+        .splash-progress { animation: splashLoadProgress 2.5s ease-out forwards; }
+        @keyframes splashLoadProgress {
+          0% { width: 0%; }
+          70% { width: 85%; }
+          100% { width: 100%; }
         }
       `}</style>
     </div>

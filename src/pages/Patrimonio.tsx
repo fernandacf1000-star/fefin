@@ -1,5 +1,5 @@
 import BottomNav from "@/components/BottomNav";
-import { Lock, CheckCircle2, AlertTriangle, TrendingUp, Wallet, ShieldCheck, Landmark, Info } from "lucide-react";
+import { Lock, CheckCircle2, AlertTriangle, TrendingUp, Wallet, ShieldCheck, Landmark, Info, AlertOctagon } from "lucide-react";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -19,6 +19,18 @@ const resgates = [
 const emergencias6m = resgates.filter((r) => r.motivo === "Emergência").length;
 
 const longoPrazo = { saldo: 12000, rentAnual: 9.8, ultimoAporte: "15 Fev 2026" };
+const resgatesLP = [
+  { data: "10 Jan 2026", valor: 2000, motivo: "Planejado" as const },
+  { data: "28 Fev 2026", valor: 1500, motivo: "Emergência" as const },
+];
+const temEmergenciaLP = resgatesLP.some((r) => r.motivo === "Emergência");
+const temResgateLP = resgatesLP.length > 0;
+
+const motivoLPStyle: Record<string, { bg: string; text: string }> = {
+  Emergência: { bg: "bg-destructive/20", text: "text-destructive" },
+  Planejado: { bg: "bg-yellow-400/20", text: "text-yellow-400" },
+  "Oportunidade de investimento": { bg: "bg-blue-400/20", text: "text-blue-400" },
+};
 
 const totalInvestido = previdencia.valor + aplicacao.saldo + fgts.saldo + longoPrazo.saldo;
 const rendMes = aplicacao.rendMensal + 756.2;
@@ -141,7 +153,47 @@ const Patrimonio = () => (
         <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">
           Último aporte: {longoPrazo.ultimoAporte}
         </p>
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary/40">
+
+        {/* Alertas de resgate */}
+        {temEmergenciaLP && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/15 mb-3">
+            <AlertOctagon size={16} className="text-destructive shrink-0" />
+            <p className="text-xs text-destructive font-medium">
+              Resgate de emergência em aplicação de longo prazo — considere reforçar sua reserva de liquidez diária para evitar isso.
+            </p>
+          </div>
+        )}
+        {temResgateLP && !temEmergenciaLP && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-500/10 mb-3">
+            <AlertTriangle size={16} className="text-orange-400 shrink-0" />
+            <p className="text-xs text-orange-300">
+              Você resgatou desta aplicação de longo prazo — avalie se era realmente necessário.
+            </p>
+          </div>
+        )}
+
+        {/* Histórico de resgates */}
+        <p className="text-xs text-muted-foreground font-medium mb-2">Resgates</p>
+        <div className="space-y-1">
+          {resgatesLP.map((r, i) => (
+            <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                  <Wallet size={14} className="text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{r.data}</p>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${motivoLPStyle[r.motivo].bg} ${motivoLPStyle[r.motivo].text}`}>
+                    {r.motivo}
+                  </span>
+                </div>
+              </div>
+              <p className="text-sm font-semibold text-foreground tabular-nums">-{fmt(r.valor)}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary/40 mt-3">
           <Info size={14} className="text-muted-foreground shrink-0 mt-0.5" />
           <p className="text-[11px] text-muted-foreground leading-relaxed">
             Aplicações de longo prazo — priorize não resgatar.

@@ -264,30 +264,47 @@ const Dashboard = () => {
             <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Target size={16} className="text-primary" />
                   <span className="text-sm font-semibold text-foreground">🎯 Meta do mês</span>
                 </div>
-                <span className="text-xs font-semibold text-primary">{metaPct}% usado</span>
+                <div className="flex items-center gap-2">
+                  {metaMensal ? (
+                    <span className="text-xs font-semibold text-primary">{metaPct}% usado</span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">Toque em ✏️ para definir sua meta</span>
+                  )}
+                  <button onClick={() => { setMetaValue(metaMensal ? String(metaMensal) : ""); setMetaOpen(true); }} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
+                    <Pencil size={14} />
+                  </button>
+                </div>
               </div>
-              <div className="relative w-full h-3 rounded-full bg-secondary/60 overflow-hidden">
-                <div
-                  className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
-                    metaPct >= 90 ? "bg-destructive" : metaPct >= 70 ? "bg-yellow-500" : "gradient-emerald"
-                  }`}
-                  style={{ width: `${metaPct}%` }}
-                />
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-2">
-                {metaPct >= 90
-                  ? "Cuidado! Gastos próximos da receita 🚨"
-                  : metaPct >= 70
-                  ? "Atenção com os gastos este mês ⚠️"
-                  : "Dentro do orçamento 💚"}
-              </p>
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-[10px] text-muted-foreground">Gastos: {showBalance ? fmt(totalDespesas) : "••••"}</span>
-                <span className="text-[10px] text-muted-foreground">Receitas: {showBalance ? fmt(totalReceitas) : "••••"}</span>
-              </div>
+              {metaMensal ? (
+                <>
+                  <div className="relative w-full h-3 rounded-full bg-secondary/60 overflow-hidden">
+                    <div
+                      className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
+                        metaPct >= 90 ? "bg-destructive" : metaPct >= 70 ? "bg-yellow-500" : "gradient-emerald"
+                      }`}
+                      style={{ width: `${metaPct}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    {metaPct >= 90
+                      ? "Cuidado! Gastos próximos da meta 🚨"
+                      : metaPct >= 70
+                      ? "Atenção com os gastos este mês ⚠️"
+                      : "Dentro do orçamento 💚"}
+                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-[10px] text-muted-foreground">Gastos: {showBalance ? fmt(totalDespesasSemInvest) : "••••"}</span>
+                    <span className="text-[10px] text-muted-foreground">Meta: {showBalance ? fmt(metaMensal) : "••••"}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-[10px] text-muted-foreground">Gastos: {showBalance ? fmt(totalDespesasSemInvest) : "••••"}</span>
+                  <span className="text-[10px] text-muted-foreground">Receitas: {showBalance ? fmt(totalReceitas) : "••••"}</span>
+                </div>
+              )}
             </div>
 
             {/* Category Summary - Horizontal scroll */}

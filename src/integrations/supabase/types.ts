@@ -339,6 +339,7 @@ export type Database = {
           idade: number | null
           idade_aposentadoria: number | null
           ir_dados: Json | null
+          meta_mensal: number | null
           nome: string | null
           tipo_tributacao: string | null
           updated_at: string
@@ -354,6 +355,7 @@ export type Database = {
           idade?: number | null
           idade_aposentadoria?: number | null
           ir_dados?: Json | null
+          meta_mensal?: number | null
           nome?: string | null
           tipo_tributacao?: string | null
           updated_at?: string
@@ -369,6 +371,7 @@ export type Database = {
           idade?: number | null
           idade_aposentadoria?: number | null
           ir_dados?: Json | null
+          meta_mensal?: number | null
           nome?: string | null
           tipo_tributacao?: string | null
           updated_at?: string

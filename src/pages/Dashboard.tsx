@@ -5,26 +5,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useAllReembolsos, getTotalReembolsado } from "@/hooks/useReembolsos";
+import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";
+import CartaoCard from "@/components/CartaoCard";
+import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
 import {
-  Eye,
-  EyeOff,
-  TrendingUp,
-  TrendingDown,
-  ShoppingBag,
-  Coffee,
-  Zap,
-  Car,
-  Utensils,
-  Heart,
-  CalendarClock,
-  Home,
-  CreditCard,
-  Users,
-  ChevronLeft,
-  ChevronRight,
-  Settings,
-  LogOut,
-  Receipt,
+  Eye, EyeOff, TrendingUp, TrendingDown,
+  ShoppingBag, CreditCard, Users,
+  ChevronLeft, ChevronRight, Settings, LogOut, Receipt, Target,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 
@@ -44,11 +31,12 @@ const generateMonths = () => {
 };
 const months = generateMonths();
 
-const categoryIconMap: Record<string, any> = {
-  fixa: Home,
-  parcelada: CreditCard,
-  extra: Zap,
-  pais: Users,
+const txIcon = (categoria: string) => {
+  const map: Record<string, any> = {
+    fixa: ShoppingBag, parcelada: CreditCard, extra: ShoppingBag, pais: Users,
+    salario: TrendingUp, reembolso_pais: Users, renda_extra: Receipt, outros: Receipt,
+  };
+  return map[categoria] || Receipt;
 };
 
 const MascotHead = ({ size = 28 }: { size?: number }) => (
@@ -84,14 +72,6 @@ const MascotHead = ({ size = 28 }: { size?: number }) => (
   </svg>
 );
 
-const txIcon = (categoria: string) => {
-  const map: Record<string, any> = {
-    fixa: Home, parcelada: CreditCard, extra: ShoppingBag, pais: Users,
-    salario: TrendingUp, reembolso_pais: Users, renda_extra: Receipt, outros: Receipt,
-  };
-  return map[categoria] || Receipt;
-};
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
@@ -104,6 +84,7 @@ const Dashboard = () => {
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
   const { data: allReembolsos = [] } = useAllReembolsos();
+  const { data: cartoes = [] } = useCartoes();
 
   const receitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
   const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
@@ -117,40 +98,43 @@ const Dashboard = () => {
   }, [despesas, allReembolsos]);
   const saldo = totalReceitas - totalDespesas;
 
+  // Category totals by macro categories
   const categoryTotals = useMemo(() => {
-    const cats = ["fixa", "parcelada", "extra", "pais"];
-    return cats.map((cat) => ({
-      key: cat,
-      label: cat === "fixa" ? "Fixas" : cat === "parcelada" ? "Parceladas" : cat === "extra" ? "Extras" : "Pais",
-      icon: categoryIconMap[cat] || Receipt,
-      color: cat === "pais" ? "text-primary" : cat === "extra" ? "text-destructive" : cat === "parcelada" ? "text-[#F59E0B]" : "text-primary",
-      value: despesas.filter((d) => d.categoria === cat).reduce((s, d) => {
-        const reemb = getTotalReembolsado(allReembolsos, d.id);
-        return s + Math.max(0, Number(d.valor) - reemb);
-      }, 0),
+    return SUBCATEGORIA_GROUPS.map((g) => ({
+      key: g.group,
+      label: g.group,
+      emoji: g.emoji,
+      value: despesas
+        .filter((d) => d.categoria_macro === g.group)
+        .reduce((s, d) => {
+          const reemb = getTotalReembolsado(allReembolsos, d.id);
+          return s + Math.max(0, Number(d.valor) - reemb);
+        }, 0),
     }));
   }, [despesas, allReembolsos]);
 
-  const upcomingBills = useMemo(() => {
-    const today = new Date();
-    return despesas
-      .filter((d) => (d.categoria === "fixa" || d.categoria === "parcelada") && !d.pago)
-      .map((d) => {
-        const dt = new Date(d.data + "T12:00:00");
-        const daysLeft = Math.max(0, Math.ceil((dt.getTime() - today.getTime()) / 86400000));
-        return { ...d, daysLeft, dateStr: dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) };
-      })
-      .sort((a, b) => a.daysLeft - b.daysLeft)
-      .slice(0, 5);
-  }, [despesas]);
+  // Meta do mês: simple ratio
+  const metaPct = useMemo(() => {
+    if (totalReceitas === 0) return 0;
+    return Math.min(100, Math.round((totalDespesas / totalReceitas) * 100));
+  }, [totalReceitas, totalDespesas]);
+
+  // Best card logic
+  const bestCartaoId = useMemo(() => {
+    if (cartoes.length <= 1) return null;
+    let best: string | null = null;
+    let maxDays = -1;
+    for (const c of cartoes) {
+      const { daysUntilClose } = getCartaoCycle(c.dia_fechamento);
+      if (daysUntilClose > maxDays) {
+        maxDays = daysUntilClose;
+        best = c.id;
+      }
+    }
+    return best;
+  }, [cartoes]);
 
   const recentTransactions = useMemo(() => lancamentos.slice(0, 7), [lancamentos]);
-
-  const healthScore = useMemo(() => {
-    if (totalReceitas === 0) return 0;
-    const ratio = 1 - totalDespesas / totalReceitas;
-    return Math.min(100, Math.max(0, Math.round(ratio * 100)));
-  }, [totalReceitas, totalDespesas]);
 
   const nome = profile?.nome || profile?.full_name || "";
   const email = profile?.email || user?.email || "";
@@ -172,7 +156,7 @@ const Dashboard = () => {
             <p className="text-muted-foreground text-sm">Olá,</p>
             <h1 className="text-xl font-semibold text-foreground">{nome ? `${nome} ✨` : "✨"}</h1>
           </div>
-          <button onClick={() => setProfileOpen(true)} className="w-[44px] h-[44px] rounded-full flex items-center justify-center overflow-hidden" style={{ background: "#1a1a2e", border: "2px solid #10B981" }}>
+          <button onClick={() => setProfileOpen(true)} className="w-[44px] h-[44px] rounded-full flex items-center justify-center overflow-hidden" style={{ background: "#1a1a2e", border: "2px solid hsl(var(--primary))" }}>
             <MascotHead size={36} />
           </button>
         </div>
@@ -227,67 +211,75 @@ const Dashboard = () => {
           <EmptyState title="Adicione seu primeiro lançamento! 🚀" />
         ) : (
           <>
-            {/* Financial Health Gauge */}
+            {/* Meta do mês */}
             <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-foreground">Saúde financeira</span>
-                <span className="text-xs text-primary font-semibold">{healthScore}%</span>
+                <div className="flex items-center gap-2">
+                  <Target size={16} className="text-primary" />
+                  <span className="text-sm font-semibold text-foreground">🎯 Meta do mês</span>
+                </div>
+                <span className="text-xs font-semibold text-primary">{metaPct}% usado</span>
               </div>
               <div className="relative w-full h-3 rounded-full bg-secondary/60 overflow-hidden">
-                <div className="absolute inset-y-0 left-0 rounded-full gradient-emerald transition-all duration-700" style={{ width: `${healthScore}%` }} />
+                <div
+                  className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
+                    metaPct >= 90 ? "bg-destructive" : metaPct >= 70 ? "bg-yellow-500" : "gradient-emerald"
+                  }`}
+                  style={{ width: `${metaPct}%` }}
+                />
               </div>
               <p className="text-[11px] text-muted-foreground mt-2">
-                {healthScore >= 70 ? "Seu controle financeiro está bom! Continue assim 💚" : healthScore >= 40 ? "Atenção com os gastos este mês ⚠️" : "Seus gastos estão acima das receitas 🚨"}
+                {metaPct >= 90
+                  ? "Cuidado! Gastos próximos da receita 🚨"
+                  : metaPct >= 70
+                  ? "Atenção com os gastos este mês ⚠️"
+                  : "Dentro do orçamento 💚"}
               </p>
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-[10px] text-muted-foreground">Gastos: {showBalance ? fmt(totalDespesas) : "••••"}</span>
+                <span className="text-[10px] text-muted-foreground">Receitas: {showBalance ? fmt(totalReceitas) : "••••"}</span>
+              </div>
             </div>
 
-            {/* Category Summary Cards */}
-            <div className="grid grid-cols-2 gap-3 mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-              {categoryTotals.map((cat) => (
-                <div key={cat.key} className="glass-card p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                      <cat.icon size={16} className={cat.color} />
+            {/* Category Summary - Horizontal scroll */}
+            <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+              <div className="flex gap-2.5 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+                {categoryTotals.map((cat) => (
+                  <div key={cat.key} className="glass-card p-3 min-w-[120px] shrink-0">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="text-base">{cat.emoji}</span>
+                      <span className="text-[10px] text-muted-foreground font-medium truncate">{cat.label}</span>
                     </div>
-                    <span className="text-xs text-muted-foreground font-medium">{cat.label}</span>
+                    <p className="text-sm font-semibold text-foreground tabular-nums">
+                      {showBalance ? fmt(cat.value) : "••••"}
+                    </p>
                   </div>
-                  <p className="text-sm font-semibold text-foreground">
-                    {showBalance ? fmt(cat.value) : "••••"}
-                  </p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            {/* Upcoming Bills */}
-            {upcomingBills.length > 0 && (
+            {/* Meus Cartões */}
+            {cartoes.length > 0 && (
               <div className="animate-fade-up mb-6" style={{ animationDelay: "0.25s" }}>
                 <div className="flex items-center gap-1.5 mb-3">
-                  <CalendarClock size={14} className="text-primary" />
-                  <h2 className="text-sm font-semibold text-foreground">Próximos vencimentos</h2>
+                  <CreditCard size={14} className="text-primary" />
+                  <h2 className="text-sm font-semibold text-foreground">💳 Meus Cartões</h2>
                 </div>
-                <div className="space-y-1">
-                  {upcomingBills.map((bill) => {
-                    const Icon = txIcon(bill.categoria);
-                    return (
-                      <div key={bill.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors">
-                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                          <Icon size={18} className="text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground">{bill.descricao}</p>
-                          <div className="flex items-center gap-2">
-                            <p className="text-[11px] text-muted-foreground">{bill.dateStr}</p>
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${bill.daysLeft <= 2 ? "bg-destructive/20 text-destructive" : bill.daysLeft <= 7 ? "bg-yellow-500/20 text-yellow-400" : "bg-secondary text-muted-foreground"}`}>
-                              {bill.daysLeft <= 2 ? "Urgente" : `${bill.daysLeft} dias`}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-sm font-semibold text-foreground tabular-nums">
-                          {showBalance ? fmt(Number(bill.valor)) : "••••"}
-                        </p>
-                      </div>
-                    );
-                  })}
+                {cartoes.length > 1 && bestCartaoId && (
+                  <p className="text-[11px] text-primary font-medium mb-2">
+                    💡 Melhor cartão hoje: {cartoes.find(c => c.id === bestCartaoId)?.nome}
+                  </p>
+                )}
+                <div className="space-y-2">
+                  {cartoes.map((c) => (
+                    <CartaoCard
+                      key={c.id}
+                      cartao={c}
+                      lancamentos={lancamentos}
+                      showBalance={showBalance}
+                      isBest={c.id === bestCartaoId && cartoes.length > 1}
+                    />
+                  ))}
                 </div>
               </div>
             )}
@@ -310,7 +302,9 @@ const Dashboard = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{tx.descricao}</p>
-                          <p className="text-[11px] text-muted-foreground">{tx.categoria} · {new Date(tx.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {tx.categoria_macro ? `${getGroupEmoji(tx.categoria_macro)} ${tx.categoria_macro}` : tx.categoria} · {new Date(tx.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                          </p>
                         </div>
                         <p className={`text-sm font-semibold tabular-nums ${isReceita ? "text-primary" : "text-foreground"}`}>
                           {isReceita ? "+" : "-"}{fmt(val)}
@@ -333,12 +327,12 @@ const Dashboard = () => {
         </div>
         <div className="px-5 pb-8">
           <div className="flex items-center gap-3 pb-4">
-            <div className="w-[40px] h-[40px] rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ background: "#1a1a2e", border: "2px solid #10B981" }}>
+            <div className="w-[40px] h-[40px] rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ background: "#1a1a2e", border: "2px solid hsl(var(--primary))" }}>
               <MascotHead size={28} />
             </div>
             <div>
               <p className="text-sm font-bold text-foreground">{nome ? `Olá, ${nome}` : "Olá!"}</p>
-              <p className="text-xs" style={{ color: "#475569" }}>{email}</p>
+              <p className="text-xs text-muted-foreground">{email}</p>
             </div>
           </div>
           <div className="h-px bg-border/30 mb-2" />
@@ -347,8 +341,8 @@ const Dashboard = () => {
             <span className="text-sm font-medium text-foreground">Minha conta</span>
           </button>
           <button onClick={() => { setProfileOpen(false); setConfirmLogout(true); }} className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors">
-            <LogOut size={18} style={{ color: "#F87171" }} />
-            <span className="text-sm font-medium" style={{ color: "#F87171" }}>Sair</span>
+            <LogOut size={18} className="text-destructive" />
+            <span className="text-sm font-medium text-destructive">Sair</span>
           </button>
         </div>
       </div>
@@ -358,13 +352,13 @@ const Dashboard = () => {
         <>
           <div className="fixed inset-0 z-[80] bg-background/70 backdrop-blur-sm" onClick={() => setConfirmLogout(false)} />
           <div className="fixed inset-0 z-[90] flex items-center justify-center px-8">
-            <div className="w-full max-w-xs rounded-2xl p-6 space-y-4" style={{ background: "#1a1a2e", border: "1px solid rgba(16,185,129,0.15)" }}>
+            <div className="w-full max-w-xs rounded-2xl p-6 space-y-4" style={{ background: "#1a1a2e", border: "1px solid hsl(var(--primary) / 0.15)" }}>
               <p className="text-base font-bold text-foreground text-center">Deseja sair do FeFin?</p>
               <div className="flex gap-3">
                 <button onClick={() => setConfirmLogout(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-secondary text-muted-foreground hover:text-foreground transition-colors">
                   Cancelar
                 </button>
-                <button onClick={handleLogout} className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors" style={{ backgroundColor: "#F87171", color: "#fff" }}>
+                <button onClick={handleLogout} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-destructive text-destructive-foreground transition-colors">
                   Sair
                 </button>
               </div>

@@ -15,8 +15,15 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-const categories = ["Todas", "Fixas", "Parceladas", "Extras"] as const;
+const categories = ["Todas", "Fixas", "Parceladas", "Extras", "Pais"] as const;
 type Category = (typeof categories)[number];
+
+const months = [
+  { label: "Fevereiro 2026", key: "2026-02" },
+  { label: "Março 2026", key: "2026-03" },
+  { label: "Abril 2026", key: "2026-04" },
+];
+const currentMonthIndex = 1; // Março
 
 const fixedBills = [
   { label: "Aluguel", value: 1800, dueDay: 10, paid: true },

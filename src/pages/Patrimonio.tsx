@@ -19,6 +19,18 @@ const resgates = [
 const emergencias6m = resgates.filter((r) => r.motivo === "Emergência").length;
 
 const longoPrazo = { saldo: 12000, rentAnual: 9.8, ultimoAporte: "15 Fev 2026" };
+const resgatesLP = [
+  { data: "10 Jan 2026", valor: 2000, motivo: "Planejado" as const },
+  { data: "28 Fev 2026", valor: 1500, motivo: "Emergência" as const },
+];
+const temEmergenciaLP = resgatesLP.some((r) => r.motivo === "Emergência");
+const temResgateLP = resgatesLP.length > 0;
+
+const motivoLPStyle: Record<string, { bg: string; text: string }> = {
+  Emergência: { bg: "bg-destructive/20", text: "text-destructive" },
+  Planejado: { bg: "bg-yellow-400/20", text: "text-yellow-400" },
+  "Oportunidade de investimento": { bg: "bg-blue-400/20", text: "text-blue-400" },
+};
 
 const totalInvestido = previdencia.valor + aplicacao.saldo + fgts.saldo + longoPrazo.saldo;
 const rendMes = aplicacao.rendMensal + 756.2;

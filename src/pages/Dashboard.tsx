@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import {
   Eye,

@@ -1,5 +1,5 @@
 import BottomNav from "@/components/BottomNav";
-import { Lock, CheckCircle2, AlertTriangle, TrendingUp, Wallet, ShieldCheck, Gift, Landmark, Info } from "lucide-react";
+import { Lock, CheckCircle2, AlertTriangle, TrendingUp, Wallet, ShieldCheck, Landmark, Info } from "lucide-react";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -18,10 +18,10 @@ const resgates = [
 ];
 const emergencias6m = resgates.filter((r) => r.motivo === "Emergência").length;
 
-const bonus = { recebido: 12000, investido: 7200, emergencias: 3600, usado: 1200 };
-const bonusPctEmergencia = (bonus.emergencias / bonus.recebido) * 100;
+const longoPrazo = { total: 12000, alocado: 7200, reserva: 3600, taxas: 1200 };
+const longoPrazoPctReserva = (longoPrazo.reserva / longoPrazo.total) * 100;
 
-const totalInvestido = previdencia.valor + aplicacao.saldo + fgts.saldo;
+const totalInvestido = previdencia.valor + aplicacao.saldo + fgts.saldo + longoPrazo.total;
 const rendMes = aplicacao.rendMensal + 756.2;
 const rendAno = 4820.5;
 
@@ -35,7 +35,7 @@ const Patrimonio = () => (
     <div className="max-w-md mx-auto px-4 pt-12 space-y-5">
       <h1 className="text-xl font-semibold text-foreground animate-fade-up">Patrimônio</h1>
 
-      {/* 1 — Hero */}
+      {/* 1 — Hero: Total Investido */}
       <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.05s" }}>
         <div className="flex items-center gap-2 mb-3">
           <Wallet size={16} className="text-primary" />
@@ -54,60 +54,8 @@ const Patrimonio = () => (
         </div>
       </section>
 
-      {/* 2 — Previdência */}
+      {/* 2 — Aplicação Liquidez Diária */}
       <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={16} className="text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Previdência Privada</h2>
-          </div>
-          <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-primary/15 text-primary">
-            <Lock size={10} /> Intocável 🔒
-          </span>
-        </div>
-        <p className="text-xl font-bold text-foreground tabular-nums">{fmt(previdencia.valor)}</p>
-        <p className="text-[11px] text-muted-foreground mt-1 mb-4">
-          Rentabilidade anual: <span className="text-primary font-semibold">{pct(previdencia.rentAnual)}</span>
-        </p>
-        <div className={`flex items-center gap-2 p-3 rounded-xl ${previdencia.aporteFeito ? "bg-primary/10" : "bg-yellow-400/10"}`}>
-          {previdencia.aporteFeito ? (
-            <CheckCircle2 size={16} className="text-primary shrink-0" />
-          ) : (
-            <AlertTriangle size={16} className="text-yellow-400 shrink-0" />
-          )}
-          <p className="text-xs text-foreground">
-            {previdencia.aporteFeito
-              ? `Aporte de ${fmt(previdencia.aporteMensal)} (12% do salário) realizado este mês ✓`
-              : "Aporte pendente este mês"}
-          </p>
-        </div>
-      </section>
-
-      {/* 2b — FGTS */}
-      <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.12s" }}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Landmark size={16} className="text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">FGTS</h2>
-          </div>
-          <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-primary/15 text-primary">
-            <Lock size={10} /> Resgate restrito 🔒
-          </span>
-        </div>
-        <p className="text-xl font-bold text-foreground tabular-nums">{fmt(fgts.saldo)}</p>
-        <p className="text-[11px] text-muted-foreground mt-1 mb-3">
-          Última atualização: {fgts.ultimaAtualizacao}
-        </p>
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary/40">
-          <Info size={14} className="text-muted-foreground shrink-0 mt-0.5" />
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Disponível em demissão sem justa causa, aposentadoria ou situações especiais.
-          </p>
-        </div>
-      </section>
-
-      {/* 3 — Aplicação */}
-      <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.15s" }}>
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp size={16} className="text-primary" />
           <h2 className="text-sm font-semibold text-foreground">Aplicação · Liquidez Diária</h2>
@@ -147,36 +95,89 @@ const Patrimonio = () => (
         </div>
       </section>
 
-      {/* 4 — Bônus Anual */}
-      <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-        <div className="flex items-center gap-2 mb-3">
-          <Gift size={16} className="text-yellow-400" />
-          <h2 className="text-sm font-semibold text-foreground">Bônus Anual</h2>
+      {/* 3 — Previdência Privada */}
+      <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={16} className="text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">Previdência Privada</h2>
+          </div>
+          <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-primary/15 text-primary">
+            <Lock size={10} /> Intocável 🔒
+          </span>
         </div>
-        <p className="text-xl font-bold text-foreground tabular-nums mb-4">{fmt(bonus.recebido)}</p>
+        <p className="text-xl font-bold text-foreground tabular-nums">{fmt(previdencia.valor)}</p>
+        <p className="text-[11px] text-muted-foreground mt-1 mb-4">
+          Rentabilidade anual: <span className="text-primary font-semibold">{pct(previdencia.rentAnual)}</span>
+        </p>
+        <div className={`flex items-center gap-2 p-3 rounded-xl ${previdencia.aporteFeito ? "bg-primary/10" : "bg-yellow-400/10"}`}>
+          {previdencia.aporteFeito ? (
+            <CheckCircle2 size={16} className="text-primary shrink-0" />
+          ) : (
+            <AlertTriangle size={16} className="text-yellow-400 shrink-0" />
+          )}
+          <p className="text-xs text-foreground">
+            {previdencia.aporteFeito
+              ? `Aporte de ${fmt(previdencia.aporteMensal)} (12% do salário) realizado este mês ✓`
+              : "Aporte pendente este mês"}
+          </p>
+        </div>
+      </section>
 
-        {/* Progress bar */}
+      {/* 4 — Aplicação Sem Liquidez — Longo Prazo */}
+      <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Lock size={16} className="text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">Aplicação Sem Liquidez — Longo Prazo</h2>
+          </div>
+        </div>
+        <p className="text-xl font-bold text-foreground tabular-nums mb-4">{fmt(longoPrazo.total)}</p>
+
         <div className="space-y-2 mb-4">
           <div className="flex justify-between text-[11px]">
-            <span className="text-primary font-medium">Investido {fmt(bonus.investido)}</span>
-            <span className="text-destructive font-medium">Emergências {fmt(bonus.emergencias)}</span>
+            <span className="text-primary font-medium">Alocado {fmt(longoPrazo.alocado)}</span>
+            <span className="text-destructive font-medium">Reserva {fmt(longoPrazo.reserva)}</span>
           </div>
           <div className="w-full h-2.5 rounded-full bg-secondary/60 flex overflow-hidden">
-            <div className="h-full bg-primary" style={{ width: `${(bonus.investido / bonus.recebido) * 100}%` }} />
-            <div className="h-full bg-destructive" style={{ width: `${(bonus.emergencias / bonus.recebido) * 100}%` }} />
-            <div className="h-full bg-muted-foreground/30" style={{ width: `${(bonus.usado / bonus.recebido) * 100}%` }} />
+            <div className="h-full bg-primary" style={{ width: `${(longoPrazo.alocado / longoPrazo.total) * 100}%` }} />
+            <div className="h-full bg-destructive" style={{ width: `${(longoPrazo.reserva / longoPrazo.total) * 100}%` }} />
+            <div className="h-full bg-muted-foreground/30" style={{ width: `${(longoPrazo.taxas / longoPrazo.total) * 100}%` }} />
           </div>
-          <p className="text-[11px] text-muted-foreground">Outros usos: {fmt(bonus.usado)}</p>
+          <p className="text-[11px] text-muted-foreground">Taxas e custos: {fmt(longoPrazo.taxas)}</p>
         </div>
 
-        {bonusPctEmergencia > 20 && (
+        {longoPrazoPctReserva > 20 && (
           <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-500/10">
             <AlertTriangle size={16} className="text-orange-400 shrink-0" />
             <p className="text-xs text-orange-300">
-              {pct(bonusPctEmergencia)} do bônus foi para emergências — acima do limite de 20%.
+              {pct(longoPrazoPctReserva)} da aplicação está em reserva — acima do limite ideal de 20%.
             </p>
           </div>
         )}
+      </section>
+
+      {/* 5 — FGTS */}
+      <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.25s" }}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Landmark size={16} className="text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">FGTS</h2>
+          </div>
+          <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-primary/15 text-primary">
+            <Lock size={10} /> Resgate restrito 🔒
+          </span>
+        </div>
+        <p className="text-xl font-bold text-foreground tabular-nums">{fmt(fgts.saldo)}</p>
+        <p className="text-[11px] text-muted-foreground mt-1 mb-3">
+          Última atualização: {fgts.ultimaAtualizacao}
+        </p>
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary/40">
+          <Info size={14} className="text-muted-foreground shrink-0 mt-0.5" />
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Disponível em demissão sem justa causa, aposentadoria ou situações especiais.
+          </p>
+        </div>
       </section>
     </div>
     <BottomNav />

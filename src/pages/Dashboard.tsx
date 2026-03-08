@@ -37,10 +37,9 @@ const categoryCards = [
 ];
 
 const upcomingBills = [
-  { label: "Aluguel", date: "10 Mar", value: 1800 },
-  { label: "Cartão Nubank", date: "12 Mar", value: 1243.5 },
-  { label: "Internet", date: "15 Mar", value: 119.9 },
-  { label: "Academia", date: "20 Mar", value: 189 },
+  { label: "Aluguel", date: "10 Mar", value: 1800, daysLeft: 2, icon: Home },
+  { label: "Cartão Nubank", date: "12 Mar", value: 1243.5, daysLeft: 4, icon: CreditCard },
+  { label: "Internet", date: "15 Mar", value: 119.9, daysLeft: 7, icon: Zap },
 ];
 
 const HEALTH_SCORE = 74;

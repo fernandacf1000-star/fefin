@@ -13,6 +13,7 @@ import SwipeableItem from "@/components/SwipeableItem";
 import LancamentoActions from "@/components/LancamentoActions";
 import EditLancamentoModal from "@/components/EditLancamentoModal";
 import ReembolsoModal from "@/components/ReembolsoModal";
+import { getGroupEmoji } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -115,7 +116,7 @@ const Pais = () => {
     const valorOriginal = Number(item.valor);
     const isTotal = totalReemb >= valorOriginal;
     return (
-      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5" style={{ backgroundColor: "rgba(16,185,129,0.15)", color: "#10B981" }}>
+      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-primary/15 text-primary">
         {isTotal ? "↩️ Reembolso total · Quitado ✓" : `↩️ Reembolso parcial: ${fmt(totalReemb)}`}
       </span>
     );
@@ -185,24 +186,26 @@ const Pais = () => {
               ))}
             </div>
 
-            {/* Resumo por Subcategoria */}
+            {/* Resumo por Categoria */}
             {(() => {
-              const subcatMap: Record<string, { total: number; euPaguei: number; elesPagaram: number }> = {};
+              const catMap: Record<string, { total: number; euPaguei: number; elesPagaram: number }> = {};
               paisDespesas.forEach((d) => {
-                const key = d.subcategoria || "Sem subcategoria";
-                if (!subcatMap[key]) subcatMap[key] = { total: 0, euPaguei: 0, elesPagaram: 0 };
-                subcatMap[key].total += Number(d.valor);
+                const key = d.categoria_macro
+                  ? `${getGroupEmoji(d.categoria_macro)} ${d.categoria_macro}`
+                  : (d.subcategoria || "Sem categoria");
+                if (!catMap[key]) catMap[key] = { total: 0, euPaguei: 0, elesPagaram: 0 };
+                catMap[key].total += Number(d.valor);
                 if (d.subcategoria_pais === "paguei_por_eles" || d.subcategoria_pais === "paguei_recebo_depois") {
-                  subcatMap[key].euPaguei += Number(d.valor);
+                  catMap[key].euPaguei += Number(d.valor);
                 } else {
-                  subcatMap[key].elesPagaram += Number(d.valor);
+                  catMap[key].elesPagaram += Number(d.valor);
                 }
               });
-              const entries = Object.entries(subcatMap).filter(([, v]) => v.total > 0).sort((a, b) => b[1].total - a[1].total);
+              const entries = Object.entries(catMap).filter(([, v]) => v.total > 0).sort((a, b) => b[1].total - a[1].total);
               if (entries.length === 0) return null;
               return (
                 <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.08s" }}>
-                  <h2 className="text-sm font-semibold text-foreground mb-3">Por subcategoria</h2>
+                  <h2 className="text-sm font-semibold text-foreground mb-3">Por categoria</h2>
                   <div className="space-y-2">
                     {entries.map(([name, vals]) => (
                       <div key={name} className="glass-card p-3">
@@ -238,7 +241,8 @@ const Pais = () => {
                           <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
                           <div className="flex items-center gap-1.5">
                             <p className={`text-[11px] ${isReembolso ? "text-primary" : "text-muted-foreground"}`}>{subLabel}</p>
-                            {item.subcategoria && <span className="text-[11px]" style={{ color: "#475569" }}>· {item.subcategoria}</span>}
+                            {item.categoria_macro && <span className="text-[11px] text-muted-foreground">· {getGroupEmoji(item.categoria_macro)} {item.categoria_macro}</span>}
+                            {item.subcategoria && <span className="text-[11px] text-muted-foreground">· {item.subcategoria}</span>}
                             <span className="text-[11px] text-muted-foreground">· {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</span>
                           </div>
                           {renderReembolsoBadge(item)}
@@ -278,6 +282,7 @@ const Pais = () => {
             data: selectedLanc.data,
             subcategoria_pais: selectedLanc.subcategoria_pais,
             subcategoria: selectedLanc.subcategoria,
+            categoria_macro: selectedLanc.categoria_macro,
             parcela_atual: selectedLanc.parcela_atual,
             parcela_total: selectedLanc.parcela_total,
           }}

@@ -21,6 +21,7 @@ interface Props {
     data: string;
     subcategoria_pais?: string;
     subcategoria?: string;
+    categoria_macro?: string;
     parcela_atual?: number;
     parcela_total?: number;
   }) => void;
@@ -31,6 +32,7 @@ interface Props {
     data: string;
     subcategoria_pais?: string | null;
     subcategoria?: string | null;
+    categoria_macro?: string | null;
     parcela_atual?: number | null;
     parcela_total?: number | null;
   };
@@ -38,9 +40,8 @@ interface Props {
 }
 
 const categorias = [
-  { value: "fixa", label: "Fixa" },
+  { value: "extra", label: "Despesa" },
   { value: "parcelada", label: "Parcelada" },
-  { value: "extra", label: "Extra" },
   { value: "pais", label: "Pais" },
 ];
 
@@ -73,6 +74,11 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
     );
   }
 
+  const isParcelada = form.categoria === "parcelada";
+  const isPais = form.categoria === "pais";
+  const needsCategory = form.categoria === "extra" || form.categoria === "pais";
+  const selectedGroup = SUBCATEGORIA_GROUPS.find(g => g.group === form.categoria_macro);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
       <div className="glass-card w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -83,25 +89,16 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
 
         <div className="space-y-1.5">
           <Label className="text-[11px] text-muted-foreground">Descrição</Label>
-          <Input
-            value={form.descricao}
-            onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
-            className="bg-secondary/40 border-border/50"
-          />
+          <Input value={form.descricao} onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))} className="bg-secondary/40 border-border/50" />
         </div>
 
         <div className="space-y-1.5">
           <Label className="text-[11px] text-muted-foreground">Valor (R$)</Label>
-          <Input
-            type="number" step="0.01"
-            value={form.valor || ""}
-            onChange={(e) => setForm((f) => ({ ...f, valor: parseFloat(e.target.value) || 0 }))}
-            className="bg-secondary/40 border-border/50"
-          />
+          <Input type="number" step="0.01" value={form.valor || ""} onChange={(e) => setForm((f) => ({ ...f, valor: parseFloat(e.target.value) || 0 }))} className="bg-secondary/40 border-border/50" />
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-[11px] text-muted-foreground">Categoria</Label>
+          <Label className="text-[11px] text-muted-foreground">Tipo</Label>
           <Select value={form.categoria} onValueChange={(v) => setForm((f) => ({ ...f, categoria: v }))}>
             <SelectTrigger className="bg-secondary/40 border-border/50"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -110,45 +107,59 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
           </Select>
         </div>
 
-        {/* Subcategoria */}
-        <div className="space-y-1.5">
-          <Label className="text-[11px] text-muted-foreground">Subcategoria</Label>
-          <div className="max-h-32 overflow-y-auto space-y-2 bg-secondary/20 rounded-xl p-2">
-            {SUBCATEGORIA_GROUPS.map((group) => (
-              <div key={group.group}>
-                <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{group.group}</p>
-                <div className="flex flex-wrap gap-1">
-                  {group.items.map((item) => (
-                    <button
-                      key={item}
-                      onClick={() => setForm((f) => ({ ...f, subcategoria: f.subcategoria === item ? null : item }))}
-                      className={cn(
-                        "px-2 py-0.5 rounded-full text-[10px] font-medium transition-all",
-                        form.subcategoria === item
-                          ? "gradient-emerald text-primary-foreground"
-                          : "bg-secondary/60 text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+        {/* Categoria Macro */}
+        {needsCategory && (
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-muted-foreground">Categoria</Label>
+            <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto">
+              {SUBCATEGORIA_GROUPS.map((g) => {
+                const selected = form.categoria_macro === g.group;
+                return (
+                  <button
+                    key={g.group}
+                    onClick={() => setForm((f) => ({ ...f, categoria_macro: g.group, subcategoria: null }))}
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[11px] font-medium transition-all text-left",
+                      selected ? "bg-primary/15 ring-1 ring-primary text-foreground" : "bg-secondary/40 text-muted-foreground"
+                    )}
+                  >
+                    <span>{g.emoji}</span> {g.group}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Subcategoria */}
+        {needsCategory && selectedGroup && (
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-muted-foreground">Subcategoria</Label>
+            <div className="flex flex-wrap gap-1">
+              {selectedGroup.items.map((item) => (
+                <button
+                  key={item}
+                  onClick={() => setForm((f) => ({ ...f, subcategoria: f.subcategoria === item ? null : item }))}
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-[10px] font-medium transition-all",
+                    form.subcategoria === item
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <Label className="text-[11px] text-muted-foreground">Data</Label>
-          <Input
-            type="date"
-            value={form.data}
-            onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))}
-            className="bg-secondary/40 border-border/50"
-          />
+          <Input type="date" value={form.data} onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))} className="bg-secondary/40 border-border/50" />
         </div>
 
-        {form.categoria === "pais" && (
+        {isPais && (
           <div className="space-y-1.5">
             <Label className="text-[11px] text-muted-foreground">O que aconteceu?</Label>
             <Select value={form.subcategoria_pais || ""} onValueChange={(v) => setForm((f) => ({ ...f, subcategoria_pais: v }))}>
@@ -160,25 +171,15 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
           </div>
         )}
 
-        {form.categoria === "parcelada" && (
+        {isParcelada && (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-[11px] text-muted-foreground">Parcela atual</Label>
-              <Input
-                type="number"
-                value={form.parcela_atual ?? ""}
-                onChange={(e) => setForm((f) => ({ ...f, parcela_atual: parseInt(e.target.value) || 0 }))}
-                className="bg-secondary/40 border-border/50"
-              />
+              <Input type="number" value={form.parcela_atual ?? ""} onChange={(e) => setForm((f) => ({ ...f, parcela_atual: parseInt(e.target.value) || 0 }))} className="bg-secondary/40 border-border/50" />
             </div>
             <div className="space-y-1.5">
               <Label className="text-[11px] text-muted-foreground">Total de parcelas</Label>
-              <Input
-                type="number"
-                value={form.parcela_total ?? ""}
-                onChange={(e) => setForm((f) => ({ ...f, parcela_total: parseInt(e.target.value) || 0 }))}
-                className="bg-secondary/40 border-border/50"
-              />
+              <Input type="number" value={form.parcela_total ?? ""} onChange={(e) => setForm((f) => ({ ...f, parcela_total: parseInt(e.target.value) || 0 }))} className="bg-secondary/40 border-border/50" />
             </div>
           </div>
         )}
@@ -193,6 +194,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
               data: form.data,
               subcategoria_pais: form.subcategoria_pais || undefined,
               subcategoria: form.subcategoria || undefined,
+              categoria_macro: form.categoria_macro || undefined,
               parcela_atual: form.parcela_atual ?? undefined,
               parcela_total: form.parcela_total ?? undefined,
             })}

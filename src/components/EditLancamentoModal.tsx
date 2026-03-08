@@ -38,6 +38,8 @@ interface Props {
     categoria_macro?: string | null;
     parcela_atual?: number | null;
     parcela_total?: number | null;
+    forma_pagamento?: string | null;
+    cartao_id?: string | null;
   };
   isPending?: boolean;
 }

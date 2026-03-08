@@ -31,12 +31,12 @@ const BottomNav = () => {
       <button
         key={item.label}
         onClick={() => navigate(item.path)}
-        className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${
+        className={`flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-xl transition-all min-w-0 ${
           isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
         }`}
       >
-        <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
-        <span className="text-[10px] font-medium">{item.label}</span>
+        <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
+        <span className="text-[9px] font-medium leading-tight">{item.label}</span>
       </button>
     );
   };

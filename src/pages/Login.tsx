@@ -70,7 +70,7 @@ const Login = () => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex-1 flex flex-col justify-between px-6 py-12 max-w-md mx-auto w-full">
+      <div className="relative z-10 flex-1 flex flex-col justify-between px-6 py-12 w-full">
         {/* Mascot + Logo */}
         <div className="text-center pt-16 animate-fade-up flex flex-col items-center">
           <div className="mascot-login">

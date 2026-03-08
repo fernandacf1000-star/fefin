@@ -77,7 +77,7 @@ const Graficos = () => {
         name,
         value,
         macro,
-        color: CAT_COLORS[macro] || "#475569",
+        color: getSubcategoriaColor(name, macro),
         emoji: getGroupEmoji(macro),
       }))
       .sort((a, b) => b.value - a.value);

@@ -9,16 +9,24 @@ import {
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+/* ── Tabela progressiva IRPF 2025 (anual) ── */
+const calcularIRAnual = (baseCalculo: number): number => {
+  if (baseCalculo <= 26963.20) return 0;
+  if (baseCalculo <= 33919.80) return baseCalculo * 0.075 - 2023.74;
+  if (baseCalculo <= 45012.60) return baseCalculo * 0.15 - 4590.72;
+  if (baseCalculo <= 55976.16) return baseCalculo * 0.225 - 7968.21;
+  return baseCalculo * 0.275 - 10773.45;
+};
+
 /* ── Dados reais ── */
 const rendimentosBrutos = 970379.22;
 const inssOficial = 11419.44;
 const pgblItau = 114110.92;
 const planoSaude = 1596.0;
 const irRetidoFonte = 219789.77;
-const baseCalculoCompleto = 843252.86;
-const irDevidoEstimado = 221121.09;
-const saldoIR = irRetidoFonte - irDevidoEstimado; // negativo = a pagar
-const saldoPagar = 1331.32;
+const baseCalculoCompleto = rendimentosBrutos - inssOficial - pgblItau - planoSaude;
+const irDevidoEstimado = calcularIRAnual(baseCalculoCompleto);
+const saldoPagar = irDevidoEstimado - irRetidoFonte;
 
 /* Modelo de declaração */
 const descontoSimplificado = Math.min(rendimentosBrutos * 0.2, 16754.34);

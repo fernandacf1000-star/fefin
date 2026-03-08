@@ -4,26 +4,27 @@ import {
   Gift, Info, TrendingUp, Users, AlertTriangle,
   ChevronDown, ChevronUp,
 } from "lucide-react";
-import { useIRDados, calcularIRAnual, fmt } from "@/hooks/useIRData";
+import { useIRLancamentos, calcularIRAnual, fmt } from "@/hooks/useIRLancamentos";
 import YearCard2026 from "@/components/ir/YearCard2026";
 import YearCard2027 from "@/components/ir/YearCard2027";
 
 const IR = () => {
   const [conjuntaExpanded, setConjuntaExpanded] = useState(false);
-  const { data: irDados } = useIRDados();
+  const { data: lancs2025 } = useIRLancamentos(2025);
 
   const doacoes = useMemo(() => {
-    const rendimentos = irDados?.rendimentos ?? 970379.22;
-    const inss = 11419.44;
-    const pgbl = irDados?.pgbl ?? 114110.92;
-    const saude = (irDados?.plano_saude ?? 1596) + (irDados?.outras_deducoes_medicas ?? 0);
-    const base = rendimentos - inss - pgbl - saude;
+    const l = lancs2025 ?? [];
+    const totalRenda = l.filter((x) => x.tipo === "renda").reduce((s, x) => s + Number(x.valor), 0);
+    const totalINSS = l.filter((x) => x.tipo === "inss").reduce((s, x) => s + Number(x.valor), 0);
+    const totalPGBL = l.filter((x) => x.tipo === "pgbl").reduce((s, x) => s + Number(x.valor), 0);
+    const totalSaude = l.filter((x) => x.tipo === "saude").reduce((s, x) => s + Number(x.valor), 0);
+    const totalOutro = l.filter((x) => x.tipo === "outro").reduce((s, x) => s + Number(x.valor), 0);
+    const base = totalRenda - totalINSS - totalPGBL - totalSaude - totalOutro;
     const irDevido = calcularIRAnual(base);
     const limiteTotal = irDevido * 0.06;
     const jaDoado = 0;
-    const saldoDisponivel = limiteTotal - jaDoado;
-    return { limiteTotal, jaDoado, saldoDisponivel };
-  }, [irDados]);
+    return { limiteTotal, jaDoado, saldoDisponivel: limiteTotal - jaDoado };
+  }, [lancs2025]);
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px]">
@@ -31,7 +32,7 @@ const IR = () => {
         <h1 className="text-xl font-semibold text-foreground animate-fade-up">Imposto de Renda</h1>
 
         {/* Card 1 — Declaração 2026 (ano-base 2025) */}
-        <YearCard2026 irDados={irDados ?? {}} />
+        <YearCard2026 />
 
         {/* Declaração Conjunta */}
         <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.12s" }}>

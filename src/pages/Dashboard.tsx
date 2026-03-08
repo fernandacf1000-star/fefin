@@ -16,8 +16,16 @@ import {
   CreditCard,
   Gift,
   Users,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
+
+const months = [
+  { label: "Fevereiro 2026", key: "2026-02" },
+  { label: "Março 2026", key: "2026-03" },
+  { label: "Abril 2026", key: "2026-04" },
+];
 
 const transactions = [
   { icon: ShoppingBag, label: "Zara", category: "Compras", value: -289.9, date: "Hoje" },

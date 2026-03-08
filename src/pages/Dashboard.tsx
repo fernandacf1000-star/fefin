@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
+import { useLancamentos } from "@/hooks/useLancamentos";
 import {
   Eye,
   EyeOff,
   TrendingUp,
   TrendingDown,
-  ArrowDownLeft,
   ShoppingBag,
   Coffee,
   Zap,
@@ -16,44 +18,37 @@ import {
   CalendarClock,
   Home,
   CreditCard,
-  Gift,
   Users,
   ChevronLeft,
   ChevronRight,
   Settings,
   LogOut,
+  Receipt,
 } from "lucide-react";
+import EmptyState from "@/components/EmptyState";
 
-const months = [
-  { label: "Fevereiro 2026", key: "2026-02" },
-  { label: "Março 2026", key: "2026-03" },
-  { label: "Abril 2026", key: "2026-04" },
-];
+const fmt = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const transactions = [
-  { icon: ShoppingBag, label: "Zara", category: "Compras", value: -289.9, date: "Hoje" },
-  { icon: Coffee, label: "Starbucks", category: "Alimentação", value: -27.5, date: "Hoje" },
-  { icon: ArrowDownLeft, label: "Pix recebido", category: "Transferência", value: 1500, date: "Ontem" },
-  { icon: Zap, label: "Conta de Luz", category: "Contas", value: -187.43, date: "Ontem" },
-  { icon: Car, label: "Uber", category: "Transporte", value: -34.8, date: "07 Mar" },
-  { icon: Utensils, label: "iFood", category: "Alimentação", value: -62.9, date: "07 Mar" },
-  { icon: Heart, label: "Pilates", category: "Saúde", value: -250, date: "06 Mar" },
-];
+const now = new Date();
+const generateMonths = () => {
+  const result = [];
+  for (let i = -1; i <= 1; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    result.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1) });
+  }
+  return result;
+};
+const months = generateMonths();
 
-const categoryCards = [
-  { icon: Home, label: "Fixas", value: 2350, color: "text-primary" },
-  { icon: CreditCard, label: "Parceladas", value: 890, color: "text-[#F59E0B]" },
-  { icon: Zap, label: "Extras", value: 415, color: "text-[#F87171]" },
-  { icon: Users, label: "Pais", value: 600, color: "text-primary" },
-];
-
-const upcomingBills = [
-  { label: "Aluguel", date: "10 Mar", value: 1800, daysLeft: 2, icon: Home },
-  { label: "Cartão Nubank", date: "12 Mar", value: 1243.5, daysLeft: 4, icon: CreditCard },
-  { label: "Internet", date: "15 Mar", value: 119.9, daysLeft: 7, icon: Zap },
-];
-
-const HEALTH_SCORE = 74;
+const categoryIconMap: Record<string, any> = {
+  fixa: Home,
+  parcelada: CreditCard,
+  extra: Zap,
+  pais: Users,
+};
 
 const MascotHead = ({ size = 28 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="8 5 84 80" fill="none">
@@ -88,12 +83,75 @@ const MascotHead = ({ size = 28 }: { size?: number }) => (
   </svg>
 );
 
+const txIcon = (categoria: string) => {
+  const map: Record<string, any> = {
+    fixa: Home, parcelada: CreditCard, extra: ShoppingBag, pais: Users,
+    salario: TrendingUp, reembolso_pais: Users, renda_extra: Receipt, outros: Receipt,
+  };
+  return map[categoria] || Receipt;
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { signOut, user } = useAuth();
+  const { data: profile } = useProfile();
   const [showBalance, setShowBalance] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [profileOpen, setProfileOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+
+  const mesRef = months[selectedMonth]?.key;
+  const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
+
+  const receitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
+  const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
+
+  const totalReceitas = useMemo(() => receitas.reduce((s, l) => s + Number(l.valor), 0), [receitas]);
+  const totalDespesas = useMemo(() => despesas.reduce((s, l) => s + Number(l.valor), 0), [despesas]);
+  const saldo = totalReceitas - totalDespesas;
+
+  const categoryTotals = useMemo(() => {
+    const cats = ["fixa", "parcelada", "extra", "pais"];
+    return cats.map((cat) => ({
+      key: cat,
+      label: cat === "fixa" ? "Fixas" : cat === "parcelada" ? "Parceladas" : cat === "extra" ? "Extras" : "Pais",
+      icon: categoryIconMap[cat] || Receipt,
+      color: cat === "pais" ? "text-primary" : cat === "extra" ? "text-destructive" : cat === "parcelada" ? "text-[#F59E0B]" : "text-primary",
+      value: despesas.filter((d) => d.categoria === cat).reduce((s, d) => s + Number(d.valor), 0),
+    }));
+  }, [despesas]);
+
+  const upcomingBills = useMemo(() => {
+    const today = new Date();
+    return despesas
+      .filter((d) => (d.categoria === "fixa" || d.categoria === "parcelada") && !d.pago)
+      .map((d) => {
+        const dt = new Date(d.data + "T12:00:00");
+        const daysLeft = Math.max(0, Math.ceil((dt.getTime() - today.getTime()) / 86400000));
+        return { ...d, daysLeft, dateStr: dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) };
+      })
+      .sort((a, b) => a.daysLeft - b.daysLeft)
+      .slice(0, 5);
+  }, [despesas]);
+
+  const recentTransactions = useMemo(() => lancamentos.slice(0, 7), [lancamentos]);
+
+  const healthScore = useMemo(() => {
+    if (totalReceitas === 0) return 0;
+    const ratio = 1 - totalDespesas / totalReceitas;
+    return Math.min(100, Math.max(0, Math.round(ratio * 100)));
+  }, [totalReceitas, totalDespesas]);
+
+  const nome = profile?.nome || profile?.full_name || user?.email?.split("@")[0] || "Usuário";
+  const email = profile?.email || user?.email || "";
+
+  const handleLogout = async () => {
+    setConfirmLogout(false);
+    await signOut();
+    navigate("/");
+  };
+
+  const hasData = lancamentos.length > 0;
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px]">
@@ -102,7 +160,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-4 animate-fade-up">
           <div>
             <p className="text-muted-foreground text-sm">Olá,</p>
-            <h1 className="text-xl font-semibold text-foreground">Fernanda ✨</h1>
+            <h1 className="text-xl font-semibold text-foreground">{nome} ✨</h1>
           </div>
           <button onClick={() => setProfileOpen(true)} className="w-[44px] h-[44px] rounded-full flex items-center justify-center overflow-hidden" style={{ background: "#1a1a2e", border: "2px solid #10B981" }}>
             <MascotHead size={36} />
@@ -111,33 +169,17 @@ const Dashboard = () => {
 
         {/* Month Selector */}
         <div className="flex items-center justify-center gap-3 mb-6 animate-fade-up" style={{ animationDelay: "0.03s" }}>
-          <button
-            onClick={() => setSelectedMonth((p) => Math.max(0, p - 1))}
-            disabled={selectedMonth === 0}
-            className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-          >
+          <button onClick={() => setSelectedMonth((p) => Math.max(0, p - 1))} disabled={selectedMonth === 0} className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
             <ChevronLeft size={18} />
           </button>
           <div className="flex items-center gap-2">
             {months.map((m, i) => (
-              <button
-                key={m.key}
-                onClick={() => setSelectedMonth(i)}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
-                  i === selectedMonth
-                    ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
+              <button key={m.key} onClick={() => setSelectedMonth(i)} className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${i === selectedMonth ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground hover:text-foreground"}`}>
                 {m.label}
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setSelectedMonth((p) => Math.min(months.length - 1, p + 1))}
-            disabled={selectedMonth === months.length - 1}
-            className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-          >
+          <button onClick={() => setSelectedMonth((p) => Math.min(months.length - 1, p + 1))} disabled={selectedMonth === months.length - 1} className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
             <ChevronRight size={18} />
           </button>
         </div>
@@ -145,175 +187,156 @@ const Dashboard = () => {
         {/* Balance Card */}
         <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
-              Saldo disponível
-            </span>
+            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Saldo disponível</span>
             <button onClick={() => setShowBalance(!showBalance)} className="text-muted-foreground p-1">
               {showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
             </button>
           </div>
           <p className="text-3xl font-bold text-foreground tracking-tight">
-            {showBalance ? "R$ 12.458,32" : "••••••"}
+            {showBalance ? fmt(saldo) : "••••••"}
           </p>
-
           <div className="flex gap-3 mt-5">
             <div className="flex-1 bg-secondary/60 rounded-xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <TrendingUp size={14} className="text-primary" />
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Receitas</span>
               </div>
-              <p className="text-sm font-semibold text-foreground">
-                {showBalance ? "R$ 8.500,00" : "••••"}
-              </p>
+              <p className="text-sm font-semibold text-foreground">{showBalance ? fmt(totalReceitas) : "••••"}</p>
             </div>
             <div className="flex-1 bg-secondary/60 rounded-xl p-3">
               <div className="flex items-center gap-1.5 mb-1">
                 <TrendingDown size={14} className="text-destructive" />
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Despesas</span>
               </div>
-              <p className="text-sm font-semibold text-foreground">
-                {showBalance ? "R$ 3.241,68" : "••••"}
-              </p>
+              <p className="text-sm font-semibold text-foreground">{showBalance ? fmt(totalDespesas) : "••••"}</p>
             </div>
           </div>
         </div>
 
-        {/* Financial Health Gauge */}
-        <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-semibold text-foreground">Saúde financeira</span>
-            <span className="text-xs text-primary font-semibold">{HEALTH_SCORE}%</span>
-          </div>
-          <div className="relative w-full h-3 rounded-full bg-secondary/60 overflow-hidden">
-            <div
-              className="absolute inset-y-0 left-0 rounded-full gradient-emerald transition-all duration-700"
-              style={{ width: `${HEALTH_SCORE}%` }}
-            />
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-2">
-            Seu controle financeiro está bom! Continue assim 💚
-          </p>
-        </div>
-
-        {/* Category Summary Cards */}
-        <div className="grid grid-cols-2 gap-3 mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-          {categoryCards.map((cat) => (
-            <div key={cat.label} className="glass-card p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                  <cat.icon size={16} className={cat.color} />
-                </div>
-                <span className="text-xs text-muted-foreground font-medium">{cat.label}</span>
+        {!hasData && !isLoading ? (
+          <EmptyState title="Adicione seu primeiro lançamento! 🚀" />
+        ) : (
+          <>
+            {/* Financial Health Gauge */}
+            <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-semibold text-foreground">Saúde financeira</span>
+                <span className="text-xs text-primary font-semibold">{healthScore}%</span>
               </div>
-              <p className="text-sm font-semibold text-foreground">
-                {showBalance
-                  ? cat.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-                  : "••••"}
+              <div className="relative w-full h-3 rounded-full bg-secondary/60 overflow-hidden">
+                <div className="absolute inset-y-0 left-0 rounded-full gradient-emerald transition-all duration-700" style={{ width: `${healthScore}%` }} />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2">
+                {healthScore >= 70 ? "Seu controle financeiro está bom! Continue assim 💚" : healthScore >= 40 ? "Atenção com os gastos este mês ⚠️" : "Seus gastos estão acima das receitas 🚨"}
               </p>
             </div>
-          ))}
-        </div>
 
-        {/* Upcoming Bills */}
-        <div className="animate-fade-up mb-6" style={{ animationDelay: "0.25s" }}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-1.5">
-              <CalendarClock size={14} className="text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">Próximos vencimentos</h2>
-            </div>
-          </div>
-          <div className="space-y-1">
-            {upcomingBills.map((bill) => (
-              <div key={bill.label} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                  <bill.icon size={18} className="text-muted-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{bill.label}</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-[11px] text-muted-foreground">{bill.date}</p>
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                        bill.daysLeft <= 2
-                          ? "bg-destructive/20 text-destructive"
-                          : bill.daysLeft <= 7
-                          ? "bg-yellow-500/20 text-yellow-400"
-                          : "bg-secondary text-muted-foreground"
-                      }`}
-                    >
-                      {bill.daysLeft <= 2 ? "Urgente" : `${bill.daysLeft} dias`}
-                    </span>
+            {/* Category Summary Cards */}
+            <div className="grid grid-cols-2 gap-3 mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+              {categoryTotals.map((cat) => (
+                <div key={cat.key} className="glass-card p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                      <cat.icon size={16} className={cat.color} />
+                    </div>
+                    <span className="text-xs text-muted-foreground font-medium">{cat.label}</span>
                   </div>
+                  <p className="text-sm font-semibold text-foreground">
+                    {showBalance ? fmt(cat.value) : "••••"}
+                  </p>
                 </div>
-                <p className="text-sm font-semibold text-foreground tabular-nums">
-                  {showBalance
-                    ? bill.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-                    : "••••"}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+            </div>
 
-        {/* Transactions */}
-        <div className="animate-fade-up" style={{ animationDelay: "0.3s" }}>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-foreground">Últimas transações</h2>
-            <span className="text-xs text-primary cursor-pointer">Ver todas</span>
-          </div>
-          <div className="space-y-1">
-            {transactions.map((tx, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors">
-                <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                  <tx.icon size={18} className="text-muted-foreground" />
+            {/* Upcoming Bills */}
+            {upcomingBills.length > 0 && (
+              <div className="animate-fade-up mb-6" style={{ animationDelay: "0.25s" }}>
+                <div className="flex items-center gap-1.5 mb-3">
+                  <CalendarClock size={14} className="text-primary" />
+                  <h2 className="text-sm font-semibold text-foreground">Próximos vencimentos</h2>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{tx.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{tx.category} · {tx.date}</p>
+                <div className="space-y-1">
+                  {upcomingBills.map((bill) => {
+                    const Icon = txIcon(bill.categoria);
+                    return (
+                      <div key={bill.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                          <Icon size={18} className="text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground">{bill.descricao}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-[11px] text-muted-foreground">{bill.dateStr}</p>
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${bill.daysLeft <= 2 ? "bg-destructive/20 text-destructive" : bill.daysLeft <= 7 ? "bg-yellow-500/20 text-yellow-400" : "bg-secondary text-muted-foreground"}`}>
+                              {bill.daysLeft <= 2 ? "Urgente" : `${bill.daysLeft} dias`}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-sm font-semibold text-foreground tabular-nums">
+                          {showBalance ? fmt(Number(bill.valor)) : "••••"}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
-                <p className={`text-sm font-semibold tabular-nums ${tx.value > 0 ? "text-primary" : "text-foreground"}`}>
-                  {tx.value > 0 ? "+" : ""}
-                  {tx.value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                </p>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
+
+            {/* Transactions */}
+            {recentTransactions.length > 0 && (
+              <div className="animate-fade-up" style={{ animationDelay: "0.3s" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-sm font-semibold text-foreground">Últimas transações</h2>
+                </div>
+                <div className="space-y-1">
+                  {recentTransactions.map((tx) => {
+                    const Icon = txIcon(tx.categoria);
+                    const val = Number(tx.valor);
+                    const isReceita = tx.tipo === "receita";
+                    return (
+                      <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                          <Icon size={18} className="text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{tx.descricao}</p>
+                          <p className="text-[11px] text-muted-foreground">{tx.categoria} · {new Date(tx.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</p>
+                        </div>
+                        <p className={`text-sm font-semibold tabular-nums ${isReceita ? "text-primary" : "text-foreground"}`}>
+                          {isReceita ? "+" : "-"}{fmt(val)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Profile Bottom Sheet */}
-      <div
-        className={`fixed inset-0 z-[60] bg-background/60 backdrop-blur-sm transition-opacity duration-300 ${profileOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-        onClick={() => setProfileOpen(false)}
-      />
-      <div
-        className={`fixed inset-x-0 bottom-0 z-[70] transition-transform duration-300 ease-out ${profileOpen ? "translate-y-0" : "translate-y-full"}`}
-        style={{ background: "#1a1a2e", borderRadius: "24px 24px 0 0" }}
-      >
+      <div className={`fixed inset-0 z-[60] bg-background/60 backdrop-blur-sm transition-opacity duration-300 ${profileOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`} onClick={() => setProfileOpen(false)} />
+      <div className={`fixed inset-x-0 bottom-0 z-[70] transition-transform duration-300 ease-out ${profileOpen ? "translate-y-0" : "translate-y-full"}`} style={{ background: "#1a1a2e", borderRadius: "24px 24px 0 0" }}>
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
         <div className="px-5 pb-8">
-          {/* Header */}
           <div className="flex items-center gap-3 pb-4">
             <div className="w-[40px] h-[40px] rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ background: "#1a1a2e", border: "2px solid #10B981" }}>
               <MascotHead size={28} />
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground">Olá, Fernanda</p>
-              <p className="text-xs" style={{ color: "#475569" }}>fernanda@email.com</p>
+              <p className="text-sm font-bold text-foreground">Olá, {nome}</p>
+              <p className="text-xs" style={{ color: "#475569" }}>{email}</p>
             </div>
           </div>
           <div className="h-px bg-border/30 mb-2" />
-          {/* Options */}
           <button className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors">
             <Settings size={18} className="text-foreground" />
             <span className="text-sm font-medium text-foreground">Minha conta</span>
           </button>
-          <button
-            onClick={() => { setProfileOpen(false); setConfirmLogout(true); }}
-            className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors"
-          >
+          <button onClick={() => { setProfileOpen(false); setConfirmLogout(true); }} className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors">
             <LogOut size={18} style={{ color: "#F87171" }} />
             <span className="text-sm font-medium" style={{ color: "#F87171" }}>Sair</span>
           </button>
@@ -328,17 +351,10 @@ const Dashboard = () => {
             <div className="w-full max-w-xs rounded-2xl p-6 space-y-4" style={{ background: "#1a1a2e", border: "1px solid rgba(16,185,129,0.15)" }}>
               <p className="text-base font-bold text-foreground text-center">Deseja sair do FeFin?</p>
               <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmLogout(false)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                >
+                <button onClick={() => setConfirmLogout(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-secondary text-muted-foreground hover:text-foreground transition-colors">
                   Cancelar
                 </button>
-                <button
-                  onClick={() => { setConfirmLogout(false); navigate("/"); }}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
-                  style={{ backgroundColor: "#F87171", color: "#fff" }}
-                >
+                <button onClick={handleLogout} className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors" style={{ backgroundColor: "#F87171", color: "#fff" }}>
                   Sair
                 </button>
               </div>

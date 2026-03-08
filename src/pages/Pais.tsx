@@ -22,6 +22,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { useState } from "react";
 
 const paisData = {
   custoTotal: 3200,

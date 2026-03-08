@@ -34,10 +34,9 @@ const totalDeducoes = deducoes.reduce((s, d) => s + d.valor, 0);
 
 /* Doações incentivadas */
 const irDevido = estimativaIRAnual;
-const limiteCriancaIdoso = irDevido * 0.06;
-const limiteCulturaEsporte = irDevido * 0.04;
+const limiteTotal = irDevido * 0.06;
 const jaDoado = 820;
-const saldoDisponivel = limiteCriancaIdoso + limiteCulturaEsporte - jaDoado;
+const saldoDisponivel = limiteTotal - jaDoado;
 
 /* Histórico DARF */
 const historicoDARF = [

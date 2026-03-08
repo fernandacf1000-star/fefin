@@ -384,7 +384,7 @@ const Despesas = () => {
                     <p className="text-sm font-bold text-primary tabular-nums">{fmt(paisTotals.subsidioLiquido)}</p>
                   </div>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
                   {pais.map((item) =>
                     renderItem(
                       item,

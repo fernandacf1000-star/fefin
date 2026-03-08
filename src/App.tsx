@@ -35,6 +35,7 @@ const AppRoutes = () => {
       {showSplash && <Splash onFinish={handleSplashFinish} />}
       <Routes>
         <Route path="/" element={!loading && session ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/cadastro" element={!loading && session ? <Navigate to="/dashboard" replace /> : <SignUp />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/despesas" element={<ProtectedRoute><Despesas /></ProtectedRoute>} />
         <Route path="/pais" element={<ProtectedRoute><Pais /></ProtectedRoute>} />

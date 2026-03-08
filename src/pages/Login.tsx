@@ -149,6 +149,17 @@ const Login = () => {
             </div>
           </div>
 
+          {/* Lembrar de mim */}
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded border-border bg-secondary accent-primary"
+            />
+            <span className="text-xs" style={{ color: "#475569" }}>Lembrar de mim</span>
+          </label>
+
           <button
             type="submit"
             disabled={loading}

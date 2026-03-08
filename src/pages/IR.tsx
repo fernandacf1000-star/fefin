@@ -9,16 +9,24 @@ import {
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+/* ── Tabela progressiva IRPF 2025 (anual) ── */
+const calcularIRAnual = (baseCalculo: number): number => {
+  if (baseCalculo <= 26963.20) return 0;
+  if (baseCalculo <= 33919.80) return baseCalculo * 0.075 - 2023.74;
+  if (baseCalculo <= 45012.60) return baseCalculo * 0.15 - 4590.72;
+  if (baseCalculo <= 55976.16) return baseCalculo * 0.225 - 7968.21;
+  return baseCalculo * 0.275 - 10773.45;
+};
+
 /* ── Dados reais ── */
 const rendimentosBrutos = 970379.22;
 const inssOficial = 11419.44;
 const pgblItau = 114110.92;
 const planoSaude = 1596.0;
 const irRetidoFonte = 219789.77;
-const baseCalculoCompleto = 843252.86;
-const irDevidoEstimado = 221121.09;
-const saldoIR = irRetidoFonte - irDevidoEstimado; // negativo = a pagar
-const saldoPagar = 1331.32;
+const baseCalculoCompleto = rendimentosBrutos - inssOficial - pgblItau - planoSaude;
+const irDevidoEstimado = calcularIRAnual(baseCalculoCompleto);
+const saldoPagar = irDevidoEstimado - irRetidoFonte;
 
 /* Modelo de declaração */
 const descontoSimplificado = Math.min(rendimentosBrutos * 0.2, 16754.34);
@@ -34,7 +42,7 @@ const deducoes = [
 const totalDeducoes = deducoes.reduce((s, d) => s + d.valor, 0);
 
 /* Doações incentivadas */
-const limiteTotal = 13267.27;
+const limiteTotal = irDevidoEstimado * 0.06;
 const jaDoado = 0;
 const saldoDisponivel = limiteTotal - jaDoado;
 
@@ -90,7 +98,7 @@ const IR = () => {
         <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.05s" }}>
           <div className="flex items-center gap-2 mb-3">
             <FileText size={16} className="text-primary" />
-            <span className="text-xs text-muted-foreground font-medium">Ano fiscal 2026</span>
+            <span className="text-xs text-muted-foreground font-medium">Ano fiscal 2025</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
@@ -112,12 +120,25 @@ const IR = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10">
-            <ArrowUp size={16} className="text-destructive shrink-0" />
-            <p className="text-sm font-bold tabular-nums text-destructive">
-              Estimativa a pagar: {fmt(saldoPagar)}
-            </p>
-          </div>
+          {saldoPagar > 0 ? (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10">
+              <ArrowUp size={16} className="text-destructive shrink-0" />
+              <p className="text-sm font-bold tabular-nums text-destructive">
+                Estimativa a pagar: {fmt(saldoPagar)}
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/10">
+              <ArrowDown size={16} className="text-primary shrink-0" />
+              <p className="text-sm font-bold tabular-nums text-primary">
+                Estimativa a restituir: {fmt(Math.abs(saldoPagar))}
+              </p>
+            </div>
+          )}
+
+          <p className="text-[10px] mt-2" style={{ color: "#475569" }}>
+            Tabela IRPF 2025 — atualizada em jan/2025
+          </p>
         </section>
 
         {/* 2 — Modelo de Declaração */}

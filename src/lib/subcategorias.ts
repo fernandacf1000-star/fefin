@@ -100,13 +100,35 @@ export const CAT_COLORS: Record<string, string> = {
   "Investimentos": "#8B5CF6",
 };
 
-/** Legacy category mapping — remap old categories to new structure */
+/** Legacy category mapping — remap old categoria_macro to new structure */
 const LEGACY_CATEGORY_MAP: Record<string, { macro: string; sub: string }> = {
   "Compras Online": { macro: "Pessoal", sub: "Outros" },
 };
 
+/** Legacy subcategoria mapping — remap old subcategorias to new structure */
+const LEGACY_SUB_MAP: Record<string, { macro: string; sub: string }> = {
+  "Amazon": { macro: "Pessoal", sub: "Roupas/Cuidados pessoais" },
+  "Shopee": { macro: "Pessoal", sub: "Roupas/Cuidados pessoais" },
+  "Outros e-commerce": { macro: "Pessoal", sub: "Outros" },
+  "Roupas/Calçados": { macro: "Pessoal", sub: "Roupas/Cuidados pessoais" },
+  "Hortifruti": { macro: "Alimentação", sub: "Supermercado" },
+  "Mercado": { macro: "Alimentação", sub: "Supermercado" },
+  "Cabelo/Estética": { macro: "Pessoal", sub: "Roupas/Cuidados pessoais" },
+  "Farmácia/Remédios": { macro: "Saúde", sub: "Medicamentos" },
+  "Advogado/Jurídico": { macro: "Pessoal", sub: "Outros" },
+  "Seguros": { macro: "Transporte", sub: "Manutenção/Seguro" },
+  "Itens domésticos": { macro: "Moradia", sub: "Manutenção" },
+  "Hotel/Hospedagem": { macro: "Lazer", sub: "Entretenimento" },
+  "Objetos de arte": { macro: "Moradia", sub: "Manutenção" },
+  "Miscelânea": { macro: "Pessoal", sub: "Outros" },
+  "Livros": { macro: "Pessoal", sub: "Cursos/Desenvolvimento" },
+  "Loteria": { macro: "Lazer", sub: "Entretenimento" },
+};
+
 /** Normalize a categoria_macro, remapping legacy values */
-export const normalizeMacro = (macro: string | null | undefined): string => {
+export const normalizeMacro = (macro: string | null | undefined, sub?: string | null): string => {
+  // First check if subcategoria has a legacy mapping
+  if (sub && LEGACY_SUB_MAP[sub]) return LEGACY_SUB_MAP[sub].macro;
   if (!macro) return "Sem categoria";
   const mapped = LEGACY_CATEGORY_MAP[macro];
   return mapped ? mapped.macro : macro;
@@ -114,6 +136,7 @@ export const normalizeMacro = (macro: string | null | undefined): string => {
 
 /** Normalize subcategoria for legacy categories */
 export const normalizeSub = (macro: string | null | undefined, sub: string | null | undefined): string | null => {
+  if (sub && LEGACY_SUB_MAP[sub]) return LEGACY_SUB_MAP[sub].sub;
   if (macro && LEGACY_CATEGORY_MAP[macro]) return LEGACY_CATEGORY_MAP[macro].sub;
   return sub || null;
 };

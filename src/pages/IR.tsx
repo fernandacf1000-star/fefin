@@ -139,6 +139,7 @@ const IR = () => {
           <p className="text-[10px] mt-2" style={{ color: "#475569" }}>
             Tabela IRPF 2025 — atualizada em jan/2025
           </p>
+        </section>
 
         {/* 2 — Modelo de Declaração */}
         <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.1s" }}>

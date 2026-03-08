@@ -1,10 +1,11 @@
-import { Home, Receipt, BarChart3, TrendingUp, Plus } from "lucide-react";
+import { Home, Receipt, BarChart3, TrendingUp, Plus, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const navItems = [
   { icon: Home, label: "Início", path: "/dashboard" },
   { icon: Receipt, label: "Despesas", path: "/despesas" },
   { type: "fab" as const },
+  { icon: Users, label: "Pais", path: "/pais" },
   { icon: BarChart3, label: "Gráficos", path: "/dashboard" },
   { icon: TrendingUp, label: "Patrimônio", path: "/dashboard" },
 ];

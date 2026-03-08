@@ -207,57 +207,6 @@ const Despesas = () => {
           </div>
         )}
 
-        {/* Pais */}
-        {showSection("Pais") && (
-          <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.25s" }}>
-            <div className="flex items-center gap-2 mb-3">
-              <Users size={14} className="text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">Pais</h2>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                {
-                  icon: DollarSign,
-                  label: "Custo Total Deles",
-                  value: paisData.custoTotal,
-                  color: "text-foreground",
-                },
-                {
-                  icon: HandCoins,
-                  label: "Eu Paguei",
-                  value: paisData.euPaguei,
-                  color: "text-destructive",
-                },
-                {
-                  icon: RefreshCw,
-                  label: "Reembolsado",
-                  value: paisData.reembolsado,
-                  color: "text-primary",
-                },
-                {
-                  icon: Receipt,
-                  label: "Meu Subsídio Líquido",
-                  value: paisData.subsidioLiquido,
-                  color: "text-yellow-400",
-                },
-              ].map((card) => (
-                <div key={card.label} className="glass-card p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                      <card.icon size={16} className={card.color} />
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mb-1">
-                    {card.label}
-                  </p>
-                  <p className={`text-lg font-bold ${card.color} tabular-nums`}>
-                    {fmt(card.value)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       <BottomNav />

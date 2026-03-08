@@ -274,35 +274,47 @@ export type Database = {
       }
       profiles: {
         Row: {
+          aliquota_aposentadoria_estimada: number | null
           avatar_url: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          idade: number | null
+          idade_aposentadoria: number | null
           ir_dados: Json | null
           nome: string | null
+          tipo_tributacao: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          aliquota_aposentadoria_estimada?: number | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          idade?: number | null
+          idade_aposentadoria?: number | null
           ir_dados?: Json | null
           nome?: string | null
+          tipo_tributacao?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          aliquota_aposentadoria_estimada?: number | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          idade?: number | null
+          idade_aposentadoria?: number | null
           ir_dados?: Json | null
           nome?: string | null
+          tipo_tributacao?: string | null
           updated_at?: string
           user_id?: string
         }

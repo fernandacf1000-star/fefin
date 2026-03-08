@@ -11,9 +11,12 @@ import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
 import {
   Eye, EyeOff, TrendingUp, TrendingDown,
   ShoppingBag, CreditCard, Users,
-  ChevronLeft, ChevronRight, Settings, LogOut, Receipt, Target, ClipboardList,
+  ChevronLeft, ChevronRight, Settings, LogOut, Receipt, Target, ClipboardList, Pencil, X,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

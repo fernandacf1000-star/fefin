@@ -26,8 +26,12 @@ const recentEntries = [
 const categories = ["Fixa", "Parcelada", "Extra", "Pais"] as const;
 type Category = (typeof categories)[number];
 
-const paraQuemOptions = ["Gasto com os pais", "Gasto meu (contexto pais)"] as const;
-const quemPagouOptions = ["Paguei do meu bolso", "Fatura no meu cartão", "Eles mesmos pagaram", "Recebi reembolso deles"] as const;
+const oQueAconteceuOptions = [
+  { id: "paguei_por_eles", emoji: "💸", label: "Paguei por eles", desc: "você pagou do seu bolso por remédio, mercado, conta etc." },
+  { id: "paguei_vou_receber", emoji: "↩️", label: "Paguei e vou receber de volta", desc: "você pagou mas eles vão te reembolsar" },
+  { id: "eles_pagaram", emoji: "📋", label: "Eles pagaram — só registrando", desc: "eles mesmos pagaram, você só quer ter o controle" },
+  { id: "usaram_meu_cartao", emoji: "💳", label: "Usaram meu cartão", desc: "eles usaram seu cartão extra como dependentes" },
+] as const;
 
 interface NewExpenseSheetProps {
   open: boolean;
@@ -39,8 +43,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
   const [valor, setValor] = useState("");
   const [categoria, setCategoria] = useState<Category>("Extra");
   const [data, setData] = useState<Date>(new Date());
-  const [paraQuem, setParaQuem] = useState<string>("Gasto com os pais");
-  const [quemPagou, setQuemPagou] = useState<string>("Paguei do meu bolso");
+  const [oQueAconteceu, setOQueAconteceu] = useState<string>("paguei_por_eles");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const suggestions = useMemo(() => {
@@ -185,47 +188,24 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
 
           {/* Campos condicionais - Pais */}
           {isPais && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
-              {/* Para quem */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Tipo de gasto</label>
-                <div className="flex gap-2">
-                  {paraQuemOptions.map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => setParaQuem(opt)}
-                      className={cn(
-                        "flex-1 px-3 py-2.5 rounded-xl text-xs font-medium transition-all",
-                        paraQuem === opt
-                          ? "gradient-emerald text-primary-foreground shadow-md shadow-primary/20"
-                          : "bg-secondary text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quem pagou */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Como foi pago</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {quemPagouOptions.map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => setQuemPagou(opt)}
-                      className={cn(
-                        "px-3 py-2.5 rounded-xl text-xs font-medium transition-all",
-                        quemPagou === opt
-                          ? "gradient-emerald text-primary-foreground shadow-md shadow-primary/20"
-                          : "bg-secondary text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
+            <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <label className="text-xs font-medium text-muted-foreground">O que aconteceu?</label>
+              <div className="grid grid-cols-2 gap-2">
+                {oQueAconteceuOptions.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setOQueAconteceu(opt.id)}
+                    className={cn(
+                      "flex flex-col items-center text-center p-4 rounded-[14px] transition-all",
+                      oQueAconteceu === opt.id
+                        ? "bg-[#10B981] text-white shadow-md"
+                        : "bg-[#1e2435] text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <span className="text-2xl mb-2">{opt.emoji}</span>
+                    <span className="text-[13px] font-medium leading-tight">{opt.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
           )}

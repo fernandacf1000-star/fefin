@@ -112,7 +112,7 @@ const Dashboard = () => {
       label: g.group,
       emoji: g.emoji,
       value: despesas
-        .filter((d) => normalizeMacro(d.categoria_macro) === g.group)
+        .filter((d) => normalizeMacro(d.categoria_macro, d.subcategoria) === g.group)
         .reduce((s, d) => {
           const reemb = getTotalReembolsado(allReembolsos, d.id);
           return s + Math.max(0, Number(d.valor) - reemb);
@@ -127,7 +127,7 @@ const Dashboard = () => {
     if (base === 0) return 0;
     // Exclude Investimentos from gastos for meta calculation
     const gastosParaMeta = despesas
-      .filter(d => normalizeMacro(d.categoria_macro) !== 'Investimentos')
+      .filter(d => normalizeMacro(d.categoria_macro, d.subcategoria) !== 'Investimentos')
       .reduce((s, d) => {
         const reemb = getTotalReembolsado(allReembolsos, d.id);
         return s + Math.max(0, Number(d.valor) - reemb);
@@ -138,7 +138,7 @@ const Dashboard = () => {
   // Total despesas sem investimentos (para exibição na meta)
   const totalDespesasSemInvest = useMemo(() => {
     return despesas
-      .filter(d => normalizeMacro(d.categoria_macro) !== 'Investimentos')
+      .filter(d => normalizeMacro(d.categoria_macro, d.subcategoria) !== 'Investimentos')
       .reduce((s, d) => {
         const reemb = getTotalReembolsado(allReembolsos, d.id);
         return s + Math.max(0, Number(d.valor) - reemb);
@@ -404,7 +404,7 @@ const Dashboard = () => {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{tx.descricao}</p>
                           <p className="text-[11px] text-muted-foreground">
-                            {tx.categoria_macro ? `${getGroupEmoji(normalizeMacro(tx.categoria_macro))} ${normalizeMacro(tx.categoria_macro)}` : tx.categoria} · {new Date(tx.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                            {tx.categoria_macro ? `${getGroupEmoji(normalizeMacro(tx.categoria_macro, tx.subcategoria))} ${normalizeMacro(tx.categoria_macro, tx.subcategoria)}` : tx.categoria} · {new Date(tx.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
                             {tx.is_parcelado && tx.parcela_atual && tx.parcela_total && (
                               <span className="text-muted-foreground"> · {tx.parcela_atual}/{tx.parcela_total}</span>
                             )}

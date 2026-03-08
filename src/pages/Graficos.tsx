@@ -2,7 +2,8 @@ import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import {
-  PieChart, Pie, Cell, ResponsiveContainer,
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
@@ -11,7 +12,15 @@ import { SUBCATEGORIA_GROUPS, getGroupEmoji, CAT_COLORS, normalizeMacro, getSubc
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+const fmtK = (v: number) => {
+  if (v >= 1000) return `${(v / 1000).toFixed(0)}k`;
+  return String(v);
+};
+
 const now = new Date();
+const currentYear = now.getFullYear();
+const currentMonthIdx = now.getMonth(); // 0-based
+
 const generateMonths = () => {
   const result = [];
   for (let i = -1; i <= 1; i++) {
@@ -24,12 +33,48 @@ const generateMonths = () => {
 };
 const months = generateMonths();
 
+const MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+const tooltipStyle = {
+  background: "hsl(var(--card))",
+  border: "1px solid hsl(var(--border))",
+  borderRadius: 12,
+  fontSize: 12,
+};
+
 const Graficos = () => {
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [subcatCatFilter, setSubcatCatFilter] = useState<string | null>(null);
   const [activePieIndex, setActivePieIndex] = useState<number | undefined>(undefined);
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
+
+  // Fetch ALL lancamentos for the year (no month filter)
+  const { data: allYearLancamentos = [] } = useLancamentos();
+
+  // Annual data by month
+  const annualData = useMemo(() => {
+    return MONTH_LABELS.map((label, i) => {
+      const mesKey = `${currentYear}-${String(i + 1).padStart(2, "0")}`;
+      const mesLancs = allYearLancamentos.filter(l => l.mes_referencia === mesKey);
+      const receitas = mesLancs.filter(l => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0);
+      const despesas = mesLancs.filter(l => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0);
+      const hasFuture = i > currentMonthIdx;
+      return {
+        name: label,
+        receitas: hasFuture ? undefined : receitas,
+        despesas: hasFuture ? undefined : despesas,
+        saldo: hasFuture ? undefined : receitas - despesas,
+        hasFuture,
+      };
+    });
+  }, [allYearLancamentos]);
+
+  const annualTotals = useMemo(() => {
+    const r = annualData.reduce((s, d) => s + (d.receitas || 0), 0);
+    const d = annualData.reduce((s, dd) => s + (dd.despesas || 0), 0);
+    return { receitas: r, despesas: d, saldo: r - d };
+  }, [annualData]);
 
   const totalReceitas = useMemo(() =>
     lancamentos.filter((l) => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0),
@@ -44,7 +89,7 @@ const Graficos = () => {
     const despesas = lancamentos.filter((l) => l.tipo === "despesa");
     const map: Record<string, number> = {};
     despesas.forEach(d => {
-      const key = normalizeMacro(d.categoria_macro);
+      const key = normalizeMacro(d.categoria_macro, d.subcategoria);
       map[key] = (map[key] || 0) + Number(d.valor);
     });
     return Object.entries(map)
@@ -59,16 +104,15 @@ const Graficos = () => {
 
   const totalMes = composicao.reduce((s, c) => s + c.value, 0);
 
-  // Subcategoria bar data with parent category color
   const subcatData = useMemo(() => {
     let despesas = lancamentos.filter((l) => l.tipo === "despesa" && l.subcategoria);
     if (subcatCatFilter) {
-      despesas = despesas.filter((l) => normalizeMacro(l.categoria_macro) === subcatCatFilter);
+      despesas = despesas.filter((l) => normalizeMacro(l.categoria_macro, l.subcategoria) === subcatCatFilter);
     }
     const map: Record<string, { value: number; macro: string }> = {};
     despesas.forEach((d) => {
       const key = d.subcategoria!;
-      const macro = normalizeMacro(d.categoria_macro);
+      const macro = normalizeMacro(d.categoria_macro, d.subcategoria);
       if (!map[key]) map[key] = { value: 0, macro };
       map[key].value += Number(d.valor);
     });
@@ -92,6 +136,7 @@ const Graficos = () => {
   ];
 
   const hasData = lancamentos.length > 0;
+  const hasAnyData = allYearLancamentos.length > 0;
 
   const activeEntry = activePieIndex !== undefined ? composicao[activePieIndex] : null;
 
@@ -102,6 +147,24 @@ const Graficos = () => {
   const handlePieLeave = useCallback(() => {
     setActivePieIndex(undefined);
   }, []);
+
+  const CustomAnnualTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const rec = payload.find((p: any) => p.dataKey === "receitas");
+    const desp = payload.find((p: any) => p.dataKey === "despesas");
+    const r = rec?.value ?? 0;
+    const d = desp?.value ?? 0;
+    return (
+      <div style={tooltipStyle} className="px-3 py-2">
+        <p className="text-xs font-semibold text-foreground mb-1">{label}</p>
+        <p className="text-[11px] text-primary">Receitas: {fmt(r)}</p>
+        <p className="text-[11px] text-destructive">Despesas: {fmt(d)}</p>
+        <p className={`text-[11px] font-semibold ${r - d >= 0 ? "text-primary" : "text-destructive"}`}>
+          Saldo: {fmt(r - d)}
+        </p>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px]">
@@ -125,11 +188,117 @@ const Graficos = () => {
           </button>
         </div>
 
-        {!hasData && !isLoading ? (
+        {!hasData && !hasAnyData && !isLoading ? (
           <EmptyState title="Adicione lançamentos para ver seus gráficos 📊" />
         ) : (
           <>
-            {/* Receitas vs Despesas */}
+            {/* Annual Receitas vs Despesas Line Chart */}
+            {hasAnyData && (
+              <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.04s" }}>
+                <h2 className="text-sm font-semibold text-foreground">Receitas vs Despesas — {currentYear}</h2>
+                <p className="text-[11px] text-muted-foreground mb-3">Evolução mensal</p>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={annualData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="gradReceitas" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10B981" stopOpacity={0.3} />
+                          <stop offset="100%" stopColor="#10B981" stopOpacity={0.05} />
+                        </linearGradient>
+                        <linearGradient id="gradDespesas" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#F87171" stopOpacity={0.3} />
+                          <stop offset="100%" stopColor="#F87171" stopOpacity={0.05} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={fmtK} />
+                      <Tooltip content={<CustomAnnualTooltip />} />
+                      <Area
+                        type="monotone"
+                        dataKey="receitas"
+                        stroke="#10B981"
+                        strokeWidth={2}
+                        fill="url(#gradReceitas)"
+                        dot={(props: any) => {
+                          const { cx, cy, index, value } = props;
+                          if (value === undefined) return <circle key={index} r={0} />;
+                          const isCurrentMonth = index === currentMonthIdx;
+                          const entry = annualData[index];
+                          const isBigger = (entry?.receitas || 0) > (entry?.despesas || 0);
+                          return (
+                            <circle
+                              key={index}
+                              cx={cx}
+                              cy={cy}
+                              r={isCurrentMonth ? (isBigger ? 5 : 3.5) : 2.5}
+                              fill="#10B981"
+                              stroke={isCurrentMonth ? "#fff" : "none"}
+                              strokeWidth={isCurrentMonth ? 2 : 0}
+                            />
+                          );
+                        }}
+                        connectNulls={false}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="despesas"
+                        stroke="#F87171"
+                        strokeWidth={2}
+                        fill="url(#gradDespesas)"
+                        dot={(props: any) => {
+                          const { cx, cy, index, value } = props;
+                          if (value === undefined) return <circle key={index} r={0} />;
+                          const isCurrentMonth = index === currentMonthIdx;
+                          const entry = annualData[index];
+                          const isBigger = (entry?.despesas || 0) > (entry?.receitas || 0);
+                          return (
+                            <circle
+                              key={index}
+                              cx={cx}
+                              cy={cy}
+                              r={isCurrentMonth ? (isBigger ? 5 : 3.5) : 2.5}
+                              fill="#F87171"
+                              stroke={isCurrentMonth ? "#fff" : "none"}
+                              strokeWidth={isCurrentMonth ? 2 : 0}
+                            />
+                          );
+                        }}
+                        connectNulls={false}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Legend */}
+                <div className="flex items-center justify-center gap-4 mt-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#10B981" }} />
+                    <span className="text-[10px] text-muted-foreground">Receitas</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F87171" }} />
+                    <span className="text-[10px] text-muted-foreground">Despesas</span>
+                  </div>
+                </div>
+                {/* Summary cards */}
+                <div className="grid grid-cols-3 gap-2 mt-3">
+                  <div className="bg-secondary/40 rounded-xl p-2.5 text-center">
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-wider block">Receitas</span>
+                    <span className="text-xs font-bold text-primary">{fmt(annualTotals.receitas)}</span>
+                  </div>
+                  <div className="bg-secondary/40 rounded-xl p-2.5 text-center">
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-wider block">Despesas</span>
+                    <span className="text-xs font-bold text-destructive">{fmt(annualTotals.despesas)}</span>
+                  </div>
+                  <div className="bg-secondary/40 rounded-xl p-2.5 text-center">
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-wider block">Saldo</span>
+                    <span className={`text-xs font-bold ${annualTotals.saldo >= 0 ? "text-primary" : "text-destructive"}`}>{fmt(annualTotals.saldo)}</span>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* Receitas vs Despesas - Monthly bars */}
             <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.05s" }}>
               <h2 className="text-sm font-semibold text-foreground mb-4">Receitas vs Despesas</h2>
               <div className="flex justify-between items-end px-4 h-32">

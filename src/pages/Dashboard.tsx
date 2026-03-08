@@ -281,6 +281,72 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Profile Bottom Sheet */}
+      <div
+        className={`fixed inset-0 z-[60] bg-background/60 backdrop-blur-sm transition-opacity duration-300 ${profileOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        onClick={() => setProfileOpen(false)}
+      />
+      <div
+        className={`fixed inset-x-0 bottom-0 z-[70] transition-transform duration-300 ease-out ${profileOpen ? "translate-y-0" : "translate-y-full"}`}
+        style={{ background: "#1a1a2e", borderRadius: "24px 24px 0 0" }}
+      >
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+        </div>
+        <div className="px-5 pb-8">
+          {/* Header */}
+          <div className="flex items-center gap-3 pb-4">
+            <div className="w-[40px] h-[40px] rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ background: "#1a1a2e", border: "2px solid #10B981" }}>
+              <MascotHead size={28} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-foreground">Olá, Fernanda</p>
+              <p className="text-xs" style={{ color: "#475569" }}>fernanda@email.com</p>
+            </div>
+          </div>
+          <div className="h-px bg-border/30 mb-2" />
+          {/* Options */}
+          <button className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors">
+            <Settings size={18} className="text-foreground" />
+            <span className="text-sm font-medium text-foreground">Minha conta</span>
+          </button>
+          <button
+            onClick={() => { setProfileOpen(false); setConfirmLogout(true); }}
+            className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors"
+          >
+            <LogOut size={18} style={{ color: "#F87171" }} />
+            <span className="text-sm font-medium" style={{ color: "#F87171" }}>Sair</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Logout Confirmation */}
+      {confirmLogout && (
+        <>
+          <div className="fixed inset-0 z-[80] bg-background/70 backdrop-blur-sm" onClick={() => setConfirmLogout(false)} />
+          <div className="fixed inset-0 z-[90] flex items-center justify-center px-8">
+            <div className="w-full max-w-xs rounded-2xl p-6 space-y-4" style={{ background: "#1a1a2e", border: "1px solid rgba(16,185,129,0.15)" }}>
+              <p className="text-base font-bold text-foreground text-center">Deseja sair do FeFin?</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmLogout(false)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => { setConfirmLogout(false); navigate("/"); }}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ backgroundColor: "#F87171", color: "#fff" }}
+                >
+                  Sair
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
       <BottomNav />
     </div>
   );

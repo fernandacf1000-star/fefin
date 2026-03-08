@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Despesas from "./pages/Despesas";
 import Pais from "./pages/Pais";
 import Graficos from "./pages/Graficos";
+import Patrimonio from "./pages/Patrimonio";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/despesas" element={<Despesas />} />
           <Route path="/pais" element={<Pais />} />
           <Route path="/graficos" element={<Graficos />} />
+          <Route path="/patrimonio" element={<Patrimonio />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

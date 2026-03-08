@@ -31,12 +31,15 @@ const BottomNav = () => {
       <button
         key={item.label}
         onClick={() => navigate(item.path)}
-        className={`flex flex-col items-center justify-center gap-0.5 min-w-0 overflow-hidden transition-all ${
+        className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 overflow-hidden transition-all ${
           isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
         }`}
+        style={{ textAlign: "center" }}
       >
         <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} className="shrink-0" />
-        <span className="text-[9px] font-medium leading-tight truncate w-full text-center">{item.label}</span>
+        {isActive && (
+          <span className="text-[9px] font-medium leading-tight truncate w-full text-center">{item.label}</span>
+        )}
       </button>
     );
   };

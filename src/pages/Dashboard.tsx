@@ -142,7 +142,7 @@ const Dashboard = () => {
     return Math.min(100, Math.max(0, Math.round(ratio * 100)));
   }, [totalReceitas, totalDespesas]);
 
-  const nome = profile?.nome || profile?.full_name || user?.email?.split("@")[0] || "Usuário";
+  const nome = profile?.nome || profile?.full_name || "";
   const email = profile?.email || user?.email || "";
 
   const handleLogout = async () => {

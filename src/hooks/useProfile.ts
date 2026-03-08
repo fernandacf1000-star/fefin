@@ -16,6 +16,7 @@ export interface Profile {
   idade_aposentadoria: number | null;
   aliquota_aposentadoria_estimada: number | null;
   ir_dados: any;
+  meta_mensal: number | null;
 }
 
 export const useProfile = () => {

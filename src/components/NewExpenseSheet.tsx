@@ -26,8 +26,8 @@ const recentEntries = [
 const categories = ["Fixa", "Parcelada", "Extra", "Pais"] as const;
 type Category = (typeof categories)[number];
 
-const paraQuemOptions = ["Para os pais", "Para mim"] as const;
-const quemPagouOptions = ["Eu paguei", "Cartão dependente", "Eles pagaram", "Reembolso recebido"] as const;
+const paraQuemOptions = ["Gasto com os pais", "Gasto meu (contexto pais)"] as const;
+const quemPagouOptions = ["Paguei do meu bolso", "Fatura no meu cartão", "Eles mesmos pagaram", "Recebi reembolso deles"] as const;
 
 interface NewExpenseSheetProps {
   open: boolean;
@@ -39,8 +39,8 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
   const [valor, setValor] = useState("");
   const [categoria, setCategoria] = useState<Category>("Extra");
   const [data, setData] = useState<Date>(new Date());
-  const [paraQuem, setParaQuem] = useState<string>("Para os pais");
-  const [quemPagou, setQuemPagou] = useState<string>("Eu paguei");
+  const [paraQuem, setParaQuem] = useState<string>("Gasto com os pais");
+  const [quemPagou, setQuemPagou] = useState<string>("Paguei do meu bolso");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const suggestions = useMemo(() => {
@@ -188,7 +188,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
               {/* Para quem */}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Para quem</label>
+                <label className="text-xs font-medium text-muted-foreground">Tipo de gasto</label>
                 <div className="flex gap-2">
                   {paraQuemOptions.map((opt) => (
                     <button
@@ -209,7 +209,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
 
               {/* Quem pagou */}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Quem pagou</label>
+                <label className="text-xs font-medium text-muted-foreground">Como foi pago</label>
                 <div className="grid grid-cols-2 gap-2">
                   {quemPagouOptions.map((opt) => (
                     <button

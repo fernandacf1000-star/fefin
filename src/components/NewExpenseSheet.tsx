@@ -53,8 +53,11 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
   const [parcelaAtual, setParcelaAtual] = useState("");
   const [parcelaTotal, setParcelaTotal] = useState("");
   const [incomeCat, setIncomeCat] = useState<string>("Salário");
+  const [formaPagamento, setFormaPagamento] = useState<string>("pix");
+  const [cartaoId, setCartaoId] = useState<string>("");
 
   const addLancamento = useAddLancamento();
+  const { data: cartoes = [] } = useCartoes();
 
   const isParcelada = tipoLanc === "parcelada";
   const isPais = tipoLanc === "pais";

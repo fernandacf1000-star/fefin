@@ -5,13 +5,24 @@ import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+const REMEMBER_KEY = "fefin_remember";
+
 const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+
+  const saved = (() => {
+    try {
+      const raw = localStorage.getItem(REMEMBER_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  })();
+
+  const [email, setEmail] = useState(saved?.email ?? "");
+  const [password, setPassword] = useState(saved?.password ?? "");
+  const [rememberMe, setRememberMe] = useState(!!saved);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

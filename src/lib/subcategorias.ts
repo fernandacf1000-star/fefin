@@ -78,6 +78,17 @@ export const detectCategoriaMacro = (subcategoria: string): string | null => {
   return getSubcategoriaGroup(subcategoria) || null;
 };
 
+/** Get color for a subcategoria by resolving its parent group */
+export const getSubcategoriaColor = (sub: string, macro?: string | null): string => {
+  // First try macro if provided
+  const normalizedMacro = macro ? normalizeMacro(macro) : null;
+  if (normalizedMacro && CAT_COLORS[normalizedMacro]) return CAT_COLORS[normalizedMacro];
+  // Fallback: find parent group from subcategoria name
+  const group = getSubcategoriaGroup(sub);
+  if (group && CAT_COLORS[group]) return CAT_COLORS[group];
+  return "#475569";
+};
+
 /** Category colors for charts */
 export const CAT_COLORS: Record<string, string> = {
   "Moradia": "#6366F1",

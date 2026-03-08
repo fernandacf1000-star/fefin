@@ -20,7 +20,7 @@ const emergencias6m = resgates.filter((r) => r.motivo === "Emergência").length;
 
 const longoPrazo = { saldo: 12000, rentAnual: 9.8, ultimoAporte: "15 Fev 2026" };
 
-const totalInvestido = previdencia.valor + aplicacao.saldo + fgts.saldo + longoPrazo.total;
+const totalInvestido = previdencia.valor + aplicacao.saldo + fgts.saldo + longoPrazo.saldo;
 const rendMes = aplicacao.rendMensal + 756.2;
 const rendAno = 4820.5;
 

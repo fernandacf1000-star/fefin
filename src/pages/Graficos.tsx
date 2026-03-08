@@ -77,7 +77,8 @@ const Graficos = () => (
 
       {/* 2 — Composição do mês */}
       <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-        <h2 className="text-sm font-semibold text-foreground mb-4">Composição do Mês</h2>
+        <h2 className="text-sm font-semibold text-foreground">Composição do Mês</h2>
+        <p className="text-[11px] text-muted-foreground mb-4">Março 2026</p>
         <div className="relative h-52 flex items-center justify-center">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>

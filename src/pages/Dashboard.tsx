@@ -7,7 +7,7 @@ import { useLancamentos } from "@/hooks/useLancamentos";
 import { useAllReembolsos, getTotalReembolsado } from "@/hooks/useReembolsos";
 import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";
 import CartaoCard from "@/components/CartaoCard";
-import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
+import { SUBCATEGORIA_GROUPS, getGroupEmoji, normalizeMacro } from "@/lib/subcategorias";
 import {
   Eye, EyeOff, TrendingUp, TrendingDown,
   ShoppingBag, CreditCard, Users,

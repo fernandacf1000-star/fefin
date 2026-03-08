@@ -2,7 +2,6 @@ import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import { useLancamentos, useUpdateLancamento, useDeleteLancamento } from "@/hooks/useLancamentos";
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
-import type { Reembolso } from "@/hooks/useReembolsos";
 import {
   Home, CreditCard, Gift, Users, CheckCircle2, Clock,
   Receipt, ChevronLeft, ChevronRight,
@@ -36,6 +35,7 @@ const months = generateMonths();
 
 const Despesas = () => {
   const [activeFilter, setActiveFilter] = useState<Category>("Todas");
+  const [activeSubcat, setActiveSubcat] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(1);
 
   const [selectedLanc, setSelectedLanc] = useState<Lancamento | null>(null);
@@ -52,10 +52,27 @@ const Despesas = () => {
   const addReembolsoMut = useAddReembolso();
 
   const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
-  const fixas = useMemo(() => despesas.filter((d) => d.categoria === "fixa"), [despesas]);
-  const parceladas = useMemo(() => despesas.filter((d) => d.categoria === "parcelada"), [despesas]);
-  const extras = useMemo(() => despesas.filter((d) => d.categoria === "extra"), [despesas]);
-  const pais = useMemo(() => despesas.filter((d) => d.categoria === "pais"), [despesas]);
+
+  // All unique subcategorias present in current despesas
+  const availableSubcats = useMemo(() => {
+    const subs = new Set<string>();
+    despesas.forEach((d) => { if (d.subcategoria) subs.add(d.subcategoria); });
+    return Array.from(subs).sort();
+  }, [despesas]);
+
+  // Filter by subcategoria
+  const filteredDespesas = useMemo(() => {
+    let filtered = despesas;
+    if (activeSubcat) {
+      filtered = filtered.filter((d) => d.subcategoria === activeSubcat);
+    }
+    return filtered;
+  }, [despesas, activeSubcat]);
+
+  const fixas = useMemo(() => filteredDespesas.filter((d) => d.categoria === "fixa"), [filteredDespesas]);
+  const parceladas = useMemo(() => filteredDespesas.filter((d) => d.categoria === "parcelada"), [filteredDespesas]);
+  const extras = useMemo(() => filteredDespesas.filter((d) => d.categoria === "extra"), [filteredDespesas]);
+  const pais = useMemo(() => filteredDespesas.filter((d) => d.categoria === "pais"), [filteredDespesas]);
 
   const paisTotals = useMemo(() => {
     const custoTotal = pais.reduce((s, d) => s + Number(d.valor), 0);
@@ -67,6 +84,16 @@ const Despesas = () => {
       .reduce((s, l) => s + Number(l.valor), 0);
     return { custoTotal, euPaguei, reembolsado, subsidioLiquido: euPaguei - reembolsado };
   }, [pais, lancamentos]);
+
+  // Subcategoria summary when filter active
+  const subcatSummary = useMemo(() => {
+    if (!activeSubcat) return null;
+    const total = filteredDespesas.reduce((s, d) => s + Number(d.valor), 0);
+    // find group
+    const item = filteredDespesas.find((d) => d.subcategoria === activeSubcat);
+    const catLabel = item?.categoria === "fixa" ? "Fixas" : item?.categoria === "parcelada" ? "Parceladas" : item?.categoria === "extra" ? "Extras" : item?.categoria === "pais" ? "Pais" : "";
+    return { label: `${catLabel} → ${activeSubcat}`, total };
+  }, [activeSubcat, filteredDespesas]);
 
   const hasData = despesas.length > 0;
   const showSection = (cat: Category) => activeFilter === "Todas" || activeFilter === cat;
@@ -115,10 +142,7 @@ const Despesas = () => {
     const valorOriginal = Number(item.valor);
     const isTotal = totalReemb >= valorOriginal;
     return (
-      <span
-        className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5"
-        style={{ backgroundColor: "rgba(16,185,129,0.15)", color: "#10B981" }}
-      >
+      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5" style={{ backgroundColor: "rgba(16,185,129,0.15)", color: "#10B981" }}>
         {isTotal ? "↩️ Reembolso total · Quitado ✓" : `↩️ Reembolso parcial: ${fmt(totalReemb)}`}
       </span>
     );
@@ -139,6 +163,11 @@ const Despesas = () => {
     );
   };
 
+  const renderSubcatLabel = (item: Lancamento) => {
+    if (!item.subcategoria) return null;
+    return <span className="text-[11px] ml-1" style={{ color: "#475569" }}>· {item.subcategoria}</span>;
+  };
+
   const renderItem = (item: Lancamento, icon: React.ReactNode, subtitle: React.ReactNode, valuePrefix = "") => (
     <SwipeableItem key={item.id} onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
       <div onClick={() => openActions(item)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer">
@@ -147,7 +176,10 @@ const Despesas = () => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
-          {subtitle}
+          <div className="flex items-center">
+            {subtitle}
+            {renderSubcatLabel(item)}
+          </div>
           {renderReembolsoBadge(item)}
         </div>
         {renderValor(item, valuePrefix)}
@@ -181,14 +213,45 @@ const Despesas = () => {
           <EmptyState title="Nenhum gasto por aqui! 🎉" />
         ) : (
           <>
-            {/* Filter Pills */}
-            <div className="flex gap-2 overflow-x-auto pb-4 mb-4 animate-fade-up scrollbar-none" style={{ animationDelay: "0.05s" }}>
+            {/* Category Filter Pills */}
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-2 animate-fade-up scrollbar-none" style={{ animationDelay: "0.05s" }}>
               {categories.map((cat) => (
-                <button key={cat} onClick={() => setActiveFilter(cat)} className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === cat ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20" : "bg-secondary/60 text-muted-foreground hover:bg-secondary"}`}>
+                <button key={cat} onClick={() => { setActiveFilter(cat); setActiveSubcat(null); }} className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === cat ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20" : "bg-secondary/60 text-muted-foreground hover:bg-secondary"}`}>
                   {cat}
                 </button>
               ))}
             </div>
+
+            {/* Subcategoria Filter Pills */}
+            {availableSubcats.length > 0 && (
+              <div className="flex gap-1.5 overflow-x-auto pb-4 mb-2 animate-fade-up scrollbar-none" style={{ animationDelay: "0.07s" }}>
+                <button
+                  onClick={() => setActiveSubcat(null)}
+                  className={`px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${!activeSubcat ? "bg-foreground/10 text-foreground" : "bg-secondary/40 text-muted-foreground hover:text-foreground"}`}
+                >
+                  Todas
+                </button>
+                {availableSubcats.map((sub) => (
+                  <button
+                    key={sub}
+                    onClick={() => setActiveSubcat(activeSubcat === sub ? null : sub)}
+                    className={`px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${activeSubcat === sub ? "bg-foreground/10 text-foreground" : "bg-secondary/40 text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Subcategoria Summary Card */}
+            {subcatSummary && (
+              <div className="glass-card p-3 mb-4 animate-fade-up">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">{subcatSummary.label}</p>
+                  <p className="text-sm font-bold text-foreground tabular-nums">{fmt(subcatSummary.total)} este mês</p>
+                </div>
+              </div>
+            )}
 
             {/* Fixas */}
             {showSection("Fixas") && fixas.length > 0 && (
@@ -234,9 +297,7 @@ const Despesas = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <p className="text-[11px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas</p>
-                            {item.parcela_atual === item.parcela_total && (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/20 text-primary">Última!</span>
-                            )}
+                            {renderSubcatLabel(item)}
                           </div>
                           {item.parcela_atual && item.parcela_total && (
                             <div className="w-full h-1 rounded-full bg-secondary/60 mt-1.5">
@@ -337,6 +398,7 @@ const Despesas = () => {
             categoria: selectedLanc.categoria,
             data: selectedLanc.data,
             subcategoria_pais: selectedLanc.subcategoria_pais,
+            subcategoria: selectedLanc.subcategoria,
             parcela_atual: selectedLanc.parcela_atual,
             parcela_total: selectedLanc.parcela_total,
           }}

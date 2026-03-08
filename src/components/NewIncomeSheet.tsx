@@ -53,6 +53,7 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
         tipo: "receita",
         categoria: catMap[categoria],
         subcategoria_pais: null,
+        subcategoria: null,
         data: format(data, "yyyy-MM-dd"),
         mes_referencia: mesRef,
         parcela_atual: null,

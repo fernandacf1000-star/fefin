@@ -25,6 +25,8 @@ interface Props {
     categoria_macro?: string;
     parcela_atual?: number;
     parcela_total?: number;
+    forma_pagamento?: string;
+    cartao_id?: string;
   }) => void;
   initial: {
     descricao: string;

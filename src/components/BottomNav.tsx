@@ -54,7 +54,7 @@ const BottomNav = () => {
   return (
     <>
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-xl border-t border-border/30"
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full max-w-[430px] bg-card/90 backdrop-blur-xl border-t border-border/30"
         style={{ paddingBottom: "calc(8px + env(safe-area-inset-bottom, 16px))" }}
       >
         <div className="max-w-md mx-auto grid grid-cols-7 items-center px-1 py-1.5 overflow-hidden">

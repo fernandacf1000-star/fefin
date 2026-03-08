@@ -83,6 +83,10 @@ const Dashboard = () => {
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [profileOpen, setProfileOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [metaOpen, setMetaOpen] = useState(false);
+  const [metaValue, setMetaValue] = useState("");
+  const [savingMeta, setSavingMeta] = useState(false);
+  const queryClient = useQueryClient();
 
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);

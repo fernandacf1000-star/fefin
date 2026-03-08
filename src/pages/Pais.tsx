@@ -11,6 +11,8 @@ import {
   Pill,
   Stethoscope,
   Car,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   BarChart,

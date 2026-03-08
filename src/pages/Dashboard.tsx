@@ -138,7 +138,7 @@ const Dashboard = () => {
   // Total despesas sem investimentos (para exibição na meta)
   const totalDespesasSemInvest = useMemo(() => {
     return despesas
-      .filter(d => normalizeMacro(d.categoria_macro) !== 'Investimentos')
+      .filter(d => normalizeMacro(d.categoria_macro, d.subcategoria) !== 'Investimentos')
       .reduce((s, d) => {
         const reemb = getTotalReembolsado(allReembolsos, d.id);
         return s + Math.max(0, Number(d.valor) - reemb);

@@ -18,8 +18,7 @@ const resgates = [
 ];
 const emergencias6m = resgates.filter((r) => r.motivo === "Emergência").length;
 
-const longoPrazo = { total: 12000, alocado: 7200, reserva: 3600, taxas: 1200 };
-const longoPrazoPctReserva = (longoPrazo.reserva / longoPrazo.total) * 100;
+const longoPrazo = { saldo: 12000, rentAnual: 9.8, ultimoAporte: "15 Fev 2026" };
 
 const totalInvestido = previdencia.valor + aplicacao.saldo + fgts.saldo + longoPrazo.total;
 const rendMes = aplicacao.rendMensal + 756.2;

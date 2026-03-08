@@ -31,12 +31,12 @@ const BottomNav = () => {
       <button
         key={item.label}
         onClick={() => navigate(item.path)}
-        className={`flex flex-col items-center gap-0.5 px-1.5 py-1.5 rounded-xl transition-all min-w-0 ${
+        className={`flex flex-col items-center justify-center gap-0.5 min-w-0 overflow-hidden transition-all ${
           isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
         }`}
       >
-        <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
-        <span className="text-[9px] font-medium leading-tight">{item.label}</span>
+        <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} className="shrink-0" />
+        <span className="text-[9px] font-medium leading-tight truncate w-full text-center">{item.label}</span>
       </button>
     );
   };
@@ -53,12 +53,15 @@ const BottomNav = () => {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-xl border-t border-border/30" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <div className="max-w-md mx-auto flex items-center justify-around px-1 py-1.5">
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-xl border-t border-border/30"
+        style={{ paddingBottom: "calc(8px + env(safe-area-inset-bottom, 16px))" }}
+      >
+        <div className="max-w-md mx-auto grid grid-cols-7 items-center px-1 py-1.5 overflow-hidden">
           {leftItems.map(renderItem)}
           <button
             onClick={() => setSelectorOpen(true)}
-            className="w-12 h-12 -mt-6 rounded-full gradient-emerald flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-transform shrink-0"
+            className="w-12 h-12 -mt-6 mx-auto rounded-full gradient-emerald flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-transform shrink-0"
           >
             <Plus size={24} className="text-primary-foreground" />
           </button>

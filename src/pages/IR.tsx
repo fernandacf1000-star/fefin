@@ -79,7 +79,7 @@ const historicoDARF = [
 ];
 
 const IR = () => (
-  <div className="min-h-screen gradient-bg pb-28 overflow-x-hidden">
+  <div className="min-h-screen gradient-bg overflow-x-hidden" style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom, 16px))" }}>
     <div className="max-w-md mx-auto px-4 pt-12 space-y-5 w-full">
       <h1 className="text-xl font-semibold text-foreground animate-fade-up">Imposto de Renda</h1>
 

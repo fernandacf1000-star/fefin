@@ -11,9 +11,12 @@ import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
 import {
   Eye, EyeOff, TrendingUp, TrendingDown,
   ShoppingBag, CreditCard, Users,
-  ChevronLeft, ChevronRight, Settings, LogOut, Receipt, Target, ClipboardList,
+  ChevronLeft, ChevronRight, Settings, LogOut, Receipt, Target, ClipboardList, Pencil, X,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -80,6 +83,10 @@ const Dashboard = () => {
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [profileOpen, setProfileOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [metaOpen, setMetaOpen] = useState(false);
+  const [metaValue, setMetaValue] = useState("");
+  const [savingMeta, setSavingMeta] = useState(false);
+  const queryClient = useQueryClient();
 
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
@@ -113,11 +120,30 @@ const Dashboard = () => {
     }));
   }, [despesas, allReembolsos]);
 
-  // Meta do mês
+  // Meta do mês - use profile meta or fallback to receitas
+  const metaMensal = profile?.meta_mensal ? Number(profile.meta_mensal) : null;
   const metaPct = useMemo(() => {
-    if (totalReceitas === 0) return 0;
-    return Math.min(100, Math.round((totalDespesas / totalReceitas) * 100));
-  }, [totalReceitas, totalDespesas]);
+    const base = metaMensal || totalReceitas;
+    if (base === 0) return 0;
+    // Exclude Investimentos from gastos for meta calculation
+    const gastosParaMeta = despesas
+      .filter(d => d.categoria_macro !== 'Investimentos')
+      .reduce((s, d) => {
+        const reemb = getTotalReembolsado(allReembolsos, d.id);
+        return s + Math.max(0, Number(d.valor) - reemb);
+      }, 0);
+    return Math.min(100, Math.round((gastosParaMeta / base) * 100));
+  }, [metaMensal, totalReceitas, despesas, allReembolsos]);
+
+  // Total despesas sem investimentos (para exibição na meta)
+  const totalDespesasSemInvest = useMemo(() => {
+    return despesas
+      .filter(d => d.categoria_macro !== 'Investimentos')
+      .reduce((s, d) => {
+        const reemb = getTotalReembolsado(allReembolsos, d.id);
+        return s + Math.max(0, Number(d.valor) - reemb);
+      }, 0);
+  }, [despesas, allReembolsos]);
 
   // Parcelamentos card
   const parcelamentos = useMemo(() => {
@@ -151,6 +177,21 @@ const Dashboard = () => {
     setConfirmLogout(false);
     await signOut();
     navigate("/");
+  };
+
+  const handleSaveMeta = async () => {
+    if (!user) return;
+    setSavingMeta(true);
+    const val = parseFloat(metaValue.replace(/\./g, "").replace(",", "."));
+    const { error } = await supabase
+      .from("profiles")
+      .update({ meta_mensal: isNaN(val) ? null : val } as any)
+      .eq("user_id", user.id);
+    setSavingMeta(false);
+    if (error) { toast.error("Erro ao salvar meta"); return; }
+    toast.success("Meta atualizada!");
+    queryClient.invalidateQueries({ queryKey: ["profile"] });
+    setMetaOpen(false);
   };
 
   const hasData = lancamentos.length > 0;
@@ -223,30 +264,47 @@ const Dashboard = () => {
             <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Target size={16} className="text-primary" />
                   <span className="text-sm font-semibold text-foreground">🎯 Meta do mês</span>
                 </div>
-                <span className="text-xs font-semibold text-primary">{metaPct}% usado</span>
+                <div className="flex items-center gap-2">
+                  {metaMensal ? (
+                    <span className="text-xs font-semibold text-primary">{metaPct}% usado</span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">Toque em ✏️ para definir sua meta</span>
+                  )}
+                  <button onClick={() => { setMetaValue(metaMensal ? String(metaMensal) : ""); setMetaOpen(true); }} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
+                    <Pencil size={14} />
+                  </button>
+                </div>
               </div>
-              <div className="relative w-full h-3 rounded-full bg-secondary/60 overflow-hidden">
-                <div
-                  className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
-                    metaPct >= 90 ? "bg-destructive" : metaPct >= 70 ? "bg-yellow-500" : "gradient-emerald"
-                  }`}
-                  style={{ width: `${metaPct}%` }}
-                />
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-2">
-                {metaPct >= 90
-                  ? "Cuidado! Gastos próximos da receita 🚨"
-                  : metaPct >= 70
-                  ? "Atenção com os gastos este mês ⚠️"
-                  : "Dentro do orçamento 💚"}
-              </p>
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-[10px] text-muted-foreground">Gastos: {showBalance ? fmt(totalDespesas) : "••••"}</span>
-                <span className="text-[10px] text-muted-foreground">Receitas: {showBalance ? fmt(totalReceitas) : "••••"}</span>
-              </div>
+              {metaMensal ? (
+                <>
+                  <div className="relative w-full h-3 rounded-full bg-secondary/60 overflow-hidden">
+                    <div
+                      className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
+                        metaPct >= 90 ? "bg-destructive" : metaPct >= 70 ? "bg-yellow-500" : "gradient-emerald"
+                      }`}
+                      style={{ width: `${metaPct}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    {metaPct >= 90
+                      ? "Cuidado! Gastos próximos da meta 🚨"
+                      : metaPct >= 70
+                      ? "Atenção com os gastos este mês ⚠️"
+                      : "Dentro do orçamento 💚"}
+                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-[10px] text-muted-foreground">Gastos: {showBalance ? fmt(totalDespesasSemInvest) : "••••"}</span>
+                    <span className="text-[10px] text-muted-foreground">Meta: {showBalance ? fmt(metaMensal) : "••••"}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-[10px] text-muted-foreground">Gastos: {showBalance ? fmt(totalDespesasSemInvest) : "••••"}</span>
+                  <span className="text-[10px] text-muted-foreground">Receitas: {showBalance ? fmt(totalReceitas) : "••••"}</span>
+                </div>
+              )}
             </div>
 
             {/* Category Summary - Horizontal scroll */}
@@ -292,11 +350,12 @@ const Dashboard = () => {
                     </div>
                   ))}
                 </div>
-                {parcelamentos.count > 5 && (
-                  <button onClick={() => navigate("/despesas")} className="text-[11px] text-primary font-medium mt-2">
-                    Ver todos →
+                <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/20">
+                  <span className="text-[10px] text-muted-foreground">{parcelamentos.count} compras parceladas · Total {showBalance ? fmt(parcelamentos.total) : "••••"} este mês</span>
+                  <button onClick={() => navigate("/despesas")} className="text-[11px] text-primary font-medium">
+                    Ver todas →
                   </button>
-                )}
+                </div>
               </div>
             )}
 
@@ -407,6 +466,40 @@ const Dashboard = () => {
                   Sair
                 </button>
               </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Meta Modal */}
+      {metaOpen && (
+        <>
+          <div className="fixed inset-0 z-[80] bg-background/70 backdrop-blur-sm" onClick={() => setMetaOpen(false)} />
+          <div className="fixed inset-0 z-[90] flex items-center justify-center px-8">
+            <div className="w-full max-w-xs rounded-2xl p-6 space-y-4" style={{ background: "#1a1a2e", border: "1px solid hsl(var(--primary) / 0.15)" }}>
+              <div className="flex items-center justify-between">
+                <p className="text-base font-bold text-foreground">🎯 Meta mensal</p>
+                <button onClick={() => setMetaOpen(false)} className="text-muted-foreground"><X size={18} /></button>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Meta mensal (R$)</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={metaValue}
+                  onChange={(e) => setMetaValue(e.target.value)}
+                  placeholder="Ex: 5000"
+                  className="w-full rounded-xl bg-secondary/60 border border-border/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Valor máximo de gastos por mês</p>
+              </div>
+              <button
+                onClick={handleSaveMeta}
+                disabled={savingMeta}
+                className="w-full py-2.5 rounded-xl text-sm font-semibold gradient-emerald text-primary-foreground transition-colors disabled:opacity-50"
+              >
+                {savingMeta ? "Salvando..." : "Salvar"}
+              </button>
             </div>
           </div>
         </>

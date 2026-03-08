@@ -14,7 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assets: {
+        Row: {
+          acquired_at: string | null
+          category: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          user_id: string
+          value: number
+        }
+        Insert: {
+          acquired_at?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          user_id: string
+          value?: number
+        }
+        Update: {
+          acquired_at?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          description: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          description: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      installment_purchases: {
+        Row: {
+          category: string
+          created_at: string
+          current_installment: number
+          description: string
+          id: string
+          installment_amount: number
+          start_date: string
+          total_amount: number
+          total_installments: number
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          current_installment?: number
+          description: string
+          id?: string
+          installment_amount?: number
+          start_date?: string
+          total_amount?: number
+          total_installments?: number
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          current_installment?: number
+          description?: string
+          id?: string
+          installment_amount?: number
+          start_date?: string
+          total_amount?: number
+          total_installments?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recurring_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          day_of_month: number
+          description: string
+          id: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string
+          day_of_month?: number
+          description: string
+          id?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          day_of_month?: number
+          description?: string
+          id?: string
+          is_active?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

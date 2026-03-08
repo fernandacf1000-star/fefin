@@ -10,6 +10,8 @@ import {
   HandCoins,
   Receipt,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
 

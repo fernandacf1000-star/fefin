@@ -4,21 +4,29 @@ import { useLancamentos, useUpdateLancamento, useDeleteLancamento } from "@/hook
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import {
   Home, CreditCard, Gift, Users, CheckCircle2, Clock,
-  Receipt, ChevronLeft, ChevronRight,
+  Receipt, ChevronLeft, ChevronRight, X, SlidersHorizontal,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import SwipeableItem from "@/components/SwipeableItem";
 import LancamentoActions from "@/components/LancamentoActions";
 import EditLancamentoModal from "@/components/EditLancamentoModal";
 import ReembolsoModal from "@/components/ReembolsoModal";
 import type { Lancamento } from "@/hooks/useLancamentos";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { SUBCATEGORIA_GROUPS } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const categories = ["Todas", "Fixas", "Parceladas", "Extras", "Pais"] as const;
-type Category = (typeof categories)[number];
+const CATEGORY_EMOJIS: Record<string, string> = {
+  "Casa": "🏠", "Alimentação fora": "🍽️", "Transporte": "🚗", "Saúde": "💊",
+  "Moda e Beleza": "👗", "Compras Online": "📦", "Serviços Fixos": "🏛️",
+  "Lazer e Viagem": "✈️", "Arte e Decoração": "🎨", "Educação": "📚", "Outros": "🎲",
+};
+
+type TipoFilter = "Todas" | "Fixas" | "Parceladas" | "Extras" | "Pais";
+type PeriodoFilter = "mes_atual" | "3_meses" | "ano" | "personalizado";
 
 const now = new Date();
 const generateMonths = () => {
@@ -33,10 +41,26 @@ const generateMonths = () => {
 };
 const months = generateMonths();
 
+const tipoToCat = (t: TipoFilter): string | null => {
+  if (t === "Fixas") return "fixa";
+  if (t === "Parceladas") return "parcelada";
+  if (t === "Extras") return "extra";
+  if (t === "Pais") return "pais";
+  return null;
+};
+
 const Despesas = () => {
-  const [activeFilter, setActiveFilter] = useState<Category>("Todas");
-  const [activeSubcat, setActiveSubcat] = useState<string | null>(null);
+  // Filters state
+  const [tipoFilter, setTipoFilter] = useState<TipoFilter>("Todas");
+  const [catFilters, setCatFilters] = useState<string[]>([]);
+  const [subcatFilters, setSubcatFilters] = useState<string[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(1);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  // Draft filters (applied only on "Ver resultados")
+  const [draftTipo, setDraftTipo] = useState<TipoFilter>("Todas");
+  const [draftCats, setDraftCats] = useState<string[]>([]);
+  const [draftSubcats, setDraftSubcats] = useState<string[]>([]);
 
   const [selectedLanc, setSelectedLanc] = useState<Lancamento | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -53,21 +77,36 @@ const Despesas = () => {
 
   const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
 
-  // All unique subcategorias present in current despesas
-  const availableSubcats = useMemo(() => {
-    const subs = new Set<string>();
-    despesas.forEach((d) => { if (d.subcategoria) subs.add(d.subcategoria); });
-    return Array.from(subs).sort();
-  }, [despesas]);
-
-  // Filter by subcategoria
+  // Apply filters
   const filteredDespesas = useMemo(() => {
     let filtered = despesas;
-    if (activeSubcat) {
-      filtered = filtered.filter((d) => d.subcategoria === activeSubcat);
+    const catKey = tipoToCat(tipoFilter);
+    if (catKey) filtered = filtered.filter(d => d.categoria === catKey);
+    if (catFilters.length > 0) {
+      // Map group names to subcategorias within those groups
+      const subsInGroups = SUBCATEGORIA_GROUPS.filter(g => catFilters.includes(g.group)).flatMap(g => g.items);
+      filtered = filtered.filter(d => d.subcategoria && subsInGroups.includes(d.subcategoria));
+    }
+    if (subcatFilters.length > 0) {
+      filtered = filtered.filter(d => d.subcategoria && subcatFilters.includes(d.subcategoria));
     }
     return filtered;
-  }, [despesas, activeSubcat]);
+  }, [despesas, tipoFilter, catFilters, subcatFilters]);
+
+  // Preview count for draft filters
+  const draftFiltered = useMemo(() => {
+    let filtered = despesas;
+    const catKey = tipoToCat(draftTipo);
+    if (catKey) filtered = filtered.filter(d => d.categoria === catKey);
+    if (draftCats.length > 0) {
+      const subsInGroups = SUBCATEGORIA_GROUPS.filter(g => draftCats.includes(g.group)).flatMap(g => g.items);
+      filtered = filtered.filter(d => d.subcategoria && subsInGroups.includes(d.subcategoria));
+    }
+    if (draftSubcats.length > 0) {
+      filtered = filtered.filter(d => d.subcategoria && draftSubcats.includes(d.subcategoria));
+    }
+    return filtered;
+  }, [despesas, draftTipo, draftCats, draftSubcats]);
 
   const fixas = useMemo(() => filteredDespesas.filter((d) => d.categoria === "fixa"), [filteredDespesas]);
   const parceladas = useMemo(() => filteredDespesas.filter((d) => d.categoria === "parcelada"), [filteredDespesas]);
@@ -85,18 +124,64 @@ const Despesas = () => {
     return { custoTotal, euPaguei, reembolsado, subsidioLiquido: euPaguei - reembolsado };
   }, [pais, lancamentos]);
 
-  // Subcategoria summary when filter active
-  const subcatSummary = useMemo(() => {
-    if (!activeSubcat) return null;
-    const total = filteredDespesas.reduce((s, d) => s + Number(d.valor), 0);
-    // find group
-    const item = filteredDespesas.find((d) => d.subcategoria === activeSubcat);
-    const catLabel = item?.categoria === "fixa" ? "Fixas" : item?.categoria === "parcelada" ? "Parceladas" : item?.categoria === "extra" ? "Extras" : item?.categoria === "pais" ? "Pais" : "";
-    return { label: `${catLabel} → ${activeSubcat}`, total };
-  }, [activeSubcat, filteredDespesas]);
+  const totalFiltrado = useMemo(() => filteredDespesas.reduce((s, d) => s + Number(d.valor), 0), [filteredDespesas]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (tipoFilter !== "Todas") count++;
+    count += catFilters.length;
+    count += subcatFilters.length;
+    return count;
+  }, [tipoFilter, catFilters, subcatFilters]);
 
   const hasData = despesas.length > 0;
-  const showSection = (cat: Category) => activeFilter === "Todas" || activeFilter === cat;
+  const showSection = (cat: string) => {
+    if (tipoFilter === "Todas" && catFilters.length === 0 && subcatFilters.length === 0) return true;
+    if (tipoFilter !== "Todas") return tipoToCat(tipoFilter) === cat;
+    return true; // when only cat/subcat filters, show all sections
+  };
+
+  // Filter sheet handlers
+  const openFilterSheet = () => {
+    setDraftTipo(tipoFilter);
+    setDraftCats([...catFilters]);
+    setDraftSubcats([...subcatFilters]);
+    setFilterSheetOpen(true);
+  };
+
+  const applyFilters = () => {
+    setTipoFilter(draftTipo);
+    setCatFilters(draftCats);
+    setSubcatFilters(draftSubcats);
+    setFilterSheetOpen(false);
+  };
+
+  const clearAllFilters = () => {
+    setDraftTipo("Todas");
+    setDraftCats([]);
+    setDraftSubcats([]);
+  };
+
+  const removeFilter = (type: "tipo" | "cat" | "subcat", value?: string) => {
+    if (type === "tipo") setTipoFilter("Todas");
+    if (type === "cat" && value) setCatFilters(p => p.filter(c => c !== value));
+    if (type === "subcat" && value) setSubcatFilters(p => p.filter(s => s !== value));
+  };
+
+  const toggleDraftCat = (cat: string) => {
+    setDraftCats(p => p.includes(cat) ? p.filter(c => c !== cat) : [...p, cat]);
+    setDraftSubcats([]); // reset subcats when cats change
+  };
+
+  const toggleDraftSubcat = (sub: string) => {
+    setDraftSubcats(p => p.includes(sub) ? p.filter(s => s !== sub) : [...p, sub]);
+  };
+
+  // Available subcats for selected draft cats
+  const draftAvailableSubcats = useMemo(() => {
+    if (draftCats.length === 0) return [];
+    return SUBCATEGORIA_GROUPS.filter(g => draftCats.includes(g.group)).flatMap(g => g.items);
+  }, [draftCats]);
 
   const openActions = (lanc: Lancamento) => { setSelectedLanc(lanc); setActionsOpen(true); };
   const openEdit = (lanc: Lancamento) => { setSelectedLanc(lanc); setEditOpen(true); setDeleteConfirm(false); };
@@ -187,13 +272,15 @@ const Despesas = () => {
     </SwipeableItem>
   );
 
+  const draftPreviewTotal = draftFiltered.reduce((s, d) => s + Number(d.valor), 0);
+
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px]">
       <div className="px-4 pt-12 w-full">
         <h1 className="text-xl font-semibold text-foreground mb-4 animate-fade-up">Despesas</h1>
 
         {/* Month Selector */}
-        <div className="flex items-center justify-center gap-3 mb-5 animate-fade-up" style={{ animationDelay: "0.03s" }}>
+        <div className="flex items-center justify-center gap-3 mb-4 animate-fade-up" style={{ animationDelay: "0.03s" }}>
           <button onClick={() => setSelectedMonth((p) => Math.max(0, p - 1))} disabled={selectedMonth === 0} className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
             <ChevronLeft size={18} />
           </button>
@@ -209,52 +296,72 @@ const Despesas = () => {
           </button>
         </div>
 
+        {/* Summary + Filter Button */}
+        <div className="flex items-center justify-between mb-3 animate-fade-up" style={{ animationDelay: "0.05s" }}>
+          <p className="text-xs" style={{ color: "#475569" }}>
+            {filteredDespesas.length} lançamentos · {fmt(totalFiltrado)}
+          </p>
+          <button
+            onClick={openFilterSheet}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+              activeFilterCount > 0
+                ? "text-primary-foreground shadow-lg shadow-primary/20"
+                : "text-foreground border"
+            }`}
+            style={activeFilterCount > 0
+              ? { backgroundColor: "#10B981" }
+              : { borderColor: "#10B981", color: "#10B981" }
+            }
+          >
+            <SlidersHorizontal size={12} />
+            Filtrar
+            {activeFilterCount > 0 && (
+              <span className="text-[10px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full">✦ {activeFilterCount}</span>
+            )}
+          </button>
+        </div>
+
+        {/* Active Filter Chips */}
+        {activeFilterCount > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-3 animate-fade-up">
+            {tipoFilter !== "Todas" && (
+              <button
+                onClick={() => removeFilter("tipo")}
+                className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium"
+                style={{ backgroundColor: "#1a1a2e", color: "#10B981" }}
+              >
+                {tipoFilter} <X size={10} />
+              </button>
+            )}
+            {catFilters.map(c => (
+              <button
+                key={c}
+                onClick={() => removeFilter("cat", c)}
+                className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium"
+                style={{ backgroundColor: "#1a1a2e", color: "#10B981" }}
+              >
+                {CATEGORY_EMOJIS[c] || ""} {c} <X size={10} />
+              </button>
+            ))}
+            {subcatFilters.map(s => (
+              <button
+                key={s}
+                onClick={() => removeFilter("subcat", s)}
+                className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium"
+                style={{ backgroundColor: "#1a1a2e", color: "#10B981" }}
+              >
+                {s} <X size={10} />
+              </button>
+            ))}
+          </div>
+        )}
+
         {!hasData && !isLoading ? (
           <EmptyState title="Nenhum gasto por aqui! 🎉" />
         ) : (
           <>
-            {/* Category Filter Pills */}
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-2 animate-fade-up scrollbar-none" style={{ animationDelay: "0.05s" }}>
-              {categories.map((cat) => (
-                <button key={cat} onClick={() => { setActiveFilter(cat); setActiveSubcat(null); }} className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === cat ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20" : "bg-secondary/60 text-muted-foreground hover:bg-secondary"}`}>
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            {/* Subcategoria Filter Pills */}
-            {availableSubcats.length > 0 && (
-              <div className="flex gap-1.5 overflow-x-auto pb-4 mb-2 animate-fade-up scrollbar-none" style={{ animationDelay: "0.07s" }}>
-                <button
-                  onClick={() => setActiveSubcat(null)}
-                  className={`px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${!activeSubcat ? "bg-foreground/10 text-foreground" : "bg-secondary/40 text-muted-foreground hover:text-foreground"}`}
-                >
-                  Todas
-                </button>
-                {availableSubcats.map((sub) => (
-                  <button
-                    key={sub}
-                    onClick={() => setActiveSubcat(activeSubcat === sub ? null : sub)}
-                    className={`px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${activeSubcat === sub ? "bg-foreground/10 text-foreground" : "bg-secondary/40 text-muted-foreground hover:text-foreground"}`}
-                  >
-                    {sub}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Subcategoria Summary Card */}
-            {subcatSummary && (
-              <div className="glass-card p-3 mb-4 animate-fade-up">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">{subcatSummary.label}</p>
-                  <p className="text-sm font-bold text-foreground tabular-nums">{fmt(subcatSummary.total)} este mês</p>
-                </div>
-              </div>
-            )}
-
             {/* Fixas */}
-            {showSection("Fixas") && fixas.length > 0 && (
+            {showSection("fixa") && fixas.length > 0 && (
               <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <Home size={14} className="text-primary" />
@@ -275,7 +382,7 @@ const Despesas = () => {
             )}
 
             {/* Parceladas */}
-            {showSection("Parceladas") && parceladas.length > 0 && (
+            {showSection("parcelada") && parceladas.length > 0 && (
               <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <CreditCard size={14} className="text-primary" />
@@ -315,7 +422,7 @@ const Despesas = () => {
             )}
 
             {/* Extras */}
-            {showSection("Extras") && extras.length > 0 && (
+            {showSection("extra") && extras.length > 0 && (
               <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <Gift size={14} className="text-primary" />
@@ -335,7 +442,7 @@ const Despesas = () => {
             )}
 
             {/* Pais */}
-            {showSection("Pais") && pais.length > 0 && (
+            {showSection("pais") && pais.length > 0 && (
               <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.25s" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <Users size={14} className="text-primary" />
@@ -371,9 +478,105 @@ const Despesas = () => {
                 </div>
               </div>
             )}
+
+            {filteredDespesas.length === 0 && hasData && (
+              <div className="text-center py-8">
+                <p className="text-sm text-muted-foreground">Nenhum lançamento com esses filtros</p>
+              </div>
+            )}
           </>
         )}
       </div>
+
+      {/* Filter Bottom Sheet */}
+      <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto pb-24">
+          <div className="space-y-5 pt-2">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-foreground">Filtrar despesas</h2>
+              <button onClick={clearAllFilters} className="text-xs font-semibold text-destructive">Limpar tudo</button>
+            </div>
+
+            {/* Tipo */}
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground mb-2">TIPO</p>
+              <div className="flex flex-wrap gap-2">
+                {(["Todas", "Fixas", "Parceladas", "Extras", "Pais"] as TipoFilter[]).map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setDraftTipo(t)}
+                    className={`px-3.5 py-2 rounded-full text-xs font-semibold transition-all ${
+                      draftTipo === t ? "text-primary-foreground shadow-md" : "bg-secondary/60 text-muted-foreground"
+                    }`}
+                    style={draftTipo === t ? { backgroundColor: "#10B981" } : undefined}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Categoria */}
+            <div>
+              <p className="text-[11px] font-semibold text-muted-foreground mb-2">CATEGORIA</p>
+              <div className="grid grid-cols-2 gap-2">
+                {SUBCATEGORIA_GROUPS.map(g => {
+                  const selected = draftCats.includes(g.group);
+                  return (
+                    <button
+                      key={g.group}
+                      onClick={() => toggleDraftCat(g.group)}
+                      className={`flex items-center gap-2 p-3 rounded-xl text-left text-xs font-medium transition-all ${
+                        selected ? "ring-2 bg-secondary/50" : "bg-secondary/30 text-muted-foreground"
+                      }`}
+                      style={selected ? { outline: "2px solid #10B981", outlineOffset: "-2px" } : undefined}
+                    >
+                      <span className="text-base">{CATEGORY_EMOJIS[g.group] || "📋"}</span>
+                      <span className={selected ? "text-foreground font-semibold" : ""}>{g.group}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Subcategoria */}
+            {draftAvailableSubcats.length > 0 && (
+              <div>
+                <p className="text-[11px] font-semibold text-muted-foreground mb-2">SUBCATEGORIA</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {draftAvailableSubcats.map(sub => {
+                    const selected = draftSubcats.includes(sub);
+                    return (
+                      <button
+                        key={sub}
+                        onClick={() => toggleDraftSubcat(sub)}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+                          selected ? "text-primary-foreground" : "bg-secondary/50 text-muted-foreground"
+                        }`}
+                        style={selected ? { backgroundColor: "#10B981" } : undefined}
+                      >
+                        {sub}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Fixed footer button */}
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border/30">
+            <button
+              onClick={applyFilters}
+              className="w-full py-3 rounded-xl text-sm font-semibold text-primary-foreground shadow-lg"
+              style={{ backgroundColor: "#10B981" }}
+            >
+              Ver {draftFiltered.length} lançamentos · {fmt(draftPreviewTotal)}
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <LancamentoActions
         open={actionsOpen}

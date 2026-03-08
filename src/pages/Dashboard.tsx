@@ -404,7 +404,7 @@ const Dashboard = () => {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{tx.descricao}</p>
                           <p className="text-[11px] text-muted-foreground">
-                            {tx.categoria_macro ? `${getGroupEmoji(tx.categoria_macro)} ${tx.categoria_macro}` : tx.categoria} · {new Date(tx.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                            {tx.categoria_macro ? `${getGroupEmoji(normalizeMacro(tx.categoria_macro))} ${normalizeMacro(tx.categoria_macro)}` : tx.categoria} · {new Date(tx.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
                             {tx.is_parcelado && tx.parcela_atual && tx.parcela_total && (
                               <span className="text-muted-foreground"> · {tx.parcela_atual}/{tx.parcela_total}</span>
                             )}

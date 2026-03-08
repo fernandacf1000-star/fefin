@@ -209,12 +209,12 @@ const Graficos = () => {
             <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <h2 className="text-sm font-semibold text-foreground mb-2">Gastos por Subcategoria</h2>
 
-              <div className="flex gap-1.5 flex-wrap pb-3">
+              <div className="grid grid-cols-4 gap-1.5 pb-3">
                 {catFilterOptions.map((opt) => (
                   <button
                     key={opt.label}
                     onClick={() => setSubcatCatFilter(opt.key)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${subcatCatFilter === opt.key ? "bg-foreground/10 text-foreground" : "bg-secondary/40 text-muted-foreground hover:text-foreground"}`}
+                    className={`px-2 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all text-center ${subcatCatFilter === opt.key ? "bg-foreground/10 text-foreground" : "bg-secondary/40 text-muted-foreground hover:text-foreground"}`}
                   >
                     {opt.label}
                   </button>

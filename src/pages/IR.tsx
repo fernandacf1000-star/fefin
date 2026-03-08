@@ -34,10 +34,9 @@ const totalDeducoes = deducoes.reduce((s, d) => s + d.valor, 0);
 
 /* Doações incentivadas */
 const irDevido = estimativaIRAnual;
-const limiteCriancaIdoso = irDevido * 0.06;
-const limiteCulturaEsporte = irDevido * 0.04;
+const limiteTotal = irDevido * 0.06;
 const jaDoado = 820;
-const saldoDisponivel = limiteCriancaIdoso + limiteCulturaEsporte - jaDoado;
+const saldoDisponivel = limiteTotal - jaDoado;
 
 /* Histórico DARF */
 const historicoDARF = [
@@ -202,24 +201,30 @@ const IR = () => (
         <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary/40 mb-4">
           <Info size={14} className="text-muted-foreground shrink-0 mt-0.5" />
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Doações para Fundos da Criança/Adolescente, Idoso, Cultura (Rouanet), Audiovisual e Desporto são deduzidas diretamente do IR devido — não da base de cálculo.
+            Pessoa física pode destinar até <span className="font-semibold text-foreground">6% do IR devido</span> para doações incentivadas — o valor é deduzido diretamente do imposto, não da base de cálculo.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="rounded-xl bg-secondary/40 p-3">
-            <p className="text-[10px] text-muted-foreground mb-0.5">Criança / Idoso (até 6%)</p>
-            <p className="text-sm font-bold text-foreground tabular-nums">{fmt(limiteCriancaIdoso)}</p>
+            <p className="text-[10px] text-muted-foreground mb-0.5">Limite total (6%)</p>
+            <p className="text-sm font-bold text-foreground tabular-nums">{fmt(limiteTotal)}</p>
           </div>
           <div className="rounded-xl bg-secondary/40 p-3">
-            <p className="text-[10px] text-muted-foreground mb-0.5">Cultura / Esporte (até 4%)</p>
-            <p className="text-sm font-bold text-foreground tabular-nums">{fmt(limiteCulturaEsporte)}</p>
+            <p className="text-[10px] text-muted-foreground mb-0.5">Já utilizado</p>
+            <p className="text-sm font-bold text-foreground tabular-nums">{fmt(jaDoado)}</p>
+          </div>
+          <div className="rounded-xl bg-primary/10 p-3">
+            <p className="text-[10px] text-primary mb-0.5">Saldo disponível</p>
+            <p className="text-sm font-bold text-primary tabular-nums">{fmt(saldoDisponivel)}</p>
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-muted-foreground">Já doado no ano</p>
-          <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(jaDoado)}</p>
+        <p className="text-[10px] text-muted-foreground font-medium mb-1.5">Modalidades aceitas</p>
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {["Criança e Adolescente", "Idoso", "Cultura (Rouanet)", "Audiovisual", "Desporto"].map((m) => (
+            <span key={m} className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/50 text-muted-foreground">{m}</span>
+          ))}
         </div>
 
         <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/10">

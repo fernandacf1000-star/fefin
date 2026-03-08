@@ -1,12 +1,20 @@
 import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip,
   PieChart, Pie, Cell,
 } from "recharts";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const months = [
+  { label: "Fevereiro 2026", key: "2026-02" },
+  { label: "Março 2026", key: "2026-03" },
+  { label: "Abril 2026", key: "2026-04" },
+];
 
 /* 1 — Receitas vs Despesas */
 const receitasDespesas = [
@@ -50,104 +58,149 @@ const tooltipStyle = {
   fontSize: 12,
 };
 
-const Graficos = () => (
-  <div className="min-h-screen gradient-bg pb-24">
-    <div className="max-w-md mx-auto px-4 pt-12 space-y-6">
-      <h1 className="text-xl font-semibold text-foreground animate-fade-up">Gráficos</h1>
+const Graficos = () => {
+  const [selectedMonth, setSelectedMonth] = useState(1);
 
-      {/* 1 — Receitas vs Despesas */}
-      <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.05s" }}>
-        <h2 className="text-sm font-semibold text-foreground mb-4">Receitas vs Despesas</h2>
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={receitasDespesas} barGap={4}>
-              <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-              <YAxis hide />
-              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "hsl(var(--foreground))" }} formatter={(v: number) => fmt(v)} />
-              <Bar dataKey="receitas" name="Receitas" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="despesas" name="Despesas" fill="hsl(var(--destructive))" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="flex items-center justify-center gap-4 mt-3">
-          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-primary" /><span className="text-[11px] text-muted-foreground">Receitas</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-destructive" /><span className="text-[11px] text-muted-foreground">Despesas</span></div>
-        </div>
-      </section>
+  const hasData = selectedMonth === 1;
 
-      {/* 2 — Composição do mês */}
-      <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-        <h2 className="text-sm font-semibold text-foreground">Composição do Mês</h2>
-        <p className="text-[11px] text-muted-foreground mb-4">Março 2026</p>
-        <div className="relative h-52 flex items-center justify-center">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={composicao} dataKey="value" innerRadius="60%" outerRadius="85%" paddingAngle={3} stroke="none">
-                {composicao.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <span className="text-[11px] text-muted-foreground">Total</span>
-            <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalMes)}</span>
+  return (
+    <div className="min-h-screen gradient-bg pb-24">
+      <div className="max-w-md mx-auto px-4 pt-12 space-y-6">
+        <h1 className="text-xl font-semibold text-foreground animate-fade-up">Gráficos</h1>
+
+        {/* Month Selector */}
+        <div className="flex items-center justify-center gap-3 animate-fade-up" style={{ animationDelay: "0.03s" }}>
+          <button
+            onClick={() => setSelectedMonth((p) => Math.max(0, p - 1))}
+            disabled={selectedMonth === 0}
+            className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <div className="flex items-center gap-2">
+            {months.map((m, i) => (
+              <button
+                key={m.key}
+                onClick={() => setSelectedMonth(i)}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
+                  i === selectedMonth
+                    ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
           </div>
+          <button
+            onClick={() => setSelectedMonth((p) => Math.min(months.length - 1, p + 1))}
+            disabled={selectedMonth === months.length - 1}
+            className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
-        <div className="flex items-center justify-center gap-4 mt-2">
-          {composicao.map((c) => (
-            <div key={c.name} className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-sm" style={{ background: c.color }} />
-              <span className="text-[11px] text-muted-foreground">{c.name}</span>
-            </div>
-          ))}
-        </div>
-      </section>
 
-      {/* 3 — Projeção */}
-      <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-        <div className="flex items-center gap-2 mb-4">
-          <CalendarClock size={14} className="text-primary" />
-          <h2 className="text-sm font-semibold text-foreground">Projeção</h2>
-        </div>
-        <div className="space-y-3">
-          {projecao.map((p) => (
-            <div key={p.mes} className="flex items-center justify-between p-3 rounded-xl bg-secondary/30">
-              <div>
-                <p className="text-sm font-medium text-foreground">{p.mes}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Fixas {fmt(p.fixas)} · Parceladas {fmt(p.parceladas)}
-                </p>
+        {!hasData ? (
+          <EmptyState title="Adicione lançamentos para ver seus gráficos 📊" />
+        ) : (
+          <>
+            {/* 1 — Receitas vs Despesas */}
+            <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.05s" }}>
+              <h2 className="text-sm font-semibold text-foreground mb-4">Receitas vs Despesas</h2>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={receitasDespesas} barGap={4}>
+                    <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                    <YAxis hide />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "hsl(var(--foreground))" }} formatter={(v: number) => fmt(v)} />
+                    <Bar dataKey="receitas" name="Receitas" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="despesas" name="Despesas" fill="hsl(var(--destructive))" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-              <p className="text-sm font-bold text-foreground tabular-nums">{fmt(p.total)}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+              <div className="flex items-center justify-center gap-4 mt-3">
+                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-primary" /><span className="text-[11px] text-muted-foreground">Receitas</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-destructive" /><span className="text-[11px] text-muted-foreground">Despesas</span></div>
+              </div>
+            </section>
 
-      {/* 4 — Pais */}
-      <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-        <h2 className="text-sm font-semibold text-foreground mb-4">Pais — Custo vs Subsídio</h2>
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={paisChart} barGap={4}>
-              <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-              <YAxis hide />
-              <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "hsl(var(--foreground))" }} formatter={(v: number) => fmt(v)} />
-              <Bar dataKey="custoTotal" name="Custo Total" fill="hsl(var(--muted-foreground))" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="subsidio" name="Meu Subsídio" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="flex items-center justify-center gap-4 mt-3">
-          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-muted-foreground" /><span className="text-[11px] text-muted-foreground">Custo Total</span></div>
-          <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-primary" /><span className="text-[11px] text-muted-foreground">Meu Subsídio</span></div>
-        </div>
-      </section>
+            {/* 2 — Composição do mês */}
+            <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+              <h2 className="text-sm font-semibold text-foreground">Composição do Mês</h2>
+              <p className="text-[11px] text-muted-foreground mb-4">Março 2026</p>
+              <div className="relative h-52 flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={composicao} dataKey="value" innerRadius="60%" outerRadius="85%" paddingAngle={3} stroke="none">
+                      {composicao.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[11px] text-muted-foreground">Total</span>
+                  <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalMes)}</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-4 mt-2">
+                {composicao.map((c) => (
+                  <div key={c.name} className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-sm" style={{ background: c.color }} />
+                    <span className="text-[11px] text-muted-foreground">{c.name}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* 3 — Projeção */}
+            <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+              <div className="flex items-center gap-2 mb-4">
+                <CalendarClock size={14} className="text-primary" />
+                <h2 className="text-sm font-semibold text-foreground">Projeção</h2>
+              </div>
+              <div className="space-y-3">
+                {projecao.map((p) => (
+                  <div key={p.mes} className="flex items-center justify-between p-3 rounded-xl bg-secondary/30">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{p.mes}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        Fixas {fmt(p.fixas)} · Parceladas {fmt(p.parceladas)}
+                      </p>
+                    </div>
+                    <p className="text-sm font-bold text-foreground tabular-nums">{fmt(p.total)}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* 4 — Pais */}
+            <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+              <h2 className="text-sm font-semibold text-foreground mb-4">Pais — Custo vs Subsídio</h2>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={paisChart} barGap={4}>
+                    <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                    <YAxis hide />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: "hsl(var(--foreground))" }} formatter={(v: number) => fmt(v)} />
+                    <Bar dataKey="custoTotal" name="Custo Total" fill="hsl(var(--muted-foreground))" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="subsidio" name="Meu Subsídio" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex items-center justify-center gap-4 mt-3">
+                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-muted-foreground" /><span className="text-[11px] text-muted-foreground">Custo Total</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-primary" /><span className="text-[11px] text-muted-foreground">Meu Subsídio</span></div>
+              </div>
+            </section>
+          </>
+        )}
+      </div>
+      <BottomNav />
     </div>
-    <BottomNav />
-  </div>
-);
+  );
+};
 
 export default Graficos;

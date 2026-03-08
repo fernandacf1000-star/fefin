@@ -1,4 +1,5 @@
 import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
 import {
   Home,
   CreditCard,
@@ -61,8 +62,9 @@ const fmt = (v: number) =>
 
 const Despesas = () => {
   const [activeFilter, setActiveFilter] = useState<Category>("Todas");
-
   const [selectedMonth, setSelectedMonth] = useState(currentMonthIndex);
+
+  const hasData = selectedMonth === 1; // Only March has data
 
   const showSection = (cat: Category) =>
     activeFilter === "Todas" || activeFilter === cat;
@@ -108,177 +110,181 @@ const Despesas = () => {
           </button>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-4 animate-fade-up scrollbar-none" style={{ animationDelay: "0.05s" }}>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveFilter(cat)}
-              className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                activeFilter === cat
-                  ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20"
-                  : "bg-secondary/60 text-muted-foreground hover:bg-secondary"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-
-        {/* Fixas */}
-        {showSection("Fixas") && (
-          <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-            <div className="flex items-center gap-2 mb-3">
-              <Home size={14} className="text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">Contas Fixas</h2>
-            </div>
-            <div className="space-y-1">
-              {fixedBills.map((bill) => (
-                <div
-                  key={bill.label}
-                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors"
+        {!hasData ? (
+          <EmptyState title="Nenhum gasto por aqui! 🎉" />
+        ) : (
+          <>
+            {/* Filter Pills */}
+            <div className="flex gap-2 overflow-x-auto pb-4 mb-4 animate-fade-up scrollbar-none" style={{ animationDelay: "0.05s" }}>
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveFilter(cat)}
+                  className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                    activeFilter === cat
+                      ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20"
+                      : "bg-secondary/60 text-muted-foreground hover:bg-secondary"
+                  }`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    {bill.paid ? (
-                      <CheckCircle2 size={18} className="text-primary" />
-                    ) : (
-                      <Clock size={18} className="text-yellow-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {bill.label}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Vence dia {bill.dueDay} ·{" "}
-                      <span
-                        className={
-                          bill.paid ? "text-primary" : "text-yellow-400"
-                        }
-                      >
-                        {bill.paid ? "Pago" : "Pendente"}
-                      </span>
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground tabular-nums">
-                    {fmt(bill.value)}
-                  </p>
-                </div>
+                  {cat}
+                </button>
               ))}
             </div>
-          </div>
-        )}
 
-        {/* Parceladas */}
-        {showSection("Parceladas") && (
-          <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-            <div className="flex items-center gap-2 mb-3">
-              <CreditCard size={14} className="text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">Parceladas</h2>
-            </div>
-            <div className="space-y-1">
-              {installments.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <Receipt size={18} className="text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {item.label}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-[11px] text-muted-foreground">
-                        {item.current}/{item.total} parcelas
+            {/* Fixas */}
+            {showSection("Fixas") && (
+              <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Home size={14} className="text-primary" />
+                  <h2 className="text-sm font-semibold text-foreground">Contas Fixas</h2>
+                </div>
+                <div className="space-y-1">
+                  {fixedBills.map((bill) => (
+                    <div
+                      key={bill.label}
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                        {bill.paid ? (
+                          <CheckCircle2 size={18} className="text-primary" />
+                        ) : (
+                          <Clock size={18} className="text-yellow-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {bill.label}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Vence dia {bill.dueDay} ·{" "}
+                          <span
+                            className={
+                              bill.paid ? "text-primary" : "text-yellow-400"
+                            }
+                          >
+                            {bill.paid ? "Pago" : "Pendente"}
+                          </span>
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-foreground tabular-nums">
+                        {fmt(bill.value)}
                       </p>
-                      {item.current === item.total && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/20 text-primary">
-                          Última!
-                        </span>
-                      )}
                     </div>
-                    {/* Progress bar */}
-                    <div className="w-full h-1 rounded-full bg-secondary/60 mt-1.5">
-                      <div
-                        className="h-full rounded-full gradient-emerald"
-                        style={{
-                          width: `${(item.current / item.total) * 100}%`,
-                        }}
-                      />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Parceladas */}
+            {showSection("Parceladas") && (
+              <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <CreditCard size={14} className="text-primary" />
+                  <h2 className="text-sm font-semibold text-foreground">Parceladas</h2>
+                </div>
+                <div className="space-y-1">
+                  {installments.map((item) => (
+                    <div
+                      key={item.label}
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                        <Receipt size={18} className="text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {item.label}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[11px] text-muted-foreground">
+                            {item.current}/{item.total} parcelas
+                          </p>
+                          {item.current === item.total && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                              Última!
+                            </span>
+                          )}
+                        </div>
+                        <div className="w-full h-1 rounded-full bg-secondary/60 mt-1.5">
+                          <div
+                            className="h-full rounded-full gradient-emerald"
+                            style={{
+                              width: `${(item.current / item.total) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-sm font-semibold text-foreground tabular-nums">
+                        {fmt(item.value)}
+                      </p>
                     </div>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground tabular-nums">
-                    {fmt(item.value)}
-                  </p>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+            )}
 
-        {/* Extras */}
-        {showSection("Extras") && (
-          <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center gap-2 mb-3">
-              <Gift size={14} className="text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">Extras</h2>
-            </div>
-            <div className="space-y-1">
-              {extras.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <Gift size={18} className="text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {item.label}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {item.date}
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground tabular-nums">
-                    -{fmt(item.value)}
-                  </p>
+            {/* Extras */}
+            {showSection("Extras") && (
+              <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Gift size={14} className="text-primary" />
+                  <h2 className="text-sm font-semibold text-foreground">Extras</h2>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+                <div className="space-y-1">
+                  {extras.map((item) => (
+                    <div
+                      key={item.label}
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                        <Gift size={18} className="text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {item.label}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {item.date}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-foreground tabular-nums">
+                        -{fmt(item.value)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* Pais */}
-        {showSection("Pais") && (
-          <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.25s" }}>
-            <div className="flex items-center gap-2 mb-3">
-              <Users size={14} className="text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">Pais</h2>
-            </div>
-            <div className="glass-card p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] text-muted-foreground">Custo total com pais</p>
-                <p className="text-sm font-bold text-foreground tabular-nums">{fmt(paisData.custoTotal)}</p>
+            {/* Pais */}
+            {showSection("Pais") && (
+              <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.25s" }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Users size={14} className="text-primary" />
+                  <h2 className="text-sm font-semibold text-foreground">Pais</h2>
+                </div>
+                <div className="glass-card p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-muted-foreground">Custo total com pais</p>
+                    <p className="text-sm font-bold text-foreground tabular-nums">{fmt(paisData.custoTotal)}</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-muted-foreground">Eu paguei</p>
+                    <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(paisData.euPaguei)}</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-muted-foreground">Reembolsado</p>
+                    <p className="text-sm font-semibold text-primary tabular-nums">+{fmt(paisData.reembolsado)}</p>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-border/30">
+                    <p className="text-xs font-semibold text-muted-foreground">Subsídio líquido</p>
+                    <p className="text-sm font-bold text-primary tabular-nums">{fmt(paisData.subsidioLiquido)}</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] text-muted-foreground">Eu paguei</p>
-                <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(paisData.euPaguei)}</p>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] text-muted-foreground">Reembolsado</p>
-                <p className="text-sm font-semibold text-primary tabular-nums">+{fmt(paisData.reembolsado)}</p>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                <p className="text-xs font-semibold text-muted-foreground">Subsídio líquido</p>
-                <p className="text-sm font-bold text-primary tabular-nums">{fmt(paisData.subsidioLiquido)}</p>
-              </div>
-            </div>
-          </div>
+            )}
+          </>
         )}
-
       </div>
 
       <BottomNav />

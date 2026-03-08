@@ -1,4 +1,5 @@
 import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
 import {
   DollarSign,
   HandCoins,
@@ -75,6 +76,8 @@ const months = [
 const Pais = () => {
   const [selectedMonth, setSelectedMonth] = useState(1);
 
+  const hasData = selectedMonth === 1;
+
   return (
     <div className="min-h-screen gradient-bg pb-24">
       <div className="max-w-md mx-auto px-4 pt-12">
@@ -115,86 +118,92 @@ const Pais = () => {
           </button>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 gap-3 mb-6 animate-fade-up" style={{ animationDelay: "0.05s" }}>
-          {[
-            { icon: DollarSign, label: "Custo Total", value: paisData.custoTotal, color: "text-foreground" },
-            { icon: HandCoins, label: "Eu Paguei", value: paisData.euPaguei, color: "text-destructive" },
-            { icon: RefreshCw, label: "Reembolsado", value: paisData.reembolsado, color: "text-primary" },
-            { icon: Receipt, label: "Meu Subsídio Líquido", value: paisData.subsidioLiquido, color: "text-yellow-400" },
-          ].map((card) => (
-            <div key={card.label} className="glass-card p-4">
-              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center mb-2">
-                <card.icon size={16} className={card.color} />
-              </div>
-              <p className="text-[11px] text-muted-foreground mb-1">{card.label}</p>
-              <p className={`text-lg font-bold ${card.color} tabular-nums`}>{fmt(card.value)}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Histórico */}
-        <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-          <h2 className="text-sm font-semibold text-foreground mb-3">Histórico</h2>
-          <div className="space-y-1">
-            {historico.map((item, i) => {
-              const MethodIcon = methodIcon[item.method] || CreditCard;
-              return (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <item.icon size={18} className="text-muted-foreground" />
+        {!hasData ? (
+          <EmptyState title="Sem gastos com os pais esse mês 💚" />
+        ) : (
+          <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 gap-3 mb-6 animate-fade-up" style={{ animationDelay: "0.05s" }}>
+              {[
+                { icon: DollarSign, label: "Custo Total", value: paisData.custoTotal, color: "text-foreground" },
+                { icon: HandCoins, label: "Eu Paguei", value: paisData.euPaguei, color: "text-destructive" },
+                { icon: RefreshCw, label: "Reembolsado", value: paisData.reembolsado, color: "text-primary" },
+                { icon: Receipt, label: "Meu Subsídio Líquido", value: paisData.subsidioLiquido, color: "text-yellow-400" },
+              ].map((card) => (
+                <div key={card.label} className="glass-card p-4">
+                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center mb-2">
+                    <card.icon size={16} className={card.color} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{item.label}</p>
-                    <div className="flex items-center gap-1.5">
-                      <MethodIcon size={11} className={methodColor[item.method]} />
-                      <p className={`text-[11px] ${methodColor[item.method]}`}>{item.method}</p>
-                      <span className="text-[11px] text-muted-foreground">· {item.date}</span>
-                    </div>
-                  </div>
-                  <p className={`text-sm font-semibold tabular-nums ${item.value < 0 ? "text-primary" : "text-foreground"}`}>
-                    {item.value < 0 ? "+" : "-"}{fmt(Math.abs(item.value))}
-                  </p>
+                  <p className="text-[11px] text-muted-foreground mb-1">{card.label}</p>
+                  <p className={`text-lg font-bold ${card.color} tabular-nums`}>{fmt(card.value)}</p>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              ))}
+            </div>
 
-        {/* Chart */}
-        <div className="glass-card p-4 mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-          <h2 className="text-sm font-semibold text-foreground mb-4">Custo Total vs Meu Subsídio</h2>
-          <div className="h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} barGap={4}>
-                <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                <YAxis hide />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
-                  labelStyle={{ color: "hsl(var(--foreground))" }}
-                  formatter={(value: number) => fmt(value)}
-                />
-                <Bar dataKey="custoTotal" name="Custo Total" fill="hsl(var(--muted-foreground))" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="subsidio" name="Meu Subsídio" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex items-center justify-center gap-4 mt-3">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-sm bg-muted-foreground" />
-              <span className="text-[11px] text-muted-foreground">Custo Total</span>
+            {/* Histórico */}
+            <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+              <h2 className="text-sm font-semibold text-foreground mb-3">Histórico</h2>
+              <div className="space-y-1">
+                {historico.map((item, i) => {
+                  const MethodIcon = methodIcon[item.method] || CreditCard;
+                  return (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors">
+                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                        <item.icon size={18} className="text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{item.label}</p>
+                        <div className="flex items-center gap-1.5">
+                          <MethodIcon size={11} className={methodColor[item.method]} />
+                          <p className={`text-[11px] ${methodColor[item.method]}`}>{item.method}</p>
+                          <span className="text-[11px] text-muted-foreground">· {item.date}</span>
+                        </div>
+                      </div>
+                      <p className={`text-sm font-semibold tabular-nums ${item.value < 0 ? "text-primary" : "text-foreground"}`}>
+                        {item.value < 0 ? "+" : "-"}{fmt(Math.abs(item.value))}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-sm bg-primary" />
-              <span className="text-[11px] text-muted-foreground">Meu Subsídio</span>
+
+            {/* Chart */}
+            <div className="glass-card p-4 mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+              <h2 className="text-sm font-semibold text-foreground mb-4">Custo Total vs Meu Subsídio</h2>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} barGap={4}>
+                    <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                    <YAxis hide />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 12,
+                        fontSize: 12,
+                      }}
+                      labelStyle={{ color: "hsl(var(--foreground))" }}
+                      formatter={(value: number) => fmt(value)}
+                    />
+                    <Bar dataKey="custoTotal" name="Custo Total" fill="hsl(var(--muted-foreground))" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="subsidio" name="Meu Subsídio" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex items-center justify-center gap-4 mt-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-muted-foreground" />
+                  <span className="text-[11px] text-muted-foreground">Custo Total</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-primary" />
+                  <span className="text-[11px] text-muted-foreground">Meu Subsídio</span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       <BottomNav />

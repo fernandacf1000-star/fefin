@@ -166,6 +166,7 @@ export type Database = {
           pago: boolean
           parcela_atual: number | null
           parcela_total: number | null
+          subcategoria: string | null
           subcategoria_pais: string | null
           tipo: string
           user_id: string
@@ -181,6 +182,7 @@ export type Database = {
           pago?: boolean
           parcela_atual?: number | null
           parcela_total?: number | null
+          subcategoria?: string | null
           subcategoria_pais?: string | null
           tipo?: string
           user_id: string
@@ -196,6 +198,7 @@ export type Database = {
           pago?: boolean
           parcela_atual?: number | null
           parcela_total?: number | null
+          subcategoria?: string | null
           subcategoria_pais?: string | null
           tipo?: string
           user_id?: string

@@ -315,111 +315,114 @@ const Graficos = () => {
               </div>
             </section>
 
-            {/* Composição por Categoria */}
-            {composicao.length > 0 && (
-              <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-                <h2 className="text-sm font-semibold text-foreground">Composição por Categoria</h2>
-                <p className="text-[11px] text-muted-foreground mb-4">{months[selectedMonth]?.label}</p>
-                <div className="relative h-52 flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={composicao}
-                        dataKey="value"
-                        innerRadius="60%"
-                        outerRadius="85%"
-                        paddingAngle={3}
-                        stroke="none"
-                        onMouseEnter={handlePieEnter}
-                        onMouseLeave={handlePieLeave}
-                        onClick={handlePieEnter}
-                      >
-                        {composicao.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} opacity={activePieIndex === undefined || activePieIndex === i ? 1 : 0.4} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    {activeEntry ? (
-                      <>
-                        <span className="text-[11px] text-muted-foreground">{getGroupEmoji(activeEntry.name)} {activeEntry.name}</span>
-                        <span className="text-lg font-bold text-foreground tabular-nums">{fmt(activeEntry.value)}</span>
-                        <span className="text-[10px] text-muted-foreground">{Math.round((activeEntry.value / totalMes) * 100)}%</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-[11px] text-muted-foreground">Total</span>
-                        <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalMes)}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-1.5 mt-3">
-                  {composicao.map((c) => (
-                    <div key={c.name} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: c.color }} />
-                        <span className="text-[11px] text-foreground">{getGroupEmoji(c.name)} {c.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-semibold text-foreground tabular-nums">{fmt(c.value)}</span>
-                        <span className="text-[10px] text-muted-foreground tabular-nums">
-                          {totalMes > 0 ? `${Math.round((c.value / totalMes) * 100)}%` : "0%"}
-                        </span>
-                      </div>
+            {/* Composição + Subcategorias — side by side on tablet */}
+            <div className="md:grid md:grid-cols-2 md:gap-4 space-y-6 md:space-y-0">
+              {/* Composição por Categoria */}
+              {composicao.length > 0 && (
+                <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+                  <h2 className="text-sm font-semibold text-foreground">Composição por Categoria</h2>
+                  <p className="text-[11px] text-muted-foreground mb-4">{months[selectedMonth]?.label}</p>
+                  <div className="relative h-52 flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={composicao}
+                          dataKey="value"
+                          innerRadius="60%"
+                          outerRadius="85%"
+                          paddingAngle={3}
+                          stroke="none"
+                          onMouseEnter={handlePieEnter}
+                          onMouseLeave={handlePieLeave}
+                          onClick={handlePieEnter}
+                        >
+                          {composicao.map((entry, i) => (
+                            <Cell key={i} fill={entry.color} opacity={activePieIndex === undefined || activePieIndex === i ? 1 : 0.4} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      {activeEntry ? (
+                        <>
+                          <span className="text-[11px] text-muted-foreground">{getGroupEmoji(activeEntry.name)} {activeEntry.name}</span>
+                          <span className="text-lg font-bold text-foreground tabular-nums">{fmt(activeEntry.value)}</span>
+                          <span className="text-[10px] text-muted-foreground">{Math.round((activeEntry.value / totalMes) * 100)}%</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[11px] text-muted-foreground">Total</span>
+                          <span className="text-lg font-bold text-foreground tabular-nums">{fmt(totalMes)}</span>
+                        </>
+                      )}
                     </div>
+                  </div>
+                  <div className="space-y-1.5 mt-3">
+                    {composicao.map((c) => (
+                      <div key={c.name} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: c.color }} />
+                          <span className="text-[11px] text-foreground">{getGroupEmoji(c.name)} {c.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-semibold text-foreground tabular-nums">{fmt(c.value)}</span>
+                          <span className="text-[10px] text-muted-foreground tabular-nums">
+                            {totalMes > 0 ? `${Math.round((c.value / totalMes) * 100)}%` : "0%"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Gastos por Subcategoria — Barras horizontais */}
+              <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+                <h2 className="text-sm font-semibold text-foreground mb-2">Gastos por Subcategoria</h2>
+
+                <div className="grid grid-cols-4 md:grid-cols-3 gap-1.5 pb-3">
+                  {catFilterOptions.map((opt) => (
+                    <button
+                      key={opt.label}
+                      onClick={() => setSubcatCatFilter(opt.key)}
+                      className={`px-2 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all text-center ${subcatCatFilter === opt.key ? "bg-foreground/10 text-foreground" : "bg-secondary/40 text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {opt.label}
+                    </button>
                   ))}
                 </div>
-              </section>
-            )}
 
-            {/* Gastos por Subcategoria — Barras horizontais */}
-            <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-              <h2 className="text-sm font-semibold text-foreground mb-2">Gastos por Subcategoria</h2>
-
-              <div className="grid grid-cols-4 gap-1.5 pb-3">
-                {catFilterOptions.map((opt) => (
-                  <button
-                    key={opt.label}
-                    onClick={() => setSubcatCatFilter(opt.key)}
-                    className={`px-2 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-all text-center ${subcatCatFilter === opt.key ? "bg-foreground/10 text-foreground" : "bg-secondary/40 text-muted-foreground hover:text-foreground"}`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-
-              {subcatData.length > 0 ? (
-                <div className="space-y-2">
-                  {subcatData.map((item) => {
-                    const pct = subcatMax > 0 ? Math.max(6, (item.value / subcatMax) * 100) : 6;
-                    const pctTotal = subcatTotal > 0 ? Math.round((item.value / subcatTotal) * 100) : 0;
-                    return (
-                      <div key={item.name} className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-foreground truncate flex-1 min-w-0">
-                            {item.emoji} {item.name}
-                          </span>
-                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                            <span className="text-[11px] font-semibold text-foreground tabular-nums">{fmt(item.value)}</span>
-                            <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pctTotal}%</span>
+                {subcatData.length > 0 ? (
+                  <div className="space-y-2">
+                    {subcatData.map((item) => {
+                      const pct = subcatMax > 0 ? Math.max(6, (item.value / subcatMax) * 100) : 6;
+                      const pctTotal = subcatTotal > 0 ? Math.round((item.value / subcatTotal) * 100) : 0;
+                      return (
+                        <div key={item.name} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-foreground truncate flex-1 min-w-0">
+                              {item.emoji} {item.name}
+                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                              <span className="text-[11px] font-semibold text-foreground tabular-nums">{fmt(item.value)}</span>
+                              <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pctTotal}%</span>
+                            </div>
+                          </div>
+                          <div className="relative w-full h-[8px] rounded-full overflow-hidden" style={{ background: "#1e2433" }}>
+                            <div
+                              className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
+                              style={{ width: `${pct}%`, background: item.color }}
+                            />
                           </div>
                         </div>
-                        <div className="relative w-full h-[8px] rounded-full overflow-hidden" style={{ background: "#1e2433" }}>
-                          <div
-                            className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
-                            style={{ width: `${pct}%`, background: item.color }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground text-center py-6">Nenhum lançamento com subcategoria neste mês</p>
-              )}
-            </section>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-6">Nenhum lançamento com subcategoria neste mês</p>
+                )}
+              </section>
+            </div>
           </>
         )}
       </div>

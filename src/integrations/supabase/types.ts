@@ -116,28 +116,145 @@ export type Database = {
         }
         Relationships: []
       }
+      lancamentos: {
+        Row: {
+          categoria: string
+          created_at: string
+          data: string
+          descricao: string
+          id: string
+          mes_referencia: string
+          pago: boolean
+          parcela_atual: number | null
+          parcela_total: number | null
+          subcategoria_pais: string | null
+          tipo: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao: string
+          id?: string
+          mes_referencia?: string
+          pago?: boolean
+          parcela_atual?: number | null
+          parcela_total?: number | null
+          subcategoria_pais?: string | null
+          tipo?: string
+          user_id: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data?: string
+          descricao?: string
+          id?: string
+          mes_referencia?: string
+          pago?: boolean
+          parcela_atual?: number | null
+          parcela_total?: number | null
+          subcategoria_pais?: string | null
+          tipo?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      patrimonio: {
+        Row: {
+          created_at: string
+          data_atualizacao: string
+          id: string
+          rendimento_mensal: number | null
+          saldo: number
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_atualizacao?: string
+          id?: string
+          rendimento_mensal?: number | null
+          saldo?: number
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_atualizacao?: string
+          id?: string
+          rendimento_mensal?: number | null
+          saldo?: number
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      patrimonio_movimentacoes: {
+        Row: {
+          created_at: string
+          data: string
+          id: string
+          motivo: string | null
+          patrimonio_tipo: string
+          tipo_movimentacao: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          id?: string
+          motivo?: string | null
+          patrimonio_tipo: string
+          tipo_movimentacao: string
+          user_id: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          id?: string
+          motivo?: string | null
+          patrimonio_tipo?: string
+          tipo_movimentacao?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
+          email: string | null
           full_name: string | null
           id: string
+          nome: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
+          nome?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
+          nome?: string | null
           updated_at?: string
           user_id?: string
         }

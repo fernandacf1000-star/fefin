@@ -327,7 +327,7 @@ const Dashboard = () => {
               <MascotHead size={28} />
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground">Olá, {nome}</p>
+              <p className="text-sm font-bold text-foreground">{nome ? `Olá, ${nome}` : "Olá!"}</p>
               <p className="text-xs" style={{ color: "#475569" }}>{email}</p>
             </div>
           </div>

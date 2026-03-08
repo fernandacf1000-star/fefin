@@ -142,7 +142,7 @@ const Dashboard = () => {
     return Math.min(100, Math.max(0, Math.round(ratio * 100)));
   }, [totalReceitas, totalDespesas]);
 
-  const nome = profile?.nome || profile?.full_name || user?.email?.split("@")[0] || "Usuário";
+  const nome = profile?.nome || profile?.full_name || "";
   const email = profile?.email || user?.email || "";
 
   const handleLogout = async () => {
@@ -160,7 +160,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-4 animate-fade-up">
           <div>
             <p className="text-muted-foreground text-sm">Olá,</p>
-            <h1 className="text-xl font-semibold text-foreground">{nome} ✨</h1>
+            <h1 className="text-xl font-semibold text-foreground">{nome ? `${nome} ✨` : "✨"}</h1>
           </div>
           <button onClick={() => setProfileOpen(true)} className="w-[44px] h-[44px] rounded-full flex items-center justify-center overflow-hidden" style={{ background: "#1a1a2e", border: "2px solid #10B981" }}>
             <MascotHead size={36} />
@@ -327,12 +327,12 @@ const Dashboard = () => {
               <MascotHead size={28} />
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground">Olá, {nome}</p>
+              <p className="text-sm font-bold text-foreground">{nome ? `Olá, ${nome}` : "Olá!"}</p>
               <p className="text-xs" style={{ color: "#475569" }}>{email}</p>
             </div>
           </div>
           <div className="h-px bg-border/30 mb-2" />
-          <button className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors">
+          <button onClick={() => { setProfileOpen(false); navigate("/conta"); }} className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors">
             <Settings size={18} className="text-foreground" />
             <span className="text-sm font-medium text-foreground">Minha conta</span>
           </button>

@@ -14,6 +14,7 @@ import Pais from "./pages/Pais";
 import Graficos from "./pages/Graficos";
 import Patrimonio from "./pages/Patrimonio";
 import IR from "./pages/IR";
+import Conta from "./pages/Conta";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const AppRoutes = () => {
         <Route path="/graficos" element={<ProtectedRoute><Graficos /></ProtectedRoute>} />
         <Route path="/patrimonio" element={<ProtectedRoute><Patrimonio /></ProtectedRoute>} />
         <Route path="/ir" element={<ProtectedRoute><IR /></ProtectedRoute>} />
+        <Route path="/conta" element={<ProtectedRoute><Conta /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

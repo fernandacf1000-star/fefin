@@ -90,7 +90,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
     setStep(1); setDescricao(""); setValor(""); setCategoriaMacro("");
     setSubcategoria(""); setData(new Date()); setParcelaAtual("");
     setParcelaTotal(""); setTipoLanc("despesa"); setIncomeCat("Salário");
-    setOQueAconteceu("paguei_por_eles");
+    setOQueAconteceu("paguei_por_eles"); setFormaPagamento("pix"); setCartaoId("");
   };
 
   const handleSave = async () => {

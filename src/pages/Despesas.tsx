@@ -34,13 +34,6 @@ const generateMonths = () => {
 };
 const months = generateMonths();
 
-const tipoToCats = (t: TipoFilter): string[] | null => {
-  if (t === "Despesas") return ["extra", "fixa"];
-  if (t === "Parceladas") return ["parcelada"];
-  if (t === "Pais") return ["pais"];
-  return null;
-};
-
 const Despesas = () => {
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("Todas");
   const [catFilters, setCatFilters] = useState<string[]>([]);
@@ -69,8 +62,9 @@ const Despesas = () => {
 
   const applyFiltersToList = useCallback((list: Lancamento[], tipo: TipoFilter, cats: string[], subcats: string[]) => {
     let filtered = list;
-    const catKeys = tipoToCats(tipo);
-    if (catKeys) filtered = filtered.filter(d => catKeys.includes(d.categoria));
+    if (tipo === "Parceladas") filtered = filtered.filter(d => d.is_parcelado);
+    else if (tipo === "Pais") filtered = filtered.filter(d => d.categoria === "pais");
+    else if (tipo === "Despesas") filtered = filtered.filter(d => !d.is_parcelado && d.categoria !== "pais");
     if (cats.length > 0) {
       filtered = filtered.filter(d => d.categoria_macro && cats.includes(d.categoria_macro));
     }
@@ -83,8 +77,8 @@ const Despesas = () => {
   const filteredDespesas = useMemo(() => applyFiltersToList(despesas, tipoFilter, catFilters, subcatFilters), [despesas, tipoFilter, catFilters, subcatFilters, applyFiltersToList]);
   const draftFiltered = useMemo(() => applyFiltersToList(despesas, draftTipo, draftCats, draftSubcats), [despesas, draftTipo, draftCats, draftSubcats, applyFiltersToList]);
 
-  const regulares = useMemo(() => filteredDespesas.filter((d) => d.categoria === "fixa" || d.categoria === "extra"), [filteredDespesas]);
-  const parceladas = useMemo(() => filteredDespesas.filter((d) => d.categoria === "parcelada"), [filteredDespesas]);
+  const regulares = useMemo(() => filteredDespesas.filter((d) => !d.is_parcelado && d.categoria !== "pais"), [filteredDespesas]);
+  const parceladas = useMemo(() => filteredDespesas.filter((d) => d.is_parcelado), [filteredDespesas]);
   const pais = useMemo(() => filteredDespesas.filter((d) => d.categoria === "pais"), [filteredDespesas]);
 
   const paisTotals = useMemo(() => {
@@ -109,13 +103,9 @@ const Despesas = () => {
   }, [tipoFilter, catFilters, subcatFilters]);
 
   const hasData = despesas.length > 0;
-  const showSection = (cats: string[]) => {
+  const showSection = (check: (d: Lancamento) => boolean) => {
     if (tipoFilter === "Todas" && catFilters.length === 0 && subcatFilters.length === 0) return true;
-    if (tipoFilter !== "Todas") {
-      const allowed = tipoToCats(tipoFilter);
-      return allowed ? cats.some(c => allowed.includes(c)) : true;
-    }
-    return true;
+    return filteredDespesas.some(check);
   };
 
   const openFilterSheet = () => {
@@ -243,6 +233,13 @@ const Despesas = () => {
             {subtitle}
             {renderSubcatLabel(item)}
           </div>
+          {item.is_parcelado && item.parcela_atual != null && item.parcela_total != null && (
+            <span className="text-[10px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas
+              {item.parcela_atual === item.parcela_total && (
+                <span className="ml-1 text-[9px] font-semibold text-yellow-500">🏁 Última parcela</span>
+              )}
+            </span>
+          )}
           {renderReembolsoBadge(item)}
         </div>
         {renderValor(item, valuePrefix)}
@@ -320,8 +317,8 @@ const Despesas = () => {
           <EmptyState title="Nenhum gasto por aqui! 🎉" />
         ) : (
           <>
-            {/* Despesas regulares (fixa + extra) */}
-            {showSection(["fixa", "extra"]) && regulares.length > 0 && (
+            {/* Despesas regulares */}
+            {regulares.length > 0 && (
               <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <Home size={14} className="text-primary" />
@@ -342,46 +339,28 @@ const Despesas = () => {
             )}
 
             {/* Parceladas */}
-            {showSection(["parcelada"]) && parceladas.length > 0 && (
+            {parceladas.length > 0 && (
               <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <CreditCard size={14} className="text-primary" />
                   <h2 className="text-sm font-semibold text-foreground">Parceladas</h2>
                 </div>
                 <div className="space-y-1">
-                  {parceladas.map((item) => (
-                    <SwipeableItem key={item.id} onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
-                      <div onClick={() => openActions(item)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer">
-                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                          <Receipt size={18} className="text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
-                            {item.parcela_atual != null && item.parcela_total != null && item.parcela_atual === item.parcela_total && (
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 bg-yellow-500/15 text-yellow-500">🏁 Última parcela!</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-[11px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas</p>
-                          </div>
-                          {item.parcela_atual && item.parcela_total && (
-                            <div className="w-full h-1 rounded-full bg-secondary/60 mt-1.5">
-                              <div className="h-full rounded-full gradient-emerald" style={{ width: `${(item.parcela_atual / item.parcela_total) * 100}%` }} />
-                            </div>
-                          )}
-                          {renderReembolsoBadge(item)}
-                        </div>
-                        {renderValor(item)}
-                      </div>
-                    </SwipeableItem>
-                  ))}
+                  {parceladas.map((item) =>
+                    renderItem(
+                      item,
+                      <Receipt size={18} className="text-muted-foreground" />,
+                      <p className="text-[11px] text-muted-foreground">
+                        {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                      </p>
+                    )
+                  )}
                 </div>
               </div>
             )}
 
             {/* Pais */}
-            {showSection(["pais"]) && pais.length > 0 && (
+            {pais.length > 0 && (
               <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <Users size={14} className="text-primary" />
@@ -538,8 +517,8 @@ const Despesas = () => {
             categoria_macro: selectedLanc.categoria_macro,
             parcela_atual: selectedLanc.parcela_atual,
             parcela_total: selectedLanc.parcela_total,
-            forma_pagamento: (selectedLanc as any).forma_pagamento,
-            cartao_id: (selectedLanc as any).cartao_id,
+            forma_pagamento: selectedLanc.forma_pagamento,
+            cartao_id: selectedLanc.cartao_id,
           }}
         />
       )}

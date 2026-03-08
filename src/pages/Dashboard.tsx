@@ -11,7 +11,7 @@ import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
 import {
   Eye, EyeOff, TrendingUp, TrendingDown,
   ShoppingBag, CreditCard, Users,
-  ChevronLeft, ChevronRight, Settings, LogOut, Receipt, Target,
+  ChevronLeft, ChevronRight, Settings, LogOut, Receipt, Target, ClipboardList,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 
@@ -33,7 +33,7 @@ const months = generateMonths();
 
 const txIcon = (categoria: string) => {
   const map: Record<string, any> = {
-    fixa: ShoppingBag, parcelada: CreditCard, extra: ShoppingBag, pais: Users,
+    fixa: ShoppingBag, extra: ShoppingBag, pais: Users,
     salario: TrendingUp, reembolso_pais: Users, renda_extra: Receipt, outros: Receipt,
   };
   return map[categoria] || Receipt;
@@ -113,11 +113,19 @@ const Dashboard = () => {
     }));
   }, [despesas, allReembolsos]);
 
-  // Meta do mês: simple ratio
+  // Meta do mês
   const metaPct = useMemo(() => {
     if (totalReceitas === 0) return 0;
     return Math.min(100, Math.round((totalDespesas / totalReceitas) * 100));
   }, [totalReceitas, totalDespesas]);
+
+  // Parcelamentos card
+  const parcelamentos = useMemo(() => {
+    const parceladas = despesas.filter(d => d.is_parcelado);
+    const total = parceladas.reduce((s, d) => s + Number(d.valor), 0);
+    const top5 = [...parceladas].sort((a, b) => Number(b.valor) - Number(a.valor)).slice(0, 5);
+    return { total, top5, count: parceladas.length };
+  }, [despesas]);
 
   // Best card logic
   const bestCartaoId = useMemo(() => {
@@ -258,6 +266,40 @@ const Dashboard = () => {
               </div>
             </div>
 
+            {/* Compromissos Parcelados */}
+            {parcelamentos.count > 0 && (
+              <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.22s" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList size={16} className="text-primary" />
+                    <span className="text-sm font-semibold text-foreground">📋 Compromissos parcelados</span>
+                  </div>
+                  <span className="text-xs font-bold text-foreground tabular-nums">{showBalance ? fmt(parcelamentos.total) : "••••"}</span>
+                </div>
+                <div className="space-y-2">
+                  {parcelamentos.top5.map(p => (
+                    <div key={p.id} className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-foreground truncate">{p.descricao}</p>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] text-muted-foreground">{p.parcela_atual}/{p.parcela_total} parcelas</span>
+                          {p.parcela_atual === p.parcela_total && (
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500">🏁 Última</span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs font-semibold text-foreground tabular-nums">{showBalance ? fmt(Number(p.valor)) : "••••"}</p>
+                    </div>
+                  ))}
+                </div>
+                {parcelamentos.count > 5 && (
+                  <button onClick={() => navigate("/despesas")} className="text-[11px] text-primary font-medium mt-2">
+                    Ver todos →
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Meus Cartões */}
             {cartoes.length > 0 && (
               <div className="animate-fade-up mb-6" style={{ animationDelay: "0.25s" }}>
@@ -304,6 +346,9 @@ const Dashboard = () => {
                           <p className="text-sm font-medium text-foreground truncate">{tx.descricao}</p>
                           <p className="text-[11px] text-muted-foreground">
                             {tx.categoria_macro ? `${getGroupEmoji(tx.categoria_macro)} ${tx.categoria_macro}` : tx.categoria} · {new Date(tx.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                            {tx.is_parcelado && tx.parcela_atual && tx.parcela_total && (
+                              <span className="text-muted-foreground"> · {tx.parcela_atual}/{tx.parcela_total}</span>
+                            )}
                           </p>
                         </div>
                         <p className={`text-sm font-semibold tabular-nums ${isReceita ? "text-primary" : "text-foreground"}`}>

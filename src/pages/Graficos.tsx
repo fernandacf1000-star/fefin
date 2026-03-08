@@ -6,7 +6,7 @@ import {
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
-import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
+import { SUBCATEGORIA_GROUPS, getGroupEmoji, CAT_COLORS } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -31,21 +31,11 @@ const tooltipStyle = {
   fontSize: 12,
 };
 
-const CAT_COLORS: Record<string, string> = {
-  "Moradia": "hsl(var(--primary))",
-  "Alimentação": "hsl(45 93% 58%)",
-  "Transporte": "hsl(var(--destructive))",
-  "Saúde": "hsl(200 80% 60%)",
-  "Pessoal": "hsl(280 70% 60%)",
-  "Lazer": "hsl(330 70% 60%)",
-  "Investimentos/Patrimônio": "hsl(160 60% 50%)",
-};
-
 const SUBCAT_COLORS = [
-  "hsl(var(--primary))", "hsl(45 93% 58%)", "hsl(var(--destructive))",
-  "hsl(200 80% 60%)", "hsl(280 70% 60%)", "hsl(330 70% 60%)",
-  "hsl(160 60% 50%)", "hsl(20 80% 55%)", "hsl(60 70% 50%)",
-  "hsl(240 60% 60%)", "hsl(100 50% 50%)", "hsl(350 65% 55%)",
+  "#6366F1", "#F59E0B", "#3B82F6",
+  "#10B981", "#EC4899", "#F97316",
+  "#8B5CF6", "#14B8A6", "#EAB308",
+  "#6D28D9", "#059669", "#DC2626",
 ];
 
 const Graficos = () => {
@@ -68,7 +58,7 @@ const Graficos = () => {
     const despesas = lancamentos.filter((l) => l.tipo === "despesa");
     const map: Record<string, number> = {};
     despesas.forEach(d => {
-      const key = d.categoria_macro || (d.categoria === "parcelada" ? "Parceladas" : d.categoria === "pais" ? "Pais" : "Sem categoria");
+      const key = d.categoria_macro || "Sem categoria";
       map[key] = (map[key] || 0) + Number(d.valor);
     });
     return Object.entries(map)

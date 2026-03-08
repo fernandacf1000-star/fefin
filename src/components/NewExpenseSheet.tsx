@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAddLancamento } from "@/hooks/useLancamentos";
+import { useCartoes } from "@/hooks/useCartoes";
 import { toast } from "sonner";
 import { SUBCATEGORIA_GROUPS, detectSubcategoria, detectCategoriaMacro } from "@/lib/subcategorias";
 

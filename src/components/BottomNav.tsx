@@ -6,7 +6,7 @@ const navItems = [
   { icon: Receipt, label: "Despesas", path: "/despesas" },
   { type: "fab" as const },
   { icon: Users, label: "Pais", path: "/pais" },
-  { icon: BarChart3, label: "Gráficos", path: "/dashboard" },
+  { icon: BarChart3, label: "Gráficos", path: "/graficos" },
   { icon: TrendingUp, label: "Patrimônio", path: "/dashboard" },
 ];
 

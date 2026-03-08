@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Despesas from "./pages/Despesas";
 import Pais from "./pages/Pais";
+import Graficos from "./pages/Graficos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/despesas" element={<Despesas />} />
           <Route path="/pais" element={<Pais />} />
+          <Route path="/graficos" element={<Graficos />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

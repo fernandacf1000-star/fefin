@@ -58,7 +58,7 @@ const Graficos = () => {
     const despesas = lancamentos.filter((l) => l.tipo === "despesa");
     const map: Record<string, number> = {};
     despesas.forEach(d => {
-      const key = d.categoria_macro || "Sem categoria";
+      const key = normalizeMacro(d.categoria_macro);
       map[key] = (map[key] || 0) + Number(d.valor);
     });
     return Object.entries(map)

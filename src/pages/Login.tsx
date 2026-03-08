@@ -52,7 +52,7 @@ const Login = () => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         if (rememberMe) {
-          localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email, password }));
+          localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email }));
         } else {
           localStorage.removeItem(REMEMBER_KEY);
         }

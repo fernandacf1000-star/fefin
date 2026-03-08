@@ -1,22 +1,16 @@
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
-import { useLancamentos } from "@/hooks/useLancamentos";
+import { useLancamentos, useUpdateLancamento, useDeleteLancamento } from "@/hooks/useLancamentos";
+import type { Lancamento } from "@/hooks/useLancamentos";
 import {
-  DollarSign,
-  HandCoins,
-  RefreshCw,
-  Receipt,
-  CreditCard,
-  Banknote,
-  ArrowDownLeft,
-  ShoppingBag,
-  Pill,
-  Stethoscope,
-  Car,
-  ChevronLeft,
-  ChevronRight,
+  DollarSign, HandCoins, RefreshCw, Receipt,
+  ArrowDownLeft, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
+import SwipeableItem from "@/components/SwipeableItem";
+import LancamentoActions from "@/components/LancamentoActions";
+import EditLancamentoModal from "@/components/EditLancamentoModal";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -43,8 +37,15 @@ const subcatLabels: Record<string, string> = {
 
 const Pais = () => {
   const [selectedMonth, setSelectedMonth] = useState(1);
+  const [selectedLanc, setSelectedLanc] = useState<Lancamento | null>(null);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
+  const updateMut = useUpdateLancamento();
+  const deleteMut = useDeleteLancamento();
 
   const paisDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa" && l.categoria === "pais"), [lancamentos]);
   const reembolsos = useMemo(() => lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais"), [lancamentos]);
@@ -60,11 +61,32 @@ const Pais = () => {
   const subsidioLiquido = euPaguei - reembolsado;
 
   const historico = useMemo(() => {
-    const all = [...paisDespesas, ...reembolsos].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-    return all;
+    return [...paisDespesas, ...reembolsos].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
   }, [paisDespesas, reembolsos]);
 
   const hasData = historico.length > 0;
+
+  const openActions = (lanc: Lancamento) => { setSelectedLanc(lanc); setActionsOpen(true); };
+  const openEdit = (lanc: Lancamento) => { setSelectedLanc(lanc); setEditOpen(true); setDeleteConfirm(false); };
+  const openDelete = (lanc: Lancamento) => { setSelectedLanc(lanc); setEditOpen(true); setDeleteConfirm(true); };
+
+  const handleSave = async (data: any) => {
+    if (!selectedLanc) return;
+    try {
+      await updateMut.mutateAsync({ id: selectedLanc.id, ...data });
+      toast.success("Lançamento atualizado ✓");
+      setEditOpen(false);
+    } catch { toast.error("Erro ao atualizar."); }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedLanc) return;
+    try {
+      await deleteMut.mutateAsync(selectedLanc.id);
+      toast.success("Lançamento excluído ✓");
+      setEditOpen(false); setActionsOpen(false);
+    } catch { toast.error("Erro ao excluir."); }
+  };
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px]">
@@ -118,21 +140,23 @@ const Pais = () => {
                   const isReembolso = item.tipo === "receita";
                   const subLabel = item.subcategoria_pais ? subcatLabels[item.subcategoria_pais] || item.subcategoria_pais : (isReembolso ? "Reembolso recebido" : "");
                   return (
-                    <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors">
-                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                        {isReembolso ? <ArrowDownLeft size={18} className="text-primary" /> : <Receipt size={18} className="text-muted-foreground" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
-                        <div className="flex items-center gap-1.5">
-                          <p className={`text-[11px] ${isReembolso ? "text-primary" : "text-muted-foreground"}`}>{subLabel}</p>
-                          <span className="text-[11px] text-muted-foreground">· {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</span>
+                    <SwipeableItem key={item.id} onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
+                      <div onClick={() => openActions(item)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer">
+                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                          {isReembolso ? <ArrowDownLeft size={18} className="text-primary" /> : <Receipt size={18} className="text-muted-foreground" />}
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className={`text-[11px] ${isReembolso ? "text-primary" : "text-muted-foreground"}`}>{subLabel}</p>
+                            <span className="text-[11px] text-muted-foreground">· {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</span>
+                          </div>
+                        </div>
+                        <p className={`text-sm font-semibold tabular-nums ${isReembolso ? "text-primary" : "text-foreground"}`}>
+                          {isReembolso ? "+" : "-"}{fmt(Number(item.valor))}
+                        </p>
                       </div>
-                      <p className={`text-sm font-semibold tabular-nums ${isReembolso ? "text-primary" : "text-foreground"}`}>
-                        {isReembolso ? "+" : "-"}{fmt(Number(item.valor))}
-                      </p>
-                    </div>
+                    </SwipeableItem>
                   );
                 })}
               </div>
@@ -140,6 +164,35 @@ const Pais = () => {
           </>
         )}
       </div>
+
+      <LancamentoActions
+        open={actionsOpen}
+        onClose={() => setActionsOpen(false)}
+        onEdit={() => { if (selectedLanc) openEdit(selectedLanc); }}
+        onDelete={() => { if (selectedLanc) openDelete(selectedLanc); setActionsOpen(false); }}
+        descricao={selectedLanc?.descricao}
+      />
+
+      {selectedLanc && (
+        <EditLancamentoModal
+          open={editOpen}
+          onClose={() => { setEditOpen(false); setDeleteConfirm(false); }}
+          showDeleteConfirm={deleteConfirm}
+          onConfirmDelete={handleDelete}
+          onSave={handleSave}
+          isPending={updateMut.isPending || deleteMut.isPending}
+          initial={{
+            descricao: selectedLanc.descricao,
+            valor: Number(selectedLanc.valor),
+            categoria: selectedLanc.categoria,
+            data: selectedLanc.data,
+            subcategoria_pais: selectedLanc.subcategoria_pais,
+            parcela_atual: selectedLanc.parcela_atual,
+            parcela_total: selectedLanc.parcela_total,
+          }}
+        />
+      )}
+
       <BottomNav />
     </div>
   );

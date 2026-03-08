@@ -74,7 +74,7 @@ const Pais = () => {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3 mb-6 animate-fade-up" style={{ animationDelay: "0.05s" }}>
           {[
-            { icon: DollarSign, label: "Custo Total Deles", value: paisData.custoTotal, color: "text-foreground" },
+            { icon: DollarSign, label: "Custo Total", value: paisData.custoTotal, color: "text-foreground" },
             { icon: HandCoins, label: "Eu Paguei", value: paisData.euPaguei, color: "text-destructive" },
             { icon: RefreshCw, label: "Reembolsado", value: paisData.reembolsado, color: "text-primary" },
             { icon: Receipt, label: "Meu Subsídio Líquido", value: paisData.subsidioLiquido, color: "text-yellow-400" },

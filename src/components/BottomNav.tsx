@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Receipt, BarChart3, TrendingUp, Plus, Users } from "lucide-react";
+import { Home, Receipt, BarChart3, TrendingUp, Plus, Users, Percent } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NewExpenseSheet from "./NewExpenseSheet";
 
@@ -8,6 +8,7 @@ const navItems = [
   { icon: Receipt, label: "Despesas", path: "/despesas" },
   { type: "fab" as const },
   { icon: Users, label: "Pais", path: "/pais" },
+  { icon: Percent, label: "IR", path: "/ir" },
   { icon: BarChart3, label: "Gráficos", path: "/graficos" },
   { icon: TrendingUp, label: "Patrimônio", path: "/patrimonio" },
 ];

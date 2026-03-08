@@ -77,7 +77,7 @@ const Graficos = () => {
   const subcatData = useMemo(() => {
     let despesas = lancamentos.filter((l) => l.tipo === "despesa" && l.subcategoria);
     if (subcatCatFilter) {
-      despesas = despesas.filter((l) => l.categoria_macro === subcatCatFilter);
+      despesas = despesas.filter((l) => normalizeMacro(l.categoria_macro) === subcatCatFilter);
     }
     const map: Record<string, number> = {};
     despesas.forEach((d) => {

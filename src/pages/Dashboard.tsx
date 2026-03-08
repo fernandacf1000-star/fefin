@@ -197,7 +197,7 @@ const Dashboard = () => {
   const hasData = lancamentos.length > 0;
 
   return (
-    <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px]">
+    <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
       <div className="px-4 pt-12 w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 animate-fade-up">
@@ -259,7 +259,7 @@ const Dashboard = () => {
         {!hasData && !isLoading ? (
           <EmptyState title="Adicione seu primeiro lançamento! 🚀" />
         ) : (
-          <>
+          <div className="md:grid md:grid-cols-2 md:gap-4 lg:block">
             {/* Meta do mês */}
             <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <div className="flex items-center justify-between mb-3">
@@ -419,7 +419,7 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 

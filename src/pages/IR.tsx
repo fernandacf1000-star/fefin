@@ -56,7 +56,7 @@ const IR = () => {
   }, [lancs2025]);
 
   return (
-    <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px]">
+    <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
       <div className="px-4 pt-12 space-y-5 w-full">
         <h1 className="text-xl font-semibold text-foreground animate-fade-up">Imposto de Renda</h1>
 

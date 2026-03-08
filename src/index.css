@@ -91,3 +91,11 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
+
+/* Tablet sidebar offset: pages shift right when sidebar is visible */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .gradient-bg,
+  .min-h-screen {
+    padding-left: 220px;
+  }
+}

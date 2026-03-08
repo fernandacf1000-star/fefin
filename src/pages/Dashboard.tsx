@@ -16,8 +16,16 @@ import {
   CreditCard,
   Gift,
   Users,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
+
+const months = [
+  { label: "Fevereiro 2026", key: "2026-02" },
+  { label: "Março 2026", key: "2026-03" },
+  { label: "Abril 2026", key: "2026-04" },
+];
 
 const transactions = [
   { icon: ShoppingBag, label: "Zara", category: "Compras", value: -289.9, date: "Hoje" },
@@ -46,12 +54,13 @@ const HEALTH_SCORE = 74;
 
 const Dashboard = () => {
   const [showBalance, setShowBalance] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState(1);
 
   return (
     <div className="min-h-screen gradient-bg pb-24">
       <div className="max-w-md mx-auto px-4 pt-12">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8 animate-fade-up">
+        <div className="flex items-center justify-between mb-4 animate-fade-up">
           <div>
             <p className="text-muted-foreground text-sm">Olá,</p>
             <h1 className="text-xl font-semibold text-foreground">Fernanda ✨</h1>
@@ -59,6 +68,39 @@ const Dashboard = () => {
           <div className="w-10 h-10 rounded-full gradient-emerald flex items-center justify-center text-primary-foreground font-semibold text-sm">
             FE
           </div>
+        </div>
+
+        {/* Month Selector */}
+        <div className="flex items-center justify-center gap-3 mb-6 animate-fade-up" style={{ animationDelay: "0.03s" }}>
+          <button
+            onClick={() => setSelectedMonth((p) => Math.max(0, p - 1))}
+            disabled={selectedMonth === 0}
+            className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <div className="flex items-center gap-2">
+            {months.map((m, i) => (
+              <button
+                key={m.key}
+                onClick={() => setSelectedMonth(i)}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${
+                  i === selectedMonth
+                    ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setSelectedMonth((p) => Math.min(months.length - 1, p + 1))}
+            disabled={selectedMonth === months.length - 1}
+            className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
 
         {/* Balance Card */}

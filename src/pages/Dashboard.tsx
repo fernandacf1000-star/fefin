@@ -112,7 +112,7 @@ const Dashboard = () => {
       label: g.group,
       emoji: g.emoji,
       value: despesas
-        .filter((d) => normalizeMacro(d.categoria_macro) === g.group)
+        .filter((d) => normalizeMacro(d.categoria_macro, d.subcategoria) === g.group)
         .reduce((s, d) => {
           const reemb = getTotalReembolsado(allReembolsos, d.id);
           return s + Math.max(0, Number(d.valor) - reemb);

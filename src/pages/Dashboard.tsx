@@ -120,11 +120,30 @@ const Dashboard = () => {
     }));
   }, [despesas, allReembolsos]);
 
-  // Meta do mês
+  // Meta do mês - use profile meta or fallback to receitas
+  const metaMensal = profile?.meta_mensal ? Number(profile.meta_mensal) : null;
   const metaPct = useMemo(() => {
-    if (totalReceitas === 0) return 0;
-    return Math.min(100, Math.round((totalDespesas / totalReceitas) * 100));
-  }, [totalReceitas, totalDespesas]);
+    const base = metaMensal || totalReceitas;
+    if (base === 0) return 0;
+    // Exclude Investimentos from gastos for meta calculation
+    const gastosParaMeta = despesas
+      .filter(d => d.categoria_macro !== 'Investimentos')
+      .reduce((s, d) => {
+        const reemb = getTotalReembolsado(allReembolsos, d.id);
+        return s + Math.max(0, Number(d.valor) - reemb);
+      }, 0);
+    return Math.min(100, Math.round((gastosParaMeta / base) * 100));
+  }, [metaMensal, totalReceitas, despesas, allReembolsos]);
+
+  // Total despesas sem investimentos (para exibição na meta)
+  const totalDespesasSemInvest = useMemo(() => {
+    return despesas
+      .filter(d => d.categoria_macro !== 'Investimentos')
+      .reduce((s, d) => {
+        const reemb = getTotalReembolsado(allReembolsos, d.id);
+        return s + Math.max(0, Number(d.valor) - reemb);
+      }, 0);
+  }, [despesas, allReembolsos]);
 
   // Parcelamentos card
   const parcelamentos = useMemo(() => {

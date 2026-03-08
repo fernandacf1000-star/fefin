@@ -160,7 +160,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-4 animate-fade-up">
           <div>
             <p className="text-muted-foreground text-sm">Olá,</p>
-            <h1 className="text-xl font-semibold text-foreground">{nome} ✨</h1>
+            <h1 className="text-xl font-semibold text-foreground">{nome ? `${nome} ✨` : "✨"}</h1>
           </div>
           <button onClick={() => setProfileOpen(true)} className="w-[44px] h-[44px] rounded-full flex items-center justify-center overflow-hidden" style={{ background: "#1a1a2e", border: "2px solid #10B981" }}>
             <MascotHead size={36} />

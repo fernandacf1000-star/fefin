@@ -34,7 +34,7 @@ const TabletSidebar = ({
   const nome = profile?.nome || profile?.full_name || "";
 
   return (
-    <aside className="hidden md:flex lg:hidden flex-col w-[220px] shrink-0 border-r border-border/30 bg-card/50 backdrop-blur-xl h-screen sticky top-0">
+    <aside className="hidden md:flex lg:hidden flex-col w-[220px] shrink-0 border-r border-border/30 bg-card/50 backdrop-blur-xl h-screen fixed top-0 left-0 z-40">
       {/* User header */}
       <div className="px-4 pt-6 pb-4 border-b border-border/20">
         <p className="text-sm font-semibold text-foreground truncate">{nome || "FeFin"}</p>

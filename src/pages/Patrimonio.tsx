@@ -42,8 +42,8 @@ const motivoStyle: Record<string, { bg: string; text: string }> = {
 };
 
 const Patrimonio = () => (
-  <div className="min-h-screen gradient-bg pb-24">
-    <div className="max-w-md mx-auto px-4 pt-12 space-y-5">
+  <div className="min-h-screen gradient-bg pb-28 overflow-x-hidden">
+    <div className="max-w-md mx-auto px-4 pt-12 space-y-5 w-full">
       <h1 className="text-xl font-semibold text-foreground animate-fade-up">Patrimônio</h1>
 
       {/* 1 — Hero: Total Investido */}

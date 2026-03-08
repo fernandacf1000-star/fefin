@@ -64,8 +64,8 @@ const Graficos = () => {
   const hasData = selectedMonth === 1;
 
   return (
-    <div className="min-h-screen gradient-bg pb-24">
-      <div className="max-w-md mx-auto px-4 pt-12 space-y-6">
+    <div className="min-h-screen gradient-bg pb-28 overflow-x-hidden">
+      <div className="max-w-md mx-auto px-4 pt-12 space-y-6 w-full">
         <h1 className="text-xl font-semibold text-foreground animate-fade-up">Gráficos</h1>
 
         {/* Month Selector */}

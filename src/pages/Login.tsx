@@ -11,14 +11,12 @@ const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
 
   const saved = (() => {
     try {
       const raw = localStorage.getItem(REMEMBER_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      // Migration: strip any previously stored passwords
       if (parsed?.password) {
         const clean = { email: parsed.email };
         localStorage.setItem(REMEMBER_KEY, JSON.stringify(clean));
@@ -40,24 +38,14 @@ const Login = () => {
     }
     setLoading(true);
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("Conta criada! Verifique seu e-mail para confirmar.");
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (rememberMe) {
+        localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email }));
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        if (rememberMe) {
-          localStorage.setItem(REMEMBER_KEY, JSON.stringify({ email }));
-        } else {
-          localStorage.removeItem(REMEMBER_KEY);
-        }
-        navigate("/dashboard");
+        localStorage.removeItem(REMEMBER_KEY);
       }
+      navigate("/dashboard");
     } catch (error: any) {
       toast.error(error.message || "Erro ao autenticar");
     } finally {
@@ -69,11 +57,7 @@ const Login = () => {
     <div className="min-h-screen flex flex-col relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0">
-        <img
-          src={loginBg}
-          alt="FeFin background"
-          className="w-full h-full object-cover opacity-30"
-        />
+        <img src={loginBg} alt="FeFin background" className="w-full h-full object-cover opacity-30" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
       </div>
 
@@ -108,37 +92,30 @@ const Login = () => {
             </svg>
           </div>
           <h1 className="text-[38px] font-bold mt-3" style={{ fontFamily: "'Playfair Display', serif" }}>
-            <span className="text-white">Fe</span>
-            <span style={{ color: "#10B981" }}>Fin</span>
+            <span className="text-foreground">Fe</span>
+            <span className="text-primary">Fin</span>
           </h1>
-          <p className="mt-1.5 uppercase" style={{ color: "#475569", fontSize: 11, letterSpacing: 2 }}>
+          <p className="mt-1.5 uppercase text-muted-foreground" style={{ fontSize: 11, letterSpacing: 2 }}>
             Minhas finanças, minhas regras
           </p>
         </div>
 
         {/* Form */}
-        <form
-          onSubmit={handleLogin}
-          className="space-y-5 animate-fade-up"
-          style={{ animationDelay: "0.2s" }}
-        >
+        <form onSubmit={handleLogin} className="space-y-5 animate-fade-up" style={{ animationDelay: "0.2s" }}>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              E-mail
-            </label>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">E-mail</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="seu@email.com"
               className="w-full px-4 py-3.5 rounded-xl bg-secondary border border-border/50 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+              maxLength={255}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Senha
-            </label>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Senha</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -157,7 +134,6 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Lembrar de mim */}
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -165,7 +141,7 @@ const Login = () => {
               onChange={(e) => setRememberMe(e.target.checked)}
               className="w-4 h-4 rounded border-border bg-secondary accent-primary"
             />
-            <span className="text-xs" style={{ color: "#475569" }}>Lembrar de mim</span>
+            <span className="text-xs text-muted-foreground">Lembrar de mim</span>
           </label>
 
           <button
@@ -173,46 +149,29 @@ const Login = () => {
             disabled={loading}
             className="w-full py-3.5 rounded-xl gradient-emerald text-primary-foreground font-semibold text-sm tracking-wide transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
           >
-            {loading ? "Carregando..." : isSignUp ? "Criar Conta" : "Entrar"}
+            {loading ? "Carregando..." : "Entrar"}
           </button>
 
           <p className="text-center text-muted-foreground text-xs">
-            {isSignUp ? "Já tem conta?" : "Não tem conta?"}{" "}
-            <span
-              className="text-primary cursor-pointer hover:underline"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp ? "Entrar" : "Criar conta"}
+            Não tem conta?{" "}
+            <span className="text-primary cursor-pointer hover:underline" onClick={() => navigate("/cadastro")}>
+              Criar conta
             </span>
           </p>
         </form>
 
         {/* Footer */}
-        <p
-          className="text-center text-muted-foreground/50 text-xs animate-fade-up"
-          style={{ animationDelay: "0.4s" }}
-        >
+        <p className="text-center text-muted-foreground/50 text-xs animate-fade-up" style={{ animationDelay: "0.4s" }}>
           Ao entrar, você concorda com nossos{" "}
           <span className="text-primary/70">Termos de Uso</span>
         </p>
       </div>
 
       <style>{`
-        .mascot-login {
-          animation: floatLogin 3s ease-in-out infinite;
-        }
-        @keyframes floatLogin {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-7px); }
-        }
-        #eye-right-login {
-          animation: winkLogin 4.5s ease-in-out infinite;
-          transform-origin: 62.5px 47.5px;
-        }
-        @keyframes winkLogin {
-          0%, 88%, 100% { transform: scaleY(1); }
-          93% { transform: scaleY(0.08); }
-        }
+        .mascot-login { animation: floatLogin 3s ease-in-out infinite; }
+        @keyframes floatLogin { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-7px); } }
+        #eye-right-login { animation: winkLogin 4.5s ease-in-out infinite; transform-origin: 62.5px 47.5px; }
+        @keyframes winkLogin { 0%, 88%, 100% { transform: scaleY(1); } 93% { transform: scaleY(0.08); } }
       `}</style>
     </div>
   );

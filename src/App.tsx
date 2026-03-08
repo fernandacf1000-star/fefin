@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import Despesas from "./pages/Despesas";
 import Pais from "./pages/Pais";
@@ -34,6 +35,7 @@ const AppRoutes = () => {
       {showSplash && <Splash onFinish={handleSplashFinish} />}
       <Routes>
         <Route path="/" element={!loading && session ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/cadastro" element={!loading && session ? <Navigate to="/dashboard" replace /> : <SignUp />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/despesas" element={<ProtectedRoute><Despesas /></ProtectedRoute>} />
         <Route path="/pais" element={<ProtectedRoute><Pais /></ProtectedRoute>} />

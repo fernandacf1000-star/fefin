@@ -20,8 +20,9 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  Settings,
+  LogOut,
 } from "lucide-react";
-import { useState } from "react";
 
 const months = [
   { label: "Fevereiro 2026", key: "2026-02" },

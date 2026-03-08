@@ -53,14 +53,14 @@ const BottomNav = () => {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-xl border-t border-border/30 safe-bottom">
-        <div className="max-w-md mx-auto flex items-center justify-around px-2 py-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-xl border-t border-border/30" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <div className="max-w-md mx-auto flex items-center justify-around px-1 py-1.5">
           {leftItems.map(renderItem)}
           <button
             onClick={() => setSelectorOpen(true)}
-            className="w-14 h-14 -mt-7 rounded-full gradient-emerald flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+            className="w-12 h-12 -mt-6 rounded-full gradient-emerald flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-transform shrink-0"
           >
-            <Plus size={28} className="text-primary-foreground" />
+            <Plus size={24} className="text-primary-foreground" />
           </button>
           {rightItems.map(renderItem)}
         </div>

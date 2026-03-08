@@ -2,10 +2,9 @@ import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import {
-  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
 } from "recharts";
-import { CalendarClock, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
 
 const fmt = (v: number) =>
@@ -31,8 +30,24 @@ const tooltipStyle = {
   fontSize: 12,
 };
 
+const SUBCAT_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(45 93% 58%)",
+  "hsl(var(--destructive))",
+  "hsl(200 80% 60%)",
+  "hsl(280 70% 60%)",
+  "hsl(330 70% 60%)",
+  "hsl(160 60% 50%)",
+  "hsl(20 80% 55%)",
+  "hsl(60 70% 50%)",
+  "hsl(240 60% 60%)",
+  "hsl(100 50% 50%)",
+  "hsl(350 65% 55%)",
+];
+
 const Graficos = () => {
   const [selectedMonth, setSelectedMonth] = useState(1);
+  const [subcatCatFilter, setSubcatCatFilter] = useState<string | null>(null);
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
 
@@ -64,9 +79,31 @@ const Graficos = () => {
 
   const totalMes = composicao.reduce((s, c) => s + c.value, 0);
 
-  const receitasDespesasChart = useMemo(() => [
-    { mes: months[selectedMonth]?.label?.split(" ")[0] || "", receitas: totalReceitas, despesas: totalDespesas },
-  ], [totalReceitas, totalDespesas, selectedMonth]);
+  // Subcategoria chart data
+  const subcatData = useMemo(() => {
+    let despesas = lancamentos.filter((l) => l.tipo === "despesa" && l.subcategoria);
+    if (subcatCatFilter) {
+      despesas = despesas.filter((l) => l.categoria === subcatCatFilter);
+    }
+    const map: Record<string, number> = {};
+    despesas.forEach((d) => {
+      const key = d.subcategoria!;
+      map[key] = (map[key] || 0) + Number(d.valor);
+    });
+    return Object.entries(map)
+      .map(([name, value], i) => ({ name, value, color: SUBCAT_COLORS[i % SUBCAT_COLORS.length] }))
+      .sort((a, b) => b.value - a.value);
+  }, [lancamentos, subcatCatFilter]);
+
+  const subcatTotal = subcatData.reduce((s, c) => s + c.value, 0);
+
+  const catFilterOptions = [
+    { key: null, label: "Todas" },
+    { key: "fixa", label: "Fixas" },
+    { key: "parcelada", label: "Parceladas" },
+    { key: "extra", label: "Extras" },
+    { key: "pais", label: "Pais" },
+  ];
 
   const hasData = lancamentos.length > 0;
 
@@ -144,6 +181,65 @@ const Graficos = () => {
                 </div>
               </section>
             )}
+
+            {/* Gastos por Subcategoria */}
+            <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.15s" }}>
+              <h2 className="text-sm font-semibold text-foreground mb-2">Gastos por Subcategoria</h2>
+
+              {/* Category filter */}
+              <div className="flex gap-1.5 overflow-x-auto pb-3 scrollbar-none">
+                {catFilterOptions.map((opt) => (
+                  <button
+                    key={opt.label}
+                    onClick={() => setSubcatCatFilter(opt.key)}
+                    className={`px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${subcatCatFilter === opt.key ? "bg-foreground/10 text-foreground" : "bg-secondary/40 text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {subcatData.length > 0 ? (
+                <>
+                  <div className="relative h-52 flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={subcatData} dataKey="value" innerRadius="60%" outerRadius="85%" paddingAngle={2} stroke="none">
+                          {subcatData.map((entry, i) => (
+                            <Cell key={i} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-[11px] text-muted-foreground">Total</span>
+                      <span className="text-lg font-bold text-foreground tabular-nums">{fmt(subcatTotal)}</span>
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="space-y-1.5 mt-3">
+                    {subcatData.map((item) => (
+                      <div key={item.name} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: item.color }} />
+                          <span className="text-[11px] text-foreground">{item.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-semibold text-foreground tabular-nums">{fmt(item.value)}</span>
+                          <span className="text-[10px] text-muted-foreground tabular-nums">
+                            {subcatTotal > 0 ? `${Math.round((item.value / subcatTotal) * 100)}%` : "0%"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-6">Nenhum lançamento com subcategoria neste mês</p>
+              )}
+            </section>
           </>
         )}
       </div>

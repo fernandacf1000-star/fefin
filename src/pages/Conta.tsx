@@ -1,13 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, EyeOff, Check, RotateCcw } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Check, RotateCcw, CreditCard, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useAllReembolsos } from "@/hooks/useReembolsos";
-import type { Reembolso } from "@/hooks/useReembolsos";
+import { useCartoes, useAddCartao, useUpdateCartao, useDeleteCartao } from "@/hooks/useCartoes";
+import type { Cartao } from "@/hooks/useCartoes";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import CartaoModal from "@/components/CartaoModal";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -17,6 +19,10 @@ const Conta = () => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const { data: allReembolsos = [] } = useAllReembolsos();
+  const { data: cartoes = [] } = useCartoes();
+  const addCartao = useAddCartao();
+  const updateCartao = useUpdateCartao();
+  const deleteCartao = useDeleteCartao();
   const queryClient = useQueryClient();
 
   const [nome, setNome] = useState("");
@@ -31,6 +37,9 @@ const Conta = () => {
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
 
+  const [cartaoModalOpen, setCartaoModalOpen] = useState(false);
+  const [editingCartao, setEditingCartao] = useState<Cartao | null>(null);
+
   useEffect(() => {
     if (profile) {
       setNome(profile.nome || profile.full_name || "");
@@ -40,7 +49,6 @@ const Conta = () => {
     }
   }, [profile, user]);
 
-  // Reembolsos stats
   const currentYear = new Date().getFullYear();
   const currentMonth = `${currentYear}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
 
@@ -96,6 +104,31 @@ const Conta = () => {
       toast.error("Não foi possível salvar as alterações. Tente novamente.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveCartao = async (data: { nome: string; bandeira: string; dia_fechamento: number; melhor_dia_compra: number; cor: string }) => {
+    try {
+      if (editingCartao) {
+        await updateCartao.mutateAsync({ id: editingCartao.id, ...data });
+        toast.success("Cartão atualizado ✓");
+      } else {
+        await addCartao.mutateAsync(data);
+        toast.success("Cartão adicionado ✓");
+      }
+      setCartaoModalOpen(false);
+      setEditingCartao(null);
+    } catch {
+      toast.error("Erro ao salvar cartão.");
+    }
+  };
+
+  const handleDeleteCartao = async (id: string) => {
+    try {
+      await deleteCartao.mutateAsync(id);
+      toast.success("Cartão removido ✓");
+    } catch {
+      toast.error("Erro ao remover cartão.");
     }
   };
 
@@ -175,10 +208,57 @@ const Conta = () => {
             </div>
           )}
 
+          {/* Meus Cartões */}
+          <div className="pt-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <CreditCard size={16} className="text-primary" />
+                <p className="text-sm font-semibold text-foreground">💳 Meus cartões</p>
+              </div>
+              <button
+                onClick={() => { setEditingCartao(null); setCartaoModalOpen(true); }}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-primary-foreground"
+              >
+                <Plus size={12} /> Adicionar
+              </button>
+            </div>
+
+            {cartoes.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">Nenhum cartão cadastrado</p>
+            ) : (
+              <div className="space-y-2">
+                {cartoes.map((c) => (
+                  <div key={c.id} className="glass-card p-4 flex items-center justify-between" style={{ borderLeft: `3px solid ${c.cor}` }}>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{c.nome}</p>
+                      <p className="text-[11px] text-muted-foreground capitalize">
+                        {c.bandeira} · Fecha dia {c.dia_fechamento} · Melhor dia: {c.melhor_dia_compra}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => { setEditingCartao(c); setCartaoModalOpen(true); }}
+                        className="text-xs text-primary font-medium"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCartao(c.id)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Reembolsos recebidos */}
           <div className="pt-4">
             <div className="flex items-center gap-2 mb-4">
-              <RotateCcw size={16} style={{ color: "#10B981" }} />
+              <RotateCcw size={16} className="text-primary" />
               <p className="text-sm font-semibold text-foreground">Reembolsos recebidos</p>
             </div>
 
@@ -211,6 +291,20 @@ const Conta = () => {
           </div>
         </div>
       </div>
+
+      <CartaoModal
+        open={cartaoModalOpen}
+        onClose={() => { setCartaoModalOpen(false); setEditingCartao(null); }}
+        onSave={handleSaveCartao}
+        isPending={addCartao.isPending || updateCartao.isPending}
+        initial={editingCartao ? {
+          nome: editingCartao.nome,
+          bandeira: editingCartao.bandeira,
+          dia_fechamento: editingCartao.dia_fechamento,
+          melhor_dia_compra: editingCartao.melhor_dia_compra,
+          cor: editingCartao.cor,
+        } : undefined}
+      />
     </div>
   );
 };

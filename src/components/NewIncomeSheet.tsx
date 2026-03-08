@@ -60,6 +60,8 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
         parcela_atual: null,
         parcela_total: null,
         pago: false,
+        forma_pagamento: null,
+        cartao_id: null,
       });
       toast.success("Receita salva!");
       onClose();

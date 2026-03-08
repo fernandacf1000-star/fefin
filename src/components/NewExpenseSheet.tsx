@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAddLancamento } from "@/hooks/useLancamentos";
+import { useCartoes } from "@/hooks/useCartoes";
 import { toast } from "sonner";
 import { SUBCATEGORIA_GROUPS, detectSubcategoria, detectCategoriaMacro } from "@/lib/subcategorias";
 
@@ -52,8 +53,11 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
   const [parcelaAtual, setParcelaAtual] = useState("");
   const [parcelaTotal, setParcelaTotal] = useState("");
   const [incomeCat, setIncomeCat] = useState<string>("Salário");
+  const [formaPagamento, setFormaPagamento] = useState<string>("pix");
+  const [cartaoId, setCartaoId] = useState<string>("");
 
   const addLancamento = useAddLancamento();
+  const { data: cartoes = [] } = useCartoes();
 
   const isParcelada = tipoLanc === "parcelada";
   const isPais = tipoLanc === "pais";
@@ -86,7 +90,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
     setStep(1); setDescricao(""); setValor(""); setCategoriaMacro("");
     setSubcategoria(""); setData(new Date()); setParcelaAtual("");
     setParcelaTotal(""); setTipoLanc("despesa"); setIncomeCat("Salário");
-    setOQueAconteceu("paguei_por_eles");
+    setOQueAconteceu("paguei_por_eles"); setFormaPagamento("pix"); setCartaoId("");
   };
 
   const handleSave = async () => {
@@ -127,6 +131,8 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
         parcela_atual: isParcelada && parcelaAtual ? parseInt(parcelaAtual) : null,
         parcela_total: isParcelada && parcelaTotal ? parseInt(parcelaTotal) : null,
         pago: false,
+        forma_pagamento: isReceita ? null : formaPagamento,
+        cartao_id: formaPagamento === "cartao" && cartaoId ? cartaoId : null,
       });
       toast.success(isReceita ? "Receita salva!" : "Despesa salva!");
       resetAndClose();
@@ -329,6 +335,47 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
             </PopoverContent>
           </Popover>
         </div>
+
+        {/* Forma de pagamento - only for expenses */}
+        {!isReceita && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Pago com</label>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => { setFormaPagamento("pix"); setCartaoId(""); }}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                  formaPagamento === "pix" ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary/60 text-muted-foreground"
+                )}
+              >
+                PIX
+              </button>
+              <button
+                onClick={() => { setFormaPagamento("dinheiro"); setCartaoId(""); }}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                  formaPagamento === "dinheiro" ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary/60 text-muted-foreground"
+                )}
+              >
+                Dinheiro
+              </button>
+              {cartoes.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => { setFormaPagamento("cartao"); setCartaoId(c.id); }}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                    formaPagamento === "cartao" && cartaoId === c.id
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-secondary/60 text-muted-foreground"
+                  )}
+                >
+                  💳 {c.nome}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Summary chips */}
         {needsCategory && subcategoria && (

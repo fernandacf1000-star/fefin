@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { SUBCATEGORIA_GROUPS } from "@/lib/subcategorias";
+import { useCartoes } from "@/hooks/useCartoes";
 
 interface Props {
   open: boolean;
@@ -24,6 +25,8 @@ interface Props {
     categoria_macro?: string;
     parcela_atual?: number;
     parcela_total?: number;
+    forma_pagamento?: string;
+    cartao_id?: string;
   }) => void;
   initial: {
     descricao: string;
@@ -35,6 +38,8 @@ interface Props {
     categoria_macro?: string | null;
     parcela_atual?: number | null;
     parcela_total?: number | null;
+    forma_pagamento?: string | null;
+    cartao_id?: string | null;
   };
   isPending?: boolean;
 }
@@ -54,6 +59,7 @@ const subcatPais = [
 
 const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDeleteConfirm, initial, isPending }: Props) => {
   const [form, setForm] = useState({ ...initial });
+  const { data: cartoes = [] } = useCartoes();
 
   if (!open) return null;
 
@@ -184,6 +190,34 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
           </div>
         )}
 
+        {/* Forma de pagamento */}
+        <div className="space-y-1.5">
+          <Label className="text-[11px] text-muted-foreground">Pago com</Label>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setForm(f => ({ ...f, forma_pagamento: "pix", cartao_id: null }))}
+              className={cn("px-2.5 py-1 rounded-full text-[11px] font-medium transition-all",
+                form.forma_pagamento === "pix" ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground"
+              )}
+            >PIX</button>
+            <button
+              onClick={() => setForm(f => ({ ...f, forma_pagamento: "dinheiro", cartao_id: null }))}
+              className={cn("px-2.5 py-1 rounded-full text-[11px] font-medium transition-all",
+                form.forma_pagamento === "dinheiro" ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground"
+              )}
+            >Dinheiro</button>
+            {cartoes.map(c => (
+              <button
+                key={c.id}
+                onClick={() => setForm(f => ({ ...f, forma_pagamento: "cartao", cartao_id: c.id }))}
+                className={cn("px-2.5 py-1 rounded-full text-[11px] font-medium transition-all",
+                  form.forma_pagamento === "cartao" && form.cartao_id === c.id ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground"
+                )}
+              >💳 {c.nome}</button>
+            ))}
+          </div>
+        </div>
+
         <div className="flex gap-3 pt-2">
           <Button variant="outline" onClick={onClose} className="flex-1">Cancelar</Button>
           <Button
@@ -197,6 +231,8 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
               categoria_macro: form.categoria_macro || undefined,
               parcela_atual: form.parcela_atual ?? undefined,
               parcela_total: form.parcela_total ?? undefined,
+              forma_pagamento: form.forma_pagamento || undefined,
+              cartao_id: form.cartao_id || undefined,
             })}
             disabled={isPending}
             className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"

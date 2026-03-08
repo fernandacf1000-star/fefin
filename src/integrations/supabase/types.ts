@@ -158,6 +158,7 @@ export type Database = {
       lancamentos: {
         Row: {
           categoria: string
+          categoria_macro: string | null
           created_at: string
           data: string
           descricao: string
@@ -174,6 +175,7 @@ export type Database = {
         }
         Insert: {
           categoria?: string
+          categoria_macro?: string | null
           created_at?: string
           data?: string
           descricao: string
@@ -190,6 +192,7 @@ export type Database = {
         }
         Update: {
           categoria?: string
+          categoria_macro?: string | null
           created_at?: string
           data?: string
           descricao?: string

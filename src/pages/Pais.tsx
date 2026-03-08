@@ -185,6 +185,42 @@ const Pais = () => {
               ))}
             </div>
 
+            {/* Resumo por Subcategoria */}
+            {(() => {
+              const subcatMap: Record<string, { total: number; euPaguei: number; elesPagaram: number }> = {};
+              paisDespesas.forEach((d) => {
+                const key = d.subcategoria || "Sem subcategoria";
+                if (!subcatMap[key]) subcatMap[key] = { total: 0, euPaguei: 0, elesPagaram: 0 };
+                subcatMap[key].total += Number(d.valor);
+                if (d.subcategoria_pais === "paguei_por_eles" || d.subcategoria_pais === "paguei_recebo_depois") {
+                  subcatMap[key].euPaguei += Number(d.valor);
+                } else {
+                  subcatMap[key].elesPagaram += Number(d.valor);
+                }
+              });
+              const entries = Object.entries(subcatMap).filter(([, v]) => v.total > 0).sort((a, b) => b[1].total - a[1].total);
+              if (entries.length === 0) return null;
+              return (
+                <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.08s" }}>
+                  <h2 className="text-sm font-semibold text-foreground mb-3">Por subcategoria</h2>
+                  <div className="space-y-2">
+                    {entries.map(([name, vals]) => (
+                      <div key={name} className="glass-card p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-xs font-semibold text-foreground">{name}</p>
+                          <p className="text-xs font-bold text-foreground tabular-nums">{fmt(vals.total)}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <p className="text-[10px] text-muted-foreground">Você pagou: <span className="font-semibold text-foreground">{fmt(vals.euPaguei)}</span></p>
+                          <p className="text-[10px] text-muted-foreground">Eles pagaram: <span className="font-semibold text-foreground">{fmt(vals.elesPagaram)}</span></p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Histórico */}
             <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
               <h2 className="text-sm font-semibold text-foreground mb-3">Histórico</h2>

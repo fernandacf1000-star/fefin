@@ -7,17 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useAddLancamento } from "@/hooks/useLancamentos";
+import { useAddLancamento, useAddMultipleLancamentos } from "@/hooks/useLancamentos";
 import { useCartoes } from "@/hooks/useCartoes";
 import { toast } from "sonner";
 import { SUBCATEGORIA_GROUPS, detectSubcategoria, detectCategoriaMacro } from "@/lib/subcategorias";
+import { Switch } from "@/components/ui/switch";
 
-type TipoLanc = "despesa" | "receita" | "parcelada" | "pais";
+type TipoLanc = "despesa" | "receita" | "pais";
 
 const tipoOptions = [
   { id: "despesa" as TipoLanc, emoji: "💸", label: "Despesa" },
   { id: "receita" as TipoLanc, emoji: "💰", label: "Receita" },
-  { id: "parcelada" as TipoLanc, emoji: "📋", label: "Parcelada" },
   { id: "pais" as TipoLanc, emoji: "👨‍👩‍👧", label: "Pais" },
 ];
 
@@ -50,16 +50,19 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
   const [subcategoria, setSubcategoria] = useState("");
   const [data, setData] = useState<Date>(new Date());
   const [oQueAconteceu, setOQueAconteceu] = useState("paguei_por_eles");
-  const [parcelaAtual, setParcelaAtual] = useState("");
-  const [parcelaTotal, setParcelaTotal] = useState("");
   const [incomeCat, setIncomeCat] = useState<string>("Salário");
   const [formaPagamento, setFormaPagamento] = useState<string>("pix");
   const [cartaoId, setCartaoId] = useState<string>("");
 
+  // Parcelamento as attribute
+  const [isParcelado, setIsParcelado] = useState(false);
+  const [numParcelas, setNumParcelas] = useState("");
+  const [valorTotal, setValorTotal] = useState("");
+
   const addLancamento = useAddLancamento();
+  const addMultiple = useAddMultipleLancamentos();
   const { data: cartoes = [] } = useCartoes();
 
-  const isParcelada = tipoLanc === "parcelada";
   const isPais = tipoLanc === "pais";
   const isReceita = tipoLanc === "receita";
   const needsCategory = tipoLanc === "despesa" || tipoLanc === "pais";
@@ -85,13 +88,23 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
     setValor(num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   };
 
+  const handleValorTotalChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, "");
+    if (!digits) { setValorTotal(""); return; }
+    const num = parseInt(digits, 10) / 100;
+    setValorTotal(num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  };
+
   const resetAndClose = () => {
     onClose();
     setStep(1); setDescricao(""); setValor(""); setCategoriaMacro("");
-    setSubcategoria(""); setData(new Date()); setParcelaAtual("");
-    setParcelaTotal(""); setTipoLanc("despesa"); setIncomeCat("Salário");
+    setSubcategoria(""); setData(new Date());
+    setTipoLanc("despesa"); setIncomeCat("Salário");
     setOQueAconteceu("paguei_por_eles"); setFormaPagamento("pix"); setCartaoId("");
+    setIsParcelado(false); setNumParcelas(""); setValorTotal("");
   };
+
+  const parseValor = (v: string) => parseFloat(v.replace(/\./g, "").replace(",", "."));
 
   const handleSave = async () => {
     if (!descricao || !valor) {
@@ -102,9 +115,55 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
       toast.error("Selecione uma subcategoria");
       return;
     }
-    const numValor = parseFloat(valor.replace(/\./g, "").replace(",", "."));
+
+    const numValor = parseValor(valor);
     if (isNaN(numValor) || numValor <= 0) {
       toast.error("Valor inválido");
+      return;
+    }
+
+    // Parcelamento logic
+    if (isParcelado && !isReceita) {
+      const nParcelas = parseInt(numParcelas);
+      const vTotal = valorTotal ? parseValor(valorTotal) : numValor * nParcelas;
+      if (!nParcelas || nParcelas < 2) {
+        toast.error("Número de parcelas deve ser pelo menos 2");
+        return;
+      }
+      const valorParcela = vTotal / nParcelas;
+      const parcelamentoId = crypto.randomUUID();
+
+      const lancamentos = Array.from({ length: nParcelas }, (_, i) => {
+        const parcelaDate = new Date(data);
+        parcelaDate.setMonth(parcelaDate.getMonth() + i);
+        const mesRef = `${parcelaDate.getFullYear()}-${String(parcelaDate.getMonth() + 1).padStart(2, "0")}`;
+        return {
+          descricao,
+          valor: valorParcela,
+          tipo: "despesa" as const,
+          categoria: isPais ? "pais" : "extra",
+          categoria_macro: categoriaMacro || null,
+          subcategoria: subcategoria || null,
+          subcategoria_pais: isPais ? oQueAconteceu : null,
+          data: format(parcelaDate, "yyyy-MM-dd"),
+          mes_referencia: mesRef,
+          parcela_atual: i + 1,
+          parcela_total: nParcelas,
+          is_parcelado: true,
+          parcelamento_id: parcelamentoId,
+          pago: false,
+          forma_pagamento: isReceita ? null : formaPagamento,
+          cartao_id: formaPagamento === "cartao" && cartaoId ? cartaoId : null,
+        };
+      });
+
+      try {
+        await addMultiple.mutateAsync(lancamentos);
+        toast.success(`${nParcelas} parcelas criadas!`);
+        resetAndClose();
+      } catch (e: any) {
+        toast.error(e.message || "Erro ao salvar parcelas");
+      }
       return;
     }
 
@@ -113,7 +172,6 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
     const catMap: Record<TipoLanc, string> = {
       despesa: "extra",
       receita: incomeCatMap[incomeCat] || "outros",
-      parcelada: "parcelada",
       pais: "pais",
     };
 
@@ -128,8 +186,10 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
         subcategoria_pais: isPais ? oQueAconteceu : null,
         data: format(data, "yyyy-MM-dd"),
         mes_referencia: mesRef,
-        parcela_atual: isParcelada && parcelaAtual ? parseInt(parcelaAtual) : null,
-        parcela_total: isParcelada && parcelaTotal ? parseInt(parcelaTotal) : null,
+        parcela_atual: null,
+        parcela_total: null,
+        is_parcelado: false,
+        parcelamento_id: null,
         pago: false,
         forma_pagamento: isReceita ? null : formaPagamento,
         cartao_id: formaPagamento === "cartao" && cartaoId ? cartaoId : null,
@@ -141,18 +201,10 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
     }
   };
 
-  const canProceedToDetails = () => {
-    if (isReceita || isParcelada) return true;
-    if (isPais && step === 2) return !!oQueAconteceu;
-    if (needsCategory && step === 2) return !!categoriaMacro;
-    if (needsCategory && step === 3) return !!subcategoria;
-    return true;
-  };
-
   const getMaxStep = () => {
-    if (isReceita || isParcelada) return 2; // step 1: tipo, step 2: details
-    if (isPais) return 4; // step 1: tipo, step 2: o que aconteceu, step 3: categoria, step 4: details
-    return 3; // step 1: tipo, step 2: categoria+sub, step 3: details
+    if (isReceita) return 2;
+    if (isPais) return 4; // tipo, o que aconteceu, categoria, details
+    return 3; // tipo, categoria+sub, details
   };
 
   const handleNext = () => {
@@ -163,22 +215,26 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
     if (step > 1) setStep(step - 1);
   };
 
+  const parcelaParsed = parseInt(numParcelas);
+  const valorTotalParsed = valorTotal ? parseValor(valorTotal) : 0;
+  const valorParcelaPreview = parcelaParsed > 0 && valorTotalParsed > 0
+    ? (valorTotalParsed / parcelaParsed).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    : null;
+
   const renderStep = () => {
     // Step 1: Tipo selection
     if (step === 1) {
       return (
         <div className="space-y-4">
           <p className="text-xs font-medium text-muted-foreground">O que você quer registrar?</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {tipoOptions.map(opt => (
               <button
                 key={opt.id}
                 onClick={() => { setTipoLanc(opt.id); setStep(2); }}
                 className={cn(
                   "flex flex-col items-center text-center p-5 rounded-2xl transition-all",
-                  tipoLanc === opt.id && step > 1
-                    ? "bg-primary/15 ring-2 ring-primary"
-                    : "bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                  "bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/60"
                 )}
               >
                 <span className="text-2xl mb-2">{opt.emoji}</span>
@@ -308,19 +364,6 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
           </div>
         )}
 
-        {isParcelada && (
-          <div className="flex gap-3">
-            <div className="space-y-1.5 flex-1">
-              <label className="text-xs font-medium text-muted-foreground">Parcela atual</label>
-              <Input placeholder="1" value={parcelaAtual} onChange={(e) => setParcelaAtual(e.target.value)} className="bg-secondary border-border/50" inputMode="numeric" />
-            </div>
-            <div className="space-y-1.5 flex-1">
-              <label className="text-xs font-medium text-muted-foreground">Total parcelas</label>
-              <Input placeholder="12" value={parcelaTotal} onChange={(e) => setParcelaTotal(e.target.value)} className="bg-secondary border-border/50" inputMode="numeric" />
-            </div>
-          </div>
-        )}
-
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">Data</label>
           <Popover>
@@ -347,18 +390,14 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
                   "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                   formaPagamento === "pix" ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary/60 text-muted-foreground"
                 )}
-              >
-                PIX
-              </button>
+              >PIX</button>
               <button
                 onClick={() => { setFormaPagamento("dinheiro"); setCartaoId(""); }}
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                   formaPagamento === "dinheiro" ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary/60 text-muted-foreground"
                 )}
-              >
-                Dinheiro
-              </button>
+              >Dinheiro</button>
               {cartoes.map((c) => (
                 <button
                   key={c.id}
@@ -369,11 +408,39 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "bg-secondary/60 text-muted-foreground"
                   )}
-                >
-                  💳 {c.nome}
-                </button>
+                >💳 {c.nome}</button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Compra parcelada toggle - only for expenses */}
+        {!isReceita && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-muted-foreground">Compra parcelada?</label>
+              <Switch checked={isParcelado} onCheckedChange={setIsParcelado} />
+            </div>
+            {isParcelado && (
+              <div className="space-y-3 p-3 rounded-xl bg-secondary/30 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium text-muted-foreground">Valor total da compra</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+                    <Input placeholder="0,00" value={valorTotal} onChange={(e) => handleValorTotalChange(e.target.value)} className="bg-secondary border-border/50 pl-9" inputMode="numeric" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium text-muted-foreground">Número de parcelas</label>
+                  <Input placeholder="12" value={numParcelas} onChange={(e) => setNumParcelas(e.target.value.replace(/\D/g, ""))} className="bg-secondary border-border/50" inputMode="numeric" />
+                </div>
+                {valorParcelaPreview && (
+                  <p className="text-xs text-primary font-medium">
+                    {valorParcelaPreview} por mês durante {parcelaParsed} meses
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -389,8 +456,8 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
           </div>
         )}
 
-        <Button onClick={handleSave} disabled={addLancamento.isPending} className="w-full h-12 bg-primary text-primary-foreground font-semibold text-sm rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow">
-          {addLancamento.isPending ? "Salvando..." : "Salvar Lançamento"}
+        <Button onClick={handleSave} disabled={addLancamento.isPending || addMultiple.isPending} className="w-full h-12 bg-primary text-primary-foreground font-semibold text-sm rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow">
+          {addLancamento.isPending || addMultiple.isPending ? "Salvando..." : "Salvar Lançamento"}
         </Button>
       </div>
     );

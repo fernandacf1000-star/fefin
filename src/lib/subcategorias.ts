@@ -6,16 +6,16 @@ export interface SubcategoriaGroup {
 }
 
 export const SUBCATEGORIA_GROUPS: SubcategoriaGroup[] = [
-  { group: "Moradia", emoji: "🏠", items: ["Condomínio", "IPTU", "Manutenção da casa", "Diarista", "Luz", "Água", "Gás", "Internet/Celular", "Seguro residencial"] },
+  { group: "Moradia", emoji: "🏠", items: ["Condomínio/IPTU", "Manutenção", "Internet/Celular"] },
   { group: "Alimentação", emoji: "🍔", items: ["Supermercado", "Restaurantes", "Delivery"] },
-  { group: "Transporte", emoji: "🚗", items: ["Combustível", "Transporte por app", "Estacionamento", "Manutenção do carro", "Seguro do carro"] },
-  { group: "Saúde", emoji: "🏥", items: ["Plano de saúde", "Consultas/Exames", "Medicamentos", "Seguro saúde"] },
-  { group: "Pessoal", emoji: "🛍️", items: ["Roupas", "Cuidados pessoais", "Academia", "Cursos", "Advogado/Jurídico", "Outros"] },
-  { group: "Lazer", emoji: "🎉", items: ["Viagens", "Entretenimento", "Presentes"] },
-  { group: "Investimentos/Patrimônio", emoji: "💰", items: ["Renda fixa", "Ações", "ETF/Fundos", "Previdência"] },
+  { group: "Transporte", emoji: "🚗", items: ["Combustível", "Uber/Taxi", "Estacionamento/Pedágio", "Manutenção/Seguro"] },
+  { group: "Saúde", emoji: "🏥", items: ["Plano de saúde", "Consultas/Exames", "Medicamentos"] },
+  { group: "Pessoal", emoji: "🛍️", items: ["Roupas/Cuidados pessoais", "Cursos/Desenvolvimento", "Presentes", "Outros"] },
+  { group: "Lazer", emoji: "🎉", items: ["Viagens", "Entretenimento", "Assinaturas"] },
+  { group: "Investimentos", emoji: "💰", items: ["Renda fixa", "Ações/ETF", "Fundos", "Previdência"] },
 ];
 
-/** Groups that Pais can use (all except Parceladas) */
+/** Groups that Pais can use (all) */
 export const PAIS_GROUPS = SUBCATEGORIA_GROUPS;
 
 /** Flat list of all subcategorias */
@@ -42,37 +42,33 @@ export const detectSubcategoria = (descricao: string): string | null => {
   const d = descricao.toUpperCase();
 
   // Moradia
-  if (/CONDOMINIO|CONDOMÍNIO/.test(d)) return "Condomínio";
-  if (/IPTU/.test(d)) return "IPTU";
-  if (/DIARISTA|FAXINA/.test(d)) return "Diarista";
-  if (/\bLUZ\b|ENERGIA|ENEL|CEMIG|CPFL|ELETRO/.test(d)) return "Luz";
-  if (/\bAGUA\b|\bÁGUA\b|SABESP|SANEPAR|COPASA/.test(d)) return "Água";
-  if (/\bGAS\b|\bGÁS\b|COMGAS|COMGÁS/.test(d)) return "Gás";
-  if (/INTERNET|CELULAR|CLARO|VIVO|TIM|OI\s|FIBRA/.test(d)) return "Internet/Celular";
+  if (/CONDOMINIO|CONDOMÍNIO|IPTU/.test(d)) return "Condomínio/IPTU";
+  if (/PAYGO|ARTSOUL|CUKIER|QUADRO E COR|CILA ART|LEROY MERLIN|SAMSUNG|COMERCIAL BUCALO|PORTO SEGURO|TOKIO MARINE/.test(d)) return "Manutenção";
+  if (/APPLECOMBILL|EC \*LIVO|MP\*LTCOMERC|INTERNET|CELULAR|CLARO|VIVO|TIM|OI\s|FIBRA/.test(d)) return "Internet/Celular";
 
   // Alimentação
-  if (/SACOLAO|MERCADO|PAO DE ACUCAR|CARREFOUR|EXTRA\s|ASSAI|ATACADAO|SAMS|BIG\s|HORTIFRUTI|HORTIFRUIT|QUITANDA|HOMEM DE MELLO|PASTORINHO/.test(d)) return "Supermercado";
-  if (/IFOOD|RAPPI|DELIVERY|UBER EATS/.test(d)) return "Delivery";
-  if (/RESTAURANTE|CANTINA|LANCHONETE|BURGUER|BURGER|PIZZA|PADARIA|CAFE|CAFETERIA|STARBUCKS/.test(d)) return "Restaurantes";
+  if (/PAO DE ACUCAR|HOMEM DE MELLO|HOMEM DE MEL|MERCADO|SACOLAO|HORTIFRUTI|PASTORINHO|MERCADOLIVRE|MP\*2PRODUTOS|CARREFOUR|EXTRA\s|ASSAI|ATACADAO/.test(d)) return "Supermercado";
+  if (/IFD\*BR|IFD\*IFOOD|IFOOD|RAPPI|DELIVERY|UBER EATS/.test(d)) return "Delivery";
+  if (/HOT POT RESTAURANT|A LAREIRA|RODOSNACK|QUIOSQUE O GUARUCA|RESTAURANTE|CANTINA|LANCHONETE|BURGUER|BURGER|PIZZA|PADARIA|CAFE|CAFETERIA|STARBUCKS/.test(d)) return "Restaurantes";
 
   // Transporte
-  if (/UBER|99\s|99POP|CABIFY/.test(d)) return "Transporte por app";
-  if (/COMBUSTIVEL|GASOLINA|ETANOL|POSTO|SHELL|IPIRANGA/.test(d)) return "Combustível";
-  if (/ESTACIONAMENTO|ZONA AZUL|ESTAPAR/.test(d)) return "Estacionamento";
+  if (/UBER|99\s|99POP|CABIFY/.test(d)) return "Uber/Taxi";
+  if (/ABASTEC|COMBUSTIVEL|GASOLINA|ETANOL|POSTO|SHELL|IPIRANGA/.test(d)) return "Combustível";
+  if (/CARDIM PARK|ALLPARK|ESTACIONAMENTO|ZONA AZUL|ESTAPAR|PEDAGIO|PEDÁGIO/.test(d)) return "Estacionamento/Pedágio";
 
   // Saúde
-  if (/DROGARIA|FARMACIA|PANVEL|RD SAUDE|DROGA\s|DROGASIL|RAIA|PACHECO/.test(d)) return "Medicamentos";
-  if (/CLINICA|MEDIC|HOSPITAL|LABORAT|CONSULTA|EXAME/.test(d)) return "Consultas/Exames";
-  if (/TOKIO MARINE|SEGURO.*SAUDE|SULAMERICA|BRADESCO SAUDE/.test(d)) return "Seguro saúde";
-  if (/PLANO.*SAUDE|UNIMED|AMIL|HAPVIDA/.test(d)) return "Plano de saúde";
+  if (/DROGARIA|RD SAUDE|FARMACIA|PANVEL|DROGASIL|RAIA|PACHECO/.test(d)) return "Medicamentos";
+  if (/CLINICA CARLA VIDA|OCULISTA|CLINICA|MEDIC|HOSPITAL|LABORAT|CONSULTA|EXAME/.test(d)) return "Consultas/Exames";
+  if (/OMINT|PLANO.*SAUDE|UNIMED|AMIL|HAPVIDA/.test(d)) return "Plano de saúde";
 
   // Pessoal
-  if (/ACADEMIA|SMART FIT|BIO RITMO/.test(d)) return "Academia";
-  if (/CURSO|UDEMY|ALURA|ESCOLA/.test(d)) return "Cursos";
-  if (/ADVOGAD|JURIDIC/.test(d)) return "Advogado/Jurídico";
+  if (/ZARA|CENTAURO|NIKE|CRIS BARROS|LAFORT|CATRAN|GRUPO BRABUS|SHOP2GETHER|VINDI|BOBO PATIO|E-COM HERING|SEPHORA|INVICTU|NETSHOES|ANSELMI|PORTO COMERCIO|STUDIO MORMAII|GRANADO|BELEZA NA WEB|RETRO HAIR|STUDIO GARCIA|MP\*STUDIOGARCIA|ACADEMIA|SMART FIT/.test(d)) return "Roupas/Cuidados pessoais";
+  if (/JIM\.COM|CURSO|UDEMY|ALURA|ESCOLA/.test(d)) return "Cursos/Desenvolvimento";
+  if (/CASAR \*PRE\*SENTE/.test(d)) return "Presentes";
 
   // Lazer
-  if (/NETFLIX|SPOTIFY|DISNEY|YOUTUBE|APPLE|GOOGLE\sONE|PRIME|HBO|GLOBOPLAY/.test(d)) return "Entretenimento";
+  if (/NETFLIX|SPOTIFY|DISNEY|YOUTUBE|APPLE|GOOGLE\sONE|PRIME|HBO|GLOBOPLAY/.test(d)) return "Assinaturas";
+  if (/SYMPLA|GRANDE HOTEL SAO P|HOTELAR MAUA BRASI/.test(d)) return "Entretenimento";
 
   return null;
 };
@@ -80,4 +76,15 @@ export const detectSubcategoria = (descricao: string): string | null => {
 /** Detect categoria_macro from subcategoria */
 export const detectCategoriaMacro = (subcategoria: string): string | null => {
   return getSubcategoriaGroup(subcategoria) || null;
+};
+
+/** Category colors for charts */
+export const CAT_COLORS: Record<string, string> = {
+  "Moradia": "#6366F1",
+  "Alimentação": "#F59E0B",
+  "Transporte": "#3B82F6",
+  "Saúde": "#10B981",
+  "Pessoal": "#EC4899",
+  "Lazer": "#F97316",
+  "Investimentos": "#8B5CF6",
 };

@@ -46,7 +46,6 @@ interface Props {
 
 const categorias = [
   { value: "extra", label: "Despesa" },
-  { value: "parcelada", label: "Parcelada" },
   { value: "pais", label: "Pais" },
 ];
 
@@ -80,9 +79,8 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
     );
   }
 
-  const isParcelada = form.categoria === "parcelada";
   const isPais = form.categoria === "pais";
-  const needsCategory = form.categoria === "extra" || form.categoria === "pais";
+  const isParcelado = !!(form.parcela_atual && form.parcela_total);
   const selectedGroup = SUBCATEGORIA_GROUPS.find(g => g.group === form.categoria_macro);
 
   return (
@@ -114,31 +112,29 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
         </div>
 
         {/* Categoria Macro */}
-        {needsCategory && (
-          <div className="space-y-1.5">
-            <Label className="text-[11px] text-muted-foreground">Categoria</Label>
-            <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto">
-              {SUBCATEGORIA_GROUPS.map((g) => {
-                const selected = form.categoria_macro === g.group;
-                return (
-                  <button
-                    key={g.group}
-                    onClick={() => setForm((f) => ({ ...f, categoria_macro: g.group, subcategoria: null }))}
-                    className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[11px] font-medium transition-all text-left",
-                      selected ? "bg-primary/15 ring-1 ring-primary text-foreground" : "bg-secondary/40 text-muted-foreground"
-                    )}
-                  >
-                    <span>{g.emoji}</span> {g.group}
-                  </button>
-                );
-              })}
-            </div>
+        <div className="space-y-1.5">
+          <Label className="text-[11px] text-muted-foreground">Categoria</Label>
+          <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto">
+            {SUBCATEGORIA_GROUPS.map((g) => {
+              const selected = form.categoria_macro === g.group;
+              return (
+                <button
+                  key={g.group}
+                  onClick={() => setForm((f) => ({ ...f, categoria_macro: g.group, subcategoria: null }))}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[11px] font-medium transition-all text-left",
+                    selected ? "bg-primary/15 ring-1 ring-primary text-foreground" : "bg-secondary/40 text-muted-foreground"
+                  )}
+                >
+                  <span>{g.emoji}</span> {g.group}
+                </button>
+              );
+            })}
           </div>
-        )}
+        </div>
 
         {/* Subcategoria */}
-        {needsCategory && selectedGroup && (
+        {selectedGroup && (
           <div className="space-y-1.5">
             <Label className="text-[11px] text-muted-foreground">Subcategoria</Label>
             <div className="flex flex-wrap gap-1">
@@ -177,7 +173,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
           </div>
         )}
 
-        {isParcelada && (
+        {isParcelado && (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-[11px] text-muted-foreground">Parcela atual</Label>

@@ -16,6 +16,8 @@ export interface Lancamento {
   mes_referencia: string;
   parcela_atual: number | null;
   parcela_total: number | null;
+  is_parcelado: boolean;
+  parcelamento_id: string | null;
   pago: boolean;
   forma_pagamento: string | null;
   cartao_id: string | null;
@@ -54,9 +56,30 @@ export const useAddLancamento = () => {
       if (!user) throw new Error("Não autenticado");
       const { data, error } = await supabase
         .from("lancamentos")
-        .insert({ ...lancamento, user_id: user.id })
+        .insert({ ...lancamento, user_id: user.id } as any)
         .select()
         .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+    },
+  });
+};
+
+export const useAddMultipleLancamentos = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (lancamentos: Omit<Lancamento, "id" | "user_id" | "created_at">[]) => {
+      if (!user) throw new Error("Não autenticado");
+      const rows = lancamentos.map(l => ({ ...l, user_id: user.id }));
+      const { data, error } = await supabase
+        .from("lancamentos")
+        .insert(rows as any)
+        .select();
       if (error) throw error;
       return data;
     },
@@ -73,7 +96,7 @@ export const useUpdateLancamento = () => {
     mutationFn: async ({ id, ...updates }: Partial<Lancamento> & { id: string }) => {
       const { data, error } = await supabase
         .from("lancamentos")
-        .update(updates)
+        .update(updates as any)
         .eq("id", id)
         .select()
         .single();

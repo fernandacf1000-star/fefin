@@ -59,6 +59,8 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
         mes_referencia: mesRef,
         parcela_atual: null,
         parcela_total: null,
+        is_parcelado: false,
+        parcelamento_id: null,
         pago: false,
         forma_pagamento: null,
         cartao_id: null,

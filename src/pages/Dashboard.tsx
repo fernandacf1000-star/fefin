@@ -259,7 +259,7 @@ const Dashboard = () => {
         {!hasData && !isLoading ? (
           <EmptyState title="Adicione seu primeiro lançamento! 🚀" />
         ) : (
-          <>
+          <div className="md:grid md:grid-cols-2 md:gap-4 lg:block">
             {/* Meta do mês */}
             <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <div className="flex items-center justify-between mb-3">

@@ -530,7 +530,7 @@ const Despesas = () => {
                       className={`flex items-center gap-2 p-3 rounded-xl text-left text-xs font-medium transition-all ${
                         selected ? "ring-2 bg-secondary/50" : "bg-secondary/30 text-muted-foreground"
                       }`}
-                      style={selected ? { ringColor: "#10B981", borderColor: "#10B981" } : undefined}
+                      style={selected ? { outline: "2px solid #10B981", outlineOffset: "-2px" } : undefined}
                     >
                       <span className="text-base">{CATEGORY_EMOJIS[g.group] || "📋"}</span>
                       <span className={selected ? "text-foreground font-semibold" : ""}>{g.group}</span>

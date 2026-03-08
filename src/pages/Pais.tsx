@@ -238,6 +238,7 @@ const Pais = () => {
                           <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
                           <div className="flex items-center gap-1.5">
                             <p className={`text-[11px] ${isReembolso ? "text-primary" : "text-muted-foreground"}`}>{subLabel}</p>
+                            {item.subcategoria && <span className="text-[11px]" style={{ color: "#475569" }}>· {item.subcategoria}</span>}
                             <span className="text-[11px] text-muted-foreground">· {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</span>
                           </div>
                           {renderReembolsoBadge(item)}

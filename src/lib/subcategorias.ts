@@ -78,15 +78,44 @@ export const detectCategoriaMacro = (subcategoria: string): string | null => {
   return getSubcategoriaGroup(subcategoria) || null;
 };
 
-/** Get color for a subcategoria by resolving its parent group */
-export const getSubcategoriaColor = (sub: string, macro?: string | null): string => {
-  // First try macro if provided
-  const normalizedMacro = macro ? normalizeMacro(macro) : null;
-  if (normalizedMacro && CAT_COLORS[normalizedMacro]) return CAT_COLORS[normalizedMacro];
-  // Fallback: find parent group from subcategoria name
-  const group = getSubcategoriaGroup(sub);
-  if (group && CAT_COLORS[group]) return CAT_COLORS[group];
-  return "#475569";
+/** Per-subcategoria unique colors */
+export const SUBCAT_COLORS: Record<string, string> = {
+  /* MORADIA */
+  "Condomínio/IPTU": "#6366F1",
+  "Manutenção": "#8B5CF6",
+  "Internet/Celular": "#0EA5E9",
+  /* ALIMENTAÇÃO */
+  "Supermercado": "#F59E0B",
+  "Restaurantes": "#F97316",
+  "Delivery": "#EF4444",
+  /* TRANSPORTE */
+  "Combustível": "#3B82F6",
+  "Uber/Taxi": "#06B6D4",
+  "Estacionamento/Pedágio": "#64748B",
+  "Manutenção/Seguro": "#475569",
+  /* SAÚDE */
+  "Plano de saúde": "#10B981",
+  "Consultas/Exames": "#34D399",
+  "Medicamentos": "#14B8A6",
+  /* PESSOAL */
+  "Roupas/Cuidados pessoais": "#EC4899",
+  "Cursos/Desenvolvimento": "#A855F7",
+  "Presentes": "#F43F5E",
+  "Outros": "#94A3B8",
+  /* LAZER */
+  "Viagens": "#FBBF24",
+  "Entretenimento": "#FB7185",
+  "Assinaturas": "#C084FC",
+  /* INVESTIMENTOS */
+  "Renda fixa": "#4ADE80",
+  "Ações/ETF": "#FCD34D",
+  "Fundos": "#67E8F9",
+  "Previdência": "#86EFAC",
+};
+
+/** Get color for a subcategoria — unique per subcategoria */
+export const getSubcategoriaColor = (sub: string, _macro?: string | null): string => {
+  return SUBCAT_COLORS[sub] || "#475569";
 };
 
 /** Category colors for charts */

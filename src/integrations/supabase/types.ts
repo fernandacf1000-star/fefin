@@ -116,6 +116,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ir_lancamentos: {
+        Row: {
+          ano: number
+          created_at: string
+          data: string | null
+          descricao: string
+          id: string
+          mes: number | null
+          subtipo: string | null
+          tipo: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          data?: string | null
+          descricao: string
+          id?: string
+          mes?: number | null
+          subtipo?: string | null
+          tipo?: string
+          user_id: string
+          valor?: number
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          data?: string | null
+          descricao?: string
+          id?: string
+          mes?: number | null
+          subtipo?: string | null
+          tipo?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       lancamentos: {
         Row: {
           categoria: string

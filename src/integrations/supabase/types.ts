@@ -335,6 +335,47 @@ export type Database = {
         }
         Relationships: []
       }
+      reembolsos: {
+        Row: {
+          created_at: string
+          data_reembolso: string
+          id: string
+          lancamento_id: string
+          observacao: string | null
+          quem_reembolsou: string
+          user_id: string
+          valor_reembolsado: number
+        }
+        Insert: {
+          created_at?: string
+          data_reembolso?: string
+          id?: string
+          lancamento_id: string
+          observacao?: string | null
+          quem_reembolsou?: string
+          user_id: string
+          valor_reembolsado?: number
+        }
+        Update: {
+          created_at?: string
+          data_reembolso?: string
+          id?: string
+          lancamento_id?: string
+          observacao?: string | null
+          quem_reembolsou?: string
+          user_id?: string
+          valor_reembolsado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reembolsos_lancamento_id_fkey"
+            columns: ["lancamento_id"]
+            isOneToOne: false
+            referencedRelation: "lancamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

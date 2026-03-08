@@ -4,6 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useLancamentos } from "@/hooks/useLancamentos";
+import { useAllReembolsos, getTotalReembolsado } from "@/hooks/useReembolsos";
 import {
   Eye,
   EyeOff,
@@ -102,12 +103,18 @@ const Dashboard = () => {
 
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
+  const { data: allReembolsos = [] } = useAllReembolsos();
 
   const receitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
   const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
 
   const totalReceitas = useMemo(() => receitas.reduce((s, l) => s + Number(l.valor), 0), [receitas]);
-  const totalDespesas = useMemo(() => despesas.reduce((s, l) => s + Number(l.valor), 0), [despesas]);
+  const totalDespesas = useMemo(() => {
+    return despesas.reduce((s, l) => {
+      const reemb = getTotalReembolsado(allReembolsos, l.id);
+      return s + Math.max(0, Number(l.valor) - reemb);
+    }, 0);
+  }, [despesas, allReembolsos]);
   const saldo = totalReceitas - totalDespesas;
 
   const categoryTotals = useMemo(() => {
@@ -117,9 +124,12 @@ const Dashboard = () => {
       label: cat === "fixa" ? "Fixas" : cat === "parcelada" ? "Parceladas" : cat === "extra" ? "Extras" : "Pais",
       icon: categoryIconMap[cat] || Receipt,
       color: cat === "pais" ? "text-primary" : cat === "extra" ? "text-destructive" : cat === "parcelada" ? "text-[#F59E0B]" : "text-primary",
-      value: despesas.filter((d) => d.categoria === cat).reduce((s, d) => s + Number(d.valor), 0),
+      value: despesas.filter((d) => d.categoria === cat).reduce((s, d) => {
+        const reemb = getTotalReembolsado(allReembolsos, d.id);
+        return s + Math.max(0, Number(d.valor) - reemb);
+      }, 0),
     }));
-  }, [despesas]);
+  }, [despesas, allReembolsos]);
 
   const upcomingBills = useMemo(() => {
     const today = new Date();

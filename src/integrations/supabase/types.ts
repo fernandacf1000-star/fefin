@@ -201,10 +201,12 @@ export type Database = {
           descricao: string
           forma_pagamento: string | null
           id: string
+          is_parcelado: boolean
           mes_referencia: string
           pago: boolean
           parcela_atual: number | null
           parcela_total: number | null
+          parcelamento_id: string | null
           subcategoria: string | null
           subcategoria_pais: string | null
           tipo: string
@@ -220,10 +222,12 @@ export type Database = {
           descricao: string
           forma_pagamento?: string | null
           id?: string
+          is_parcelado?: boolean
           mes_referencia?: string
           pago?: boolean
           parcela_atual?: number | null
           parcela_total?: number | null
+          parcelamento_id?: string | null
           subcategoria?: string | null
           subcategoria_pais?: string | null
           tipo?: string
@@ -239,10 +243,12 @@ export type Database = {
           descricao?: string
           forma_pagamento?: string | null
           id?: string
+          is_parcelado?: boolean
           mes_referencia?: string
           pago?: boolean
           parcela_atual?: number | null
           parcela_total?: number | null
+          parcelamento_id?: string | null
           subcategoria?: string | null
           subcategoria_pais?: string | null
           tipo?: string

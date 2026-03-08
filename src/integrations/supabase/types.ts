@@ -47,6 +47,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cartoes: {
+        Row: {
+          ativo: boolean
+          bandeira: string
+          cor: string
+          created_at: string
+          dia_fechamento: number
+          id: string
+          melhor_dia_compra: number
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          bandeira?: string
+          cor?: string
+          created_at?: string
+          dia_fechamento?: number
+          id?: string
+          melhor_dia_compra?: number
+          nome: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          bandeira?: string
+          cor?: string
+          created_at?: string
+          dia_fechamento?: number
+          id?: string
+          melhor_dia_compra?: number
+          nome?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
@@ -157,11 +193,13 @@ export type Database = {
       }
       lancamentos: {
         Row: {
+          cartao_id: string | null
           categoria: string
           categoria_macro: string | null
           created_at: string
           data: string
           descricao: string
+          forma_pagamento: string | null
           id: string
           mes_referencia: string
           pago: boolean
@@ -174,11 +212,13 @@ export type Database = {
           valor: number
         }
         Insert: {
+          cartao_id?: string | null
           categoria?: string
           categoria_macro?: string | null
           created_at?: string
           data?: string
           descricao: string
+          forma_pagamento?: string | null
           id?: string
           mes_referencia?: string
           pago?: boolean
@@ -191,11 +231,13 @@ export type Database = {
           valor?: number
         }
         Update: {
+          cartao_id?: string | null
           categoria?: string
           categoria_macro?: string | null
           created_at?: string
           data?: string
           descricao?: string
+          forma_pagamento?: string | null
           id?: string
           mes_referencia?: string
           pago?: boolean
@@ -207,7 +249,15 @@ export type Database = {
           user_id?: string
           valor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lancamentos_cartao_id_fkey"
+            columns: ["cartao_id"]
+            isOneToOne: false
+            referencedRelation: "cartoes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       patrimonio: {
         Row: {

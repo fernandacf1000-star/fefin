@@ -538,6 +538,8 @@ const Despesas = () => {
             categoria_macro: selectedLanc.categoria_macro,
             parcela_atual: selectedLanc.parcela_atual,
             parcela_total: selectedLanc.parcela_total,
+            forma_pagamento: (selectedLanc as any).forma_pagamento,
+            cartao_id: (selectedLanc as any).cartao_id,
           }}
         />
       )}

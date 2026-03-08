@@ -62,6 +62,8 @@ const fmt = (v: number) =>
 const Despesas = () => {
   const [activeFilter, setActiveFilter] = useState<Category>("Todas");
 
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthIndex);
+
   const showSection = (cat: Category) =>
     activeFilter === "Todas" || activeFilter === cat;
 

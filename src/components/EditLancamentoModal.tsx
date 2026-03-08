@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { SUBCATEGORIA_GROUPS } from "@/lib/subcategorias";
+import { useCartoes } from "@/hooks/useCartoes";
 
 interface Props {
   open: boolean;

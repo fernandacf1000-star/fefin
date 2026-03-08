@@ -7,7 +7,7 @@ const navItems = [
   { type: "fab" as const },
   { icon: Users, label: "Pais", path: "/pais" },
   { icon: BarChart3, label: "Gráficos", path: "/graficos" },
-  { icon: TrendingUp, label: "Patrimônio", path: "/dashboard" },
+  { icon: TrendingUp, label: "Patrimônio", path: "/patrimonio" },
 ];
 
 const BottomNav = () => {

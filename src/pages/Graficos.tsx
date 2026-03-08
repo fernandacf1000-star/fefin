@@ -224,7 +224,7 @@ const Graficos = () => {
               {subcatData.length > 0 ? (
                 <div className="space-y-2">
                   {subcatData.map((item) => {
-                    const pct = subcatMax > 0 ? (item.value / subcatMax) * 100 : 0;
+                    const pct = subcatMax > 0 ? Math.max(6, (item.value / subcatMax) * 100) : 6;
                     const pctTotal = subcatTotal > 0 ? Math.round((item.value / subcatTotal) * 100) : 0;
                     return (
                       <div key={item.name} className="space-y-1">
@@ -237,7 +237,7 @@ const Graficos = () => {
                             <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pctTotal}%</span>
                           </div>
                         </div>
-                        <div className="relative w-full h-[8px] rounded-full bg-secondary/40 overflow-hidden">
+                        <div className="relative w-full h-[8px] rounded-full overflow-hidden" style={{ background: "#1e2433" }}>
                           <div
                             className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
                             style={{ width: `${pct}%`, background: item.color }}

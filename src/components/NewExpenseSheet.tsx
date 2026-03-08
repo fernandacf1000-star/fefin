@@ -209,7 +209,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
 
               {/* Quem pagou */}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Quem pagou</label>
+                <label className="text-xs font-medium text-muted-foreground">Como foi pago</label>
                 <div className="grid grid-cols-2 gap-2">
                   {quemPagouOptions.map((opt) => (
                     <button

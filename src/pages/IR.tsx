@@ -2,6 +2,7 @@ import BottomNav from "@/components/BottomNav";
 import {
   FileText, TrendingDown, TrendingUp, CheckCircle2, Award,
   Heart, ShieldCheck, Gift, Info, Calendar, ArrowDown, ArrowUp,
+  RotateCcw,
 } from "lucide-react";
 
 const fmt = (v: number) =>

@@ -50,7 +50,7 @@ const SignUp = () => {
         navigate("/");
       }
     } catch (error: any) {
-      toast.error(error.message || "Erro ao criar conta");
+      toast.error("Não foi possível criar a conta. Verifique os dados e tente novamente.");
     } finally {
       setLoading(false);
     }

@@ -86,7 +86,7 @@ const Conta = () => {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
-      toast.error(err.message || "Erro ao salvar");
+      toast.error("Não foi possível salvar as alterações. Tente novamente.");
     } finally {
       setSaving(false);
     }

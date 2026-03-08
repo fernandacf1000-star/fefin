@@ -47,7 +47,7 @@ const Login = () => {
       }
       navigate("/dashboard");
     } catch (error: any) {
-      toast.error(error.message || "Erro ao autenticar");
+      toast.error("E-mail ou senha incorretos. Tente novamente.");
     } finally {
       setLoading(false);
     }

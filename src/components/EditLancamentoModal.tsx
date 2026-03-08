@@ -59,6 +59,7 @@ const subcatPais = [
 
 const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDeleteConfirm, initial, isPending }: Props) => {
   const [form, setForm] = useState({ ...initial });
+  const { data: cartoes = [] } = useCartoes();
 
   if (!open) return null;
 

@@ -251,6 +251,34 @@ const Despesas = () => {
           </div>
         )}
 
+        {/* Pais */}
+        {showSection("Pais") && (
+          <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.25s" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <Users size={14} className="text-primary" />
+              <h2 className="text-sm font-semibold text-foreground">Pais</h2>
+            </div>
+            <div className="glass-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-muted-foreground">Custo total com pais</p>
+                <p className="text-sm font-bold text-foreground tabular-nums">{fmt(paisData.custoTotal)}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-muted-foreground">Eu paguei</p>
+                <p className="text-sm font-semibold text-foreground tabular-nums">{fmt(paisData.euPaguei)}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] text-muted-foreground">Reembolsado</p>
+                <p className="text-sm font-semibold text-primary tabular-nums">+{fmt(paisData.reembolsado)}</p>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-border/30">
+                <p className="text-xs font-semibold text-muted-foreground">Subsídio líquido</p>
+                <p className="text-sm font-bold text-primary tabular-nums">{fmt(paisData.subsidioLiquido)}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
 
       <BottomNav />

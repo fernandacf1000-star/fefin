@@ -131,6 +131,8 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
         parcela_atual: isParcelada && parcelaAtual ? parseInt(parcelaAtual) : null,
         parcela_total: isParcelada && parcelaTotal ? parseInt(parcelaTotal) : null,
         pago: false,
+        forma_pagamento: isReceita ? null : formaPagamento,
+        cartao_id: formaPagamento === "cartao" && cartaoId ? cartaoId : null,
       });
       toast.success(isReceita ? "Receita salva!" : "Despesa salva!");
       resetAndClose();

@@ -17,6 +17,8 @@ export interface Lancamento {
   parcela_atual: number | null;
   parcela_total: number | null;
   pago: boolean;
+  forma_pagamento: string | null;
+  cartao_id: string | null;
   created_at: string;
 }
 

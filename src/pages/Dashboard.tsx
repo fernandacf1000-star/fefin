@@ -179,6 +179,21 @@ const Dashboard = () => {
     navigate("/");
   };
 
+  const handleSaveMeta = async () => {
+    if (!user) return;
+    setSavingMeta(true);
+    const val = parseFloat(metaValue.replace(/\./g, "").replace(",", "."));
+    const { error } = await supabase
+      .from("profiles")
+      .update({ meta_mensal: isNaN(val) ? null : val } as any)
+      .eq("user_id", user.id);
+    setSavingMeta(false);
+    if (error) { toast.error("Erro ao salvar meta"); return; }
+    toast.success("Meta atualizada!");
+    queryClient.invalidateQueries({ queryKey: ["profile"] });
+    setMetaOpen(false);
+  };
+
   const hasData = lancamentos.length > 0;
 
   return (

@@ -124,9 +124,12 @@ const Dashboard = () => {
       label: cat === "fixa" ? "Fixas" : cat === "parcelada" ? "Parceladas" : cat === "extra" ? "Extras" : "Pais",
       icon: categoryIconMap[cat] || Receipt,
       color: cat === "pais" ? "text-primary" : cat === "extra" ? "text-destructive" : cat === "parcelada" ? "text-[#F59E0B]" : "text-primary",
-      value: despesas.filter((d) => d.categoria === cat).reduce((s, d) => s + Number(d.valor), 0),
+      value: despesas.filter((d) => d.categoria === cat).reduce((s, d) => {
+        const reemb = getTotalReembolsado(allReembolsos, d.id);
+        return s + Math.max(0, Number(d.valor) - reemb);
+      }, 0),
     }));
-  }, [despesas]);
+  }, [despesas, allReembolsos]);
 
   const upcomingBills = useMemo(() => {
     const today = new Date();

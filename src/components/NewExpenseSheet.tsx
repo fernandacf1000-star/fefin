@@ -336,6 +336,47 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
           </Popover>
         </div>
 
+        {/* Forma de pagamento - only for expenses */}
+        {!isReceita && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">Pago com</label>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => { setFormaPagamento("pix"); setCartaoId(""); }}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                  formaPagamento === "pix" ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary/60 text-muted-foreground"
+                )}
+              >
+                PIX
+              </button>
+              <button
+                onClick={() => { setFormaPagamento("dinheiro"); setCartaoId(""); }}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                  formaPagamento === "dinheiro" ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary/60 text-muted-foreground"
+                )}
+              >
+                Dinheiro
+              </button>
+              {cartoes.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => { setFormaPagamento("cartao"); setCartaoId(c.id); }}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                    formaPagamento === "cartao" && cartaoId === c.id
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-secondary/60 text-muted-foreground"
+                  )}
+                >
+                  💳 {c.nome}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Summary chips */}
         {needsCategory && subcategoria && (
           <div className="flex items-center gap-1.5 flex-wrap">

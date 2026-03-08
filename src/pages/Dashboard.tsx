@@ -471,6 +471,40 @@ const Dashboard = () => {
         </>
       )}
 
+      {/* Meta Modal */}
+      {metaOpen && (
+        <>
+          <div className="fixed inset-0 z-[80] bg-background/70 backdrop-blur-sm" onClick={() => setMetaOpen(false)} />
+          <div className="fixed inset-0 z-[90] flex items-center justify-center px-8">
+            <div className="w-full max-w-xs rounded-2xl p-6 space-y-4" style={{ background: "#1a1a2e", border: "1px solid hsl(var(--primary) / 0.15)" }}>
+              <div className="flex items-center justify-between">
+                <p className="text-base font-bold text-foreground">🎯 Meta mensal</p>
+                <button onClick={() => setMetaOpen(false)} className="text-muted-foreground"><X size={18} /></button>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Meta mensal (R$)</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={metaValue}
+                  onChange={(e) => setMetaValue(e.target.value)}
+                  placeholder="Ex: 5000"
+                  className="w-full rounded-xl bg-secondary/60 border border-border/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Valor máximo de gastos por mês</p>
+              </div>
+              <button
+                onClick={handleSaveMeta}
+                disabled={savingMeta}
+                className="w-full py-2.5 rounded-xl text-sm font-semibold gradient-emerald text-primary-foreground transition-colors disabled:opacity-50"
+              >
+                {savingMeta ? "Salvando..." : "Salvar"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       <BottomNav />
     </div>
   );

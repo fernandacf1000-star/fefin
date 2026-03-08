@@ -96,7 +96,7 @@ const Dashboard = () => {
   const [confirmLogout, setConfirmLogout] = useState(false);
 
   return (
-    <div className="min-h-screen gradient-bg pb-28 overflow-x-hidden">
+    <div className="min-h-screen gradient-bg overflow-x-hidden" style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom, 16px))" }}>
       <div className="max-w-md mx-auto px-4 pt-12 w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 animate-fade-up">

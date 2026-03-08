@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Splash from "./pages/Splash";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -16,28 +17,46 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { session, loading } = useAuth();
+  if (loading) return null;
+  if (!session) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
+
+const AppRoutes = () => {
   const [showSplash, setShowSplash] = useState(true);
   const handleSplashFinish = useCallback(() => setShowSplash(false), []);
+  const { session, loading } = useAuth();
 
+  return (
+    <>
+      {showSplash && <Splash onFinish={handleSplashFinish} />}
+      <Routes>
+        <Route path="/" element={!loading && session ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/despesas" element={<ProtectedRoute><Despesas /></ProtectedRoute>} />
+        <Route path="/pais" element={<ProtectedRoute><Pais /></ProtectedRoute>} />
+        <Route path="/graficos" element={<ProtectedRoute><Graficos /></ProtectedRoute>} />
+        <Route path="/patrimonio" element={<ProtectedRoute><Patrimonio /></ProtectedRoute>} />
+        <Route path="/ir" element={<ProtectedRoute><IR /></ProtectedRoute>} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+};
+
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        {showSplash && <Splash onFinish={handleSplashFinish} />}
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/despesas" element={<Despesas />} />
-            <Route path="/pais" element={<Pais />} />
-            <Route path="/graficos" element={<Graficos />} />
-            <Route path="/patrimonio" element={<Patrimonio />} />
-            <Route path="/ir" element={<IR />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

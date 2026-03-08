@@ -2,16 +2,43 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import loginBg from "@/assets/login-bg.jpg";
 import { Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/dashboard");
+    if (!email || !password) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        if (error) throw error;
+        toast.success("Conta criada! Verifique seu e-mail para confirmar.");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        navigate("/dashboard");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao autenticar");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -108,15 +135,19 @@ const Login = () => {
 
           <button
             type="submit"
-            className="w-full py-3.5 rounded-xl gradient-emerald text-primary-foreground font-semibold text-sm tracking-wide transition-all hover:opacity-90 active:scale-[0.98]"
+            disabled={loading}
+            className="w-full py-3.5 rounded-xl gradient-emerald text-primary-foreground font-semibold text-sm tracking-wide transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
           >
-            Entrar
+            {loading ? "Carregando..." : isSignUp ? "Criar Conta" : "Entrar"}
           </button>
 
           <p className="text-center text-muted-foreground text-xs">
-            Esqueceu sua senha?{" "}
-            <span className="text-primary cursor-pointer hover:underline">
-              Recuperar
+            {isSignUp ? "Já tem conta?" : "Não tem conta?"}{" "}
+            <span
+              className="text-primary cursor-pointer hover:underline"
+              onClick={() => setIsSignUp(!isSignUp)}
+            >
+              {isSignUp ? "Entrar" : "Criar conta"}
             </span>
           </p>
         </form>

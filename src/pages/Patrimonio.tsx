@@ -21,7 +21,7 @@ const emergencias6m = resgates.filter((r) => r.motivo === "Emergência").length;
 const bonus = { recebido: 12000, investido: 7200, emergencias: 3600, usado: 1200 };
 const bonusPctEmergencia = (bonus.emergencias / bonus.recebido) * 100;
 
-const totalInvestido = previdencia.valor + aplicacao.saldo;
+const totalInvestido = previdencia.valor + aplicacao.saldo + fgts.saldo;
 const rendMes = aplicacao.rendMensal + 756.2;
 const rendAno = 4820.5;
 

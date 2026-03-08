@@ -60,11 +60,11 @@ const BottomNav = () => {
         className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full sm:max-w-[430px] bg-card/90 backdrop-blur-xl border-t border-border/30"
         style={{ paddingBottom: "calc(8px + env(safe-area-inset-bottom, 16px))" }}
       >
-        <div className="grid grid-cols-7 items-center px-1 py-1.5 overflow-hidden">
+        <div className="flex justify-around items-center w-full px-0" style={{ padding: "8px 0" }}>
           {leftItems.map(renderItem)}
           <button
             onClick={() => setSelectorOpen(true)}
-            className="w-12 h-12 -mt-6 mx-auto rounded-full gradient-emerald flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-transform shrink-0"
+            className="w-[52px] h-[52px] -mt-6 rounded-full gradient-emerald flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-transform shrink-0"
           >
             <Plus size={24} className="text-primary-foreground" />
           </button>

@@ -226,7 +226,12 @@ const Despesas = () => {
                           <Receipt size={18} className="text-muted-foreground" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
+                            {item.parcela_atual != null && item.parcela_total != null && item.parcela_atual === item.parcela_total && (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap shrink-0" style={{ backgroundColor: "rgba(245,158,11,0.15)", color: "#F59E0B" }}>🏁 Última parcela!</span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2">
                             <p className="text-[11px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas</p>
                             {item.parcela_atual === item.parcela_total && (

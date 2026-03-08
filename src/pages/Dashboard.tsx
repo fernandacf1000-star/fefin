@@ -103,12 +103,18 @@ const Dashboard = () => {
 
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
+  const { data: allReembolsos = [] } = useAllReembolsos();
 
   const receitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
   const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
 
   const totalReceitas = useMemo(() => receitas.reduce((s, l) => s + Number(l.valor), 0), [receitas]);
-  const totalDespesas = useMemo(() => despesas.reduce((s, l) => s + Number(l.valor), 0), [despesas]);
+  const totalDespesas = useMemo(() => {
+    return despesas.reduce((s, l) => {
+      const reemb = getTotalReembolsado(allReembolsos, l.id);
+      return s + Math.max(0, Number(l.valor) - reemb);
+    }, 0);
+  }, [despesas, allReembolsos]);
   const saldo = totalReceitas - totalDespesas;
 
   const categoryTotals = useMemo(() => {

@@ -61,7 +61,7 @@ const Login = () => {
             <span style={{ color: "#10B981" }}>Fin</span>
           </h1>
           <p className="mt-1.5 uppercase" style={{ color: "#475569", fontSize: 11, letterSpacing: 2 }}>
-            Suas finanças, seu controle
+            Minhas finanças, minhas regras
           </p>
         </div>
 

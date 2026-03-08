@@ -153,7 +153,47 @@ const Patrimonio = () => (
         <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">
           Último aporte: {longoPrazo.ultimoAporte}
         </p>
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary/40">
+
+        {/* Alertas de resgate */}
+        {temEmergenciaLP && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/15 mb-3">
+            <AlertOctagon size={16} className="text-destructive shrink-0" />
+            <p className="text-xs text-destructive font-medium">
+              Resgate de emergência em aplicação de longo prazo — considere reforçar sua reserva de liquidez diária para evitar isso.
+            </p>
+          </div>
+        )}
+        {temResgateLP && !temEmergenciaLP && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-500/10 mb-3">
+            <AlertTriangle size={16} className="text-orange-400 shrink-0" />
+            <p className="text-xs text-orange-300">
+              Você resgatou desta aplicação de longo prazo — avalie se era realmente necessário.
+            </p>
+          </div>
+        )}
+
+        {/* Histórico de resgates */}
+        <p className="text-xs text-muted-foreground font-medium mb-2">Resgates</p>
+        <div className="space-y-1">
+          {resgatesLP.map((r, i) => (
+            <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                  <Wallet size={14} className="text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{r.data}</p>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${motivoLPStyle[r.motivo].bg} ${motivoLPStyle[r.motivo].text}`}>
+                    {r.motivo}
+                  </span>
+                </div>
+              </div>
+              <p className="text-sm font-semibold text-foreground tabular-nums">-{fmt(r.valor)}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary/40 mt-3">
           <Info size={14} className="text-muted-foreground shrink-0 mt-0.5" />
           <p className="text-[11px] text-muted-foreground leading-relaxed">
             Aplicações de longo prazo — priorize não resgatar.

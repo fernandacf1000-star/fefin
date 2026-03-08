@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-const categories = ["Todas", "Fixas", "Parceladas", "Extras", "Pais"] as const;
+const categories = ["Todas", "Fixas", "Parceladas", "Extras"] as const;
 type Category = (typeof categories)[number];
 
 const fixedBills = [

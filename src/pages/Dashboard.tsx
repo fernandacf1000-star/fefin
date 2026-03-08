@@ -197,7 +197,7 @@ const Dashboard = () => {
   const hasData = lancamentos.length > 0;
 
   return (
-    <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px]">
+    <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
       <div className="px-4 pt-12 w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 animate-fade-up">

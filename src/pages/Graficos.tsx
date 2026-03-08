@@ -207,7 +207,7 @@ const Graficos = () => {
                             <Cell key={i} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
+                        <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} trigger="click" />
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">

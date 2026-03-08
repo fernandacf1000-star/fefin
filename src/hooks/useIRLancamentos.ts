@@ -103,7 +103,6 @@ export const useSeedIRData = () => {
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
 
-      // Check if seed data already exists
       const { data: existing } = await supabase
         .from("ir_lancamentos" as any)
         .select("id")
@@ -143,6 +142,16 @@ export const calcularIRAnual = (baseCalculo: number): number => {
   return baseCalculo * 0.275 - 10773.45;
 };
 
+/* ── Tabela progressiva IRPF 2025 (mensal) ── */
+export const calcularIRMensal = (baseMensal: number): number => {
+  if (baseMensal <= 0) return 0;
+  if (baseMensal <= 2259.20) return 0;
+  if (baseMensal <= 2826.65) return baseMensal * 0.075 - 169.44;
+  if (baseMensal <= 3751.05) return baseMensal * 0.15 - 381.44;
+  if (baseMensal <= 4664.68) return baseMensal * 0.225 - 662.77;
+  return baseMensal * 0.275 - 896.00;
+};
+
 export const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -150,3 +159,5 @@ export const MESES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
+
+export const TETO_INSS_2025 = 908.85;

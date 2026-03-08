@@ -1,5 +1,5 @@
 import BottomNav from "@/components/BottomNav";
-import { Lock, CheckCircle2, AlertTriangle, TrendingUp, Wallet, ShieldCheck, Gift } from "lucide-react";
+import { Lock, CheckCircle2, AlertTriangle, TrendingUp, Wallet, ShieldCheck, Gift, Landmark, Info } from "lucide-react";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -8,6 +8,7 @@ const pct = (v: number) => `${v.toFixed(1)}%`;
 
 /* Data */
 const previdencia = { valor: 82450.0, rentAnual: 11.2, aporteFeito: true, aporteMensal: 1020 };
+const fgts = { saldo: 18400.0, ultimaAtualizacao: "01 Mar 2026" };
 const aplicacao = { saldo: 24800.0, rendMensal: 198.4 };
 const resgates = [
   { data: "02 Mar", valor: 1200, motivo: "Emergência" as const },
@@ -20,7 +21,7 @@ const emergencias6m = resgates.filter((r) => r.motivo === "Emergência").length;
 const bonus = { recebido: 12000, investido: 7200, emergencias: 3600, usado: 1200 };
 const bonusPctEmergencia = (bonus.emergencias / bonus.recebido) * 100;
 
-const totalInvestido = previdencia.valor + aplicacao.saldo;
+const totalInvestido = previdencia.valor + aplicacao.saldo + fgts.saldo;
 const rendMes = aplicacao.rendMensal + 756.2;
 const rendAno = 4820.5;
 
@@ -78,6 +79,29 @@ const Patrimonio = () => (
             {previdencia.aporteFeito
               ? `Aporte de ${fmt(previdencia.aporteMensal)} (12% do salário) realizado este mês ✓`
               : "Aporte pendente este mês"}
+          </p>
+        </div>
+      </section>
+
+      {/* 2b — FGTS */}
+      <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.12s" }}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Landmark size={16} className="text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">FGTS</h2>
+          </div>
+          <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-primary/15 text-primary">
+            <Lock size={10} /> Resgate restrito 🔒
+          </span>
+        </div>
+        <p className="text-xl font-bold text-foreground tabular-nums">{fmt(fgts.saldo)}</p>
+        <p className="text-[11px] text-muted-foreground mt-1 mb-3">
+          Última atualização: {fgts.ultimaAtualizacao}
+        </p>
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary/40">
+          <Info size={14} className="text-muted-foreground shrink-0 mt-0.5" />
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Disponível em demissão sem justa causa, aposentadoria ou situações especiais.
           </p>
         </div>
       </section>

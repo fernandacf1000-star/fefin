@@ -1,6 +1,7 @@
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import { useLancamentos, useUpdateLancamento, useDeleteLancamento } from "@/hooks/useLancamentos";
+import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import type { Lancamento } from "@/hooks/useLancamentos";
 import {
   DollarSign, HandCoins, RefreshCw, Receipt,
@@ -11,6 +12,7 @@ import { toast } from "sonner";
 import SwipeableItem from "@/components/SwipeableItem";
 import LancamentoActions from "@/components/LancamentoActions";
 import EditLancamentoModal from "@/components/EditLancamentoModal";
+import ReembolsoModal from "@/components/ReembolsoModal";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -41,11 +43,14 @@ const Pais = () => {
   const [actionsOpen, setActionsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [reembolsoOpen, setReembolsoOpen] = useState(false);
 
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
+  const { data: allReembolsos = [] } = useAllReembolsos();
   const updateMut = useUpdateLancamento();
   const deleteMut = useDeleteLancamento();
+  const addReembolsoMut = useAddReembolso();
 
   const paisDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa" && l.categoria === "pais"), [lancamentos]);
   const reembolsos = useMemo(() => lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais"), [lancamentos]);
@@ -69,6 +74,7 @@ const Pais = () => {
   const openActions = (lanc: Lancamento) => { setSelectedLanc(lanc); setActionsOpen(true); };
   const openEdit = (lanc: Lancamento) => { setSelectedLanc(lanc); setEditOpen(true); setDeleteConfirm(false); };
   const openDelete = (lanc: Lancamento) => { setSelectedLanc(lanc); setEditOpen(true); setDeleteConfirm(true); };
+  const openReembolso = (lanc: Lancamento) => { setSelectedLanc(lanc); setReembolsoOpen(true); };
 
   const handleSave = async (data: any) => {
     if (!selectedLanc) return;
@@ -86,6 +92,53 @@ const Pais = () => {
       toast.success("Lançamento excluído ✓");
       setEditOpen(false); setActionsOpen(false);
     } catch { toast.error("Erro ao excluir."); }
+  };
+
+  const handleReembolso = async (data: { valor_reembolsado: number; quem_reembolsou: string; data_reembolso: string; observacao?: string }) => {
+    if (!selectedLanc) return;
+    try {
+      await addReembolsoMut.mutateAsync({
+        lancamento_id: selectedLanc.id,
+        valor_reembolsado: data.valor_reembolsado,
+        quem_reembolsou: data.quem_reembolsou,
+        data_reembolso: data.data_reembolso,
+        observacao: data.observacao || null,
+      });
+      toast.success("Reembolso registrado ✓");
+      setReembolsoOpen(false);
+    } catch { toast.error("Erro ao registrar reembolso."); }
+  };
+
+  const renderReembolsoBadge = (item: Lancamento) => {
+    const totalReemb = getTotalReembolsado(allReembolsos, item.id);
+    if (totalReemb <= 0) return null;
+    const valorOriginal = Number(item.valor);
+    const isTotal = totalReemb >= valorOriginal;
+    return (
+      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5" style={{ backgroundColor: "rgba(16,185,129,0.15)", color: "#10B981" }}>
+        {isTotal ? "↩️ Reembolso total · Quitado ✓" : `↩️ Reembolso parcial: ${fmt(totalReemb)}`}
+      </span>
+    );
+  };
+
+  const renderValor = (item: Lancamento, isReembolso: boolean) => {
+    const totalReemb = getTotalReembolsado(allReembolsos, item.id);
+    const valorOriginal = Number(item.valor);
+    const prefix = isReembolso ? "+" : "-";
+    if (totalReemb <= 0) {
+      return (
+        <p className={`text-sm font-semibold tabular-nums ${isReembolso ? "text-primary" : "text-foreground"}`}>
+          {prefix}{fmt(valorOriginal)}
+        </p>
+      );
+    }
+    const valorLiquido = Math.max(0, valorOriginal - totalReemb);
+    return (
+      <div className="text-right">
+        <p className="text-[10px] text-muted-foreground line-through tabular-nums">{prefix}{fmt(valorOriginal)}</p>
+        <p className={`text-sm font-semibold tabular-nums ${isReembolso ? "text-primary" : "text-foreground"}`}>{prefix}{fmt(valorLiquido)}</p>
+      </div>
+    );
   };
 
   return (
@@ -151,10 +204,9 @@ const Pais = () => {
                             <p className={`text-[11px] ${isReembolso ? "text-primary" : "text-muted-foreground"}`}>{subLabel}</p>
                             <span className="text-[11px] text-muted-foreground">· {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</span>
                           </div>
+                          {renderReembolsoBadge(item)}
                         </div>
-                        <p className={`text-sm font-semibold tabular-nums ${isReembolso ? "text-primary" : "text-foreground"}`}>
-                          {isReembolso ? "+" : "-"}{fmt(Number(item.valor))}
-                        </p>
+                        {renderValor(item, isReembolso)}
                       </div>
                     </SwipeableItem>
                   );
@@ -170,6 +222,7 @@ const Pais = () => {
         onClose={() => setActionsOpen(false)}
         onEdit={() => { if (selectedLanc) openEdit(selectedLanc); }}
         onDelete={() => { if (selectedLanc) openDelete(selectedLanc); setActionsOpen(false); }}
+        onReembolso={() => { if (selectedLanc) openReembolso(selectedLanc); }}
         descricao={selectedLanc?.descricao}
       />
 
@@ -190,6 +243,17 @@ const Pais = () => {
             parcela_atual: selectedLanc.parcela_atual,
             parcela_total: selectedLanc.parcela_total,
           }}
+        />
+      )}
+
+      {selectedLanc && (
+        <ReembolsoModal
+          open={reembolsoOpen}
+          onClose={() => setReembolsoOpen(false)}
+          onSave={handleReembolso}
+          descricao={selectedLanc.descricao}
+          valorOriginal={Number(selectedLanc.valor)}
+          isPending={addReembolsoMut.isPending}
         />
       )}
 

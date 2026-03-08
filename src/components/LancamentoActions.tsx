@@ -1,14 +1,15 @@
-import { Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Trash2, RotateCcw, X } from "lucide-react";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onReembolso?: () => void;
   descricao?: string;
 }
 
-const LancamentoActions = ({ open, onClose, onEdit, onDelete, descricao }: Props) => {
+const LancamentoActions = ({ open, onClose, onEdit, onDelete, onReembolso, descricao }: Props) => {
   if (!open) return null;
 
   return (
@@ -26,6 +27,17 @@ const LancamentoActions = ({ open, onClose, onEdit, onDelete, descricao }: Props
           <Pencil size={16} className="text-foreground" />
           <span className="text-sm font-medium text-foreground">✏️ Editar lançamento</span>
         </button>
+
+        {onReembolso && (
+          <button
+            onClick={() => { onReembolso(); onClose(); }}
+            className="w-full flex items-center gap-3 p-4 rounded-xl transition-colors"
+            style={{ backgroundColor: "rgba(16,185,129,0.1)" }}
+          >
+            <RotateCcw size={16} style={{ color: "#10B981" }} />
+            <span className="text-sm font-medium" style={{ color: "#10B981" }}>↩️ Registrar reembolso</span>
+          </button>
+        )}
 
         <button
           onClick={onDelete}

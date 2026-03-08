@@ -276,6 +276,7 @@ const Pais = () => {
             categoria: selectedLanc.categoria,
             data: selectedLanc.data,
             subcategoria_pais: selectedLanc.subcategoria_pais,
+            subcategoria: selectedLanc.subcategoria,
             parcela_atual: selectedLanc.parcela_atual,
             parcela_total: selectedLanc.parcela_total,
           }}

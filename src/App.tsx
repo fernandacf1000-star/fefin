@@ -30,7 +30,7 @@ const AppRoutes = () => {
   const { session, loading } = useAuth();
 
   return (
-    <>
+    <div className="max-w-[430px] mx-auto min-h-screen relative bg-background">
       {showSplash && <Splash onFinish={handleSplashFinish} />}
       <Routes>
         <Route path="/" element={!loading && session ? <Navigate to="/dashboard" replace /> : <Login />} />
@@ -42,7 +42,7 @@ const AppRoutes = () => {
         <Route path="/ir" element={<ProtectedRoute><IR /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </>
+    </div>
   );
 };
 

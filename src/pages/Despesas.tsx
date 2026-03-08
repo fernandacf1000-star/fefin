@@ -70,8 +70,8 @@ const Despesas = () => {
     activeFilter === "Todas" || activeFilter === cat;
 
   return (
-    <div className="min-h-screen gradient-bg overflow-x-hidden" style={{ paddingBottom: "calc(80px + env(safe-area-inset-bottom, 16px))" }}>
-      <div className="max-w-md mx-auto px-4 pt-12 w-full">
+    <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px]">
+      <div className="px-4 pt-12 w-full">
         {/* Header */}
         <h1 className="text-xl font-semibold text-foreground mb-4 animate-fade-up">
           Despesas

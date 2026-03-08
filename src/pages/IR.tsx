@@ -41,10 +41,42 @@ const saldoDisponivel = limiteCriancaIdoso + limiteCulturaEsporte - jaDoado;
 
 /* Histórico DARF */
 const historicoDARF = [
-  { ano: 2025, status: "Restituição recebida", cor: "text-primary" },
-  { ano: 2024, status: "Entregue", cor: "text-muted-foreground" },
-  { ano: 2023, status: "Entregue", cor: "text-muted-foreground" },
-  { ano: 2022, status: "A pagar", cor: "text-destructive" },
+  {
+    ano: 2025,
+    status: "Restituição recebida" as const,
+    darfTotal: 5200,
+    impostoNormal: 3700,
+    doacaoIncentivada: 1500,
+    restituicao: 1820,
+    ganhoSelic: 180,
+  },
+  {
+    ano: 2024,
+    status: "Entregue" as const,
+    darfTotal: 4800,
+    impostoNormal: 4800,
+    doacaoIncentivada: 0,
+    restituicao: 920,
+    ganhoSelic: 0,
+  },
+  {
+    ano: 2023,
+    status: "Entregue" as const,
+    darfTotal: 4200,
+    impostoNormal: 4200,
+    doacaoIncentivada: 0,
+    restituicao: 650,
+    ganhoSelic: 0,
+  },
+  {
+    ano: 2022,
+    status: "A pagar" as const,
+    darfTotal: 3900,
+    impostoNormal: 3900,
+    doacaoIncentivada: 0,
+    restituicao: 0,
+    ganhoSelic: 0,
+  },
 ];
 
 const IR = () => (

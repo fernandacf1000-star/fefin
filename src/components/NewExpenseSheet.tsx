@@ -26,8 +26,12 @@ const recentEntries = [
 const categories = ["Fixa", "Parcelada", "Extra", "Pais"] as const;
 type Category = (typeof categories)[number];
 
-const paraQuemOptions = ["Gasto com os pais", "Gasto meu (contexto pais)"] as const;
-const quemPagouOptions = ["Paguei do meu bolso", "Fatura no meu cartão", "Eles mesmos pagaram", "Recebi reembolso deles"] as const;
+const oQueAconteceuOptions = [
+  { id: "paguei_por_eles", emoji: "💸", label: "Paguei por eles", desc: "você pagou do seu bolso por remédio, mercado, conta etc." },
+  { id: "paguei_vou_receber", emoji: "↩️", label: "Paguei e vou receber de volta", desc: "você pagou mas eles vão te reembolsar" },
+  { id: "eles_pagaram", emoji: "📋", label: "Eles pagaram — só registrando", desc: "eles mesmos pagaram, você só quer ter o controle" },
+  { id: "usaram_meu_cartao", emoji: "💳", label: "Usaram meu cartão", desc: "eles usaram seu cartão extra como dependentes" },
+] as const;
 
 interface NewExpenseSheetProps {
   open: boolean;

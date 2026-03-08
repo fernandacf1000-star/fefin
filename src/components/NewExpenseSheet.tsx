@@ -39,8 +39,8 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
   const [valor, setValor] = useState("");
   const [categoria, setCategoria] = useState<Category>("Extra");
   const [data, setData] = useState<Date>(new Date());
-  const [paraQuem, setParaQuem] = useState<string>("Para os pais");
-  const [quemPagou, setQuemPagou] = useState<string>("Eu paguei");
+  const [paraQuem, setParaQuem] = useState<string>("Gasto com os pais");
+  const [quemPagou, setQuemPagou] = useState<string>("Paguei do meu bolso");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const suggestions = useMemo(() => {

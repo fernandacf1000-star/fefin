@@ -42,7 +42,7 @@ const deducoes = [
 const totalDeducoes = deducoes.reduce((s, d) => s + d.valor, 0);
 
 /* Doações incentivadas */
-const limiteTotal = 13267.27;
+const limiteTotal = irDevidoEstimado * 0.06;
 const jaDoado = 0;
 const saldoDisponivel = limiteTotal - jaDoado;
 

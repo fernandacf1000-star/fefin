@@ -10,6 +10,7 @@ export interface Lancamento {
   tipo: "despesa" | "receita";
   categoria: string;
   subcategoria_pais: string | null;
+  subcategoria: string | null;
   data: string;
   mes_referencia: string;
   parcela_atual: number | null;

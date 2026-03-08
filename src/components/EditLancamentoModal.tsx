@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { SUBCATEGORIA_GROUPS } from "@/lib/subcategorias";
 
 interface Props {
   open: boolean;
@@ -18,6 +20,7 @@ interface Props {
     categoria: string;
     data: string;
     subcategoria_pais?: string;
+    subcategoria?: string;
     parcela_atual?: number;
     parcela_total?: number;
   }) => void;
@@ -27,6 +30,7 @@ interface Props {
     categoria: string;
     data: string;
     subcategoria_pais?: string | null;
+    subcategoria?: string | null;
     parcela_atual?: number | null;
     parcela_total?: number | null;
   };
@@ -106,6 +110,34 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
           </Select>
         </div>
 
+        {/* Subcategoria */}
+        <div className="space-y-1.5">
+          <Label className="text-[11px] text-muted-foreground">Subcategoria</Label>
+          <div className="max-h-32 overflow-y-auto space-y-2 bg-secondary/20 rounded-xl p-2">
+            {SUBCATEGORIA_GROUPS.map((group) => (
+              <div key={group.group}>
+                <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">{group.group}</p>
+                <div className="flex flex-wrap gap-1">
+                  {group.items.map((item) => (
+                    <button
+                      key={item}
+                      onClick={() => setForm((f) => ({ ...f, subcategoria: f.subcategoria === item ? null : item }))}
+                      className={cn(
+                        "px-2 py-0.5 rounded-full text-[10px] font-medium transition-all",
+                        form.subcategoria === item
+                          ? "gradient-emerald text-primary-foreground"
+                          : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="space-y-1.5">
           <Label className="text-[11px] text-muted-foreground">Data</Label>
           <Input
@@ -160,6 +192,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
               categoria: form.categoria,
               data: form.data,
               subcategoria_pais: form.subcategoria_pais || undefined,
+              subcategoria: form.subcategoria || undefined,
               parcela_atual: form.parcela_atual ?? undefined,
               parcela_total: form.parcela_total ?? undefined,
             })}

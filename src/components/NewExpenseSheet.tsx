@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { X, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -9,6 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAddLancamento } from "@/hooks/useLancamentos";
 import { toast } from "sonner";
+import { SUBCATEGORIA_GROUPS, detectSubcategoria } from "@/lib/subcategorias";
 
 const categories = ["Fixa", "Parcelada", "Extra", "Pais"] as const;
 type Category = (typeof categories)[number];
@@ -36,6 +37,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
   const [categoria, setCategoria] = useState<Category>("Extra");
+  const [subcategoria, setSubcategoria] = useState<string>("");
   const [data, setData] = useState<Date>(new Date());
   const [oQueAconteceu, setOQueAconteceu] = useState<string>("paguei_por_eles");
   const [parcelaAtual, setParcelaAtual] = useState("");
@@ -44,10 +46,23 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
   const addLancamento = useAddLancamento();
   const isPais = categoria === "Pais";
   const isParcelada = categoria === "Parcelada";
+  const isExtra = categoria === "Extra";
+
+  const handleDescricaoChange = (val: string) => {
+    setDescricao(val);
+    if (!subcategoria) {
+      const detected = detectSubcategoria(val);
+      if (detected) setSubcategoria(detected);
+    }
+  };
 
   const handleSave = async () => {
     if (!descricao || !valor) {
       toast.error("Preencha descrição e valor");
+      return;
+    }
+    if (isExtra && !subcategoria) {
+      toast.error("Selecione uma subcategoria");
       return;
     }
     const numValor = parseFloat(valor.replace(/\./g, "").replace(",", "."));
@@ -65,6 +80,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
         tipo: "despesa",
         categoria: catMap[categoria],
         subcategoria_pais: isPais ? oQueAconteceu : null,
+        subcategoria: subcategoria || null,
         data: format(data, "yyyy-MM-dd"),
         mes_referencia: mesRef,
         parcela_atual: isParcelada && parcelaAtual ? parseInt(parcelaAtual) : null,
@@ -73,12 +89,9 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
       });
       toast.success("Despesa salva!");
       onClose();
-      setDescricao("");
-      setValor("");
-      setCategoria("Extra");
-      setData(new Date());
-      setParcelaAtual("");
-      setParcelaTotal("");
+      setDescricao(""); setValor(""); setCategoria("Extra");
+      setSubcategoria(""); setData(new Date());
+      setParcelaAtual(""); setParcelaTotal("");
     } catch (e: any) {
       toast.error(e.message || "Erro ao salvar");
     }
@@ -108,7 +121,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">Descrição</label>
-            <Input placeholder="Ex: Conta de Luz" value={descricao} onChange={(e) => setDescricao(e.target.value)} className="bg-secondary border-border/50" />
+            <Input placeholder="Ex: Conta de Luz" value={descricao} onChange={(e) => handleDescricaoChange(e.target.value)} className="bg-secondary border-border/50" />
           </div>
 
           <div className="space-y-1.5">
@@ -123,9 +136,39 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
             <label className="text-xs font-medium text-muted-foreground">Categoria</label>
             <div className="flex gap-2">
               {categories.map((cat) => (
-                <button key={cat} onClick={() => setCategoria(cat)} className={cn("px-4 py-2 rounded-full text-xs font-medium transition-all", categoria === cat ? "gradient-emerald text-primary-foreground shadow-md shadow-primary/20" : "bg-secondary text-muted-foreground hover:text-foreground")}>
+                <button key={cat} onClick={() => { setCategoria(cat); setSubcategoria(""); }} className={cn("px-4 py-2 rounded-full text-xs font-medium transition-all", categoria === cat ? "gradient-emerald text-primary-foreground shadow-md shadow-primary/20" : "bg-secondary text-muted-foreground hover:text-foreground")}>
                   {cat}
                 </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Subcategoria selector */}
+          <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <label className="text-xs font-medium text-muted-foreground">
+              Subcategoria {isExtra && <span className="text-destructive">*</span>}
+            </label>
+            <div className="max-h-40 overflow-y-auto space-y-3 bg-secondary/30 rounded-xl p-3">
+              {SUBCATEGORIA_GROUPS.map((group) => (
+                <div key={group.group}>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{group.group}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.items.map((item) => (
+                      <button
+                        key={item}
+                        onClick={() => setSubcategoria(subcategoria === item ? "" : item)}
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[11px] font-medium transition-all",
+                          subcategoria === item
+                            ? "gradient-emerald text-primary-foreground shadow-sm"
+                            : "bg-secondary/60 text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>

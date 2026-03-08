@@ -1,20 +1,46 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import BottomNav from "@/components/BottomNav";
 import {
   Gift, Info, TrendingUp, Users, AlertTriangle,
   ChevronDown, ChevronUp, Briefcase, Building2,
 } from "lucide-react";
 import { useIRLancamentos, calcularIRAnual, fmt } from "@/hooks/useIRLancamentos";
+import { useProfile } from "@/hooks/useProfile";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import YearCard2026 from "@/components/ir/YearCard2026";
 import YearCard2027 from "@/components/ir/YearCard2027";
 import IRModoPJ from "@/components/ir/IRModoPJ";
+import SimuladorPrevidencia from "@/components/ir/SimuladorPrevidencia";
 
 type Modo = "clt" | "pj";
 
 const IR = () => {
   const [conjuntaExpanded, setConjuntaExpanded] = useState(false);
+  const { data: profile } = useProfile();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [modo, setModo] = useState<Modo>("clt");
   const { data: lancs2025 } = useIRLancamentos(2025);
+
+  // Load saved preference
+  useEffect(() => {
+    if (profile?.tipo_tributacao === "socio" || profile?.tipo_tributacao === "pj") {
+      setModo("pj");
+    }
+  }, [profile]);
+
+  const handleModoChange = async (newModo: Modo) => {
+    setModo(newModo);
+    if (user && profile) {
+      await supabase
+        .from("profiles" as any)
+        .update({ tipo_tributacao: newModo === "pj" ? "socio" : "clt" } as any)
+        .eq("user_id", user.id);
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    }
+  };
 
   const doacoes = useMemo(() => {
     const l = lancs2025 ?? [];
@@ -37,7 +63,7 @@ const IR = () => {
         {/* Modo Toggle */}
         <div className="flex gap-2 p-1 rounded-xl bg-secondary/40 animate-fade-up" style={{ animationDelay: "0.02s" }}>
           <button
-            onClick={() => setModo("clt")}
+            onClick={() => handleModoChange("clt")}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all ${
               modo === "clt" ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground"
             }`}
@@ -45,7 +71,7 @@ const IR = () => {
             <Briefcase size={14} /> CLT / Assalariado
           </button>
           <button
-            onClick={() => setModo("pj")}
+            onClick={() => handleModoChange("pj")}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-semibold transition-all ${
               modo === "pj" ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground"
             }`}
@@ -55,7 +81,10 @@ const IR = () => {
         </div>
 
         {modo === "pj" ? (
-          <IRModoPJ />
+          <>
+            <IRModoPJ />
+            <SimuladorPrevidencia />
+          </>
         ) : (
           <>
             {/* Card 1 — 2026 historical (collapsed) */}
@@ -63,6 +92,9 @@ const IR = () => {
 
             {/* Card 2 — 2027 active */}
             <YearCard2027 />
+
+            {/* Simulador */}
+            <SimuladorPrevidencia />
 
             {/* Declaração Conjunta */}
             <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.12s" }}>

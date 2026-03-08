@@ -371,7 +371,7 @@ const Dashboard = () => {
                     💡 Melhor cartão hoje: {cartoes.find(c => c.id === bestCartaoId)?.nome}
                   </p>
                 )}
-                <div className="space-y-2">
+                <div className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
                   {cartoes.map((c) => (
                     <CartaoCard
                       key={c.id}
@@ -391,7 +391,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-sm font-semibold text-foreground">Últimas transações</h2>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
                   {recentTransactions.map((tx) => {
                     const Icon = txIcon(tx.categoria);
                     const val = Number(tx.valor);

@@ -350,11 +350,12 @@ const Dashboard = () => {
                     </div>
                   ))}
                 </div>
-                {parcelamentos.count > 5 && (
-                  <button onClick={() => navigate("/despesas")} className="text-[11px] text-primary font-medium mt-2">
-                    Ver todos →
+                <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/20">
+                  <span className="text-[10px] text-muted-foreground">{parcelamentos.count} compras parceladas · Total {showBalance ? fmt(parcelamentos.total) : "••••"} este mês</span>
+                  <button onClick={() => navigate("/despesas")} className="text-[11px] text-primary font-medium">
+                    Ver todas →
                   </button>
-                )}
+                </div>
               </div>
             )}
 

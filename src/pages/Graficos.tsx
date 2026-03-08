@@ -6,7 +6,7 @@ import {
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
-import { SUBCATEGORIA_GROUPS, getGroupEmoji, CAT_COLORS } from "@/lib/subcategorias";
+import { SUBCATEGORIA_GROUPS, getGroupEmoji, CAT_COLORS, normalizeMacro } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -58,7 +58,7 @@ const Graficos = () => {
     const despesas = lancamentos.filter((l) => l.tipo === "despesa");
     const map: Record<string, number> = {};
     despesas.forEach(d => {
-      const key = d.categoria_macro || "Sem categoria";
+      const key = normalizeMacro(d.categoria_macro);
       map[key] = (map[key] || 0) + Number(d.valor);
     });
     return Object.entries(map)
@@ -77,7 +77,7 @@ const Graficos = () => {
   const subcatData = useMemo(() => {
     let despesas = lancamentos.filter((l) => l.tipo === "despesa" && l.subcategoria);
     if (subcatCatFilter) {
-      despesas = despesas.filter((l) => l.categoria_macro === subcatCatFilter);
+      despesas = despesas.filter((l) => normalizeMacro(l.categoria_macro) === subcatCatFilter);
     }
     const map: Record<string, number> = {};
     despesas.forEach((d) => {
@@ -149,12 +149,12 @@ const Graficos = () => {
                 <div className="relative h-52 flex items-center justify-center">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={composicao} dataKey="value" innerRadius="60%" outerRadius="85%" paddingAngle={3} stroke="none">
+                      <Pie data={composicao} dataKey="value" innerRadius="60%" outerRadius="85%" paddingAngle={3} stroke="none" isAnimationActive={true}>
                         {composicao.map((entry, i) => (
                           <Cell key={i} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
+                      <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} trigger="click" />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -207,7 +207,7 @@ const Graficos = () => {
                             <Cell key={i} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
+                        <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} trigger="click" />
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">

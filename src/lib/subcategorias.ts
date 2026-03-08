@@ -88,3 +88,21 @@ export const CAT_COLORS: Record<string, string> = {
   "Lazer": "#F97316",
   "Investimentos": "#8B5CF6",
 };
+
+/** Legacy category mapping — remap old categories to new structure */
+const LEGACY_CATEGORY_MAP: Record<string, { macro: string; sub: string }> = {
+  "Compras Online": { macro: "Pessoal", sub: "Outros" },
+};
+
+/** Normalize a categoria_macro, remapping legacy values */
+export const normalizeMacro = (macro: string | null | undefined): string => {
+  if (!macro) return "Sem categoria";
+  const mapped = LEGACY_CATEGORY_MAP[macro];
+  return mapped ? mapped.macro : macro;
+};
+
+/** Normalize subcategoria for legacy categories */
+export const normalizeSub = (macro: string | null | undefined, sub: string | null | undefined): string | null => {
+  if (macro && LEGACY_CATEGORY_MAP[macro]) return LEGACY_CATEGORY_MAP[macro].sub;
+  return sub || null;
+};

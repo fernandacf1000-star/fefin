@@ -9,6 +9,7 @@ import Despesas from "./pages/Despesas";
 import Pais from "./pages/Pais";
 import Graficos from "./pages/Graficos";
 import Patrimonio from "./pages/Patrimonio";
+import IR from "./pages/IR";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

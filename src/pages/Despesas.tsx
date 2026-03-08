@@ -70,8 +70,8 @@ const Despesas = () => {
     activeFilter === "Todas" || activeFilter === cat;
 
   return (
-    <div className="min-h-screen gradient-bg pb-24">
-      <div className="max-w-md mx-auto px-4 pt-12">
+    <div className="min-h-screen gradient-bg pb-28 overflow-x-hidden">
+      <div className="max-w-md mx-auto px-4 pt-12 w-full">
         {/* Header */}
         <h1 className="text-xl font-semibold text-foreground mb-4 animate-fade-up">
           Despesas

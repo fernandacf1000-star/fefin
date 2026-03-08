@@ -79,8 +79,8 @@ const Pais = () => {
   const hasData = selectedMonth === 1;
 
   return (
-    <div className="min-h-screen gradient-bg pb-24">
-      <div className="max-w-md mx-auto px-4 pt-12">
+    <div className="min-h-screen gradient-bg pb-28 overflow-x-hidden">
+      <div className="max-w-md mx-auto px-4 pt-12 w-full">
         <h1 className="text-xl font-semibold text-foreground mb-4 animate-fade-up">
           Pais
         </h1>

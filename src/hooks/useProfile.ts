@@ -11,6 +11,11 @@ export interface Profile {
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
+  tipo_tributacao: string | null;
+  idade: number | null;
+  idade_aposentadoria: number | null;
+  aliquota_aposentadoria_estimada: number | null;
+  ir_dados: any;
 }
 
 export const useProfile = () => {

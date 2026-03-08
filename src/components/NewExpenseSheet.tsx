@@ -26,8 +26,8 @@ const recentEntries = [
 const categories = ["Fixa", "Parcelada", "Extra", "Pais"] as const;
 type Category = (typeof categories)[number];
 
-const paraQuemOptions = ["Para os pais", "Para mim"] as const;
-const quemPagouOptions = ["Eu paguei", "Cartão dependente", "Eles pagaram", "Reembolso recebido"] as const;
+const paraQuemOptions = ["Gasto com os pais", "Gasto meu (contexto pais)"] as const;
+const quemPagouOptions = ["Paguei do meu bolso", "Fatura no meu cartão", "Eles mesmos pagaram", "Recebi reembolso deles"] as const;
 
 interface NewExpenseSheetProps {
   open: boolean;

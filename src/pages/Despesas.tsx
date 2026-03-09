@@ -303,7 +303,7 @@ const Despesas = () => {
       }
       toast.success("Este e os próximos excluídos ✓");
       setDeleteSheetOpen(false); setActionsOpen(false);
-    } catch { toast.error("Erro ao excluir."); }
+    } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
   };
 
   const handleDeleteAll = async () => {

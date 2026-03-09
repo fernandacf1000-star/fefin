@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Trash2, X } from "lucide-react";
 
@@ -12,9 +13,16 @@ interface Props {
   isPending?: boolean;
 }
 
-const DeleteConfirmSheet = ({ open, onClose, tipo, onDeleteSingle, onDeleteFuture, onDeleteAll, descricao, isPending }: Props) => {
+const DeleteConfirmSheet = ({ open, onClose, tipo, onDeleteSingle, onDeleteFuture, onDeleteAll, descricao }: Props) => {
   const isGroup = tipo === "parcelado" || tipo === "recorrente";
   const label = tipo === "parcelado" ? "parcela" : "mês";
+
+  const [localLoading, setLocalLoading] = useState(false);
+
+  const wrapDelete = (fn: () => void) => async () => {
+    setLocalLoading(true);
+    try { await (fn as any)(); } finally { setLocalLoading(false); }
+  };
 
   return (
     <>
@@ -52,16 +60,16 @@ const DeleteConfirmSheet = ({ open, onClose, tipo, onDeleteSingle, onDeleteFutur
                 <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-secondary/60 text-muted-foreground">
                   Cancelar
                 </button>
-                <button onClick={onDeleteSingle} disabled={isPending} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-destructive text-destructive-foreground disabled:opacity-50">
-                  {isPending ? "Excluindo..." : "Excluir"}
+                <button onClick={wrapDelete(onDeleteSingle)} disabled={localLoading} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-destructive text-destructive-foreground disabled:opacity-50">
+                  {localLoading ? "Excluindo..." : "Excluir"}
                 </button>
               </div>
             </div>
           ) : (
             <div className="space-y-2">
               <button
-                onClick={() => { onClose(); setTimeout(onDeleteSingle, 200); }}
-                disabled={isPending}
+                onClick={wrapDelete(onDeleteSingle)}
+                disabled={localLoading}
                 className="w-full flex items-start gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 active:scale-[0.98] transition-transform text-left disabled:opacity-50"
               >
                 <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(239,68,68,0.15)" }}>
@@ -74,8 +82,8 @@ const DeleteConfirmSheet = ({ open, onClose, tipo, onDeleteSingle, onDeleteFutur
               </button>
 
               <button
-                onClick={() => { onClose(); setTimeout(onDeleteFuture, 200); }}
-                disabled={isPending}
+                onClick={wrapDelete(onDeleteFuture)}
+                disabled={localLoading}
                 className="w-full flex items-start gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 active:scale-[0.98] transition-transform text-left disabled:opacity-50"
               >
                 <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(239,68,68,0.15)" }}>
@@ -88,8 +96,8 @@ const DeleteConfirmSheet = ({ open, onClose, tipo, onDeleteSingle, onDeleteFutur
               </button>
 
               <button
-                onClick={() => { onClose(); setTimeout(onDeleteAll, 200); }}
-                disabled={isPending}
+                onClick={wrapDelete(onDeleteAll)}
+                disabled={localLoading}
                 className="w-full flex items-start gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 active:scale-[0.98] transition-transform text-left disabled:opacity-50"
               >
                 <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(239,68,68,0.15)" }}>

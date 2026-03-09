@@ -60,6 +60,11 @@ const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) =
   const [numParcelas, setNumParcelas] = useState("");
   const [valorTotal, setValorTotal] = useState("");
 
+  // Recorrência
+  const [recorrente, setRecorrente] = useState(false);
+  const [diaRecorrencia, setDiaRecorrencia] = useState("1");
+  const [recorrenciaAte, setRecorrenciaAte] = useState<Date | undefined>();
+
   const addLancamento = useAddLancamento();
   const addMultiple = useAddMultipleLancamentos();
   const { data: cartoes = [] } = useCartoes();

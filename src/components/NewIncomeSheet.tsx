@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import { useAddLancamento, useAddMultipleLancamentos } from "@/hooks/useLancamentos";
 import { toast } from "sonner";
-import { v4 as uuidv4 } from "uuid";
+
 
 const incomeCategories = ["Salário", "Reembolso pais", "Renda extra", "Investimentos", "Outros"] as const;
 type IncomeCategory = (typeof incomeCategories)[number];

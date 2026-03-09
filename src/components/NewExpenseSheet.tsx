@@ -197,6 +197,10 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
         pago: false,
         forma_pagamento: isReceita ? null : formaPagamento,
         cartao_id: formaPagamento === "cartao" && cartaoId ? cartaoId : null,
+        recorrente: false,
+        dia_recorrencia: null,
+        recorrencia_ate: null,
+        recorrencia_pai_id: null,
       });
       toast.success(isReceita ? "Receita salva!" : "Despesa salva!");
       resetAndClose();

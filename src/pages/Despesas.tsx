@@ -361,7 +361,7 @@ const Despesas = () => {
     const isReceita = item.tipo === "receita";
     const borderColor = isReceita ? "#10B981" : "#F87171";
     return (
-      <SwipeableItem key={item.id} onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
+      <SwipeableItem onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
         <div
           onClick={() => openActions(item)}
           className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer"
@@ -517,7 +517,11 @@ const Despesas = () => {
       {/* Unified sorted list */}
       {unifiedList.length > 0 ? (
         <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-          {unifiedList.map((item) => renderItem(item, getItemIcon(item), getItemSubtitle(item)))}
+          {unifiedList.map((item) => (
+            <div key={item.id}>
+              {renderItem(item, getItemIcon(item), getItemSubtitle(item))}
+            </div>
+          ))}
         </div>
       ) : (
         hasData && (

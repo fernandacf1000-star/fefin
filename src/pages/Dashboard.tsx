@@ -91,6 +91,7 @@ const Dashboard = () => {
 
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
+  const { data: todosLancamentos = [] } = useLancamentos(); // para calcular fatura dos cartões
   const { data: allReembolsos = [] } = useAllReembolsos();
   const { data: cartoes = [] } = useCartoes();
 
@@ -376,7 +377,7 @@ const Dashboard = () => {
                     <CartaoCard
                       key={c.id}
                       cartao={c}
-                      lancamentos={lancamentos}
+                      lancamentos={todosLancamentos}
                       showBalance={showBalance}
                       isBest={c.id === bestCartaoId && cartoes.length > 1}
                     />

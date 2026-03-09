@@ -74,6 +74,7 @@ const Despesas = () => {
   const [editMode, setEditMode] = useState<ParcelamentoMode>(null);
   const [parcelamentoCount, setParcelamentoCount] = useState(0);
 
+  const queryClient = useQueryClient();
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
   const { data: allReembolsos = [] } = useAllReembolsos();

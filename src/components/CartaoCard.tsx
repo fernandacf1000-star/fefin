@@ -117,17 +117,17 @@ const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
 
         {isClosed && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/15 text-destructive">
-            🔴 Fatura fechada — {showBalance ? fmt(faturaAtual) : "••••"} a pagar
+            🔴 Fatura vencida — {showBalance ? fmt(faturaAtual) : "••••"} a pagar
           </span>
         )}
         {!isClosed && isClosingSoon && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500">
-            ⚠️ Fecha em {daysUntilClose} dia{daysUntilClose !== 1 ? "s" : ""}
+            ⚠️ Vence em {daysUntilClose} dia{daysUntilClose !== 1 ? "s" : ""}
           </span>
         )}
         {!isClosed && !isClosingSoon && (
           <span className="text-[10px] text-muted-foreground">
-            Fecha em {daysUntilClose} dias
+            Vence em {daysUntilClose} dias
           </span>
         )}
       </div>

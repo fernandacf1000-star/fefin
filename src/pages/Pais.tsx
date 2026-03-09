@@ -147,7 +147,12 @@ const Pais = () => {
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
       <div className="px-4 pt-12 w-full">
-        <h1 className="text-xl font-semibold text-foreground mb-4 animate-fade-up">Pais</h1>
+        <div className="flex items-center justify-between mb-4 animate-fade-up">
+          <h1 className="text-xl font-semibold text-foreground">Pais</h1>
+          <button onClick={() => setReembolsoFixoOpen(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-lg">
+            <Plus size={14} /> Reembolso fixo
+          </button>
+        </div>
 
         {/* Month Selector */}
         <div className="flex items-center justify-center gap-3 mb-5 animate-fade-up" style={{ animationDelay: "0.03s" }}>

@@ -83,8 +83,8 @@ export const useAddReembolso = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reembolsos"] });
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["reembolsos"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };

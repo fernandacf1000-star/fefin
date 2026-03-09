@@ -265,8 +265,8 @@ const Despesas = () => {
       setEditOpen(false);
       setEditMode(null);
       setSelectedLanc(null);
-    } catch {
-      toast.error("Erro ao atualizar.");
+    } catch (e: any) {
+      toast.error("Erro: " + (e?.message || JSON.stringify(e)));
     }
   };
 

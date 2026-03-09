@@ -361,7 +361,7 @@ const Despesas = () => {
     const isReceita = item.tipo === "receita";
     const borderColor = isReceita ? "#10B981" : "#F87171";
     return (
-      <SwipeableItem key={item.id} onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
+      <SwipeableItem onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
         <div
           onClick={() => openActions(item)}
           className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer"

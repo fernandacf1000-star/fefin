@@ -4,6 +4,7 @@ import loginBg from "@/assets/login-bg.jpg";
 import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { APP_VERSION, APP_UPDATED } from "@/version";
 
 const REMEMBER_KEY = "fefin_remember";
 

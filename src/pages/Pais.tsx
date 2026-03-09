@@ -238,6 +238,8 @@ const Pais = () => {
                 {historico.map((item) => {
                   const isReembolso = item.tipo === "receita";
                   const subLabel = item.subcategoria_pais ? subcatLabels[item.subcategoria_pais] || item.subcategoria_pais : (isReembolso ? "Reembolso recebido" : "");
+                  const isRecorrente = item.recorrente;
+                  const isPago = item.pago;
                   return (
                     <SwipeableItem key={item.id} onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
                       <div onClick={() => openActions(item)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer">
@@ -246,15 +248,37 @@ const Pais = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <p className={`text-[11px] ${isReembolso ? "text-primary" : "text-muted-foreground"}`}>{subLabel}</p>
                             {item.categoria_macro && <span className="text-[11px] text-muted-foreground">· {getGroupEmoji(item.categoria_macro)} {item.categoria_macro}</span>}
                             {item.subcategoria && <span className="text-[11px] text-muted-foreground">· {item.subcategoria}</span>}
                             <span className="text-[11px] text-muted-foreground">· {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</span>
                           </div>
-                          {renderReembolsoBadge(item)}
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {isRecorrente && isReembolso && !isPago && (
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500">⏳ Aguardando</span>
+                            )}
+                            {isRecorrente && isReembolso && isPago && (
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">✅ Recebido</span>
+                            )}
+                            {isRecorrente && (
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">🔄 Recorrente</span>
+                            )}
+                            {renderReembolsoBadge(item)}
+                          </div>
                         </div>
-                        {renderValor(item, isReembolso)}
+                        <div className="flex items-center gap-2">
+                          {isRecorrente && isReembolso && !isPago && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleMarkReceived(item); }}
+                              className="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                              title="Marcar como recebido"
+                            >
+                              <Check size={14} />
+                            </button>
+                          )}
+                          {renderValor(item, isReembolso)}
+                        </div>
                       </div>
                     </SwipeableItem>
                   );

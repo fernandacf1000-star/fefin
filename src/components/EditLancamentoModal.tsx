@@ -59,6 +59,15 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
   const [form, setForm] = useState({ ...initial, valor: initial.valor || 0 });
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingSaveData, setPendingSaveData] = useState<any>(null);
+
+  useEffect(() => {
+    if (open) {
+      setForm({ ...initial, valor: initial.valor || 0 });
+      setShowConfirm(false);
+      setPendingSaveData(null);
+    }
+  }, [open, initial]);
+
   const { data: cartoes = [] } = useCartoes();
 
   if (!open) return null;

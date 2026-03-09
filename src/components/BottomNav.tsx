@@ -112,7 +112,7 @@ const BottomNav = () => {
       >
         <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} className="shrink-0" />
         {isActive && (
-          <span className="text-[9px] font-medium leading-tight truncate w-full text-center">{item.label}</span>
+          <span className="leading-tight text-center w-full" style={{ fontSize: "9px", fontWeight: 500 }}>{item.label}</span>
         )}
       </button>
     );

@@ -263,6 +263,7 @@ const Despesas = () => {
       }
       setEditOpen(false);
       setEditMode(null);
+      setSelectedLanc(null);
     } catch {
       toast.error("Erro ao atualizar.");
     }
@@ -738,6 +739,7 @@ const Despesas = () => {
 
       {selectedLanc && (
         <EditLancamentoModal
+          key={selectedLanc.id}
           open={editOpen}
           onClose={() => { setEditOpen(false); setDeleteConfirm(false); setEditMode(null); }}
           showDeleteConfirm={deleteConfirm}

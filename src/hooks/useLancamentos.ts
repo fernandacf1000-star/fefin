@@ -68,7 +68,7 @@ export const useAddLancamento = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -89,7 +89,7 @@ export const useAddMultipleLancamentos = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -109,7 +109,7 @@ export const useUpdateLancamento = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -135,7 +135,7 @@ export const useUpdateParcelamentoFuturas = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -158,7 +158,7 @@ export const useUpdateAllParcelamento = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -190,7 +190,7 @@ export const useDeleteLancamento = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -206,7 +206,7 @@ export const useDeleteFutureParcelamento = () => {
         .gte("data", fromDate);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false }),
+    onSuccess: () => queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false }),
   });
 };
 
@@ -220,7 +220,7 @@ export const useDeleteAllParcelamento = () => {
         .eq("parcelamento_id", parcelamento_id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false }),
+    onSuccess: () => queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false }),
   });
 };
 
@@ -235,7 +235,7 @@ export const useDeleteFutureRecorrencia = () => {
         .gte("data", fromDate);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false }),
+    onSuccess: () => queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false }),
   });
 };
 
@@ -249,6 +249,6 @@ export const useDeleteAllRecorrencia = () => {
         .eq("recorrencia_pai_id", recorrencia_pai_id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false }),
+    onSuccess: () => queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false }),
   });
 };

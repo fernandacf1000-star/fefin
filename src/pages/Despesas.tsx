@@ -192,7 +192,7 @@ const Despesas = () => {
     }
   };
 
-  const openDelete = (lanc: Lancamento) => { setSelectedLanc(lanc); setEditOpen(true); setDeleteConfirm(true); };
+  const openDelete = (lanc: Lancamento) => { setSelectedLanc(lanc); setDeleteSheetOpen(true); };
   const openReembolso = (lanc: Lancamento) => { setSelectedLanc(lanc); setReembolsoOpen(true); };
 
   const handleSelectParcelamentoSingle = () => {

@@ -106,7 +106,7 @@ const CartaoModal = ({ open, onClose, onSave, isPending, initial }: Props) => {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label className="text-[11px] text-muted-foreground">Dia de fechamento</Label>
+            <Label className="text-[11px] text-muted-foreground">Dia de vencimento</Label>
             <Input
               type="number"
               min={1}

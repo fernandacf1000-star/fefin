@@ -233,7 +233,7 @@ const Conta = () => {
                     <div>
                       <p className="text-sm font-semibold text-foreground">{c.nome}</p>
                       <p className="text-[11px] text-muted-foreground capitalize">
-                        {c.bandeira} · Fecha dia {c.dia_fechamento} · Melhor dia: {c.melhor_dia_compra}
+                        {c.bandeira} · Vence dia {c.dia_fechamento} · Melhor dia: {c.melhor_dia_compra}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

@@ -296,27 +296,39 @@ const Despesas = () => {
 
   const handleDeleteFuture = async () => {
     if (!selectedLanc) return;
+    const lanc = selectedLanc;
+    setDeleteSheetOpen(false);
+    setSelectedLanc(null);
     try {
-      if (selectedLanc.is_parcelado && selectedLanc.parcelamento_id) {
-        await deleteFutureParc.mutateAsync({ parcelamento_id: selectedLanc.parcelamento_id, fromDate: selectedLanc.data });
-      } else if (selectedLanc.recorrente && selectedLanc.recorrencia_pai_id) {
-        await deleteFutureRec.mutateAsync({ recorrencia_pai_id: selectedLanc.recorrencia_pai_id, fromDate: selectedLanc.data });
+      const groupId = lanc.parcelamento_id || lanc.recorrencia_pai_id;
+      if (!groupId) {
+        await deleteMut.mutateAsync(lanc.id);
+      } else if (lanc.parcelamento_id) {
+        await deleteFutureParc.mutateAsync({ parcelamento_id: lanc.parcelamento_id, fromDate: lanc.data });
+      } else if (lanc.recorrencia_pai_id) {
+        await deleteFutureRec.mutateAsync({ recorrencia_pai_id: lanc.recorrencia_pai_id, fromDate: lanc.data });
       }
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
       toast.success("Este e os próximos excluídos ✓");
-      setDeleteSheetOpen(false); setActionsOpen(false);
     } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
   };
 
   const handleDeleteAll = async () => {
     if (!selectedLanc) return;
+    const lanc = selectedLanc;
+    setDeleteSheetOpen(false);
+    setSelectedLanc(null);
     try {
-      if (selectedLanc.is_parcelado && selectedLanc.parcelamento_id) {
-        await deleteAllParc.mutateAsync(selectedLanc.parcelamento_id);
-      } else if (selectedLanc.recorrente && selectedLanc.recorrencia_pai_id) {
-        await deleteAllRec.mutateAsync(selectedLanc.recorrencia_pai_id);
+      const groupId = lanc.parcelamento_id || lanc.recorrencia_pai_id;
+      if (!groupId) {
+        await deleteMut.mutateAsync(lanc.id);
+      } else if (lanc.parcelamento_id) {
+        await deleteAllParc.mutateAsync(lanc.parcelamento_id);
+      } else if (lanc.recorrencia_pai_id) {
+        await deleteAllRec.mutateAsync(lanc.recorrencia_pai_id);
       }
-      toast.success("Todos os lançamentos excluídos ✓");
-      setDeleteSheetOpen(false); setActionsOpen(false);
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
+      toast.success("Todos excluídos ✓");
     } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
   };
 

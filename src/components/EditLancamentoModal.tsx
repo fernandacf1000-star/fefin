@@ -65,8 +65,8 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
 
   if (showDeleteConfirm) {
     return (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 space-y-4" style={{ background: "#0d1117" }}>
+      <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 pb-24 space-y-4" style={{ background: "#0d1117" }}>
           <h3 className="text-base font-semibold text-foreground text-center">Excluir lançamento?</h3>
           <p className="text-sm text-muted-foreground text-center">Tem certeza? Esta ação não pode ser desfeita.</p>
           <div className="flex gap-3">
@@ -84,8 +84,8 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
     const isFuture = parcelamentoMode === "future";
     const count = parcelamentoCount ?? 0;
     return (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 space-y-4" style={{ background: "#0d1117" }}>
+      <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 pb-24 space-y-4" style={{ background: "#0d1117" }}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-yellow-500/15 flex items-center justify-center shrink-0">
               <AlertTriangle size={18} className="text-yellow-400" />
@@ -165,13 +165,13 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Bottom sheet */}
       <div
-        className="fixed inset-x-0 bottom-0 z-[51] flex flex-col"
+        className="fixed inset-x-0 bottom-0 z-[90] flex flex-col"
         style={{
           maxHeight: "90vh",
           borderRadius: "24px 24px 0 0",

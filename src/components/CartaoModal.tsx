@@ -35,12 +35,24 @@ interface Props {
 }
 
 const CartaoModal = ({ open, onClose, onSave, isPending, initial }: Props) => {
-  const [nome, setNome] = useState(initial?.nome || "");
-  const [bandeira, setBandeira] = useState(initial?.bandeira || "visa");
-  const [diaFechamento, setDiaFechamento] = useState(initial?.dia_fechamento || 10);
-  const [melhorDia, setMelhorDia] = useState(initial?.melhor_dia_compra || 11);
-  const [cor, setCor] = useState(initial?.cor || "#10B981");
-  const [melhorDiaEditado, setMelhorDiaEditado] = useState(!!initial);
+  const [nome, setNome] = useState("");
+  const [bandeira, setBandeira] = useState("visa");
+  const [diaFechamento, setDiaFechamento] = useState(10);
+  const [melhorDia, setMelhorDia] = useState(11);
+  const [cor, setCor] = useState("#10B981");
+  const [melhorDiaEditado, setMelhorDiaEditado] = useState(false);
+
+  // Sync state when modal opens or initial changes
+  useEffect(() => {
+    if (open) {
+      setNome(initial?.nome || "");
+      setBandeira(initial?.bandeira || "visa");
+      setDiaFechamento(initial?.dia_fechamento || 10);
+      setMelhorDia(initial?.melhor_dia_compra || 11);
+      setCor(initial?.cor || "#10B981");
+      setMelhorDiaEditado(!!initial);
+    }
+  }, [open, initial]);
 
   useEffect(() => {
     if (!melhorDiaEditado) {

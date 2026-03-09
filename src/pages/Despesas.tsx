@@ -3,8 +3,9 @@ import EmptyState from "@/components/EmptyState";
 import { useLancamentos, useUpdateLancamento, useDeleteLancamento } from "@/hooks/useLancamentos";
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import {
-  Home, CreditCard, Gift, Users, CheckCircle2, Clock,
+  CreditCard, Users, CheckCircle2, Clock,
   Receipt, ChevronLeft, ChevronRight, X, SlidersHorizontal,
+  ArrowDownLeft, ArrowUpRight,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
@@ -19,7 +20,7 @@ import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-type TipoFilter = "Todas" | "Despesas" | "Parceladas" | "Pais";
+type TipoFilter = "Todas" | "Despesas" | "Receitas" | "Parceladas" | "Pais";
 
 const now = new Date();
 const generateMonths = () => {
@@ -58,13 +59,22 @@ const Despesas = () => {
   const deleteMut = useDeleteLancamento();
   const addReembolsoMut = useAddReembolso();
 
-  const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
+  const todasDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
+  const todasReceitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
+
+  // Summaries
+  const totalReceitas = useMemo(() => todasReceitas.reduce((s, l) => s + Number(l.valor), 0), [todasReceitas]);
+  const totalDespesas = useMemo(() => todasDespesas.reduce((s, l) => s + Number(l.valor), 0), [todasDespesas]);
+  const saldo = totalReceitas - totalDespesas;
 
   const applyFiltersToList = useCallback((list: Lancamento[], tipo: TipoFilter, cats: string[], subcats: string[]) => {
     let filtered = list;
-    if (tipo === "Parceladas") filtered = filtered.filter(d => d.is_parcelado);
+
+    if (tipo === "Despesas") filtered = filtered.filter(d => d.tipo === "despesa" && !d.is_parcelado && d.categoria !== "pais");
+    else if (tipo === "Receitas") filtered = filtered.filter(d => d.tipo === "receita");
+    else if (tipo === "Parceladas") filtered = filtered.filter(d => d.is_parcelado);
     else if (tipo === "Pais") filtered = filtered.filter(d => d.categoria === "pais");
-    else if (tipo === "Despesas") filtered = filtered.filter(d => !d.is_parcelado && d.categoria !== "pais");
+
     if (cats.length > 0) {
       filtered = filtered.filter(d => d.categoria_macro && cats.includes(d.categoria_macro));
     }
@@ -74,25 +84,34 @@ const Despesas = () => {
     return filtered;
   }, []);
 
-  const filteredDespesas = useMemo(() => applyFiltersToList(despesas, tipoFilter, catFilters, subcatFilters), [despesas, tipoFilter, catFilters, subcatFilters, applyFiltersToList]);
-  const draftFiltered = useMemo(() => applyFiltersToList(despesas, draftTipo, draftCats, draftSubcats), [despesas, draftTipo, draftCats, draftSubcats, applyFiltersToList]);
+  const allLancamentos = useMemo(() => lancamentos, [lancamentos]);
 
-  const regulares = useMemo(() => filteredDespesas.filter((d) => !d.is_parcelado && d.categoria !== "pais"), [filteredDespesas]);
-  const parceladas = useMemo(() => filteredDespesas.filter((d) => d.is_parcelado), [filteredDespesas]);
-  const pais = useMemo(() => filteredDespesas.filter((d) => d.categoria === "pais"), [filteredDespesas]);
+  const filteredAll = useMemo(() => applyFiltersToList(allLancamentos, tipoFilter, catFilters, subcatFilters), [allLancamentos, tipoFilter, catFilters, subcatFilters, applyFiltersToList]);
+  const draftFiltered = useMemo(() => applyFiltersToList(allLancamentos, draftTipo, draftCats, draftSubcats), [allLancamentos, draftTipo, draftCats, draftSubcats, applyFiltersToList]);
+
+  // Grouped from filteredAll
+  const filteredReceitas = useMemo(() => filteredAll.filter(l => l.tipo === "receita"), [filteredAll]);
+  const filteredDespesasReg = useMemo(() => filteredAll.filter(d => d.tipo === "despesa" && !d.is_parcelado && d.categoria !== "pais"), [filteredAll]);
+  const filteredParceladas = useMemo(() => filteredAll.filter(d => d.is_parcelado), [filteredAll]);
+  const filteredPais = useMemo(() => filteredAll.filter(d => d.categoria === "pais"), [filteredAll]);
+
+  // Unified sorted list for "Todas"
+  const unifiedList = useMemo(() => {
+    return [...filteredAll].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+  }, [filteredAll]);
 
   const paisTotals = useMemo(() => {
-    const custoTotal = pais.reduce((s, d) => s + Number(d.valor), 0);
-    const euPaguei = pais
+    const custoTotal = filteredPais.reduce((s, d) => s + Number(d.valor), 0);
+    const euPaguei = filteredPais
       .filter((d) => d.subcategoria_pais === "paguei_por_eles" || d.subcategoria_pais === "paguei_recebo_depois")
       .reduce((s, d) => s + Number(d.valor), 0);
-    const reembolsado = lancamentos
-      .filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais")
+    const reembolsado = todasReceitas
+      .filter((l) => l.categoria === "reembolso_pais")
       .reduce((s, l) => s + Number(l.valor), 0);
     return { custoTotal, euPaguei, reembolsado, subsidioLiquido: euPaguei - reembolsado };
-  }, [pais, lancamentos]);
+  }, [filteredPais, todasReceitas]);
 
-  const totalFiltrado = useMemo(() => filteredDespesas.reduce((s, d) => s + Number(d.valor), 0), [filteredDespesas]);
+  const totalFiltrado = useMemo(() => filteredAll.reduce((s, d) => s + Number(d.valor), 0), [filteredAll]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -102,11 +121,7 @@ const Despesas = () => {
     return count;
   }, [tipoFilter, catFilters, subcatFilters]);
 
-  const hasData = despesas.length > 0;
-  const showSection = (check: (d: Lancamento) => boolean) => {
-    if (tipoFilter === "Todas" && catFilters.length === 0 && subcatFilters.length === 0) return true;
-    return filteredDespesas.some(check);
-  };
+  const hasData = lancamentos.length > 0;
 
   const openFilterSheet = () => {
     setDraftTipo(tipoFilter);
@@ -198,17 +213,21 @@ const Despesas = () => {
     );
   };
 
-  const renderValor = (item: Lancamento, prefix = "") => {
+  const renderValorItem = (item: Lancamento) => {
     const totalReemb = getTotalReembolsado(allReembolsos, item.id);
     const valorOriginal = Number(item.valor);
+    const isReceita = item.tipo === "receita";
+    const colorClass = isReceita ? "text-emerald-400" : "text-red-400";
+    const prefix = isReceita ? "+ " : "- ";
+
     if (totalReemb <= 0) {
-      return <p className="text-sm font-semibold text-foreground tabular-nums">{prefix}{fmt(valorOriginal)}</p>;
+      return <p className={`text-sm font-semibold tabular-nums ${colorClass}`}>{prefix}{fmt(valorOriginal)}</p>;
     }
     const valorLiquido = Math.max(0, valorOriginal - totalReemb);
     return (
       <div className="text-right">
         <p className="text-[10px] text-muted-foreground line-through tabular-nums">{prefix}{fmt(valorOriginal)}</p>
-        <p className="text-sm font-semibold text-foreground tabular-nums">{prefix}{fmt(valorLiquido)}</p>
+        <p className={`text-sm font-semibold tabular-nums ${colorClass}`}>{prefix}{fmt(valorLiquido)}</p>
       </div>
     );
   };
@@ -221,30 +240,56 @@ const Despesas = () => {
     return <span className="text-[11px] ml-1 text-muted-foreground">· {parts.join(" · ")}</span>;
   };
 
-  const renderItem = (item: Lancamento, icon: React.ReactNode, subtitle: React.ReactNode, valuePrefix = "") => (
-    <SwipeableItem key={item.id} onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
-      <div onClick={() => openActions(item)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer">
-        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
-          <div className="flex items-center">
-            {subtitle}
-            {renderSubcatLabel(item)}
+  const renderItem = (item: Lancamento, icon: React.ReactNode, subtitle: React.ReactNode) => {
+    const isReceita = item.tipo === "receita";
+    const borderColor = isReceita ? "#10B981" : "#F87171";
+    return (
+      <SwipeableItem key={item.id} onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
+        <div
+          onClick={() => openActions(item)}
+          className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer"
+          style={{ borderLeft: `3px solid ${borderColor}` }}
+        >
+          <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
+            {icon}
           </div>
-          {item.is_parcelado && item.parcela_atual != null && item.parcela_total != null && (
-            <span className="text-[10px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas
-              {item.parcela_atual === item.parcela_total && (
-                <span className="ml-1 text-[9px] font-semibold text-yellow-500">🏁 Última parcela</span>
-              )}
-            </span>
-          )}
-          {renderReembolsoBadge(item)}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
+            <div className="flex items-center flex-wrap">
+              {subtitle}
+              {renderSubcatLabel(item)}
+            </div>
+            {item.is_parcelado && item.parcela_atual != null && item.parcela_total != null && (
+              <span className="text-[10px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas
+                {item.parcela_atual === item.parcela_total && (
+                  <span className="ml-1 text-[9px] font-semibold text-yellow-500">🏁 Última parcela</span>
+                )}
+              </span>
+            )}
+            {renderReembolsoBadge(item)}
+          </div>
+          {renderValorItem(item)}
         </div>
-        {renderValor(item, valuePrefix)}
-      </div>
-    </SwipeableItem>
+      </SwipeableItem>
+    );
+  };
+
+  const getItemIcon = (item: Lancamento) => {
+    if (item.tipo === "receita") return <ArrowUpRight size={17} className="text-emerald-400" />;
+    if (item.is_parcelado) return <Receipt size={17} className="text-muted-foreground" />;
+    if (item.categoria === "pais") return <Users size={17} className="text-muted-foreground" />;
+    return item.pago
+      ? <CheckCircle2 size={17} className="text-primary" />
+      : <Clock size={17} className="text-yellow-400" />;
+  };
+
+  const getItemSubtitle = (item: Lancamento) => (
+    <p className="text-[11px] text-muted-foreground">
+      {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+      {item.tipo === "despesa" && !item.is_parcelado && (
+        <> · <span className={item.pago ? "text-primary" : "text-yellow-400"}>{item.pago ? "Pago" : "Pendente"}</span></>
+      )}
+    </p>
   );
 
   const draftPreviewTotal = draftFiltered.reduce((s, d) => s + Number(d.valor), 0);
@@ -272,7 +317,7 @@ const Despesas = () => {
       <div>
         <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">TIPO</p>
         <div className="flex flex-wrap gap-1.5">
-          {(["Todas", "Despesas", "Parceladas", "Pais"] as TipoFilter[]).map(t => (
+          {(["Todas", "Despesas", "Receitas", "Parceladas", "Pais"] as TipoFilter[]).map(t => (
             <button key={t} onClick={() => setTipoFilter(t)} className={`px-2.5 py-1.5 rounded-full text-[10px] font-semibold transition-all ${tipoFilter === t ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary/60 text-muted-foreground"}`}>
               {t}
             </button>
@@ -313,58 +358,17 @@ const Despesas = () => {
     </div>
   );
 
+  // Unified transaction list sorted by date
   const transactionList = (
     <>
-      {/* Despesas regulares */}
-      {regulares.length > 0 && (
-        <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-          <div className="flex items-center gap-2 mb-3">
-            <Home size={14} className="text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Despesas</h2>
-          </div>
-          <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
-            {regulares.map((bill) =>
-              renderItem(
-                bill,
-                bill.pago ? <CheckCircle2 size={18} className="text-primary" /> : <Clock size={18} className="text-yellow-400" />,
-                <p className="text-[11px] text-muted-foreground">
-                  {new Date(bill.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} · <span className={bill.pago ? "text-primary" : "text-yellow-400"}>{bill.pago ? "Pago" : "Pendente"}</span>
-                </p>
-              )
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Parceladas */}
-      {parceladas.length > 0 && (
-        <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-          <div className="flex items-center gap-2 mb-3">
-            <CreditCard size={14} className="text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Parceladas</h2>
-          </div>
-          <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
-            {parceladas.map((item) =>
-              renderItem(
-                item,
-                <Receipt size={18} className="text-muted-foreground" />,
-                <p className="text-[11px] text-muted-foreground">
-                  {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-                </p>
-              )
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Pais */}
-      {pais.length > 0 && (
-        <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-          <div className="flex items-center gap-2 mb-3">
+      {/* Pais summary block (always on top when pais items visible) */}
+      {filteredPais.length > 0 && (tipoFilter === "Todas" || tipoFilter === "Pais") && (
+        <div className="mb-4 animate-fade-up" style={{ animationDelay: "0.08s" }}>
+          <div className="flex items-center gap-2 mb-2">
             <Users size={14} className="text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Pais</h2>
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Resumo Pais</h2>
           </div>
-          <div className="glass-card p-4 space-y-3 mb-3">
+          <div className="glass-card p-4 space-y-2 mb-3">
             <div className="flex items-center justify-between">
               <p className="text-[11px] text-muted-foreground">Custo total</p>
               <p className="text-sm font-bold text-foreground tabular-nums">{fmt(paisTotals.custoTotal)}</p>
@@ -382,23 +386,20 @@ const Despesas = () => {
               <p className="text-sm font-bold text-primary tabular-nums">{fmt(paisTotals.subsidioLiquido)}</p>
             </div>
           </div>
-          <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
-            {pais.map((item) =>
-              renderItem(
-                item,
-                <Users size={18} className="text-muted-foreground" />,
-                <p className="text-[11px] text-muted-foreground">{new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</p>,
-                "-"
-              )
-            )}
-          </div>
         </div>
       )}
 
-      {filteredDespesas.length === 0 && hasData && (
-        <div className="text-center py-8">
-          <p className="text-sm text-muted-foreground">Nenhum lançamento com esses filtros</p>
+      {/* Unified list */}
+      {unifiedList.length > 0 ? (
+        <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
+          {unifiedList.map((item) => renderItem(item, getItemIcon(item), getItemSubtitle(item)))}
         </div>
+      ) : (
+        hasData && (
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground">Nenhum lançamento com esses filtros</p>
+          </div>
+        )
       )}
     </>
   );
@@ -406,7 +407,7 @@ const Despesas = () => {
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
       <div className="px-4 pt-12 w-full">
-        <h1 className="text-xl font-semibold text-foreground mb-4 animate-fade-up">Despesas</h1>
+        <h1 className="text-xl font-semibold text-foreground mb-4 animate-fade-up">Transações</h1>
 
         {/* Month Selector */}
         <div className="flex items-center justify-center gap-3 mb-4 animate-fade-up" style={{ animationDelay: "0.03s" }}>
@@ -425,10 +426,14 @@ const Despesas = () => {
           </button>
         </div>
 
-        {/* Summary + Filter Button (mobile only) */}
+        {/* Summary bar */}
         <div className="flex items-center justify-between mb-3 animate-fade-up" style={{ animationDelay: "0.05s" }}>
-          <p className="text-xs text-muted-foreground">
-            {filteredDespesas.length} lançamentos · {fmt(totalFiltrado)}
+          <p className="text-[11px] text-muted-foreground leading-snug">
+            <span className="text-emerald-400 font-medium">↑ {fmt(totalReceitas)}</span>
+            {" · "}
+            <span className="text-red-400 font-medium">↓ {fmt(totalDespesas)}</span>
+            {" · "}
+            <span className={`font-semibold ${saldo >= 0 ? "text-emerald-400" : "text-red-400"}`}>Saldo {fmt(saldo)}</span>
           </p>
           <button
             onClick={openFilterSheet}
@@ -446,14 +451,22 @@ const Despesas = () => {
           </button>
         </div>
 
+        {/* Quick filter pills (mobile) */}
+        <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1 md:hidden animate-fade-up" style={{ animationDelay: "0.06s" }}>
+          {(["Todas", "Despesas", "Receitas", "Parceladas", "Pais"] as TipoFilter[]).map(t => (
+            <button
+              key={t}
+              onClick={() => setTipoFilter(t)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${tipoFilter === t ? "gradient-emerald text-primary-foreground shadow-md shadow-primary/20" : "bg-secondary/60 text-muted-foreground"}`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
         {/* Active Filter Chips (mobile only) */}
-        {activeFilterCount > 0 && (
+        {activeFilterCount > 0 && (catFilters.length > 0 || subcatFilters.length > 0) && (
           <div className="flex flex-wrap gap-1.5 mb-3 animate-fade-up md:hidden">
-            {tipoFilter !== "Todas" && (
-              <button onClick={() => removeFilter("tipo")} className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium bg-secondary text-primary">
-                {tipoFilter} <X size={10} />
-              </button>
-            )}
             {catFilters.map(c => (
               <button key={c} onClick={() => removeFilter("cat", c)} className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium bg-secondary text-primary">
                 {getGroupEmoji(c)} {c} <X size={10} />
@@ -468,7 +481,7 @@ const Despesas = () => {
         )}
 
         {!hasData && !isLoading ? (
-          <EmptyState title="Nenhum gasto por aqui! 🎉" />
+          <EmptyState title="Nenhum lançamento por aqui! 🎉" />
         ) : (
           <div className="md:flex md:gap-4">
             {/* Tablet: Filter sidebar */}
@@ -490,7 +503,7 @@ const Despesas = () => {
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto pb-24">
           <div className="space-y-5 pt-2">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-foreground">Filtrar despesas</h2>
+              <h2 className="text-base font-semibold text-foreground">Filtrar transações</h2>
               <button onClick={clearAllFilters} className="text-xs font-semibold text-destructive">Limpar tudo</button>
             </div>
 
@@ -498,7 +511,7 @@ const Despesas = () => {
             <div>
               <p className="text-[11px] font-semibold text-muted-foreground mb-2">TIPO</p>
               <div className="flex flex-wrap gap-2">
-                {(["Todas", "Despesas", "Parceladas", "Pais"] as TipoFilter[]).map(t => (
+                {(["Todas", "Despesas", "Receitas", "Parceladas", "Pais"] as TipoFilter[]).map(t => (
                   <button
                     key={t}
                     onClick={() => setDraftTipo(t)}

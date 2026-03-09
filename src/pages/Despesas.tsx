@@ -80,6 +80,10 @@ const Despesas = () => {
   const updateFuturasMut = useUpdateParcelamentoFuturas();
   const updateAllMut = useUpdateAllParcelamento();
   const deleteMut = useDeleteLancamento();
+  const deleteFutureParc = useDeleteFutureParcelamento();
+  const deleteAllParc = useDeleteAllParcelamento();
+  const deleteFutureRec = useDeleteFutureRecorrencia();
+  const deleteAllRec = useDeleteAllRecorrencia();
   const addReembolsoMut = useAddReembolso();
 
   const todasDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);

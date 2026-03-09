@@ -738,6 +738,7 @@ const Despesas = () => {
 
       {selectedLanc && (
         <EditLancamentoModal
+          key={selectedLanc.id}
           open={editOpen}
           onClose={() => { setEditOpen(false); setDeleteConfirm(false); setEditMode(null); }}
           showDeleteConfirm={deleteConfirm}

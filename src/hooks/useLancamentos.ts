@@ -135,12 +135,21 @@ export const useUpdateParcelamentoFuturas = () => {
         cartao_id?: string | null;
       };
     }) => {
-      const { error } = await supabase
+      // Try parcelamento_id first
+      const { error: err1 } = await supabase
         .from("lancamentos")
         .update(updates as any)
         .eq("parcelamento_id", parcelamento_id)
         .gte("data", fromDate);
-      if (error) throw error;
+      if (err1) throw err1;
+
+      // Also update by recorrencia_pai_id (for recurring entries)
+      const { error: err2 } = await supabase
+        .from("lancamentos")
+        .update(updates as any)
+        .eq("recorrencia_pai_id", parcelamento_id)
+        .gte("data", fromDate);
+      if (err2) throw err2;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });

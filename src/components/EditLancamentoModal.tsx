@@ -65,8 +65,8 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
 
   if (showDeleteConfirm) {
     return (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 space-y-4" style={{ background: "#0d1117" }}>
+      <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 pb-24 space-y-4" style={{ background: "#0d1117" }}>
           <h3 className="text-base font-semibold text-foreground text-center">Excluir lançamento?</h3>
           <p className="text-sm text-muted-foreground text-center">Tem certeza? Esta ação não pode ser desfeita.</p>
           <div className="flex gap-3">

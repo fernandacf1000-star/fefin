@@ -5,7 +5,7 @@ import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/
 import type { Lancamento } from "@/hooks/useLancamentos";
 import {
   DollarSign, HandCoins, RefreshCw, Receipt,
-  ArrowDownLeft, ChevronLeft, ChevronRight,
+  ArrowDownLeft, ChevronLeft, ChevronRight, Plus, Check,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import SwipeableItem from "@/components/SwipeableItem";
 import LancamentoActions from "@/components/LancamentoActions";
 import EditLancamentoModal from "@/components/EditLancamentoModal";
 import ReembolsoModal from "@/components/ReembolsoModal";
+import ReembolsoFixoModal from "@/components/ReembolsoFixoModal";
 import { getGroupEmoji } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>

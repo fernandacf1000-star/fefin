@@ -125,7 +125,15 @@ export const useUpdateParcelamentoFuturas = () => {
     }: {
       parcelamento_id: string;
       fromDate: string;
-      updates: { descricao?: string; valor?: number };
+      updates: { 
+        descricao?: string; 
+        valor?: number;
+        categoria?: string;
+        subcategoria?: string | null;
+        categoria_macro?: string | null;
+        forma_pagamento?: string | null;
+        cartao_id?: string | null;
+      };
     }) => {
       const { error } = await supabase
         .from("lancamentos")

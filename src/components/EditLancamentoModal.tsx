@@ -268,7 +268,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
                             ? "ring-2 text-foreground"
                             : "bg-secondary/40 text-muted-foreground"
                         )}
-                        style={selected ? { background: "rgba(16,185,129,0.12)", borderColor: "#10B981", ringColor: "#10B981", outline: "2px solid #10B981" } : {}}
+                        style={selected ? { background: "rgba(16,185,129,0.12)", outline: "2px solid #10B981" } : {}}
                       >
                         <span className="text-base">{g.emoji}</span>
                         <span className="truncate">{g.group}</span>

@@ -192,16 +192,18 @@ const Despesas = () => {
   };
 
   const handleSelectParcelamentoFuture = async () => {
-    if (!selectedLanc?.parcelamento_id) return;
-    const count = await fetchParcelamentoCount(selectedLanc.parcelamento_id, today);
+    const groupId = selectedLanc?.parcelamento_id || selectedLanc?.recorrencia_pai_id;
+    if (!groupId) return;
+    const count = await fetchParcelamentoCount(groupId, today);
     setParcelamentoCount(count);
     setEditMode("future");
     setEditOpen(true);
   };
 
   const handleSelectParcelamentoAll = async () => {
-    if (!selectedLanc?.parcelamento_id) return;
-    const count = await fetchParcelamentoCount(selectedLanc.parcelamento_id);
+    const groupId = selectedLanc?.parcelamento_id || selectedLanc?.recorrencia_pai_id;
+    if (!groupId) return;
+    const count = await fetchParcelamentoCount(groupId);
     setParcelamentoCount(count);
     setEditMode("all");
     setEditOpen(true);

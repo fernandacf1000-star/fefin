@@ -39,11 +39,12 @@ const incomeCatMap: Record<string, string> = {
 interface NewExpenseSheetProps {
   open: boolean;
   onClose: () => void;
+  initialTipo?: TipoLanc;
 }
 
-const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
-  const [step, setStep] = useState(1);
-  const [tipoLanc, setTipoLanc] = useState<TipoLanc>("despesa");
+const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) => {
+  const [step, setStep] = useState(initialTipo ? 2 : 1);
+  const [tipoLanc, setTipoLanc] = useState<TipoLanc>(initialTipo || "despesa");
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
   const [categoriaMacro, setCategoriaMacro] = useState("");
@@ -97,9 +98,9 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
 
   const resetAndClose = () => {
     onClose();
-    setStep(1); setDescricao(""); setValor(""); setCategoriaMacro("");
+    setStep(initialTipo ? 2 : 1); setDescricao(""); setValor(""); setCategoriaMacro("");
     setSubcategoria(""); setData(new Date());
-    setTipoLanc("despesa"); setIncomeCat("Salário");
+    setTipoLanc(initialTipo || "despesa"); setIncomeCat("Salário");
     setOQueAconteceu("paguei_por_eles"); setFormaPagamento("pix"); setCartaoId("");
     setIsParcelado(false); setNumParcelas(""); setValorTotal("");
   };

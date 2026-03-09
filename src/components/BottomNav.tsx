@@ -3,7 +3,6 @@ import { Home, Receipt, BarChart3, TrendingUp, Plus, Users, Percent, ArrowDownLe
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import NewExpenseSheet from "./NewExpenseSheet";
-import NewIncomeSheet from "./NewIncomeSheet";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { APP_VERSION } from "@/version";
@@ -96,7 +95,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
-  const [incomeOpen, setIncomeOpen] = useState(false);
+  const [expenseInitialTipo, setExpenseInitialTipo] = useState<"despesa" | "receita">("despesa");
 
   const renderItem = (item: { icon: any; label: string; path: string }) => {
     const isActive = location.pathname === item.path;
@@ -120,20 +119,22 @@ const BottomNav = () => {
 
   const handleSelectExpense = () => {
     setSelectorOpen(false);
+    setExpenseInitialTipo("despesa");
     setTimeout(() => setExpenseOpen(true), 200);
   };
 
   const handleSelectIncome = () => {
     setSelectorOpen(false);
-    setTimeout(() => setIncomeOpen(true), 200);
+    setExpenseInitialTipo("receita");
+    setTimeout(() => setExpenseOpen(true), 200);
   };
 
   return (
     <>
       {/* Tablet sidebar */}
       <TabletSidebar
-        onNewExpense={() => setExpenseOpen(true)}
-        onNewIncome={() => setIncomeOpen(true)}
+        onNewExpense={() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); }}
+        onNewIncome={() => { setExpenseInitialTipo("receita"); setExpenseOpen(true); }}
       />
 
       {/* Mobile bottom nav - hidden on tablet+ */}
@@ -202,8 +203,7 @@ const BottomNav = () => {
         </div>
       </div>
 
-      <NewExpenseSheet open={expenseOpen} onClose={() => setExpenseOpen(false)} />
-      <NewIncomeSheet open={incomeOpen} onClose={() => setIncomeOpen(false)} />
+      <NewExpenseSheet open={expenseOpen} onClose={() => setExpenseOpen(false)} initialTipo={expenseInitialTipo} />
     </>
   );
 };

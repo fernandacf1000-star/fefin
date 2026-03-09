@@ -32,6 +32,25 @@ export interface Lancamento {
 
 export const useLancamentos = (mesReferencia?: string) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`lancamentos-rt-${mesReferencia ?? "all"}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "lancamentos",
+      }, () => {
+        queryClient.refetchQueries({
+          queryKey: ["lancamentos"],
+          exact: false,
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, mesReferencia, queryClient]);
 
   return useQuery({
     queryKey: ["lancamentos", user?.id, mesReferencia],

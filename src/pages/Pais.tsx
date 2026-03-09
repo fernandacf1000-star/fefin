@@ -46,6 +46,7 @@ const Pais = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [reembolsoOpen, setReembolsoOpen] = useState(false);
+  const [reembolsoFixoOpen, setReembolsoFixoOpen] = useState(false);
 
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);

@@ -111,7 +111,7 @@ const CartaoModal = ({ open, onClose, onSave, isPending, initial }: Props) => {
               min={1}
               max={31}
               value={melhorDia}
-              onChange={(e) => setMelhorDia(parseInt(e.target.value) || 1)}
+              onChange={(e) => { setMelhorDiaEditado(true); setMelhorDia(parseInt(e.target.value) || 1); }}
               className="bg-secondary/40 border-border/50"
             />
           </div>

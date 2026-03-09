@@ -429,7 +429,7 @@ const Dashboard = () => {
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
-        <div className="px-5 pb-8">
+        <div className="px-5 pb-6">
           <div className="flex items-center gap-3 pb-4">
             <div className="w-[40px] h-[40px] rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ background: "#1a1a2e", border: "2px solid hsl(var(--primary))" }}>
               <MascotHead size={28} />
@@ -448,6 +448,9 @@ const Dashboard = () => {
             <LogOut size={18} className="text-destructive" />
             <span className="text-sm font-medium text-destructive">Sair</span>
           </button>
+          <div className="h-px mt-2 mb-3" style={{ background: "#1e2433" }} />
+          <p className="text-center text-[11px]" style={{ color: "#475569" }}>FeFin {APP_VERSION}</p>
+          <p className="text-center text-[10px]" style={{ color: "#475569" }}>Atualizado em {APP_UPDATED}</p>
         </div>
       </div>
 

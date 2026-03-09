@@ -529,7 +529,7 @@ const Despesas = () => {
     </>
   );
 
-  const isPending = updateMut.isPending || updateFuturasMut.isPending || updateAllMut.isPending || deleteMut.isPending;
+  const isPending = updateMut.isPending || updateFuturasMut.isPending || updateAllMut.isPending || deleteMut.isPending || deleteFutureParc.isPending || deleteAllParc.isPending || deleteFutureRec.isPending || deleteAllRec.isPending;
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">

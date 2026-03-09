@@ -212,9 +212,10 @@ const Despesas = () => {
   const handleSave = async (data: any) => {
     if (!selectedLanc) return;
     try {
-      if (editMode === "future" && selectedLanc.parcelamento_id) {
+      const groupId = selectedLanc.parcelamento_id || selectedLanc.recorrencia_pai_id;
+      if (editMode === "future" && groupId) {
         await updateFuturasMut.mutateAsync({
-          parcelamento_id: selectedLanc.parcelamento_id,
+          parcelamento_id: groupId,
           fromDate: selectedLanc.data >= today ? selectedLanc.data : today,
           updates: { 
             descricao: data.descricao, 

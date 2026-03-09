@@ -51,7 +51,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
   const [data, setData] = useState<Date>(new Date());
   const [oQueAconteceu, setOQueAconteceu] = useState("paguei_por_eles");
   const [incomeCat, setIncomeCat] = useState<string>("Salário");
-  const [formaPagamento, setFormaPagamento] = useState<string>("pix");
+  const [formaPagamento, setFormaPagamento] = useState<string>("dinheiro");
   const [cartaoId, setCartaoId] = useState<string>("");
 
   // Parcelamento as attribute

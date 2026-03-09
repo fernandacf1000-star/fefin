@@ -10,6 +10,7 @@ import type { Cartao } from "@/hooks/useCartoes";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import CartaoModal from "@/components/CartaoModal";
+import { APP_VERSION, APP_UPDATED } from "@/version";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -294,15 +295,12 @@ const Conta = () => {
 
       {/* Sobre o app */}
       <div className="px-4 mt-8 pb-8 flex flex-col items-center animate-fade-up" style={{ animationDelay: "0.1s" }}>
-        <div className="w-full h-[1px] bg-[#1e2433] mb-6" />
-        <h2 className="text-white font-bold text-lg mb-1">FeFin</h2>
-        <p className="text-[#475569] text-[12px]">Versão 1.0.0</p>
-        <p className="text-[#475569] text-[12px] mb-4">Atualizado em 08/03/2026</p>
-        <button 
-          onClick={() => {
-            // @ts-ignore
-            window.location.reload(true);
-          }}
+        <div className="w-full h-[1px] bg-border/30 mb-6" />
+        <h2 className="text-foreground font-bold text-lg mb-1">FeFin</h2>
+        <p className="text-muted-foreground text-[12px]">{APP_VERSION}</p>
+        <p className="text-muted-foreground text-[12px] mb-4">Atualizado em {APP_UPDATED}</p>
+        <button
+          onClick={() => window.location.reload()}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border/50 text-foreground text-sm font-medium hover:bg-secondary/50 transition-colors"
         >
           <span>🔄</span> Forçar atualização

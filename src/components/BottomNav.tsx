@@ -6,6 +6,7 @@ import NewExpenseSheet from "./NewExpenseSheet";
 import NewIncomeSheet from "./NewIncomeSheet";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
+import { APP_VERSION } from "@/version";
 
 const navItems = [
   { icon: Home, label: "Início", path: "/dashboard" },
@@ -84,7 +85,7 @@ const TabletSidebar = ({
 
       {/* Version */}
       <div className="px-4 pb-4">
-        <p className="text-[9px] text-muted-foreground">FeFin v1.0</p>
+        <p className="text-[9px] text-muted-foreground">FeFin {APP_VERSION}</p>
       </div>
     </aside>
   );

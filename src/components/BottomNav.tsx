@@ -3,7 +3,6 @@ import { Home, Receipt, BarChart3, TrendingUp, Plus, Users, Percent, ArrowDownLe
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import NewExpenseSheet from "./NewExpenseSheet";
-import NewIncomeSheet from "./NewIncomeSheet";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { APP_VERSION } from "@/version";

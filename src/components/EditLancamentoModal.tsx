@@ -165,7 +165,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 

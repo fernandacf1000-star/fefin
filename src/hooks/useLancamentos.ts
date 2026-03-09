@@ -179,22 +179,36 @@ export const useUpdateAllParcelamento = () => {
   });
 };
 
-/** Returns count of lancamentos for a parcelamento_id, optionally filtered by fromDate */
+/** Returns count of lancamentos for a parcelamento_id or recorrencia_pai_id, optionally filtered by fromDate */
 export const fetchParcelamentoCount = async (
-  parcelamento_id: string,
+  groupId: string,
   fromDate?: string
 ): Promise<number> => {
+  // Try parcelamento_id first, then recorrencia_pai_id
   let query = supabase
     .from("lancamentos")
     .select("id", { count: "exact", head: true })
-    .eq("parcelamento_id", parcelamento_id);
+    .eq("parcelamento_id", groupId);
 
   if (fromDate) {
     query = query.gte("data", fromDate);
   }
 
-  const { count } = await query;
-  return count ?? 0;
+  const { count: count1 } = await query;
+  if (count1 && count1 > 0) return count1;
+
+  // Fallback: try recorrencia_pai_id
+  let query2 = supabase
+    .from("lancamentos")
+    .select("id", { count: "exact", head: true })
+    .eq("recorrencia_pai_id", groupId);
+
+  if (fromDate) {
+    query2 = query2.gte("data", fromDate);
+  }
+
+  const { count: count2 } = await query2;
+  return count2 ?? 0;
 };
 
 export const useDeleteLancamento = () => {

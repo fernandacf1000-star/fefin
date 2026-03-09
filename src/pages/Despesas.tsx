@@ -1,18 +1,26 @@
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
-import { useLancamentos, useUpdateLancamento, useDeleteLancamento } from "@/hooks/useLancamentos";
+import {
+  useLancamentos,
+  useUpdateLancamento,
+  useUpdateParcelamentoFuturas,
+  useUpdateAllParcelamento,
+  useDeleteLancamento,
+  fetchParcelamentoCount,
+} from "@/hooks/useLancamentos";
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import {
   CreditCard, Users, CheckCircle2, Clock,
   Receipt, ChevronLeft, ChevronRight, X, SlidersHorizontal,
-  ArrowDownLeft, ArrowUpRight,
+  ArrowUpRight,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import SwipeableItem from "@/components/SwipeableItem";
 import LancamentoActions from "@/components/LancamentoActions";
-import EditLancamentoModal from "@/components/EditLancamentoModal";
+import EditLancamentoModal, { type ParcelamentoMode } from "@/components/EditLancamentoModal";
 import ReembolsoModal from "@/components/ReembolsoModal";
+import ParcelamentoEditSheet from "@/components/ParcelamentoEditSheet";
 import type { Lancamento } from "@/hooks/useLancamentos";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
@@ -21,6 +29,8 @@ const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 type TipoFilter = "Todas" | "Despesas" | "Receitas" | "Parceladas" | "Pais";
+
+const today = new Date().toISOString().split("T")[0];
 
 const now = new Date();
 const generateMonths = () => {
@@ -52,53 +62,48 @@ const Despesas = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [reembolsoOpen, setReembolsoOpen] = useState(false);
 
+  // Parcelamento edit flow
+  const [parcelamentoSheetOpen, setParcelamentoSheetOpen] = useState(false);
+  const [editMode, setEditMode] = useState<ParcelamentoMode>(null);
+  const [parcelamentoCount, setParcelamentoCount] = useState(0);
+
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
   const { data: allReembolsos = [] } = useAllReembolsos();
   const updateMut = useUpdateLancamento();
+  const updateFuturasMut = useUpdateParcelamentoFuturas();
+  const updateAllMut = useUpdateAllParcelamento();
   const deleteMut = useDeleteLancamento();
   const addReembolsoMut = useAddReembolso();
 
   const todasDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
   const todasReceitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
 
-  // Summaries
+  // Summary
   const totalReceitas = useMemo(() => todasReceitas.reduce((s, l) => s + Number(l.valor), 0), [todasReceitas]);
   const totalDespesas = useMemo(() => todasDespesas.reduce((s, l) => s + Number(l.valor), 0), [todasDespesas]);
   const saldo = totalReceitas - totalDespesas;
 
   const applyFiltersToList = useCallback((list: Lancamento[], tipo: TipoFilter, cats: string[], subcats: string[]) => {
     let filtered = list;
-
     if (tipo === "Despesas") filtered = filtered.filter(d => d.tipo === "despesa" && !d.is_parcelado && d.categoria !== "pais");
     else if (tipo === "Receitas") filtered = filtered.filter(d => d.tipo === "receita");
     else if (tipo === "Parceladas") filtered = filtered.filter(d => d.is_parcelado);
     else if (tipo === "Pais") filtered = filtered.filter(d => d.categoria === "pais");
-
-    if (cats.length > 0) {
-      filtered = filtered.filter(d => d.categoria_macro && cats.includes(d.categoria_macro));
-    }
-    if (subcats.length > 0) {
-      filtered = filtered.filter(d => d.subcategoria && subcats.includes(d.subcategoria));
-    }
+    if (cats.length > 0) filtered = filtered.filter(d => d.categoria_macro && cats.includes(d.categoria_macro));
+    if (subcats.length > 0) filtered = filtered.filter(d => d.subcategoria && subcats.includes(d.subcategoria));
     return filtered;
   }, []);
 
-  const allLancamentos = useMemo(() => lancamentos, [lancamentos]);
+  const filteredAll = useMemo(() => applyFiltersToList(lancamentos, tipoFilter, catFilters, subcatFilters), [lancamentos, tipoFilter, catFilters, subcatFilters, applyFiltersToList]);
+  const draftFiltered = useMemo(() => applyFiltersToList(lancamentos, draftTipo, draftCats, draftSubcats), [lancamentos, draftTipo, draftCats, draftSubcats, applyFiltersToList]);
 
-  const filteredAll = useMemo(() => applyFiltersToList(allLancamentos, tipoFilter, catFilters, subcatFilters), [allLancamentos, tipoFilter, catFilters, subcatFilters, applyFiltersToList]);
-  const draftFiltered = useMemo(() => applyFiltersToList(allLancamentos, draftTipo, draftCats, draftSubcats), [allLancamentos, draftTipo, draftCats, draftSubcats, applyFiltersToList]);
-
-  // Grouped from filteredAll
-  const filteredReceitas = useMemo(() => filteredAll.filter(l => l.tipo === "receita"), [filteredAll]);
-  const filteredDespesasReg = useMemo(() => filteredAll.filter(d => d.tipo === "despesa" && !d.is_parcelado && d.categoria !== "pais"), [filteredAll]);
-  const filteredParceladas = useMemo(() => filteredAll.filter(d => d.is_parcelado), [filteredAll]);
   const filteredPais = useMemo(() => filteredAll.filter(d => d.categoria === "pais"), [filteredAll]);
 
-  // Unified sorted list for "Todas"
-  const unifiedList = useMemo(() => {
-    return [...filteredAll].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-  }, [filteredAll]);
+  const unifiedList = useMemo(
+    () => [...filteredAll].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
+    [filteredAll]
+  );
 
   const paisTotals = useMemo(() => {
     const custoTotal = filteredPais.reduce((s, d) => s + Number(d.valor), 0);
@@ -164,17 +169,74 @@ const Despesas = () => {
   }, [draftCats]);
 
   const openActions = (lanc: Lancamento) => { setSelectedLanc(lanc); setActionsOpen(true); };
-  const openEdit = (lanc: Lancamento) => { setSelectedLanc(lanc); setEditOpen(true); setDeleteConfirm(false); };
+
+  const openEdit = (lanc: Lancamento) => {
+    setSelectedLanc(lanc);
+    setDeleteConfirm(false);
+    if (lanc.is_parcelado && lanc.parcelamento_id) {
+      // Show parcelamento choice sheet
+      setParcelamentoSheetOpen(true);
+    } else {
+      setEditMode("single");
+      setEditOpen(true);
+    }
+  };
+
   const openDelete = (lanc: Lancamento) => { setSelectedLanc(lanc); setEditOpen(true); setDeleteConfirm(true); };
   const openReembolso = (lanc: Lancamento) => { setSelectedLanc(lanc); setReembolsoOpen(true); };
+
+  const handleSelectParcelamentoSingle = () => {
+    setEditMode("single");
+    setParcelamentoCount(0);
+    setEditOpen(true);
+  };
+
+  const handleSelectParcelamentoFuture = async () => {
+    if (!selectedLanc?.parcelamento_id) return;
+    const count = await fetchParcelamentoCount(selectedLanc.parcelamento_id, today);
+    setParcelamentoCount(count);
+    setEditMode("future");
+    setEditOpen(true);
+  };
+
+  const handleSelectParcelamentoAll = async () => {
+    if (!selectedLanc?.parcelamento_id) return;
+    const count = await fetchParcelamentoCount(selectedLanc.parcelamento_id);
+    setParcelamentoCount(count);
+    setEditMode("all");
+    setEditOpen(true);
+  };
 
   const handleSave = async (data: any) => {
     if (!selectedLanc) return;
     try {
-      await updateMut.mutateAsync({ id: selectedLanc.id, ...data });
-      toast.success("Lançamento atualizado ✓");
+      if (editMode === "future" && selectedLanc.parcelamento_id) {
+        await updateFuturasMut.mutateAsync({
+          parcelamento_id: selectedLanc.parcelamento_id,
+          fromDate: selectedLanc.data >= today ? selectedLanc.data : today,
+          updates: { descricao: data.descricao, valor: data.valor },
+        });
+        toast.success("Parcelas futuras atualizadas ✓");
+      } else if (editMode === "all" && selectedLanc.parcelamento_id) {
+        await updateAllMut.mutateAsync({
+          parcelamento_id: selectedLanc.parcelamento_id,
+          updates: { descricao: data.descricao, valor: data.valor },
+        });
+        toast.success("Todas as parcelas atualizadas ✓");
+      } else {
+        // single mode: update only this lancamento, mark as editado_individualmente
+        const updates: any = { ...data };
+        if (selectedLanc.is_parcelado) {
+          updates.editado_individualmente = true;
+        }
+        await updateMut.mutateAsync({ id: selectedLanc.id, ...updates });
+        toast.success("Lançamento atualizado ✓");
+      }
       setEditOpen(false);
-    } catch { toast.error("Erro ao atualizar."); }
+      setEditMode(null);
+    } catch {
+      toast.error("Erro ao atualizar.");
+    }
   };
 
   const handleDelete = async () => {
@@ -254,7 +316,14 @@ const Despesas = () => {
             {icon}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
+              {(item as any).editado_individualmente && (
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 shrink-0">
+                  ⚠️ Editado individualmente
+                </span>
+              )}
+            </div>
             <div className="flex items-center flex-wrap">
               {subtitle}
               {renderSubcatLabel(item)}
@@ -294,7 +363,7 @@ const Despesas = () => {
 
   const draftPreviewTotal = draftFiltered.reduce((s, d) => s + Number(d.valor), 0);
 
-  // Inline filter helpers for tablet sidebar (apply immediately)
+  // Inline filter helpers for tablet sidebar
   const toggleInlineCat = (cat: string) => {
     setCatFilters(p => p.includes(cat) ? p.filter(c => c !== cat) : [...p, cat]);
     setSubcatFilters([]);
@@ -313,7 +382,6 @@ const Despesas = () => {
         <h3 className="text-xs font-semibold text-foreground">Filtros</h3>
         <button onClick={() => { setTipoFilter("Todas"); setCatFilters([]); setSubcatFilters([]); }} className="text-[10px] font-semibold text-destructive">Limpar</button>
       </div>
-      {/* Tipo */}
       <div>
         <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">TIPO</p>
         <div className="flex flex-wrap gap-1.5">
@@ -324,7 +392,6 @@ const Despesas = () => {
           ))}
         </div>
       </div>
-      {/* Categoria */}
       <div>
         <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">CATEGORIA</p>
         <div className="grid grid-cols-1 gap-1.5">
@@ -339,7 +406,6 @@ const Despesas = () => {
           })}
         </div>
       </div>
-      {/* Subcategoria */}
       {inlineAvailableSubcats.length > 0 && (
         <div>
           <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">SUBCATEGORIA</p>
@@ -358,10 +424,9 @@ const Despesas = () => {
     </div>
   );
 
-  // Unified transaction list sorted by date
   const transactionList = (
     <>
-      {/* Pais summary block (always on top when pais items visible) */}
+      {/* Pais summary block */}
       {filteredPais.length > 0 && (tipoFilter === "Todas" || tipoFilter === "Pais") && (
         <div className="mb-4 animate-fade-up" style={{ animationDelay: "0.08s" }}>
           <div className="flex items-center gap-2 mb-2">
@@ -389,7 +454,7 @@ const Despesas = () => {
         </div>
       )}
 
-      {/* Unified list */}
+      {/* Unified sorted list */}
       {unifiedList.length > 0 ? (
         <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
           {unifiedList.map((item) => renderItem(item, getItemIcon(item), getItemSubtitle(item)))}
@@ -403,6 +468,8 @@ const Despesas = () => {
       )}
     </>
   );
+
+  const isPending = updateMut.isPending || updateFuturasMut.isPending || updateAllMut.isPending || deleteMut.isPending;
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
@@ -464,8 +531,8 @@ const Despesas = () => {
           ))}
         </div>
 
-        {/* Active Filter Chips (mobile only) */}
-        {activeFilterCount > 0 && (catFilters.length > 0 || subcatFilters.length > 0) && (
+        {/* Active Filter Chips */}
+        {(catFilters.length > 0 || subcatFilters.length > 0) && (
           <div className="flex flex-wrap gap-1.5 mb-3 animate-fade-up md:hidden">
             {catFilters.map(c => (
               <button key={c} onClick={() => removeFilter("cat", c)} className="flex items-center gap-1 px-2.5 h-7 rounded-full text-[11px] font-medium bg-secondary text-primary">
@@ -498,6 +565,16 @@ const Despesas = () => {
         )}
       </div>
 
+      {/* Parcelamento edit choice sheet */}
+      <ParcelamentoEditSheet
+        open={parcelamentoSheetOpen}
+        onClose={() => setParcelamentoSheetOpen(false)}
+        descricao={selectedLanc?.descricao}
+        onSelectSingle={handleSelectParcelamentoSingle}
+        onSelectFuture={handleSelectParcelamentoFuture}
+        onSelectAll={handleSelectParcelamentoAll}
+      />
+
       {/* Filter Bottom Sheet */}
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto pb-24">
@@ -506,8 +583,6 @@ const Despesas = () => {
               <h2 className="text-base font-semibold text-foreground">Filtrar transações</h2>
               <button onClick={clearAllFilters} className="text-xs font-semibold text-destructive">Limpar tudo</button>
             </div>
-
-            {/* Tipo */}
             <div>
               <p className="text-[11px] font-semibold text-muted-foreground mb-2">TIPO</p>
               <div className="flex flex-wrap gap-2">
@@ -524,8 +599,6 @@ const Despesas = () => {
                 ))}
               </div>
             </div>
-
-            {/* Categoria */}
             <div>
               <p className="text-[11px] font-semibold text-muted-foreground mb-2">CATEGORIA</p>
               <div className="grid grid-cols-2 gap-2">
@@ -546,8 +619,6 @@ const Despesas = () => {
                 })}
               </div>
             </div>
-
-            {/* Subcategoria */}
             {draftAvailableSubcats.length > 0 && (
               <div>
                 <p className="text-[11px] font-semibold text-muted-foreground mb-2">SUBCATEGORIA</p>
@@ -570,7 +641,6 @@ const Despesas = () => {
               </div>
             )}
           </div>
-
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-border/30">
             <button
               onClick={applyFilters}
@@ -585,7 +655,7 @@ const Despesas = () => {
       <LancamentoActions
         open={actionsOpen}
         onClose={() => setActionsOpen(false)}
-        onEdit={() => { if (selectedLanc) openEdit(selectedLanc); }}
+        onEdit={() => { if (selectedLanc) openEdit(selectedLanc); setActionsOpen(false); }}
         onDelete={() => { if (selectedLanc) openDelete(selectedLanc); setActionsOpen(false); }}
         onReembolso={() => { if (selectedLanc) openReembolso(selectedLanc); }}
         descricao={selectedLanc?.descricao}
@@ -594,11 +664,13 @@ const Despesas = () => {
       {selectedLanc && (
         <EditLancamentoModal
           open={editOpen}
-          onClose={() => { setEditOpen(false); setDeleteConfirm(false); }}
+          onClose={() => { setEditOpen(false); setDeleteConfirm(false); setEditMode(null); }}
           showDeleteConfirm={deleteConfirm}
           onConfirmDelete={handleDelete}
           onSave={handleSave}
-          isPending={updateMut.isPending || deleteMut.isPending}
+          isPending={isPending}
+          parcelamentoMode={editMode}
+          parcelamentoCount={parcelamentoCount}
           initial={{
             descricao: selectedLanc.descricao,
             valor: Number(selectedLanc.valor),

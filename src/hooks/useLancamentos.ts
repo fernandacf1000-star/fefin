@@ -206,7 +206,7 @@ export const useDeleteFutureParcelamento = () => {
         .gte("data", fromDate);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false }),
+    onSuccess: () => queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false }),
   });
 };
 

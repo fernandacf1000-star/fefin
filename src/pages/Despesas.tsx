@@ -173,8 +173,8 @@ const Despesas = () => {
   const openEdit = (lanc: Lancamento) => {
     setSelectedLanc(lanc);
     setDeleteConfirm(false);
-    if (lanc.is_parcelado && lanc.parcelamento_id) {
-      // Show parcelamento choice sheet
+    if ((lanc.is_parcelado && lanc.parcelamento_id) || (lanc.recorrente && lanc.recorrencia_pai_id)) {
+      // Show parcelamento/recorrente choice sheet
       setParcelamentoSheetOpen(true);
     } else {
       setEditMode("single");

@@ -25,6 +25,7 @@ import LancamentoActions from "@/components/LancamentoActions";
 import EditLancamentoModal, { type ParcelamentoMode } from "@/components/EditLancamentoModal";
 import ReembolsoModal from "@/components/ReembolsoModal";
 import ParcelamentoEditSheet from "@/components/ParcelamentoEditSheet";
+import DeleteConfirmSheet from "@/components/DeleteConfirmSheet";
 import type { Lancamento } from "@/hooks/useLancamentos";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";

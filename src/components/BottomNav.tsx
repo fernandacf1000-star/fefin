@@ -134,8 +134,8 @@ const BottomNav = () => {
     <>
       {/* Tablet sidebar */}
       <TabletSidebar
-        onNewExpense={() => setExpenseOpen(true)}
-        onNewIncome={() => setIncomeOpen(true)}
+        onNewExpense={() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); }}
+        onNewIncome={() => { setExpenseInitialTipo("receita"); setExpenseOpen(true); }}
       />
 
       {/* Mobile bottom nav - hidden on tablet+ */}

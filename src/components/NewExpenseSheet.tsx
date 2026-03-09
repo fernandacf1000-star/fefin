@@ -98,9 +98,9 @@ const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) =
 
   const resetAndClose = () => {
     onClose();
-    setStep(1); setDescricao(""); setValor(""); setCategoriaMacro("");
+    setStep(initialTipo ? 2 : 1); setDescricao(""); setValor(""); setCategoriaMacro("");
     setSubcategoria(""); setData(new Date());
-    setTipoLanc("despesa"); setIncomeCat("Salário");
+    setTipoLanc(initialTipo || "despesa"); setIncomeCat("Salário");
     setOQueAconteceu("paguei_por_eles"); setFormaPagamento("pix"); setCartaoId("");
     setIsParcelado(false); setNumParcelas(""); setValorTotal("");
   };

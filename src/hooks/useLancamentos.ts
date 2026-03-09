@@ -206,7 +206,7 @@ export const useDeleteLancamento = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };

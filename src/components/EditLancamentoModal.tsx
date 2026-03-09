@@ -365,33 +365,54 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
               <div>
                 <p className="text-[11px] text-muted-foreground mb-2">Pago com</p>
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    { key: "pix", label: "PIX", cartao: null },
-                    { key: "dinheiro", label: "Dinheiro", cartao: null },
-                    ...cartoes.map(c => ({ key: "cartao_" + c.id, label: "💳 " + c.nome, cartao: c.id })),
-                  ].map(opt => {
-                    const isCartao = opt.cartao !== null;
-                    const isSelected = isCartao
-                      ? form.forma_pagamento === "cartao" && form.cartao_id === opt.cartao
-                      : form.forma_pagamento === opt.key;
-                    return (
+                  {cartoes.length === 0 ? (
+                    <>
                       <button
-                        key={opt.key}
                         onClick={() => setForm(f => ({
                           ...f,
-                          forma_pagamento: isCartao ? "cartao" : opt.key,
-                          cartao_id: isCartao ? opt.cartao : null,
+                          forma_pagamento: "dinheiro",
+                          cartao_id: null,
                         }))}
                         className={cn(
                           "px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
-                          isSelected ? "text-white" : "bg-secondary/60 text-muted-foreground"
+                          form.forma_pagamento === "dinheiro" ? "text-white" : "bg-secondary/60 text-muted-foreground"
                         )}
-                        style={isSelected ? { background: "#10B981" } : {}}
+                        style={form.forma_pagamento === "dinheiro" ? { background: "#10B981" } : {}}
                       >
-                        {opt.label}
+                        💵 Dinheiro
                       </button>
-                    );
-                  })}
+                      <p className="text-[12px] text-[#475569] w-full mt-1">
+                        Adicione um cartão em Minha Conta para selecionar aqui
+                      </p>
+                    </>
+                  ) : (
+                    [
+                      { key: "dinheiro", label: "💵 Dinheiro", cartao: null },
+                      ...cartoes.map(c => ({ key: "cartao_" + c.id, label: "💳 " + c.nome, cartao: c.id })),
+                    ].map(opt => {
+                      const isCartao = opt.cartao !== null;
+                      const isSelected = isCartao
+                        ? form.forma_pagamento === "cartao" && form.cartao_id === opt.cartao
+                        : form.forma_pagamento === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          onClick={() => setForm(f => ({
+                            ...f,
+                            forma_pagamento: isCartao ? "cartao" : opt.key,
+                            cartao_id: isCartao ? opt.cartao : null,
+                          }))}
+                          className={cn(
+                            "px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                            isSelected ? "text-white" : "bg-secondary/60 text-muted-foreground"
+                          )}
+                          style={isSelected ? { background: "#10B981" } : {}}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </>

@@ -316,7 +316,7 @@ const Despesas = () => {
       }
       toast.success("Todos os lançamentos excluídos ✓");
       setDeleteSheetOpen(false); setActionsOpen(false);
-    } catch { toast.error("Erro ao excluir."); }
+    } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
   };
 
   const handleReembolso = async (data: { valor_reembolsado: number; quem_reembolsou: string; data_reembolso: string; observacao?: string }) => {

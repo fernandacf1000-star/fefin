@@ -351,6 +351,11 @@ const Despesas = () => {
                 )}
               </span>
             )}
+            {item.recorrente && (
+              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-blue-500/15 text-blue-400">
+                🔄 Recorrente
+              </span>
+            )}
             {renderReembolsoBadge(item)}
           </div>
           {renderValorItem(item)}

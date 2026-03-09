@@ -272,11 +272,25 @@ const Despesas = () => {
 
   const handleDelete = async () => {
     if (!selectedLanc) return;
+    const lancToDelete = selectedLanc;
+    // Remove da UI imediatamente
+    queryClient.setQueriesData(
+      { queryKey: ["lancamentos"], exact: false },
+      (old: any) => Array.isArray(old) 
+        ? old.filter((l: any) => l.id !== lancToDelete.id) 
+        : old
+    );
+    setEditOpen(false); 
+    setActionsOpen(false); 
+    setDeleteSheetOpen(false);
+    setSelectedLanc(null);
     try {
-      await deleteMut.mutateAsync(selectedLanc.id);
+      await deleteMut.mutateAsync(lancToDelete.id);
       toast.success("Lançamento excluído ✓");
-      setEditOpen(false); setActionsOpen(false); setDeleteSheetOpen(false);
-    } catch { toast.error("Erro ao excluir."); }
+    } catch (e: any) {
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
+      toast.error("Erro ao excluir: " + (e?.message || JSON.stringify(e)));
+    }
   };
 
   const handleDeleteFuture = async () => {

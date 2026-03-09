@@ -89,7 +89,7 @@ export const useAddMultipleLancamentos = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };

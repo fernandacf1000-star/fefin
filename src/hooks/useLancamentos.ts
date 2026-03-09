@@ -68,7 +68,7 @@ export const useAddLancamento = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -89,7 +89,7 @@ export const useAddMultipleLancamentos = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -109,7 +109,7 @@ export const useUpdateLancamento = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -143,7 +143,7 @@ export const useUpdateParcelamentoFuturas = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -174,7 +174,7 @@ export const useUpdateAllParcelamento = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -206,7 +206,7 @@ export const useDeleteLancamento = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };

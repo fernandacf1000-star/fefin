@@ -51,7 +51,7 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
   const [data, setData] = useState<Date>(new Date());
   const [oQueAconteceu, setOQueAconteceu] = useState("paguei_por_eles");
   const [incomeCat, setIncomeCat] = useState<string>("Salário");
-  const [formaPagamento, setFormaPagamento] = useState<string>("pix");
+  const [formaPagamento, setFormaPagamento] = useState<string>("dinheiro");
   const [cartaoId, setCartaoId] = useState<string>("");
 
   // Parcelamento as attribute
@@ -393,19 +393,12 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
             <label className="text-xs font-medium text-muted-foreground">Pago com</label>
             <div className="flex gap-2 flex-wrap">
               <button
-                onClick={() => { setFormaPagamento("pix"); setCartaoId(""); }}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                  formaPagamento === "pix" ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary/60 text-muted-foreground"
-                )}
-              >PIX</button>
-              <button
                 onClick={() => { setFormaPagamento("dinheiro"); setCartaoId(""); }}
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                   formaPagamento === "dinheiro" ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary/60 text-muted-foreground"
                 )}
-              >Dinheiro</button>
+              >💵 Dinheiro</button>
               {cartoes.map((c) => (
                 <button
                   key={c.id}
@@ -418,6 +411,11 @@ const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
                   )}
                 >💳 {c.nome}</button>
               ))}
+              {cartoes.length === 0 && (
+                <p className="text-[12px] text-[#475569] w-full mt-1">
+                  Adicione um cartão em Minha Conta para selecionar aqui
+                </p>
+              )}
             </div>
           </div>
         )}

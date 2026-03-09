@@ -635,7 +635,18 @@ const Despesas = () => {
         onSelectAll={handleSelectParcelamentoAll}
       />
 
-      {/* Filter Bottom Sheet */}
+      {/* Delete confirm sheet */}
+      <DeleteConfirmSheet
+        open={deleteSheetOpen}
+        onClose={() => setDeleteSheetOpen(false)}
+        tipo={selectedLanc?.is_parcelado ? "parcelado" : selectedLanc?.recorrente ? "recorrente" : "simples"}
+        onDeleteSingle={handleDelete}
+        onDeleteFuture={handleDeleteFuture}
+        onDeleteAll={handleDeleteAll}
+        descricao={selectedLanc?.descricao}
+        isPending={isPending}
+      />
+
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto pb-24">
           <div className="space-y-5 pt-2">

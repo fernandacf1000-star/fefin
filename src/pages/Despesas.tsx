@@ -19,6 +19,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import SwipeableItem from "@/components/SwipeableItem";
 import LancamentoActions from "@/components/LancamentoActions";

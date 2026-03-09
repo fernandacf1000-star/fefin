@@ -91,7 +91,7 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
           });
         }
         await addMultiple.mutateAsync(lancamentos);
-        toast.success(`Receita recorrente salva! (${lancamentos.length} meses)`);
+        toast.success(`Receita recorrente criada! (${lancamentos.length} meses)`);
       } else {
         await addLancamento.mutateAsync({
           descricao,

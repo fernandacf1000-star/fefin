@@ -474,11 +474,11 @@ const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) =
         )}
 
         {/* Compra parcelada toggle - only for expenses */}
-        {!isReceita && (
+        {!isReceita && !recorrente && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-muted-foreground">Compra parcelada?</label>
-              <Switch checked={isParcelado} onCheckedChange={setIsParcelado} />
+              <Switch checked={isParcelado} onCheckedChange={(v) => { setIsParcelado(v); if (v) setRecorrente(false); }} />
             </div>
             {isParcelado && (
               <div className="space-y-3 p-3 rounded-xl bg-secondary/30 animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -498,6 +498,42 @@ const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) =
                     {valorParcelaPreview} por mês durante {parcelaParsed} meses
                   </p>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Despesa recorrente toggle - only for expenses, not parcelado, not pais */}
+        {!isReceita && !isPais && !isParcelado && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-muted-foreground">🔄 Despesa recorrente?</label>
+              <Switch checked={recorrente} onCheckedChange={(v) => { setRecorrente(v); if (v) setIsParcelado(false); }} />
+            </div>
+            {recorrente && (
+              <div className="space-y-3 p-3 rounded-xl bg-secondary/30 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium text-muted-foreground">Dia do mês</label>
+                  <Input type="number" min={1} max={31} value={diaRecorrencia} onChange={(e) => setDiaRecorrencia(e.target.value)} className="bg-secondary border-border/50 w-24" inputMode="numeric" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium text-muted-foreground">Repetir até (opcional)</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start bg-secondary border-border/50 text-foreground text-xs">
+                        <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        {recorrenciaAte ? format(recorrenciaAte, "dd/MM/yyyy") : "Sem data de fim"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 z-[80]" align="start">
+                      <Calendar mode="single" selected={recorrenciaAte} onSelect={(d) => setRecorrenciaAte(d || undefined)} initialFocus className="p-3 pointer-events-auto" disabled={(d) => d < new Date()} />
+                    </PopoverContent>
+                  </Popover>
+                  {recorrenciaAte && (
+                    <button onClick={() => setRecorrenciaAte(undefined)} className="text-[10px] text-primary hover:underline">Limpar data limite</button>
+                  )}
+                </div>
+                <p className="text-[10px] text-muted-foreground">Será lançada todo mês neste dia. Sem data de fim: gera 24 meses.</p>
               </div>
             )}
           </div>

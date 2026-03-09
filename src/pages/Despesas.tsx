@@ -228,9 +228,9 @@ const Despesas = () => {
           },
         });
         toast.success("Parcelas futuras atualizadas ✓");
-      } else if (editMode === "all" && selectedLanc.parcelamento_id) {
+      } else if (editMode === "all" && groupId) {
         await updateAllMut.mutateAsync({
-          parcelamento_id: selectedLanc.parcelamento_id,
+          parcelamento_id: groupId,
           updates: { 
             descricao: data.descricao, 
             valor: data.valor,

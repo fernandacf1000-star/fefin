@@ -6,6 +6,7 @@ import NewExpenseSheet from "./NewExpenseSheet";
 import NewIncomeSheet from "./NewIncomeSheet";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
+import { APP_VERSION } from "@/version";
 
 const navItems = [
   { icon: Home, label: "Início", path: "/dashboard" },

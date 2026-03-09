@@ -92,10 +92,11 @@
   }
 }
 
-/* Tablet sidebar offset: pages shift right when sidebar is visible */
-@media (min-width: 768px) and (max-width: 1023px) {
+/* Sidebar offset: pages shift right when sidebar is visible (md+) */
+@media (min-width: 768px) {
   .gradient-bg,
   .min-h-screen {
     padding-left: 220px;
   }
 }
+

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, AlertTriangle, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SUBCATEGORIA_GROUPS } from "@/lib/subcategorias";

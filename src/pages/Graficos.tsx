@@ -52,27 +52,32 @@ const Graficos = () => {
   // Fetch ALL lancamentos for the year (no month filter)
   const { data: allYearLancamentos = [] } = useLancamentos();
 
-  // Annual data by month
+  // Annual data by month — past vs future split for dashed future lines
   const annualData = useMemo(() => {
     return MONTH_LABELS.map((label, i) => {
       const mesKey = `${currentYear}-${String(i + 1).padStart(2, "0")}`;
       const mesLancs = allYearLancamentos.filter(l => l.mes_referencia === mesKey);
       const receitas = mesLancs.filter(l => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0);
       const despesas = mesLancs.filter(l => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0);
-      const hasFuture = i > currentMonthIdx;
+      const isFuture = i > currentMonthIdx;
+      const isTransition = i === currentMonthIdx; // current month acts as bridge
       return {
         name: label,
-        receitas: hasFuture ? undefined : receitas,
-        despesas: hasFuture ? undefined : despesas,
-        saldo: hasFuture ? undefined : receitas - despesas,
-        hasFuture,
+        // Past/current data
+        receitasPast: !isFuture ? receitas : undefined,
+        despesasPast: !isFuture ? despesas : undefined,
+        // Future dashed (bridge from current month)
+        receitasFuture: (isFuture || isTransition) ? receitas : undefined,
+        despesasFuture: (isFuture || isTransition) ? despesas : undefined,
+        saldo: receitas - despesas,
+        isFuture,
       };
     });
   }, [allYearLancamentos]);
 
   const annualTotals = useMemo(() => {
-    const r = annualData.reduce((s, d) => s + (d.receitas || 0), 0);
-    const d = annualData.reduce((s, dd) => s + (dd.despesas || 0), 0);
+    const r = annualData.reduce((s, d) => s + (d.receitasPast || 0), 0);
+    const d = annualData.reduce((s, dd) => s + (dd.despesasPast || 0), 0);
     return { receitas: r, despesas: d, saldo: r - d };
   }, [annualData]);
 

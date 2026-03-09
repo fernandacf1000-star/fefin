@@ -338,6 +338,8 @@ const Pais = () => {
         />
       )}
 
+      <ReembolsoFixoModal open={reembolsoFixoOpen} onClose={() => setReembolsoFixoOpen(false)} />
+
       <BottomNav />
     </div>
   );

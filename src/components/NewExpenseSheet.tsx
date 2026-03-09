@@ -39,11 +39,12 @@ const incomeCatMap: Record<string, string> = {
 interface NewExpenseSheetProps {
   open: boolean;
   onClose: () => void;
+  initialTipo?: TipoLanc;
 }
 
-const NewExpenseSheet = ({ open, onClose }: NewExpenseSheetProps) => {
-  const [step, setStep] = useState(1);
-  const [tipoLanc, setTipoLanc] = useState<TipoLanc>("despesa");
+const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) => {
+  const [step, setStep] = useState(initialTipo ? 2 : 1);
+  const [tipoLanc, setTipoLanc] = useState<TipoLanc>(initialTipo || "despesa");
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
   const [categoriaMacro, setCategoriaMacro] = useState("");

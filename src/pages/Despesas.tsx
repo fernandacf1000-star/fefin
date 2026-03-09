@@ -473,7 +473,7 @@ const Despesas = () => {
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
-      <div className="px-4 pt-12 w-full">
+      <div className="px-4 pt-12 w-full max-w-4xl md:mx-auto">
         <h1 className="text-xl font-semibold text-foreground mb-4 animate-fade-up">Transações</h1>
 
         {/* Month Selector */}

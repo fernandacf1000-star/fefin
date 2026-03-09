@@ -198,7 +198,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
-      <div className="px-4 pt-12 w-full">
+      <div className="px-4 pt-12 w-full max-w-4xl md:mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 animate-fade-up">
           <div>
@@ -259,7 +259,7 @@ const Dashboard = () => {
         {!hasData && !isLoading ? (
           <EmptyState title="Adicione seu primeiro lançamento! 🚀" />
         ) : (
-          <div className="md:grid md:grid-cols-2 md:gap-4 lg:block">
+          <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start">
             {/* Meta do mês */}
             <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
               <div className="flex items-center justify-between mb-3">

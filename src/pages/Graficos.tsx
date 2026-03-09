@@ -177,7 +177,7 @@ const Graficos = () => {
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
-      <div className="px-4 pt-12 space-y-6 w-full">
+      <div className="px-4 pt-12 space-y-6 w-full max-w-4xl md:mx-auto">
         <h1 className="text-xl font-semibold text-foreground animate-fade-up">Gráficos</h1>
 
         {/* Month Selector */}
@@ -279,26 +279,26 @@ const Graficos = () => {
               </section>
             )}
 
-            {/* Receitas vs Despesas - Monthly bars */}
-            <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.05s" }}>
-              <h2 className="text-sm font-semibold text-foreground mb-4">Receitas vs Despesas</h2>
-              <div className="flex justify-between items-end px-4 h-32">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-16 rounded-t-lg gradient-emerald" style={{ height: `${Math.max(8, totalReceitas > 0 ? 100 : 0)}px` }} />
-                  <span className="text-[11px] text-muted-foreground">Receitas</span>
-                  <span className="text-xs font-bold text-primary">{fmt(totalReceitas)}</span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-16 rounded-t-lg bg-destructive" style={{ height: `${Math.max(8, totalReceitas > 0 ? (totalDespesas / totalReceitas) * 100 : totalDespesas > 0 ? 100 : 0)}px` }} />
-                  <span className="text-[11px] text-muted-foreground">Despesas</span>
-                  <span className="text-xs font-bold text-destructive">{fmt(totalDespesas)}</span>
-                </div>
-              </div>
-            </section>
-
-            {/* Composição + Subcategorias — side by side on tablet */}
+            {/* Receitas vs Despesas mensal + Composição donut — lado a lado no iPad */}
             <div className="md:grid md:grid-cols-2 md:gap-4 space-y-6 md:space-y-0">
-              {/* Composição por Categoria */}
+              {/* Monthly bars */}
+              <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.05s" }}>
+                <h2 className="text-sm font-semibold text-foreground mb-4">Receitas vs Despesas — {months[selectedMonth]?.label}</h2>
+                <div className="flex justify-around items-end px-4 h-32">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-16 rounded-t-lg gradient-emerald" style={{ height: `${Math.max(8, totalReceitas > 0 ? 100 : 0)}px` }} />
+                    <span className="text-[11px] text-muted-foreground">Receitas</span>
+                    <span className="text-xs font-bold text-primary">{fmt(totalReceitas)}</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-16 rounded-t-lg bg-destructive" style={{ height: `${Math.max(8, totalReceitas > 0 ? (totalDespesas / totalReceitas) * 100 : totalDespesas > 0 ? 100 : 0)}px` }} />
+                    <span className="text-[11px] text-muted-foreground">Despesas</span>
+                    <span className="text-xs font-bold text-destructive">{fmt(totalDespesas)}</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* Composição por Categoria — Donut */}
               {composicao.length > 0 && (
                 <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
                   <h2 className="text-sm font-semibold text-foreground">Composição por Categoria</h2>

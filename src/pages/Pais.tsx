@@ -112,6 +112,13 @@ const Pais = () => {
     } catch { toast.error("Erro ao registrar reembolso."); }
   };
 
+  const handleMarkReceived = async (item: Lancamento) => {
+    try {
+      await updateMut.mutateAsync({ id: item.id, pago: true });
+      toast.success("Reembolso marcado como recebido ✓");
+    } catch { toast.error("Erro ao atualizar."); }
+  };
+
   const renderReembolsoBadge = (item: Lancamento) => {
     const totalReemb = getTotalReembolsado(allReembolsos, item.id);
     if (totalReemb <= 0) return null;

@@ -5,7 +5,7 @@ import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/
 import type { Lancamento } from "@/hooks/useLancamentos";
 import {
   DollarSign, HandCoins, RefreshCw, Receipt,
-  ArrowDownLeft, ChevronLeft, ChevronRight,
+  ArrowDownLeft, ChevronLeft, ChevronRight, Plus, Check,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import SwipeableItem from "@/components/SwipeableItem";
 import LancamentoActions from "@/components/LancamentoActions";
 import EditLancamentoModal from "@/components/EditLancamentoModal";
 import ReembolsoModal from "@/components/ReembolsoModal";
+import ReembolsoFixoModal from "@/components/ReembolsoFixoModal";
 import { getGroupEmoji } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
@@ -45,6 +46,7 @@ const Pais = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [reembolsoOpen, setReembolsoOpen] = useState(false);
+  const [reembolsoFixoOpen, setReembolsoFixoOpen] = useState(false);
 
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
@@ -110,6 +112,13 @@ const Pais = () => {
     } catch { toast.error("Erro ao registrar reembolso."); }
   };
 
+  const handleMarkReceived = async (item: Lancamento) => {
+    try {
+      await updateMut.mutateAsync({ id: item.id, pago: true });
+      toast.success("Reembolso marcado como recebido ✓");
+    } catch { toast.error("Erro ao atualizar."); }
+  };
+
   const renderReembolsoBadge = (item: Lancamento) => {
     const totalReemb = getTotalReembolsado(allReembolsos, item.id);
     if (totalReemb <= 0) return null;
@@ -145,7 +154,12 @@ const Pais = () => {
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
       <div className="px-4 pt-12 w-full">
-        <h1 className="text-xl font-semibold text-foreground mb-4 animate-fade-up">Pais</h1>
+        <div className="flex items-center justify-between mb-4 animate-fade-up">
+          <h1 className="text-xl font-semibold text-foreground">Pais</h1>
+          <button onClick={() => setReembolsoFixoOpen(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-lg">
+            <Plus size={14} /> Reembolso fixo
+          </button>
+        </div>
 
         {/* Month Selector */}
         <div className="flex items-center justify-center gap-3 mb-5 animate-fade-up" style={{ animationDelay: "0.03s" }}>
@@ -231,6 +245,8 @@ const Pais = () => {
                 {historico.map((item) => {
                   const isReembolso = item.tipo === "receita";
                   const subLabel = item.subcategoria_pais ? subcatLabels[item.subcategoria_pais] || item.subcategoria_pais : (isReembolso ? "Reembolso recebido" : "");
+                  const isRecorrente = item.recorrente;
+                  const isPago = item.pago;
                   return (
                     <SwipeableItem key={item.id} onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
                       <div onClick={() => openActions(item)} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer">
@@ -239,15 +255,37 @@ const Pais = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <p className={`text-[11px] ${isReembolso ? "text-primary" : "text-muted-foreground"}`}>{subLabel}</p>
                             {item.categoria_macro && <span className="text-[11px] text-muted-foreground">· {getGroupEmoji(item.categoria_macro)} {item.categoria_macro}</span>}
                             {item.subcategoria && <span className="text-[11px] text-muted-foreground">· {item.subcategoria}</span>}
                             <span className="text-[11px] text-muted-foreground">· {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</span>
                           </div>
-                          {renderReembolsoBadge(item)}
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {isRecorrente && isReembolso && !isPago && (
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500">⏳ Aguardando</span>
+                            )}
+                            {isRecorrente && isReembolso && isPago && (
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">✅ Recebido</span>
+                            )}
+                            {isRecorrente && (
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">🔄 Recorrente</span>
+                            )}
+                            {renderReembolsoBadge(item)}
+                          </div>
                         </div>
-                        {renderValor(item, isReembolso)}
+                        <div className="flex items-center gap-2">
+                          {isRecorrente && isReembolso && !isPago && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleMarkReceived(item); }}
+                              className="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                              title="Marcar como recebido"
+                            >
+                              <Check size={14} />
+                            </button>
+                          )}
+                          {renderValor(item, isReembolso)}
+                        </div>
                       </div>
                     </SwipeableItem>
                   );
@@ -299,6 +337,8 @@ const Pais = () => {
           isPending={addReembolsoMut.isPending}
         />
       )}
+
+      <ReembolsoFixoModal open={reembolsoFixoOpen} onClose={() => setReembolsoFixoOpen(false)} />
 
       <BottomNav />
     </div>

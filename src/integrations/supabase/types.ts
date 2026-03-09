@@ -199,6 +199,7 @@ export type Database = {
           created_at: string
           data: string
           descricao: string
+          dia_recorrencia: number | null
           editado_individualmente: boolean
           forma_pagamento: string | null
           id: string
@@ -208,6 +209,9 @@ export type Database = {
           parcela_atual: number | null
           parcela_total: number | null
           parcelamento_id: string | null
+          recorrencia_ate: string | null
+          recorrencia_pai_id: string | null
+          recorrente: boolean
           subcategoria: string | null
           subcategoria_pais: string | null
           tipo: string
@@ -221,6 +225,7 @@ export type Database = {
           created_at?: string
           data?: string
           descricao: string
+          dia_recorrencia?: number | null
           editado_individualmente?: boolean
           forma_pagamento?: string | null
           id?: string
@@ -230,6 +235,9 @@ export type Database = {
           parcela_atual?: number | null
           parcela_total?: number | null
           parcelamento_id?: string | null
+          recorrencia_ate?: string | null
+          recorrencia_pai_id?: string | null
+          recorrente?: boolean
           subcategoria?: string | null
           subcategoria_pais?: string | null
           tipo?: string
@@ -243,6 +251,7 @@ export type Database = {
           created_at?: string
           data?: string
           descricao?: string
+          dia_recorrencia?: number | null
           editado_individualmente?: boolean
           forma_pagamento?: string | null
           id?: string
@@ -252,6 +261,9 @@ export type Database = {
           parcela_atual?: number | null
           parcela_total?: number | null
           parcelamento_id?: string | null
+          recorrencia_ate?: string | null
+          recorrencia_pai_id?: string | null
+          recorrente?: boolean
           subcategoria?: string | null
           subcategoria_pais?: string | null
           tipo?: string

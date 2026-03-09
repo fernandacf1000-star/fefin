@@ -22,6 +22,10 @@ export interface Lancamento {
   forma_pagamento: string | null;
   cartao_id: string | null;
   editado_individualmente?: boolean;
+  recorrente: boolean;
+  dia_recorrencia: number | null;
+  recorrencia_ate: string | null;
+  recorrencia_pai_id: string | null;
   created_at: string;
 }
 

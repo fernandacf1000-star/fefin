@@ -11,12 +11,13 @@ import { SUBCATEGORIA_GROUPS, getGroupEmoji, normalizeMacro } from "@/lib/subcat
 import {
   Eye, EyeOff, TrendingUp, TrendingDown,
   ShoppingBag, CreditCard, Users,
-  ChevronLeft, ChevronRight, Settings, LogOut, Receipt, Target, ClipboardList, Pencil, X,
+  ChevronLeft, ChevronRight, Settings, LogOut, Receipt, ClipboardList, Pencil, X,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { APP_VERSION, APP_UPDATED } from "@/version";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -261,25 +262,23 @@ const Dashboard = () => {
         ) : (
           <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start">
             {/* Meta do mês */}
-            <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-foreground">🎯 Meta do mês</span>
+            <div className="glass-card p-4 mb-6 animate-fade-up" style={{ animationDelay: "0.15s", minHeight: "100px" }}>
+              <div className="flex items-start justify-between mb-1">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <span className="text-base shrink-0">🎯</span>
+                  <span className="text-sm font-semibold text-foreground whitespace-nowrap">Meta do mês</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {metaMensal ? (
-                    <span className="text-xs font-semibold text-primary">{metaPct}% usado</span>
-                  ) : (
-                    <span className="text-[10px] text-muted-foreground">Toque em ✏️ para definir sua meta</span>
-                  )}
-                  <button onClick={() => { setMetaValue(metaMensal ? String(metaMensal) : ""); setMetaOpen(true); }} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
-                    <Pencil size={14} />
-                  </button>
-                </div>
+                <button onClick={() => { setMetaValue(metaMensal ? String(metaMensal) : ""); setMetaOpen(true); }} className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0 ml-2">
+                  <Pencil size={14} />
+                </button>
               </div>
-              {metaMensal ? (
+              {!metaMensal && (
+                <p className="text-[11px] mb-2" style={{ color: "#475569" }}>Toque em ✏️ para definir sua meta</p>
+              )}
+              {metaMensal && (
                 <>
-                  <div className="relative w-full h-3 rounded-full bg-secondary/60 overflow-hidden">
+                  <p className="text-xs font-semibold text-primary mb-2">{metaPct}% usado</p>
+                  <div className="relative w-full h-2.5 rounded-full bg-secondary/60 overflow-hidden">
                     <div
                       className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
                         metaPct >= 90 ? "bg-destructive" : metaPct >= 70 ? "bg-yellow-500" : "gradient-emerald"
@@ -287,42 +286,43 @@ const Dashboard = () => {
                       style={{ width: `${metaPct}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-2">
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
                     {metaPct >= 90
                       ? "Cuidado! Gastos próximos da meta 🚨"
                       : metaPct >= 70
                       ? "Atenção com os gastos este mês ⚠️"
                       : "Dentro do orçamento 💚"}
                   </p>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-[10px] text-muted-foreground">Gastos: {showBalance ? fmt(totalDespesasSemInvest) : "••••"}</span>
-                    <span className="text-[10px] text-muted-foreground">Meta: {showBalance ? fmt(metaMensal) : "••••"}</span>
-                  </div>
                 </>
-              ) : (
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-[10px] text-muted-foreground">Gastos: {showBalance ? fmt(totalDespesasSemInvest) : "••••"}</span>
-                  <span className="text-[10px] text-muted-foreground">Receitas: {showBalance ? fmt(totalReceitas) : "••••"}</span>
-                </div>
               )}
-            </div>
-
-            {/* Category Summary - Horizontal scroll */}
-            <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-              <div className="flex gap-2.5 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-                {categoryTotals.map((cat) => (
-                  <div key={cat.key} className="glass-card p-3 min-w-[120px] shrink-0">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span className="text-base">{cat.emoji}</span>
-                      <span className="text-[10px] text-muted-foreground font-medium truncate">{cat.label}</span>
-                    </div>
-                    <p className="text-sm font-semibold text-foreground tabular-nums">
-                      {showBalance ? fmt(cat.value) : "••••"}
-                    </p>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-[10px] text-muted-foreground">Gastos: {showBalance ? fmt(totalDespesasSemInvest) : "••••"}</span>
+                <span className="text-[10px] text-muted-foreground">{metaMensal ? `Meta: ${showBalance ? fmt(metaMensal) : "••••"}` : `Receitas: ${showBalance ? fmt(totalReceitas) : "••••"}`}</span>
               </div>
             </div>
+
+            {/* Category Summary - 2x3 grid fixo */}
+            {(() => {
+              const displayKeys = ["Moradia", "Alimentação", "Transporte", "Saúde", "Pessoal", "Lazer"];
+              const displayCats = displayKeys.map(k => categoryTotals.find(c => c.key === k)).filter(Boolean) as typeof categoryTotals;
+              return (
+                <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+                  <div className="grid grid-cols-2 gap-2">
+                    {displayCats.map((cat) => (
+                      <div key={cat.key} className="glass-card p-3">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-base">{cat.emoji}</span>
+                          <span className="text-[10px] text-muted-foreground font-medium truncate">{cat.label}</span>
+                        </div>
+                        <p className="text-sm font-semibold text-foreground tabular-nums">
+                          {showBalance ? fmt(cat.value) : "••••"}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Compromissos Parcelados */}
             {parcelamentos.count > 0 && (
@@ -429,7 +429,7 @@ const Dashboard = () => {
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
-        <div className="px-5 pb-8">
+        <div className="px-5 pb-6">
           <div className="flex items-center gap-3 pb-4">
             <div className="w-[40px] h-[40px] rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ background: "#1a1a2e", border: "2px solid hsl(var(--primary))" }}>
               <MascotHead size={28} />
@@ -448,6 +448,9 @@ const Dashboard = () => {
             <LogOut size={18} className="text-destructive" />
             <span className="text-sm font-medium text-destructive">Sair</span>
           </button>
+          <div className="h-px mt-2 mb-3" style={{ background: "#1e2433" }} />
+          <p className="text-center text-[11px]" style={{ color: "#475569" }}>FeFin {APP_VERSION}</p>
+          <p className="text-center text-[10px]" style={{ color: "#475569" }}>Atualizado em {APP_UPDATED}</p>
         </div>
       </div>
 

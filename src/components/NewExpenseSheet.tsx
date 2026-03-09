@@ -108,6 +108,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) =
     setTipoLanc(initialTipo || "despesa"); setIncomeCat("Salário");
     setOQueAconteceu("paguei_por_eles"); setFormaPagamento("pix"); setCartaoId("");
     setIsParcelado(false); setNumParcelas(""); setValorTotal("");
+    setRecorrente(false); setDiaRecorrencia("1"); setRecorrenciaAte(undefined);
   };
 
   const parseValor = (v: string) => parseFloat(v.replace(/\./g, "").replace(",", "."));

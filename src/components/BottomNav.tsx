@@ -204,8 +204,7 @@ const BottomNav = () => {
         </div>
       </div>
 
-      <NewExpenseSheet open={expenseOpen} onClose={() => setExpenseOpen(false)} />
-      <NewIncomeSheet open={incomeOpen} onClose={() => setIncomeOpen(false)} />
+      <NewExpenseSheet open={expenseOpen} onClose={() => setExpenseOpen(false)} initialTipo={expenseInitialTipo} />
     </>
   );
 };

@@ -6,6 +6,10 @@ import {
   useUpdateParcelamentoFuturas,
   useUpdateAllParcelamento,
   useDeleteLancamento,
+  useDeleteFutureParcelamento,
+  useDeleteAllParcelamento,
+  useDeleteFutureRecorrencia,
+  useDeleteAllRecorrencia,
   fetchParcelamentoCount,
 } from "@/hooks/useLancamentos";
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";

@@ -273,7 +273,33 @@ const Despesas = () => {
     try {
       await deleteMut.mutateAsync(selectedLanc.id);
       toast.success("Lançamento excluído ✓");
-      setEditOpen(false); setActionsOpen(false);
+      setEditOpen(false); setActionsOpen(false); setDeleteSheetOpen(false);
+    } catch { toast.error("Erro ao excluir."); }
+  };
+
+  const handleDeleteFuture = async () => {
+    if (!selectedLanc) return;
+    try {
+      if (selectedLanc.is_parcelado && selectedLanc.parcelamento_id) {
+        await deleteFutureParc.mutateAsync({ parcelamento_id: selectedLanc.parcelamento_id, fromDate: selectedLanc.data });
+      } else if (selectedLanc.recorrente && selectedLanc.recorrencia_pai_id) {
+        await deleteFutureRec.mutateAsync({ recorrencia_pai_id: selectedLanc.recorrencia_pai_id, fromDate: selectedLanc.data });
+      }
+      toast.success("Este e os próximos excluídos ✓");
+      setDeleteSheetOpen(false); setActionsOpen(false);
+    } catch { toast.error("Erro ao excluir."); }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!selectedLanc) return;
+    try {
+      if (selectedLanc.is_parcelado && selectedLanc.parcelamento_id) {
+        await deleteAllParc.mutateAsync(selectedLanc.parcelamento_id);
+      } else if (selectedLanc.recorrente && selectedLanc.recorrencia_pai_id) {
+        await deleteAllRec.mutateAsync(selectedLanc.recorrencia_pai_id);
+      }
+      toast.success("Todos os lançamentos excluídos ✓");
+      setDeleteSheetOpen(false); setActionsOpen(false);
     } catch { toast.error("Erro ao excluir."); }
   };
 

@@ -186,6 +186,52 @@ const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) =
       pais: "pais",
     };
 
+    // Recorrência para despesas
+    if (recorrente && !isReceita && !isPais) {
+      const dia = parseInt(diaRecorrencia, 10) || 1;
+      const recorrenciaPaiId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+      const maxMonths = 24;
+      const lancamentos: any[] = [];
+      for (let i = 0; i < maxMonths; i++) {
+        const monthDate = addMonths(data, i);
+        if (recorrenciaAte && monthDate > recorrenciaAte) break;
+        const mRef = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
+        const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+        const actualDay = Math.min(dia, daysInMonth);
+        const dateStr = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}-${String(actualDay).padStart(2, "0")}`;
+        lancamentos.push({
+          descricao,
+          valor: numValor,
+          tipo: "despesa",
+          categoria: catMap[tipoLanc],
+          categoria_macro: categoriaMacro || null,
+          subcategoria: subcategoria || null,
+          subcategoria_pais: null,
+          data: dateStr,
+          mes_referencia: mRef,
+          parcela_atual: null,
+          parcela_total: null,
+          is_parcelado: false,
+          parcelamento_id: null,
+          pago: false,
+          forma_pagamento: formaPagamento,
+          cartao_id: formaPagamento === "cartao" && cartaoId ? cartaoId : null,
+          recorrente: true,
+          dia_recorrencia: dia,
+          recorrencia_ate: recorrenciaAte ? format(recorrenciaAte, "yyyy-MM-dd") : null,
+          recorrencia_pai_id: recorrenciaPaiId,
+        });
+      }
+      try {
+        await addMultiple.mutateAsync(lancamentos);
+        toast.success(`Despesa recorrente criada! (${lancamentos.length} meses)`);
+        resetAndClose();
+      } catch (e: any) {
+        toast.error(e.message || "Erro ao salvar");
+      }
+      return;
+    }
+
     try {
       await addLancamento.mutateAsync({
         descricao,

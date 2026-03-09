@@ -214,13 +214,29 @@ const Despesas = () => {
         await updateFuturasMut.mutateAsync({
           parcelamento_id: selectedLanc.parcelamento_id,
           fromDate: selectedLanc.data >= today ? selectedLanc.data : today,
-          updates: { descricao: data.descricao, valor: data.valor },
+          updates: { 
+            descricao: data.descricao, 
+            valor: data.valor,
+            categoria: data.categoria,
+            subcategoria: data.subcategoria,
+            categoria_macro: data.categoria_macro,
+            forma_pagamento: data.forma_pagamento,
+            cartao_id: data.cartao_id,
+          },
         });
         toast.success("Parcelas futuras atualizadas ✓");
       } else if (editMode === "all" && selectedLanc.parcelamento_id) {
         await updateAllMut.mutateAsync({
           parcelamento_id: selectedLanc.parcelamento_id,
-          updates: { descricao: data.descricao, valor: data.valor },
+          updates: { 
+            descricao: data.descricao, 
+            valor: data.valor,
+            categoria: data.categoria,
+            subcategoria: data.subcategoria,
+            categoria_macro: data.categoria_macro,
+            forma_pagamento: data.forma_pagamento,
+            cartao_id: data.cartao_id,
+          },
         });
         toast.success("Todas as parcelas atualizadas ✓");
       } else {

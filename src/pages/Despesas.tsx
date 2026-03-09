@@ -65,6 +65,7 @@ const Despesas = () => {
   const [actionsOpen, setActionsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [reembolsoOpen, setReembolsoOpen] = useState(false);
 
   // Parcelamento edit flow

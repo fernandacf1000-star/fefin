@@ -331,7 +331,7 @@ const Despesas = () => {
       });
       toast.success("Reembolso registrado ✓");
       setReembolsoOpen(false);
-    } catch { toast.error("Erro ao registrar reembolso."); }
+    } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
   };
 
   const renderReembolsoBadge = (item: Lancamento) => {

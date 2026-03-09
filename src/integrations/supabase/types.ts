@@ -199,6 +199,7 @@ export type Database = {
           created_at: string
           data: string
           descricao: string
+          editado_individualmente: boolean
           forma_pagamento: string | null
           id: string
           is_parcelado: boolean
@@ -220,6 +221,7 @@ export type Database = {
           created_at?: string
           data?: string
           descricao: string
+          editado_individualmente?: boolean
           forma_pagamento?: string | null
           id?: string
           is_parcelado?: boolean
@@ -241,6 +243,7 @@ export type Database = {
           created_at?: string
           data?: string
           descricao?: string
+          editado_individualmente?: boolean
           forma_pagamento?: string | null
           id?: string
           is_parcelado?: boolean

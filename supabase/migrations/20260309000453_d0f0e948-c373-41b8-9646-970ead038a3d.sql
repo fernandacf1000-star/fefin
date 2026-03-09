@@ -1,0 +1,1 @@
+ALTER TABLE lancamentos ADD COLUMN IF NOT EXISTS editado_individualmente boolean NOT NULL DEFAULT false;

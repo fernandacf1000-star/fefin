@@ -35,7 +35,7 @@ const ParcelamentoEditSheet = ({ open, onClose, onSelectSingle, onSelectFuture, 
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
 
-        <div className="px-5 pb-10 space-y-4">
+        <div className="px-5 pb-24 space-y-4">
           <div className="text-center">
             <p className="text-base font-bold text-white">✏️ O que deseja editar?</p>
             {descricao && (

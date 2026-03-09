@@ -171,7 +171,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
 
       {/* Bottom sheet */}
       <div
-        className="fixed inset-x-0 bottom-0 z-[51] flex flex-col"
+        className="fixed inset-x-0 bottom-0 z-[90] flex flex-col"
         style={{
           maxHeight: "90vh",
           borderRadius: "24px 24px 0 0",

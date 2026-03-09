@@ -3,7 +3,7 @@ import EmptyState from "@/components/EmptyState";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";

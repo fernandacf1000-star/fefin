@@ -6,6 +6,10 @@ import {
   useUpdateParcelamentoFuturas,
   useUpdateAllParcelamento,
   useDeleteLancamento,
+  useDeleteFutureParcelamento,
+  useDeleteAllParcelamento,
+  useDeleteFutureRecorrencia,
+  useDeleteAllRecorrencia,
   fetchParcelamentoCount,
 } from "@/hooks/useLancamentos";
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
@@ -21,6 +25,7 @@ import LancamentoActions from "@/components/LancamentoActions";
 import EditLancamentoModal, { type ParcelamentoMode } from "@/components/EditLancamentoModal";
 import ReembolsoModal from "@/components/ReembolsoModal";
 import ParcelamentoEditSheet from "@/components/ParcelamentoEditSheet";
+import DeleteConfirmSheet from "@/components/DeleteConfirmSheet";
 import type { Lancamento } from "@/hooks/useLancamentos";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
@@ -60,6 +65,7 @@ const Despesas = () => {
   const [actionsOpen, setActionsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [reembolsoOpen, setReembolsoOpen] = useState(false);
 
   // Parcelamento edit flow
@@ -74,6 +80,10 @@ const Despesas = () => {
   const updateFuturasMut = useUpdateParcelamentoFuturas();
   const updateAllMut = useUpdateAllParcelamento();
   const deleteMut = useDeleteLancamento();
+  const deleteFutureParc = useDeleteFutureParcelamento();
+  const deleteAllParc = useDeleteAllParcelamento();
+  const deleteFutureRec = useDeleteFutureRecorrencia();
+  const deleteAllRec = useDeleteAllRecorrencia();
   const addReembolsoMut = useAddReembolso();
 
   const todasDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
@@ -182,7 +192,7 @@ const Despesas = () => {
     }
   };
 
-  const openDelete = (lanc: Lancamento) => { setSelectedLanc(lanc); setEditOpen(true); setDeleteConfirm(true); };
+  const openDelete = (lanc: Lancamento) => { setSelectedLanc(lanc); setDeleteSheetOpen(true); };
   const openReembolso = (lanc: Lancamento) => { setSelectedLanc(lanc); setReembolsoOpen(true); };
 
   const handleSelectParcelamentoSingle = () => {
@@ -263,7 +273,33 @@ const Despesas = () => {
     try {
       await deleteMut.mutateAsync(selectedLanc.id);
       toast.success("Lançamento excluído ✓");
-      setEditOpen(false); setActionsOpen(false);
+      setEditOpen(false); setActionsOpen(false); setDeleteSheetOpen(false);
+    } catch { toast.error("Erro ao excluir."); }
+  };
+
+  const handleDeleteFuture = async () => {
+    if (!selectedLanc) return;
+    try {
+      if (selectedLanc.is_parcelado && selectedLanc.parcelamento_id) {
+        await deleteFutureParc.mutateAsync({ parcelamento_id: selectedLanc.parcelamento_id, fromDate: selectedLanc.data });
+      } else if (selectedLanc.recorrente && selectedLanc.recorrencia_pai_id) {
+        await deleteFutureRec.mutateAsync({ recorrencia_pai_id: selectedLanc.recorrencia_pai_id, fromDate: selectedLanc.data });
+      }
+      toast.success("Este e os próximos excluídos ✓");
+      setDeleteSheetOpen(false); setActionsOpen(false);
+    } catch { toast.error("Erro ao excluir."); }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!selectedLanc) return;
+    try {
+      if (selectedLanc.is_parcelado && selectedLanc.parcelamento_id) {
+        await deleteAllParc.mutateAsync(selectedLanc.parcelamento_id);
+      } else if (selectedLanc.recorrente && selectedLanc.recorrencia_pai_id) {
+        await deleteAllRec.mutateAsync(selectedLanc.recorrencia_pai_id);
+      }
+      toast.success("Todos os lançamentos excluídos ✓");
+      setDeleteSheetOpen(false); setActionsOpen(false);
     } catch { toast.error("Erro ao excluir."); }
   };
 
@@ -493,7 +529,7 @@ const Despesas = () => {
     </>
   );
 
-  const isPending = updateMut.isPending || updateFuturasMut.isPending || updateAllMut.isPending || deleteMut.isPending;
+  const isPending = updateMut.isPending || updateFuturasMut.isPending || updateAllMut.isPending || deleteMut.isPending || deleteFutureParc.isPending || deleteAllParc.isPending || deleteFutureRec.isPending || deleteAllRec.isPending;
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
@@ -599,7 +635,18 @@ const Despesas = () => {
         onSelectAll={handleSelectParcelamentoAll}
       />
 
-      {/* Filter Bottom Sheet */}
+      {/* Delete confirm sheet */}
+      <DeleteConfirmSheet
+        open={deleteSheetOpen}
+        onClose={() => setDeleteSheetOpen(false)}
+        tipo={selectedLanc?.is_parcelado ? "parcelado" : selectedLanc?.recorrente ? "recorrente" : "simples"}
+        onDeleteSingle={handleDelete}
+        onDeleteFuture={handleDeleteFuture}
+        onDeleteAll={handleDeleteAll}
+        descricao={selectedLanc?.descricao}
+        isPending={isPending}
+      />
+
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto pb-24">
           <div className="space-y-5 pt-2">

@@ -249,6 +249,6 @@ export const useDeleteAllRecorrencia = () => {
         .eq("recorrencia_pai_id", recorrencia_pai_id);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false }),
+    onSuccess: () => queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false }),
   });
 };

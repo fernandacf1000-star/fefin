@@ -84,8 +84,8 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
     const isFuture = parcelamentoMode === "future";
     const count = parcelamentoCount ?? 0;
     return (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 space-y-4" style={{ background: "#0d1117" }}>
+      <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 backdrop-blur-sm">
+        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 pb-24 space-y-4" style={{ background: "#0d1117" }}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-yellow-500/15 flex items-center justify-center shrink-0">
               <AlertTriangle size={18} className="text-yellow-400" />

@@ -10,6 +10,7 @@ import type { Cartao } from "@/hooks/useCartoes";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import CartaoModal from "@/components/CartaoModal";
+import { APP_VERSION, APP_UPDATED } from "@/version";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

@@ -162,10 +162,13 @@ const Login = () => {
         </form>
 
         {/* Footer */}
-        <p className="text-center text-muted-foreground/50 text-xs animate-fade-up" style={{ animationDelay: "0.4s" }}>
-          Ao entrar, você concorda com nossos{" "}
-          <span className="text-primary/70">Termos de Uso</span>
-        </p>
+        <div className="flex flex-col items-center gap-1 animate-fade-up" style={{ animationDelay: "0.4s" }}>
+          <p className="text-center text-muted-foreground/50 text-xs">
+            Ao entrar, você concorda com nossos{" "}
+            <span className="text-primary/70">Termos de Uso</span>
+          </p>
+          <p className="text-muted-foreground/30 text-[10px]">{APP_VERSION} · {APP_UPDATED}</p>
+        </div>
       </div>
 
       <style>{`

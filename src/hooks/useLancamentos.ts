@@ -158,7 +158,7 @@ export const useUpdateAllParcelamento = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };

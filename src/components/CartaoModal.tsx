@@ -40,12 +40,13 @@ const CartaoModal = ({ open, onClose, onSave, isPending, initial }: Props) => {
   const [diaFechamento, setDiaFechamento] = useState(initial?.dia_fechamento || 10);
   const [melhorDia, setMelhorDia] = useState(initial?.melhor_dia_compra || 11);
   const [cor, setCor] = useState(initial?.cor || "#10B981");
+  const [melhorDiaEditado, setMelhorDiaEditado] = useState(!!initial);
 
   useEffect(() => {
-    if (!initial) {
+    if (!melhorDiaEditado) {
       setMelhorDia(diaFechamento >= 31 ? 1 : diaFechamento + 1);
     }
-  }, [diaFechamento, initial]);
+  }, [diaFechamento, melhorDiaEditado]);
 
   if (!open) return null;
 

@@ -19,6 +19,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import SwipeableItem from "@/components/SwipeableItem";
 import LancamentoActions from "@/components/LancamentoActions";
@@ -73,6 +74,7 @@ const Despesas = () => {
   const [editMode, setEditMode] = useState<ParcelamentoMode>(null);
   const [parcelamentoCount, setParcelamentoCount] = useState(0);
 
+  const queryClient = useQueryClient();
   const mesRef = months[selectedMonth]?.key;
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
   const { data: allReembolsos = [] } = useAllReembolsos();
@@ -264,18 +266,32 @@ const Despesas = () => {
       setEditOpen(false);
       setEditMode(null);
       setSelectedLanc(null);
-    } catch {
-      toast.error("Erro ao atualizar.");
+    } catch (e: any) {
+      toast.error("Erro: " + (e?.message || JSON.stringify(e)));
     }
   };
 
   const handleDelete = async () => {
     if (!selectedLanc) return;
+    const lancToDelete = selectedLanc;
+    // Remove da UI imediatamente
+    queryClient.setQueriesData(
+      { queryKey: ["lancamentos"], exact: false },
+      (old: any) => Array.isArray(old) 
+        ? old.filter((l: any) => l.id !== lancToDelete.id) 
+        : old
+    );
+    setEditOpen(false); 
+    setActionsOpen(false); 
+    setDeleteSheetOpen(false);
+    setSelectedLanc(null);
     try {
-      await deleteMut.mutateAsync(selectedLanc.id);
+      await deleteMut.mutateAsync(lancToDelete.id);
       toast.success("Lançamento excluído ✓");
-      setEditOpen(false); setActionsOpen(false); setDeleteSheetOpen(false);
-    } catch { toast.error("Erro ao excluir."); }
+    } catch (e: any) {
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
+      toast.error("Erro ao excluir: " + (e?.message || JSON.stringify(e)));
+    }
   };
 
   const handleDeleteFuture = async () => {
@@ -288,7 +304,7 @@ const Despesas = () => {
       }
       toast.success("Este e os próximos excluídos ✓");
       setDeleteSheetOpen(false); setActionsOpen(false);
-    } catch { toast.error("Erro ao excluir."); }
+    } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
   };
 
   const handleDeleteAll = async () => {
@@ -301,7 +317,7 @@ const Despesas = () => {
       }
       toast.success("Todos os lançamentos excluídos ✓");
       setDeleteSheetOpen(false); setActionsOpen(false);
-    } catch { toast.error("Erro ao excluir."); }
+    } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
   };
 
   const handleReembolso = async (data: { valor_reembolsado: number; quem_reembolsou: string; data_reembolso: string; observacao?: string }) => {
@@ -316,7 +332,7 @@ const Despesas = () => {
       });
       toast.success("Reembolso registrado ✓");
       setReembolsoOpen(false);
-    } catch { toast.error("Erro ao registrar reembolso."); }
+    } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
   };
 
   const renderReembolsoBadge = (item: Lancamento) => {

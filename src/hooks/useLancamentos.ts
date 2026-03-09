@@ -21,6 +21,7 @@ export interface Lancamento {
   pago: boolean;
   forma_pagamento: string | null;
   cartao_id: string | null;
+  editado_individualmente?: boolean;
   created_at: string;
 }
 
@@ -107,6 +108,73 @@ export const useUpdateLancamento = () => {
       queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
     },
   });
+};
+
+export const useUpdateParcelamentoFuturas = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      parcelamento_id,
+      fromDate,
+      updates,
+    }: {
+      parcelamento_id: string;
+      fromDate: string;
+      updates: { descricao?: string; valor?: number };
+    }) => {
+      const { error } = await supabase
+        .from("lancamentos")
+        .update(updates as any)
+        .eq("parcelamento_id", parcelamento_id)
+        .gte("data", fromDate);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+    },
+  });
+};
+
+export const useUpdateAllParcelamento = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      parcelamento_id,
+      updates,
+    }: {
+      parcelamento_id: string;
+      updates: { descricao?: string; valor?: number };
+    }) => {
+      const { error } = await supabase
+        .from("lancamentos")
+        .update(updates as any)
+        .eq("parcelamento_id", parcelamento_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
+    },
+  });
+};
+
+/** Returns count of lancamentos for a parcelamento_id, optionally filtered by fromDate */
+export const fetchParcelamentoCount = async (
+  parcelamento_id: string,
+  fromDate?: string
+): Promise<number> => {
+  let query = supabase
+    .from("lancamentos")
+    .select("id", { count: "exact", head: true })
+    .eq("parcelamento_id", parcelamento_id);
+
+  if (fromDate) {
+    query = query.gte("data", fromDate);
+  }
+
+  const { count } = await query;
+  return count ?? 0;
 };
 
 export const useDeleteLancamento = () => {

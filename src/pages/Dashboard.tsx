@@ -198,7 +198,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
-      <div className="px-4 pt-12 w-full">
+      <div className="px-4 pt-12 w-full max-w-4xl md:mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 animate-fade-up">
           <div>

@@ -155,18 +155,22 @@ const Graficos = () => {
 
   const CustomAnnualTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
-    const rec = payload.find((p: any) => p.dataKey === "receitas");
-    const desp = payload.find((p: any) => p.dataKey === "despesas");
-    const r = rec?.value ?? 0;
-    const d = desp?.value ?? 0;
+    // Merge values from past and future lines
+    const r = (payload.find((p: any) => p.dataKey === "receitasPast")?.value
+            ?? payload.find((p: any) => p.dataKey === "receitasFuture")?.value) ?? 0;
+    const d = (payload.find((p: any) => p.dataKey === "despesasPast")?.value
+            ?? payload.find((p: any) => p.dataKey === "despesasFuture")?.value) ?? 0;
+    const saldo = r - d;
     return (
-      <div style={tooltipStyle} className="px-3 py-2">
-        <p className="text-xs font-semibold text-foreground mb-1">{label}</p>
-        <p className="text-[11px] text-primary">Receitas: {fmt(r)}</p>
-        <p className="text-[11px] text-destructive">Despesas: {fmt(d)}</p>
-        <p className={`text-[11px] font-semibold ${r - d >= 0 ? "text-primary" : "text-destructive"}`}>
-          Saldo: {fmt(r - d)}
-        </p>
+      <div style={tooltipStyle} className="px-3 py-2.5 min-w-[140px]">
+        <p className="text-xs font-bold text-foreground mb-1.5">{label}</p>
+        <p className="text-[11px]" style={{ color: "#10B981" }}>↑ Receitas: {fmt(r)}</p>
+        <p className="text-[11px]" style={{ color: "#F87171" }}>↓ Despesas: {fmt(d)}</p>
+        <div className="border-t border-border/30 mt-1.5 pt-1.5">
+          <p className={`text-[11px] font-bold ${saldo >= 0 ? "text-primary" : "text-destructive"}`}>
+            Saldo: {fmt(saldo)}
+          </p>
+        </div>
       </div>
     );
   };
@@ -197,106 +201,78 @@ const Graficos = () => {
           <EmptyState title="Adicione lançamentos para ver seus gráficos 📊" />
         ) : (
           <>
-            {/* Annual Receitas vs Despesas Line Chart */}
+            {/* ══ Annual Receitas vs Despesas — linha dupla com área ══ */}
             {hasAnyData && (
               <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.04s" }}>
                 <h2 className="text-sm font-semibold text-foreground">Receitas vs Despesas — {currentYear}</h2>
-                <p className="text-[11px] text-muted-foreground mb-3">Evolução mensal</p>
-                <div className="h-52">
+                <p className="text-[11px] text-muted-foreground mb-3">Evolução mensal · linha tracejada = meses futuros</p>
+
+                <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={annualData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
+                    <ComposedChart data={annualData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
                       <defs>
-                        <linearGradient id="gradReceitas" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#10B981" stopOpacity={0.3} />
-                          <stop offset="100%" stopColor="#10B981" stopOpacity={0.05} />
+                        <linearGradient id="gradRec" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10B981" stopOpacity={0.25} />
+                          <stop offset="100%" stopColor="#10B981" stopOpacity={0.02} />
                         </linearGradient>
-                        <linearGradient id="gradDespesas" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#F87171" stopOpacity={0.3} />
-                          <stop offset="100%" stopColor="#F87171" stopOpacity={0.05} />
+                        <linearGradient id="gradDesp" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#F87171" stopOpacity={0.22} />
+                          <stop offset="100%" stopColor="#F87171" stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={fmtK} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.25} />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={fmtK} />
                       <Tooltip content={<CustomAnnualTooltip />} />
-                      <Area
-                        type="monotone"
-                        dataKey="receitas"
-                        stroke="#10B981"
-                        strokeWidth={2}
-                        fill="url(#gradReceitas)"
-                        dot={(props: any) => {
-                          const { cx, cy, index, value } = props;
-                          if (value === undefined) return <circle key={index} r={0} />;
-                          const isCurrentMonth = index === currentMonthIdx;
-                          const entry = annualData[index];
-                          const isBigger = (entry?.receitas || 0) > (entry?.despesas || 0);
-                          return (
-                            <circle
-                              key={index}
-                              cx={cx}
-                              cy={cy}
-                              r={isCurrentMonth ? (isBigger ? 5 : 3.5) : 2.5}
-                              fill="#10B981"
-                              stroke={isCurrentMonth ? "#fff" : "none"}
-                              strokeWidth={isCurrentMonth ? 2 : 0}
-                            />
-                          );
-                        }}
-                        connectNulls={false}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="despesas"
-                        stroke="#F87171"
-                        strokeWidth={2}
-                        fill="url(#gradDespesas)"
-                        dot={(props: any) => {
-                          const { cx, cy, index, value } = props;
-                          if (value === undefined) return <circle key={index} r={0} />;
-                          const isCurrentMonth = index === currentMonthIdx;
-                          const entry = annualData[index];
-                          const isBigger = (entry?.despesas || 0) > (entry?.receitas || 0);
-                          return (
-                            <circle
-                              key={index}
-                              cx={cx}
-                              cy={cy}
-                              r={isCurrentMonth ? (isBigger ? 5 : 3.5) : 2.5}
-                              fill="#F87171"
-                              stroke={isCurrentMonth ? "#fff" : "none"}
-                              strokeWidth={isCurrentMonth ? 2 : 0}
-                            />
-                          );
-                        }}
-                        connectNulls={false}
-                      />
-                    </AreaChart>
+
+                      {/* Área preenchida — passado */}
+                      <Area type="monotone" dataKey="receitasPast" stroke="#10B981" strokeWidth={2} fill="url(#gradRec)" dot={false} connectNulls={false} legendType="none" />
+                      <Area type="monotone" dataKey="despesasPast" stroke="#F87171" strokeWidth={2} fill="url(#gradDesp)" dot={false} connectNulls={false} legendType="none" />
+
+                      {/* Linhas tracejadas — futuro */}
+                      <Line type="monotone" dataKey="receitasFuture" stroke="#475569" strokeWidth={1.5} strokeDasharray="5 4" dot={false} connectNulls={false} legendType="none" />
+                      <Line type="monotone" dataKey="despesasFuture" stroke="#475569" strokeWidth={1.5} strokeDasharray="5 4" dot={false} connectNulls={false} legendType="none" />
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
-                {/* Legend */}
-                <div className="flex items-center justify-center gap-4 mt-2">
+
+                {/* Legenda */}
+                <div className="flex items-center justify-center gap-5 mt-2">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#10B981" }} />
-                    <span className="text-[10px] text-muted-foreground">Receitas</span>
+                    <div className="w-3 h-3 rounded-full" style={{ background: "#10B981" }} />
+                    <span className="text-[11px] text-muted-foreground font-medium">Receitas</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#F87171" }} />
-                    <span className="text-[10px] text-muted-foreground">Despesas</span>
+                    <div className="w-3 h-3 rounded-full" style={{ background: "#F87171" }} />
+                    <span className="text-[11px] text-muted-foreground font-medium">Despesas</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex gap-0.5">
+                      <div className="w-2 h-0.5 mt-1.5 rounded-full bg-muted-foreground/50" />
+                      <div className="w-1 h-0.5 mt-1.5 rounded-full bg-muted-foreground/50" />
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">Futuro</span>
                   </div>
                 </div>
-                {/* Summary cards */}
+
+                {/* Cards resumo */}
                 <div className="grid grid-cols-3 gap-2 mt-3">
-                  <div className="bg-secondary/40 rounded-xl p-2.5 text-center">
-                    <span className="text-[9px] text-muted-foreground uppercase tracking-wider block">Receitas</span>
-                    <span className="text-xs font-bold text-primary">{fmt(annualTotals.receitas)}</span>
+                  <div className="rounded-xl p-3 text-center" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#10B981" }}>Total Receitas</span>
+                    <span className="text-xs font-bold" style={{ color: "#10B981" }}>{fmt(annualTotals.receitas)}</span>
                   </div>
-                  <div className="bg-secondary/40 rounded-xl p-2.5 text-center">
-                    <span className="text-[9px] text-muted-foreground uppercase tracking-wider block">Despesas</span>
-                    <span className="text-xs font-bold text-destructive">{fmt(annualTotals.despesas)}</span>
+                  <div className="rounded-xl p-3 text-center" style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
+                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#F87171" }}>Total Despesas</span>
+                    <span className="text-xs font-bold" style={{ color: "#F87171" }}>{fmt(annualTotals.despesas)}</span>
                   </div>
-                  <div className="bg-secondary/40 rounded-xl p-2.5 text-center">
-                    <span className="text-[9px] text-muted-foreground uppercase tracking-wider block">Saldo</span>
+                  <div
+                    className="rounded-xl p-3 text-center"
+                    style={{
+                      background: annualTotals.saldo >= 0 ? "rgba(16,185,129,0.08)" : "rgba(248,113,113,0.08)",
+                      border: `1px solid ${annualTotals.saldo >= 0 ? "rgba(16,185,129,0.2)" : "rgba(248,113,113,0.2)"}`,
+                    }}
+                  >
+                    <span className="text-[9px] uppercase tracking-wider block mb-1 text-muted-foreground">Saldo Acum.</span>
                     <span className={`text-xs font-bold ${annualTotals.saldo >= 0 ? "text-primary" : "text-destructive"}`}>{fmt(annualTotals.saldo)}</span>
                   </div>
                 </div>

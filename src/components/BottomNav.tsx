@@ -120,12 +120,14 @@ const BottomNav = () => {
 
   const handleSelectExpense = () => {
     setSelectorOpen(false);
+    setExpenseInitialTipo("despesa");
     setTimeout(() => setExpenseOpen(true), 200);
   };
 
   const handleSelectIncome = () => {
     setSelectorOpen(false);
-    setTimeout(() => setIncomeOpen(true), 200);
+    setExpenseInitialTipo("receita");
+    setTimeout(() => setExpenseOpen(true), 200);
   };
 
   return (

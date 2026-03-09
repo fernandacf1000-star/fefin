@@ -7,16 +7,60 @@ import type { Lancamento } from "@/hooks/useLancamentos";
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const bandeiraSvg: Record<string, string> = {
-  visa: "💳",
-  mastercard: "💳",
-  elo: "💳",
-  amex: "💳",
+// Logo real da bandeira
+const BandeiraIcon = ({ bandeira }: { bandeira: string }) => {
+  if (bandeira === "visa") {
+    return (
+      <span
+        style={{
+          fontStyle: "italic",
+          fontWeight: 900,
+          fontSize: 12,
+          color: "#1A1F71",
+          background: "white",
+          borderRadius: 4,
+          padding: "2px 6px",
+          letterSpacing: 1,
+          lineHeight: 1,
+        }}
+      >
+        VISA
+      </span>
+    );
+  }
+  if (bandeira === "mastercard") {
+    return (
+      <div style={{ position: "relative", width: 32, height: 20, flexShrink: 0 }}>
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            width: 20,
+            height: 20,
+            borderRadius: "50%",
+            background: "#EB001B",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: 12,
+            width: 20,
+            height: 20,
+            borderRadius: "50%",
+            background: "#F79E1B",
+            opacity: 0.9,
+          }}
+        />
+      </div>
+    );
+  }
+  return <CreditCard size={16} />;
 };
 
 interface Props {
   cartao: Cartao;
-  lancamentos: Lancamento[];
+  lancamentos: Lancamento[]; // todos os lançamentos, sem filtro de mês
   showBalance: boolean;
   isBest?: boolean;
 }
@@ -24,29 +68,31 @@ interface Props {
 const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
   const { cycleStart, cycleEnd, daysUntilClose } = getCartaoCycle(cartao.dia_fechamento);
 
+  // Soma apenas lançamentos vinculados a este cartão no ciclo atual
   const faturaAtual = useMemo(() => {
     return lancamentos
       .filter((l) => {
-        if ((l as any).cartao_id !== cartao.id) return false;
+        if (!l.cartao_id || l.cartao_id !== cartao.id) return false;
+        if (l.tipo !== "despesa") return false;
         const d = new Date(l.data + "T12:00:00");
         return d >= cycleStart && d <= cycleEnd;
       })
       .reduce((s, l) => s + Number(l.valor), 0);
   }, [lancamentos, cartao.id, cycleStart, cycleEnd]);
 
-  const isClosingSoon = daysUntilClose >= 0 && daysUntilClose <= 3;
+  const isClosingSoon = daysUntilClose >= 0 && daysUntilClose <= 5;
   const isClosed = daysUntilClose < 0;
 
   return (
     <div
-      className="p-4 rounded-xl border border-border/30 space-y-2"
-      style={{ borderLeft: `3px solid ${cartao.cor}` }}
+      className="p-4 rounded-xl border border-border/30 space-y-3"
+      style={{ borderLeft: `3px solid ${cartao.cor}`, background: "#12121f" }}
     >
+      {/* Linha 1: Bandeira + Nome + Badge melhor */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CreditCard size={16} style={{ color: cartao.cor }} />
+          <BandeiraIcon bandeira={cartao.bandeira} />
           <span className="text-sm font-semibold text-foreground">{cartao.nome}</span>
-          <span className="text-[10px] text-muted-foreground capitalize">{cartao.bandeira}</span>
         </div>
         {isBest && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary">
@@ -55,32 +101,35 @@ const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
         )}
       </div>
 
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Fatura atual</span>
-        <span className="text-sm font-bold text-foreground tabular-nums">
-          {showBalance ? fmt(faturaAtual) : "••••"}
-        </span>
+      {/* Linha 2: Fatura atual em destaque */}
+      <div>
+        <p className="text-[10px] text-muted-foreground mb-0.5">Fatura atual</p>
+        <p className="text-xl font-bold text-foreground tabular-nums">
+          {showBalance ? fmt(faturaAtual) : "R$ ••••"}
+        </p>
       </div>
 
-      <div className="flex items-center gap-2">
-        {isClosingSoon && (
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500">
-            ⚠️ Fecha em {daysUntilClose} dia{daysUntilClose !== 1 ? "s" : ""}
-          </span>
-        )}
+      {/* Linha 3: Melhor dia + status de fechamento */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+          📅 Melhor dia: {cartao.melhor_dia_compra}
+        </span>
+
         {isClosed && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-destructive/15 text-destructive">
             🔴 Fatura fechada — {showBalance ? fmt(faturaAtual) : "••••"} a pagar
           </span>
         )}
-        {!isClosingSoon && !isClosed && daysUntilClose > 3 && (
+        {!isClosed && isClosingSoon && (
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500">
+            ⚠️ Fecha em {daysUntilClose} dia{daysUntilClose !== 1 ? "s" : ""}
+          </span>
+        )}
+        {!isClosed && !isClosingSoon && (
           <span className="text-[10px] text-muted-foreground">
             Fecha em {daysUntilClose} dias
           </span>
         )}
-        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-          📅 Melhor dia: {cartao.melhor_dia_compra}
-        </span>
       </div>
     </div>
   );

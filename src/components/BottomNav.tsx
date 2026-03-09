@@ -96,7 +96,7 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
-  const [incomeOpen, setIncomeOpen] = useState(false);
+  const [expenseInitialTipo, setExpenseInitialTipo] = useState<"despesa" | "receita">("despesa");
 
   const renderItem = (item: { icon: any; label: string; path: string }) => {
     const isActive = location.pathname === item.path;

@@ -173,8 +173,8 @@ const Despesas = () => {
   const openEdit = (lanc: Lancamento) => {
     setSelectedLanc(lanc);
     setDeleteConfirm(false);
-    if (lanc.is_parcelado && lanc.parcelamento_id) {
-      // Show parcelamento choice sheet
+    if ((lanc.is_parcelado && lanc.parcelamento_id) || (lanc.recorrente && lanc.recorrencia_pai_id)) {
+      // Show parcelamento/recorrente choice sheet
       setParcelamentoSheetOpen(true);
     } else {
       setEditMode("single");
@@ -192,16 +192,18 @@ const Despesas = () => {
   };
 
   const handleSelectParcelamentoFuture = async () => {
-    if (!selectedLanc?.parcelamento_id) return;
-    const count = await fetchParcelamentoCount(selectedLanc.parcelamento_id, today);
+    const groupId = selectedLanc?.parcelamento_id || selectedLanc?.recorrencia_pai_id;
+    if (!groupId) return;
+    const count = await fetchParcelamentoCount(groupId, today);
     setParcelamentoCount(count);
     setEditMode("future");
     setEditOpen(true);
   };
 
   const handleSelectParcelamentoAll = async () => {
-    if (!selectedLanc?.parcelamento_id) return;
-    const count = await fetchParcelamentoCount(selectedLanc.parcelamento_id);
+    const groupId = selectedLanc?.parcelamento_id || selectedLanc?.recorrencia_pai_id;
+    if (!groupId) return;
+    const count = await fetchParcelamentoCount(groupId);
     setParcelamentoCount(count);
     setEditMode("all");
     setEditOpen(true);
@@ -210,9 +212,10 @@ const Despesas = () => {
   const handleSave = async (data: any) => {
     if (!selectedLanc) return;
     try {
-      if (editMode === "future" && selectedLanc.parcelamento_id) {
+      const groupId = selectedLanc.parcelamento_id || selectedLanc.recorrencia_pai_id;
+      if (editMode === "future" && groupId) {
         await updateFuturasMut.mutateAsync({
-          parcelamento_id: selectedLanc.parcelamento_id,
+          parcelamento_id: groupId,
           fromDate: selectedLanc.data >= today ? selectedLanc.data : today,
           updates: { 
             descricao: data.descricao, 
@@ -225,9 +228,9 @@ const Despesas = () => {
           },
         });
         toast.success("Parcelas futuras atualizadas ✓");
-      } else if (editMode === "all" && selectedLanc.parcelamento_id) {
+      } else if (editMode === "all" && groupId) {
         await updateAllMut.mutateAsync({
-          parcelamento_id: selectedLanc.parcelamento_id,
+          parcelamento_id: groupId,
           updates: { 
             descricao: data.descricao, 
             valor: data.valor,
@@ -349,6 +352,11 @@ const Despesas = () => {
                 {item.parcela_atual === item.parcela_total && (
                   <span className="ml-1 text-[9px] font-semibold text-yellow-500">🏁 Última parcela</span>
                 )}
+              </span>
+            )}
+            {item.recorrente && (
+              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-blue-500/15 text-blue-400">
+                🔄 Recorrente
               </span>
             )}
             {renderReembolsoBadge(item)}

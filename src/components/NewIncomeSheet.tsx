@@ -59,7 +59,7 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
         const recorrenciaPaiId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
         const lancamentos: any[] = [];
         // Create current + future months (up to 12 months or until recorrenciaAte)
-        const maxMonths = 12;
+        const maxMonths = recorrenciaAte ? 120 : 24;
         for (let i = 0; i < maxMonths; i++) {
           const monthDate = addMonths(data, i);
           if (recorrenciaAte && monthDate > recorrenciaAte) break;
@@ -91,7 +91,7 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
           });
         }
         await addMultiple.mutateAsync(lancamentos);
-        toast.success(`Receita recorrente salva! (${lancamentos.length} meses)`);
+        toast.success(`Receita recorrente criada! (${lancamentos.length} meses)`);
       } else {
         await addLancamento.mutateAsync({
           descricao,

@@ -135,12 +135,21 @@ export const useUpdateParcelamentoFuturas = () => {
         cartao_id?: string | null;
       };
     }) => {
-      const { error } = await supabase
+      // Try parcelamento_id first
+      const { error: err1 } = await supabase
         .from("lancamentos")
         .update(updates as any)
         .eq("parcelamento_id", parcelamento_id)
         .gte("data", fromDate);
-      if (error) throw error;
+      if (err1) throw err1;
+
+      // Also update by recorrencia_pai_id (for recurring entries)
+      const { error: err2 } = await supabase
+        .from("lancamentos")
+        .update(updates as any)
+        .eq("recorrencia_pai_id", parcelamento_id)
+        .gte("data", fromDate);
+      if (err2) throw err2;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
@@ -167,11 +176,19 @@ export const useUpdateAllParcelamento = () => {
         cartao_id?: string | null;
       };
     }) => {
-      const { error } = await supabase
+      // Try parcelamento_id
+      const { error: err1 } = await supabase
         .from("lancamentos")
         .update(updates as any)
         .eq("parcelamento_id", parcelamento_id);
-      if (error) throw error;
+      if (err1) throw err1;
+
+      // Also update by recorrencia_pai_id
+      const { error: err2 } = await supabase
+        .from("lancamentos")
+        .update(updates as any)
+        .eq("recorrencia_pai_id", parcelamento_id);
+      if (err2) throw err2;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
@@ -179,22 +196,36 @@ export const useUpdateAllParcelamento = () => {
   });
 };
 
-/** Returns count of lancamentos for a parcelamento_id, optionally filtered by fromDate */
+/** Returns count of lancamentos for a parcelamento_id or recorrencia_pai_id, optionally filtered by fromDate */
 export const fetchParcelamentoCount = async (
-  parcelamento_id: string,
+  groupId: string,
   fromDate?: string
 ): Promise<number> => {
+  // Try parcelamento_id first, then recorrencia_pai_id
   let query = supabase
     .from("lancamentos")
     .select("id", { count: "exact", head: true })
-    .eq("parcelamento_id", parcelamento_id);
+    .eq("parcelamento_id", groupId);
 
   if (fromDate) {
     query = query.gte("data", fromDate);
   }
 
-  const { count } = await query;
-  return count ?? 0;
+  const { count: count1 } = await query;
+  if (count1 && count1 > 0) return count1;
+
+  // Fallback: try recorrencia_pai_id
+  let query2 = supabase
+    .from("lancamentos")
+    .select("id", { count: "exact", head: true })
+    .eq("recorrencia_pai_id", groupId);
+
+  if (fromDate) {
+    query2 = query2.gte("data", fromDate);
+  }
+
+  const { count: count2 } = await query2;
+  return count2 ?? 0;
 };
 
 export const useDeleteLancamento = () => {

@@ -241,3 +241,61 @@ export const useDeleteLancamento = () => {
     },
   });
 };
+
+export const useDeleteFutureParcelamento = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ parcelamento_id, fromDate }: { parcelamento_id: string; fromDate: string }) => {
+      const { error } = await supabase
+        .from("lancamentos")
+        .delete()
+        .eq("parcelamento_id", parcelamento_id)
+        .gte("data", fromDate);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false }),
+  });
+};
+
+export const useDeleteAllParcelamento = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (parcelamento_id: string) => {
+      const { error } = await supabase
+        .from("lancamentos")
+        .delete()
+        .eq("parcelamento_id", parcelamento_id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false }),
+  });
+};
+
+export const useDeleteFutureRecorrencia = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ recorrencia_pai_id, fromDate }: { recorrencia_pai_id: string; fromDate: string }) => {
+      const { error } = await supabase
+        .from("lancamentos")
+        .delete()
+        .eq("recorrencia_pai_id", recorrencia_pai_id)
+        .gte("data", fromDate);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false }),
+  });
+};
+
+export const useDeleteAllRecorrencia = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (recorrencia_pai_id: string) => {
+      const { error } = await supabase
+        .from("lancamentos")
+        .delete()
+        .eq("recorrencia_pai_id", recorrencia_pai_id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false }),
+  });
+};

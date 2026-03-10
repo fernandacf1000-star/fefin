@@ -19,18 +19,6 @@ import { getGroupEmoji } from "@/lib/subcategorias";
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const now = new Date();
-const generateMonths = () => {
-  const result = [];
-  for (let i = -1; i <= 1; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    result.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1) });
-  }
-  return result;
-};
-const months = generateMonths();
 
 const subcatLabels: Record<string, string> = {
   paguei_por_eles: "Paguei por eles",

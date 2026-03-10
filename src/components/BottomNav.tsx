@@ -116,17 +116,7 @@ const BottomNav = () => {
     );
   };
 
-  const handleSelectExpense = () => {
-    setSelectorOpen(false);
-    setExpenseInitialTipo("despesa");
-    setTimeout(() => setExpenseOpen(true), 200);
-  };
 
-  const handleSelectIncome = () => {
-    setSelectorOpen(false);
-    setExpenseInitialTipo("receita");
-    setTimeout(() => setExpenseOpen(true), 200);
-  };
 
   return (
     <>

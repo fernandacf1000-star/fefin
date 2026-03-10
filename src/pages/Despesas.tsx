@@ -14,10 +14,11 @@ import {
 } from "@/hooks/useLancamentos";
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import {
-  CreditCard, Users, CheckCircle2, Clock,
+  CreditCard, Users, CircleDollarSign,
   Receipt, ChevronLeft, ChevronRight, X, SlidersHorizontal,
-  ArrowUpRight,
+  ArrowUpRight, CheckSquare, Trash2,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useMemo, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";

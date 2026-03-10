@@ -419,45 +419,59 @@ const Despesas = () => {
   const renderItem = (item: Lancamento, icon: React.ReactNode, subtitle: React.ReactNode) => {
     const isReceita = item.tipo === "receita";
     const borderColor = isReceita ? "#10B981" : "#F87171";
+    const isSelected = selectedIds.has(item.id);
+
+    const content = (
+      <div
+        onClick={() => selectMode ? toggleSelectId(item.id) : openActions(item)}
+        className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer"
+        style={{ borderLeft: `3px solid ${borderColor}` }}
+      >
+        {selectMode && (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => toggleSelectId(item.id)}
+            className="shrink-0"
+          />
+        )}
+        <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
+            {(item as any).editado_individualmente && (
+              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 shrink-0">
+                ⚠️ Editado individualmente
+              </span>
+            )}
+          </div>
+          <div className="flex items-center flex-wrap">
+            {subtitle}
+            {renderSubcatLabel(item)}
+          </div>
+          {item.is_parcelado && item.parcela_atual != null && item.parcela_total != null && (
+            <span className="text-[10px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas
+              {item.parcela_atual === item.parcela_total && (
+                <span className="ml-1 text-[9px] font-semibold text-yellow-500">🏁 Última parcela</span>
+              )}
+            </span>
+          )}
+          {item.recorrente && (
+            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-blue-500/15 text-blue-400">
+              🔄 Recorrente
+            </span>
+          )}
+          {renderReembolsoBadge(item)}
+        </div>
+        {renderValorItem(item)}
+      </div>
+    );
+
+    if (selectMode) return content;
     return (
       <SwipeableItem onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
-        <div
-          onClick={() => openActions(item)}
-          className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer"
-          style={{ borderLeft: `3px solid ${borderColor}` }}
-        >
-          <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
-            {icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
-              {(item as any).editado_individualmente && (
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 shrink-0">
-                  ⚠️ Editado individualmente
-                </span>
-              )}
-            </div>
-            <div className="flex items-center flex-wrap">
-              {subtitle}
-              {renderSubcatLabel(item)}
-            </div>
-            {item.is_parcelado && item.parcela_atual != null && item.parcela_total != null && (
-              <span className="text-[10px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas
-                {item.parcela_atual === item.parcela_total && (
-                  <span className="ml-1 text-[9px] font-semibold text-yellow-500">🏁 Última parcela</span>
-                )}
-              </span>
-            )}
-            {item.recorrente && (
-              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-blue-500/15 text-blue-400">
-                🔄 Recorrente
-              </span>
-            )}
-            {renderReembolsoBadge(item)}
-          </div>
-          {renderValorItem(item)}
-        </div>
+        {content}
       </SwipeableItem>
     );
   };

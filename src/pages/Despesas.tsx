@@ -66,7 +66,10 @@ const Despesas = () => {
   const [parcelamentoCount, setParcelamentoCount] = useState(0);
 
   const queryClient = useQueryClient();
-  const mesRef = months[selectedMonth]?.key;
+  const mesRef = `${mesAtual.year}-${String(mesAtual.month + 1).padStart(2, "0")}`;
+  const mesLabel = new Date(mesAtual.year, mesAtual.month, 1)
+    .toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const mesLabelFmt = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
   const { data: allReembolsos = [] } = useAllReembolsos();
   const updateMut = useUpdateLancamento();

@@ -289,7 +289,7 @@ const Graficos = () => {
               {composicao.length > 0 && (
                 <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
                   <h2 className="text-sm font-semibold text-foreground">Composição por Categoria</h2>
-                  <p className="text-[11px] text-muted-foreground mb-4">{months[selectedMonth]?.label}</p>
+                  <p className="text-[11px] text-muted-foreground mb-4">{mesLabelFmt}</p>
                   <div className="relative h-52 flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>

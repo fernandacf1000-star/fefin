@@ -334,6 +334,35 @@ const Despesas = () => {
   };
 
   const handleReembolso = async (data: { valor_reembolsado: number; quem_reembolsou: string; data_reembolso: string; observacao?: string }) => {
+
+  // Multi-select helpers
+  const toggleSelectId = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    setBatchDeleteConfirm(false);
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBatchDeleting(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map(id => deleteMut.mutateAsync(id)));
+      toast.success(`${selectedIds.size} lançamento(s) excluído(s) ✓`);
+      exitSelectMode();
+    } catch (e: any) {
+      toast.error("Erro ao excluir: " + (e?.message || JSON.stringify(e)));
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
     if (!selectedLanc) return;
     try {
       await addReembolsoMut.mutateAsync({

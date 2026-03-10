@@ -30,10 +30,16 @@ const tooltipStyle = {
 };
 
 const Graficos = () => {
-  const [selectedMonth, setSelectedMonth] = useState(1);
+  const [mesAtual, setMesAtual] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
   const [subcatCatFilter, setSubcatCatFilter] = useState<string | null>(null);
   const [activePieIndex, setActivePieIndex] = useState<number | undefined>(undefined);
-  const mesRef = months[selectedMonth]?.key;
+  const mesRef = `${mesAtual.year}-${String(mesAtual.month + 1).padStart(2, "0")}`;
+  const mesLabel = new Date(mesAtual.year, mesAtual.month, 1)
+    .toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const mesLabelFmt = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
 
   // Fetch ALL lancamentos for the year (no month filter)

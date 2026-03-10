@@ -43,7 +43,10 @@ const Despesas = () => {
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("Todas");
   const [catFilters, setCatFilters] = useState<string[]>([]);
   const [subcatFilters, setSubcatFilters] = useState<string[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState(1);
+  const [mesAtual, setMesAtual] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const [draftTipo, setDraftTipo] = useState<TipoFilter>("Todas");

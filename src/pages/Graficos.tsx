@@ -270,7 +270,7 @@ const Graficos = () => {
             <div className="md:grid md:grid-cols-2 md:gap-4 space-y-6 md:space-y-0">
               {/* Monthly bars */}
               <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.05s" }}>
-                <h2 className="text-sm font-semibold text-foreground mb-4">Receitas vs Despesas — {months[selectedMonth]?.label}</h2>
+                <h2 className="text-sm font-semibold text-foreground mb-4">Receitas vs Despesas — {mesLabelFmt}</h2>
                 <div className="flex justify-around items-end px-4 h-32">
                   <div className="flex flex-col items-center gap-2">
                     <div className="w-16 rounded-t-lg gradient-emerald" style={{ height: `${Math.max(8, totalReceitas > 0 ? 100 : 0)}px` }} />

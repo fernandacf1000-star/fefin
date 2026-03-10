@@ -38,24 +38,15 @@ type TipoFilter = "Todas" | "Despesas" | "Receitas" | "Parceladas" | "Pais";
 
 const today = new Date().toISOString().split("T")[0];
 
-const now = new Date();
-const generateMonths = () => {
-  const result = [];
-  for (let i = -1; i <= 1; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    result.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1) });
-  }
-  return result;
-};
-const months = generateMonths();
 
 const Despesas = () => {
   const [tipoFilter, setTipoFilter] = useState<TipoFilter>("Todas");
   const [catFilters, setCatFilters] = useState<string[]>([]);
   const [subcatFilters, setSubcatFilters] = useState<string[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState(1);
+  const [mesAtual, setMesAtual] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const [draftTipo, setDraftTipo] = useState<TipoFilter>("Todas");
@@ -75,7 +66,10 @@ const Despesas = () => {
   const [parcelamentoCount, setParcelamentoCount] = useState(0);
 
   const queryClient = useQueryClient();
-  const mesRef = months[selectedMonth]?.key;
+  const mesRef = `${mesAtual.year}-${String(mesAtual.month + 1).padStart(2, "0")}`;
+  const mesLabel = new Date(mesAtual.year, mesAtual.month, 1)
+    .toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const mesLabelFmt = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
   const { data: allReembolsos = [] } = useAllReembolsos();
   const updateMut = useUpdateLancamento();
@@ -571,17 +565,25 @@ const Despesas = () => {
 
         {/* Month Selector */}
         <div className="flex items-center justify-center gap-3 mb-4 animate-fade-up" style={{ animationDelay: "0.03s" }}>
-          <button onClick={() => setSelectedMonth((p) => Math.max(0, p - 1))} disabled={selectedMonth === 0} className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
+          <button
+            onClick={() => setMesAtual(p => {
+              const d = new Date(p.year, p.month - 1, 1);
+              return { year: d.getFullYear(), month: d.getMonth() };
+            })}
+            className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors"
+          >
             <ChevronLeft size={18} />
           </button>
-          <div className="flex items-center gap-2">
-            {months.map((m, i) => (
-              <button key={m.key} onClick={() => setSelectedMonth(i)} className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${i === selectedMonth ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground hover:text-foreground"}`}>
-                {m.label}
-              </button>
-            ))}
-          </div>
-          <button onClick={() => setSelectedMonth((p) => Math.min(months.length - 1, p + 1))} disabled={selectedMonth === months.length - 1} className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
+          <span className="text-sm font-semibold text-foreground min-w-[140px] text-center">
+            {mesLabelFmt}
+          </span>
+          <button
+            onClick={() => setMesAtual(p => {
+              const d = new Date(p.year, p.month + 1, 1);
+              return { year: d.getFullYear(), month: d.getMonth() };
+            })}
+            className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors"
+          >
             <ChevronRight size={18} />
           </button>
         </div>

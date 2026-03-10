@@ -61,6 +61,12 @@ const Despesas = () => {
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [reembolsoOpen, setReembolsoOpen] = useState(false);
 
+  // Multi-select mode
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchDeleteConfirm, setBatchDeleteConfirm] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
   // Parcelamento edit flow
   const [parcelamentoSheetOpen, setParcelamentoSheetOpen] = useState(false);
   const [editMode, setEditMode] = useState<ParcelamentoMode>(null);

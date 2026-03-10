@@ -865,7 +865,53 @@ const Despesas = () => {
         />
       )}
 
-      <BottomNav />
+      {/* Batch delete bottom bar */}
+      {selectMode && (
+        <>
+          <div
+            className={`fixed inset-0 z-[80] bg-background/80 backdrop-blur-sm transition-opacity duration-300 ${batchDeleteConfirm ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            onClick={() => setBatchDeleteConfirm(false)}
+          />
+          {batchDeleteConfirm && (
+            <div className="fixed inset-x-0 bottom-0 z-[90] rounded-t-[28px] p-5 pb-24 space-y-3" style={{ background: "#1a1a2e" }}>
+              <p className="text-sm font-bold text-foreground text-center">
+                Excluir {selectedIds.size} lançamento(s)?
+              </p>
+              <p className="text-xs text-muted-foreground text-center">Esta ação não pode ser desfeita.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setBatchDeleteConfirm(false)} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-secondary/60 text-muted-foreground">
+                  Cancelar
+                </button>
+                <button onClick={handleBatchDelete} disabled={batchDeleting} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-destructive text-destructive-foreground disabled:opacity-50">
+                  {batchDeleting ? "Excluindo..." : "Excluir"}
+                </button>
+              </div>
+            </div>
+          )}
+          {!batchDeleteConfirm && (
+            <div className="fixed inset-x-0 bottom-0 z-50 bg-background/95 backdrop-blur border-t border-border/30 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] flex items-center justify-between">
+              <span className="text-sm text-muted-foreground font-medium">
+                {selectedIds.size} selecionado(s)
+              </span>
+              <div className="flex gap-2">
+                <button onClick={exitSelectMode} className="px-4 py-2 rounded-xl text-xs font-semibold bg-secondary/60 text-muted-foreground">
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => setBatchDeleteConfirm(true)}
+                  disabled={selectedIds.size === 0}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-destructive text-destructive-foreground disabled:opacity-50"
+                >
+                  <Trash2 size={14} />
+                  Excluir
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {!selectMode && <BottomNav />}
     </div>
   );
 };

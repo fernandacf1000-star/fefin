@@ -69,7 +69,10 @@ const Dashboard = () => {
   const { signOut, user } = useAuth();
   const { data: profile } = useProfile();
   const [showBalance, setShowBalance] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState(1);
+  const [mesAtual, setMesAtual] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
   const [profileOpen, setProfileOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [metaOpen, setMetaOpen] = useState(false);

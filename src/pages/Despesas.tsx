@@ -333,8 +333,6 @@ const Despesas = () => {
     } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
   };
 
-  const handleReembolso = async (data: { valor_reembolsado: number; quem_reembolsou: string; data_reembolso: string; observacao?: string }) => {
-
   // Multi-select helpers
   const toggleSelectId = (id: string) => {
     setSelectedIds(prev => {
@@ -363,6 +361,8 @@ const Despesas = () => {
       setBatchDeleting(false);
     }
   };
+
+  const handleReembolso = async (data: { valor_reembolsado: number; quem_reembolsou: string; data_reembolso: string; observacao?: string }) => {
     if (!selectedLanc) return;
     try {
       await addReembolsoMut.mutateAsync({

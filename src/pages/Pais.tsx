@@ -28,7 +28,10 @@ const subcatLabels: Record<string, string> = {
 };
 
 const Pais = () => {
-  const [selectedMonth, setSelectedMonth] = useState(1);
+  const [mesAtual, setMesAtual] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
   const [selectedLanc, setSelectedLanc] = useState<Lancamento | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);

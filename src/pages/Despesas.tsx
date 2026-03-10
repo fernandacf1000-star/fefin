@@ -642,20 +642,35 @@ const Despesas = () => {
             {" · "}
             <span className={`font-semibold ${saldo >= 0 ? "text-emerald-400" : "text-red-400"}`}>Saldo {fmt(saldo)}</span>
           </p>
-          <button
-            onClick={openFilterSheet}
-            className={`md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              activeFilterCount > 0
-                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                : "text-primary border border-primary"
-            }`}
-          >
-            <SlidersHorizontal size={12} />
-            Filtrar
-            {activeFilterCount > 0 && (
-              <span className="text-[10px] font-bold bg-primary-foreground/20 px-1.5 py-0.5 rounded-full">✦ {activeFilterCount}</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { if (selectMode) exitSelectMode(); else setSelectMode(true); }}
+              className={`md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                selectMode
+                  ? "bg-destructive text-destructive-foreground"
+                  : "text-muted-foreground border border-border"
+              }`}
+            >
+              <CheckSquare size={12} />
+              {selectMode ? "Cancelar" : "Selecionar"}
+            </button>
+            {!selectMode && (
+              <button
+                onClick={openFilterSheet}
+                className={`md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  activeFilterCount > 0
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                    : "text-primary border border-primary"
+                }`}
+              >
+                <SlidersHorizontal size={12} />
+                Filtrar
+                {activeFilterCount > 0 && (
+                  <span className="text-[10px] font-bold bg-primary-foreground/20 px-1.5 py-0.5 rounded-full">✦ {activeFilterCount}</span>
+                )}
+              </button>
             )}
-          </button>
+          </div>
         </div>
 
         {/* Quick filter pills (mobile) */}

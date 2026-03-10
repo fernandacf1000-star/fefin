@@ -555,7 +555,7 @@ const Despesas = () => {
   const transactionList = (
     <>
       {/* Pais summary block */}
-      {filteredPais.length > 0 && (tipoFilter === "Todas" || tipoFilter === "Pais") && (
+      {filteredPais.length > 0 && tipoFilter === "Pais" && (
         <div className="mb-4 animate-fade-up" style={{ animationDelay: "0.08s" }}>
           <div className="flex items-center gap-2 mb-2">
             <Users size={14} className="text-primary" />

@@ -14,10 +14,11 @@ import {
 } from "@/hooks/useLancamentos";
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import {
-  CreditCard, Users, CheckCircle2, Clock,
+  CreditCard, Users, CircleDollarSign,
   Receipt, ChevronLeft, ChevronRight, X, SlidersHorizontal,
-  ArrowUpRight,
+  ArrowUpRight, CheckSquare, Trash2,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useMemo, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -59,6 +60,12 @@ const Despesas = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const [reembolsoOpen, setReembolsoOpen] = useState(false);
+
+  // Multi-select mode
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchDeleteConfirm, setBatchDeleteConfirm] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
 
   // Parcelamento edit flow
   const [parcelamentoSheetOpen, setParcelamentoSheetOpen] = useState(false);
@@ -326,6 +333,35 @@ const Despesas = () => {
     } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
   };
 
+  // Multi-select helpers
+  const toggleSelectId = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    setBatchDeleteConfirm(false);
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBatchDeleting(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map(id => deleteMut.mutateAsync(id)));
+      toast.success(`${selectedIds.size} lançamento(s) excluído(s) ✓`);
+      exitSelectMode();
+    } catch (e: any) {
+      toast.error("Erro ao excluir: " + (e?.message || JSON.stringify(e)));
+    } finally {
+      setBatchDeleting(false);
+    }
+  };
+
   const handleReembolso = async (data: { valor_reembolsado: number; quem_reembolsou: string; data_reembolso: string; observacao?: string }) => {
     if (!selectedLanc) return;
     try {
@@ -383,45 +419,59 @@ const Despesas = () => {
   const renderItem = (item: Lancamento, icon: React.ReactNode, subtitle: React.ReactNode) => {
     const isReceita = item.tipo === "receita";
     const borderColor = isReceita ? "#10B981" : "#F87171";
+    const isSelected = selectedIds.has(item.id);
+
+    const content = (
+      <div
+        onClick={() => selectMode ? toggleSelectId(item.id) : openActions(item)}
+        className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer"
+        style={{ borderLeft: `3px solid ${borderColor}` }}
+      >
+        {selectMode && (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => toggleSelectId(item.id)}
+            className="shrink-0"
+          />
+        )}
+        <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
+            {(item as any).editado_individualmente && (
+              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 shrink-0">
+                ⚠️ Editado individualmente
+              </span>
+            )}
+          </div>
+          <div className="flex items-center flex-wrap">
+            {subtitle}
+            {renderSubcatLabel(item)}
+          </div>
+          {item.is_parcelado && item.parcela_atual != null && item.parcela_total != null && (
+            <span className="text-[10px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas
+              {item.parcela_atual === item.parcela_total && (
+                <span className="ml-1 text-[9px] font-semibold text-yellow-500">🏁 Última parcela</span>
+              )}
+            </span>
+          )}
+          {item.recorrente && (
+            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-blue-500/15 text-blue-400">
+              🔄 Recorrente
+            </span>
+          )}
+          {renderReembolsoBadge(item)}
+        </div>
+        {renderValorItem(item)}
+      </div>
+    );
+
+    if (selectMode) return content;
     return (
       <SwipeableItem onEdit={() => openEdit(item)} onDelete={() => openDelete(item)}>
-        <div
-          onClick={() => openActions(item)}
-          className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors cursor-pointer"
-          style={{ borderLeft: `3px solid ${borderColor}` }}
-        >
-          <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
-            {icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <p className="text-sm font-medium text-foreground truncate">{item.descricao}</p>
-              {(item as any).editado_individualmente && (
-                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 shrink-0">
-                  ⚠️ Editado individualmente
-                </span>
-              )}
-            </div>
-            <div className="flex items-center flex-wrap">
-              {subtitle}
-              {renderSubcatLabel(item)}
-            </div>
-            {item.is_parcelado && item.parcela_atual != null && item.parcela_total != null && (
-              <span className="text-[10px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas
-                {item.parcela_atual === item.parcela_total && (
-                  <span className="ml-1 text-[9px] font-semibold text-yellow-500">🏁 Última parcela</span>
-                )}
-              </span>
-            )}
-            {item.recorrente && (
-              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-blue-500/15 text-blue-400">
-                🔄 Recorrente
-              </span>
-            )}
-            {renderReembolsoBadge(item)}
-          </div>
-          {renderValorItem(item)}
-        </div>
+        {content}
       </SwipeableItem>
     );
   };
@@ -430,17 +480,12 @@ const Despesas = () => {
     if (item.tipo === "receita") return <ArrowUpRight size={17} className="text-emerald-400" />;
     if (item.is_parcelado) return <Receipt size={17} className="text-muted-foreground" />;
     if (item.categoria === "pais") return <Users size={17} className="text-muted-foreground" />;
-    return item.pago
-      ? <CheckCircle2 size={17} className="text-primary" />
-      : <Clock size={17} className="text-yellow-400" />;
+    return <CircleDollarSign size={17} className="text-muted-foreground" />;
   };
 
   const getItemSubtitle = (item: Lancamento) => (
     <p className="text-[11px] text-muted-foreground">
       {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-      {item.tipo === "despesa" && !item.is_parcelado && (
-        <> · <span className={item.pago ? "text-primary" : "text-yellow-400"}>{item.pago ? "Pago" : "Pendente"}</span></>
-      )}
     </p>
   );
 
@@ -597,20 +642,35 @@ const Despesas = () => {
             {" · "}
             <span className={`font-semibold ${saldo >= 0 ? "text-emerald-400" : "text-red-400"}`}>Saldo {fmt(saldo)}</span>
           </p>
-          <button
-            onClick={openFilterSheet}
-            className={`md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              activeFilterCount > 0
-                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                : "text-primary border border-primary"
-            }`}
-          >
-            <SlidersHorizontal size={12} />
-            Filtrar
-            {activeFilterCount > 0 && (
-              <span className="text-[10px] font-bold bg-primary-foreground/20 px-1.5 py-0.5 rounded-full">✦ {activeFilterCount}</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { if (selectMode) exitSelectMode(); else setSelectMode(true); }}
+              className={`md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                selectMode
+                  ? "bg-destructive text-destructive-foreground"
+                  : "text-muted-foreground border border-border"
+              }`}
+            >
+              <CheckSquare size={12} />
+              {selectMode ? "Cancelar" : "Selecionar"}
+            </button>
+            {!selectMode && (
+              <button
+                onClick={openFilterSheet}
+                className={`md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  activeFilterCount > 0
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                    : "text-primary border border-primary"
+                }`}
+              >
+                <SlidersHorizontal size={12} />
+                Filtrar
+                {activeFilterCount > 0 && (
+                  <span className="text-[10px] font-bold bg-primary-foreground/20 px-1.5 py-0.5 rounded-full">✦ {activeFilterCount}</span>
+                )}
+              </button>
             )}
-          </button>
+          </div>
         </div>
 
         {/* Quick filter pills (mobile) */}
@@ -805,7 +865,53 @@ const Despesas = () => {
         />
       )}
 
-      <BottomNav />
+      {/* Batch delete bottom bar */}
+      {selectMode && (
+        <>
+          <div
+            className={`fixed inset-0 z-[80] bg-background/80 backdrop-blur-sm transition-opacity duration-300 ${batchDeleteConfirm ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            onClick={() => setBatchDeleteConfirm(false)}
+          />
+          {batchDeleteConfirm && (
+            <div className="fixed inset-x-0 bottom-0 z-[90] rounded-t-[28px] p-5 pb-24 space-y-3" style={{ background: "#1a1a2e" }}>
+              <p className="text-sm font-bold text-foreground text-center">
+                Excluir {selectedIds.size} lançamento(s)?
+              </p>
+              <p className="text-xs text-muted-foreground text-center">Esta ação não pode ser desfeita.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setBatchDeleteConfirm(false)} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-secondary/60 text-muted-foreground">
+                  Cancelar
+                </button>
+                <button onClick={handleBatchDelete} disabled={batchDeleting} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-destructive text-destructive-foreground disabled:opacity-50">
+                  {batchDeleting ? "Excluindo..." : "Excluir"}
+                </button>
+              </div>
+            </div>
+          )}
+          {!batchDeleteConfirm && (
+            <div className="fixed inset-x-0 bottom-0 z-50 bg-background/95 backdrop-blur border-t border-border/30 px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] flex items-center justify-between">
+              <span className="text-sm text-muted-foreground font-medium">
+                {selectedIds.size} selecionado(s)
+              </span>
+              <div className="flex gap-2">
+                <button onClick={exitSelectMode} className="px-4 py-2 rounded-xl text-xs font-semibold bg-secondary/60 text-muted-foreground">
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => setBatchDeleteConfirm(true)}
+                  disabled={selectedIds.size === 0}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-destructive text-destructive-foreground disabled:opacity-50"
+                >
+                  <Trash2 size={14} />
+                  Excluir
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {!selectMode && <BottomNav />}
     </div>
   );
 };

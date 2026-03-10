@@ -43,7 +43,7 @@ interface NewExpenseSheetProps {
 }
 
 const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) => {
-  const [step, setStep] = useState(initialTipo ? 2 : 1);
+  const [step, setStep] = useState(2);
   const [tipoLanc, setTipoLanc] = useState<TipoLanc>(initialTipo || "despesa");
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");

@@ -604,6 +604,28 @@ const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) =
             </div>
           )}
 
+          {/* Toggle tipo — sempre visível */}
+          <div className="flex gap-2 mb-2">
+            {([
+              { id: "despesa", emoji: "💸", label: "Despesa" },
+              { id: "receita", emoji: "💰", label: "Receita" },
+              { id: "pais", emoji: "👨‍👩‍👧", label: "Pais" },
+            ] as const).map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => { setTipoLanc(opt.id); setCategoriaMacro(""); setSubcategoria(""); setStep(2); }}
+                className={cn(
+                  "flex-1 py-2 rounded-xl text-xs font-semibold transition-all",
+                  tipoLanc === opt.id
+                    ? "gradient-emerald text-primary-foreground shadow-md"
+                    : "bg-secondary/60 text-muted-foreground"
+                )}
+              >
+                {opt.emoji} {opt.label}
+              </button>
+            ))}
+          </div>
+
           {renderStep()}
         </div>
       </div>

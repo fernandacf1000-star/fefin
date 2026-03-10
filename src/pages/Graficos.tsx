@@ -17,21 +17,8 @@ const fmtK = (v: number) => {
   return String(v);
 };
 
-const now = new Date();
-const currentYear = now.getFullYear();
-const currentMonthIdx = now.getMonth(); // 0-based
-
-const generateMonths = () => {
-  const result = [];
-  for (let i = -1; i <= 1; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    result.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1) });
-  }
-  return result;
-};
-const months = generateMonths();
+const currentYear = new Date().getFullYear();
+const currentMonthIdx = new Date().getMonth();
 
 const MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -43,10 +30,16 @@ const tooltipStyle = {
 };
 
 const Graficos = () => {
-  const [selectedMonth, setSelectedMonth] = useState(1);
+  const [mesAtual, setMesAtual] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
   const [subcatCatFilter, setSubcatCatFilter] = useState<string | null>(null);
   const [activePieIndex, setActivePieIndex] = useState<number | undefined>(undefined);
-  const mesRef = months[selectedMonth]?.key;
+  const mesRef = `${mesAtual.year}-${String(mesAtual.month + 1).padStart(2, "0")}`;
+  const mesLabel = new Date(mesAtual.year, mesAtual.month, 1)
+    .toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const mesLabelFmt = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
 
   // Fetch ALL lancamentos for the year (no month filter)
@@ -182,17 +175,11 @@ const Graficos = () => {
 
         {/* Month Selector */}
         <div className="flex items-center justify-center gap-3 animate-fade-up" style={{ animationDelay: "0.03s" }}>
-          <button onClick={() => setSelectedMonth((p) => Math.max(0, p - 1))} disabled={selectedMonth === 0} className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
+          <button onClick={() => setMesAtual(p => { const d = new Date(p.year, p.month - 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors">
             <ChevronLeft size={18} />
           </button>
-          <div className="flex items-center gap-2 overflow-hidden">
-            {months.map((m, i) => (
-              <button key={m.key} onClick={() => setSelectedMonth(i)} className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-all whitespace-nowrap ${i === selectedMonth ? "gradient-emerald text-primary-foreground shadow-lg shadow-primary/20" : "text-muted-foreground hover:text-foreground"}`}>
-                {m.label}
-              </button>
-            ))}
-          </div>
-          <button onClick={() => setSelectedMonth((p) => Math.min(months.length - 1, p + 1))} disabled={selectedMonth === months.length - 1} className="p-1 rounded-full text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors">
+          <span className="text-sm font-semibold text-foreground min-w-[160px] text-center">{mesLabelFmt}</span>
+          <button onClick={() => setMesAtual(p => { const d = new Date(p.year, p.month + 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors">
             <ChevronRight size={18} />
           </button>
         </div>
@@ -283,7 +270,7 @@ const Graficos = () => {
             <div className="md:grid md:grid-cols-2 md:gap-4 space-y-6 md:space-y-0">
               {/* Monthly bars */}
               <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.05s" }}>
-                <h2 className="text-sm font-semibold text-foreground mb-4">Receitas vs Despesas — {months[selectedMonth]?.label}</h2>
+                <h2 className="text-sm font-semibold text-foreground mb-4">Receitas vs Despesas — {mesLabelFmt}</h2>
                 <div className="flex justify-around items-end px-4 h-32">
                   <div className="flex flex-col items-center gap-2">
                     <div className="w-16 rounded-t-lg gradient-emerald" style={{ height: `${Math.max(8, totalReceitas > 0 ? 100 : 0)}px` }} />
@@ -302,7 +289,7 @@ const Graficos = () => {
               {composicao.length > 0 && (
                 <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
                   <h2 className="text-sm font-semibold text-foreground">Composição por Categoria</h2>
-                  <p className="text-[11px] text-muted-foreground mb-4">{months[selectedMonth]?.label}</p>
+                  <p className="text-[11px] text-muted-foreground mb-4">{mesLabelFmt}</p>
                   <div className="relative h-52 flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>

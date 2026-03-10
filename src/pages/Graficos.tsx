@@ -17,21 +17,8 @@ const fmtK = (v: number) => {
   return String(v);
 };
 
-const now = new Date();
-const currentYear = now.getFullYear();
-const currentMonthIdx = now.getMonth(); // 0-based
-
-const generateMonths = () => {
-  const result = [];
-  for (let i = -1; i <= 1; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    result.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1) });
-  }
-  return result;
-};
-const months = generateMonths();
+const currentYear = new Date().getFullYear();
+const currentMonthIdx = new Date().getMonth();
 
 const MONTH_LABELS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 

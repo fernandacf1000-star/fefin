@@ -431,17 +431,12 @@ const Despesas = () => {
     if (item.tipo === "receita") return <ArrowUpRight size={17} className="text-emerald-400" />;
     if (item.is_parcelado) return <Receipt size={17} className="text-muted-foreground" />;
     if (item.categoria === "pais") return <Users size={17} className="text-muted-foreground" />;
-    return item.pago
-      ? <CheckCircle2 size={17} className="text-primary" />
-      : <Clock size={17} className="text-yellow-400" />;
+    return <CircleDollarSign size={17} className="text-muted-foreground" />;
   };
 
   const getItemSubtitle = (item: Lancamento) => (
     <p className="text-[11px] text-muted-foreground">
       {new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-      {item.tipo === "despesa" && !item.is_parcelado && (
-        <> · <span className={item.pago ? "text-primary" : "text-yellow-400"}>{item.pago ? "Pago" : "Pendente"}</span></>
-      )}
     </p>
   );
 

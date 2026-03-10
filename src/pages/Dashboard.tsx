@@ -22,18 +22,6 @@ import { APP_VERSION, APP_UPDATED } from "@/version";
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const now = new Date();
-const generateMonths = () => {
-  const result = [];
-  for (let i = -1; i <= 1; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    result.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1) });
-  }
-  return result;
-};
-const months = generateMonths();
 
 const txIcon = (categoria: string) => {
   const map: Record<string, any> = {

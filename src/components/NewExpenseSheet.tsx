@@ -273,8 +273,8 @@ const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) =
 
   const getMaxStep = () => {
     if (isReceita) return 2;
-    if (isPais) return 4; // tipo, o que aconteceu, categoria, details
-    return 3; // tipo, categoria+sub, details
+    if (isPais) return 3;
+    return 2; // despesa: vai direto para detalhes
   };
 
   const handleNext = () => {
@@ -342,8 +342,8 @@ const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) =
       );
     }
 
-    // Category + subcategory step (step 2 for despesa, step 3 for pais)
-    if (needsCategory && ((tipoLanc === "despesa" && step === 2) || (isPais && step === 3))) {
+    // Category + subcategory step (step 3 for pais only)
+    if (isPais && step === 3) {
       return (
         <div className="space-y-4">
           <p className="text-xs font-medium text-muted-foreground">Categoria</p>
@@ -399,6 +399,45 @@ const NewExpenseSheet = ({ open, onClose, initialTipo }: NewExpenseSheetProps) =
     // Details step (final step for all types)
     return (
       <div className="space-y-4">
+        {(tipoLanc === "despesa") && (
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">Categoria</label>
+            <div className="grid grid-cols-2 gap-2">
+              {SUBCATEGORIA_GROUPS.map(g => {
+                const selected = categoriaMacro === g.group;
+                return (
+                  <button
+                    key={g.group}
+                    onClick={() => { setCategoriaMacro(g.group); setSubcategoria(""); }}
+                    className={cn(
+                      "flex items-center gap-2 p-2.5 rounded-xl text-left transition-all",
+                      selected ? "bg-primary/15 ring-2 ring-primary" : "bg-secondary/40 text-muted-foreground"
+                    )}
+                  >
+                    <span className="text-base">{g.emoji}</span>
+                    <span className={cn("text-xs font-medium", selected && "text-foreground font-semibold")}>{g.group}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {SUBCATEGORIA_GROUPS.find(g => g.group === categoriaMacro) && (
+              <div className="flex flex-wrap gap-1.5">
+                {SUBCATEGORIA_GROUPS.find(g => g.group === categoriaMacro)!.items.map(item => (
+                  <button
+                    key={item}
+                    onClick={() => setSubcategoria(item)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-full text-xs font-medium transition-all",
+                      subcategoria === item ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-muted-foreground"
+                    )}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">Descrição</label>
           <Input placeholder="Ex: Conta de Luz" value={descricao} onChange={(e) => handleDescricaoChange(e.target.value)} className="bg-secondary border-border/50" />

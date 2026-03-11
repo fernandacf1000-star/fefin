@@ -1,146 +1,166 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./useAuth";
+import { useMemo } from "react";
+import { CreditCard } from "lucide-react";
+import type { Cartao } from "@/hooks/useCartoes";
+import { getCartaoCycle } from "@/hooks/useCartoes";
+import type { Lancamento } from "@/hooks/useLancamentos";
 
-export interface Cartao {
-  id: string;
-  user_id: string;
-  nome: string;
-  bandeira: string;
-  dia_fechamento: number;
-  melhor_dia_compra: number;
-  cor: string;
-  ativo: boolean;
-  created_at: string;
+const fmt = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const BandeiraIcon = ({ bandeira }: { bandeira: string }) => {
+  if (bandeira === "visa") {
+    return (
+      <span
+        style={{
+          fontStyle: "italic",
+          fontWeight: 900,
+          fontSize: 12,
+          color: "#1A1F71",
+          background: "white",
+          borderRadius: 4,
+          padding: "2px 6px",
+          letterSpacing: 1,
+          lineHeight: 1,
+        }}
+      >
+        VISA
+      </span>
+    );
+  }
+  if (bandeira === "mastercard") {
+    return (
+      <div style={{ position: "relative", width: 32, height: 20, flexShrink: 0 }}>
+        <div style={{ position: "absolute", left: 0, width: 20, height: 20, borderRadius: "50%", background: "#EB001B" }} />
+        <div style={{ position: "absolute", left: 12, width: 20, height: 20, borderRadius: "50%", background: "#F79E1B", opacity: 0.9 }} />
+      </div>
+    );
+  }
+  return <CreditCard size={16} />;
+};
+
+interface Props {
+  cartao: Cartao;
+  lancamentos: Lancamento[];
+  showBalance: boolean;
+  isBest?: boolean;
 }
 
-export const useCartoes = () => {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["cartoes", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("cartoes" as any)
-        .select("*")
-        .eq("ativo", true)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as unknown as Cartao[];
-    },
-    enabled: !!user,
-  });
-};
-
-export const useAddCartao = () => {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  return useMutation({
-    mutationFn: async (cartao: Omit<Cartao, "id" | "user_id" | "created_at" | "ativo">) => {
-      if (!user) throw new Error("Não autenticado");
-      const { data, error } = await supabase
-        .from("cartoes" as any)
-        .insert({ ...cartao, user_id: user.id } as any)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cartoes"] }),
-  });
-};
-
-export const useUpdateCartao = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Cartao> & { id: string }) => {
-      const { data, error } = await supabase
-        .from("cartoes" as any)
-        .update(updates as any)
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cartoes"] }),
-  });
-};
-
-export const useDeleteCartao = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("cartoes" as any)
-        .update({ ativo: false } as any)
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cartoes"] }),
-  });
-};
-
-/**
- * Get the current billing cycle dates for a card.
- *
- * Cycle logic:
- *   - cycleEnd   = next occurrence of diaFechamento (the closing date)
- *   - cycleStart = day after the previous closing date
- *   - daysUntilClose = days remaining until cycleEnd (0 = closes today, <0 = already closed)
- *
- * "Melhor cartão" = the card with most daysUntilClose (most time to pay)
- *
- * Fatura display:
- *   - If daysUntilClose >= 0  → cycle still open, show acumulado (compras de cycleStart até hoje)
- *   - If daysUntilClose < 0   → cycle closed, show fatura fechada aguardando pagamento
- *     (use previousCycleStart / previousCycleEnd)
- */
-export const getCartaoCycle = (diaFechamento: number) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const day = today.getDate();
-
-  let cycleStart: Date;
-  let cycleEnd: Date;
-  let previousCycleStart: Date;
-  let previousCycleEnd: Date;
-
-  if (day <= diaFechamento) {
-    // Before or on closing day this month → current cycle ends this month
-    cycleEnd = new Date(year, month, diaFechamento);
-    cycleStart = new Date(year, month - 1, diaFechamento + 1);
-    previousCycleEnd = new Date(year, month - 1, diaFechamento);
-    previousCycleStart = new Date(year, month - 2, diaFechamento + 1);
-  } else {
-    // After closing day → current cycle ends next month
-    cycleEnd = new Date(year, month + 1, diaFechamento);
-    cycleStart = new Date(year, month, diaFechamento + 1);
-    previousCycleEnd = new Date(year, month, diaFechamento);
-    previousCycleStart = new Date(year, month - 1, diaFechamento + 1);
-  }
-
-  // mes_referencia do ciclo atual (YYYY-MM) — mês em que a fatura vence
-  // Vencimento = 5 dias corridos após fechamento (aproximação; data exata vem do banco)
-  const vencimento = new Date(cycleEnd);
-  vencimento.setDate(vencimento.getDate() + 5);
-  const cycleMonthRef = `${vencimento.getFullYear()}-${String(vencimento.getMonth() + 1).padStart(2, '0')}`;
-
-  // mes_referencia do ciclo anterior
-  const vencimentoPrev = new Date(previousCycleEnd);
-  vencimentoPrev.setDate(vencimentoPrev.getDate() + 5);
-  const previousCycleMonthRef = `${vencimentoPrev.getFullYear()}-${String(vencimentoPrev.getMonth() + 1).padStart(2, '0')}`;
-
-  const daysUntilClose = Math.ceil((cycleEnd.getTime() - today.getTime()) / 86400000);
-
-  return {
+const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
+  const {
     cycleStart,
     cycleEnd,
-    previousCycleStart,
-    previousCycleEnd,
-    cycleMonthRef,
     previousCycleMonthRef,
+    cycleMonthRef,
     daysUntilClose,
-  };
+  } = getCartaoCycle(cartao.dia_fechamento);
+
+  // Ciclo atual ainda aberto → mostra acumulado (compras desde cycleStart até hoje)
+  // Ciclo fechado aguardando pagamento → mostra fatura fechada (previousCycleMonthRef)
+  // Na prática: sempre mostramos o mes_referencia correto para cada lançamento
+
+  // Fatura fechada: ciclo já fechou, mostra o que foi cobrado (previousCycleMonthRef)
+  // Fatura aberta: ciclo ainda aberto, mostra o acumulado por data
+  const isCycleOpen = daysUntilClose >= 0;
+
+  const faturaFechada = useMemo(() => {
+    // Lançamentos do ciclo anterior (já fechado, aguardando pagamento)
+    return lancamentos
+      .filter((l) => {
+        if (!l.cartao_id || l.cartao_id !== cartao.id) return false;
+        if (l.tipo !== "despesa") return false;
+        if (l.is_parcelado || l.recorrente) {
+          return l.mes_referencia === previousCycleMonthRef;
+        }
+        // avulsos: data dentro do ciclo anterior
+        const d = new Date(l.data + "T12:00:00");
+        const prevStart = new Date(cycleStart);
+        prevStart.setMonth(prevStart.getMonth() - 1);
+        return d < cycleStart && d >= prevStart;
+      })
+      .reduce((s, l) => s + Number(l.valor), 0);
+  }, [lancamentos, cartao.id, previousCycleMonthRef, cycleStart]);
+
+  const faturaAberta = useMemo(() => {
+    // Lançamentos do ciclo atual aberto
+    return lancamentos
+      .filter((l) => {
+        if (!l.cartao_id || l.cartao_id !== cartao.id) return false;
+        if (l.tipo !== "despesa") return false;
+        if (l.is_parcelado || l.recorrente) {
+          return l.mes_referencia === cycleMonthRef;
+        }
+        const d = new Date(l.data + "T12:00:00");
+        return d >= cycleStart && d <= cycleEnd;
+      })
+      .reduce((s, l) => s + Number(l.valor), 0);
+  }, [lancamentos, cartao.id, cycleMonthRef, cycleStart, cycleEnd]);
+
+  // O que mostrar em destaque:
+  // - Se ciclo fechou recentemente (daysUntilClose entre -35 e -1): mostra fatura fechada a pagar
+  // - Se ciclo aberto: mostra acumulado aberto
+  const showFaturaFechada = !isCycleOpen && faturaFechada > 0;
+  const valorDestaque = showFaturaFechada ? faturaFechada : faturaAberta;
+
+  const isClosingSoon = isCycleOpen && daysUntilClose <= 5;
+
+  return (
+    <div
+      className="p-4 rounded-xl border border-border/30 space-y-3"
+      style={{ borderLeft: `3px solid ${cartao.cor}`, background: "#12121f" }}
+    >
+      {/* Linha 1: Bandeira + Nome + Badge melhor */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <BandeiraIcon bandeira={cartao.bandeira} />
+          <span className="text-sm font-semibold text-foreground">{cartao.nome}</span>
+        </div>
+        {isBest && (
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+            💡 Melhor hoje
+          </span>
+        )}
+      </div>
+
+      {/* Linha 2: Fatura em destaque */}
+      <div>
+        <p className="text-[10px] text-muted-foreground mb-0.5">
+          {showFaturaFechada ? "Fatura fechada · a pagar" : "Fatura aberta · acumulado"}
+        </p>
+        <p className="text-xl font-bold text-foreground tabular-nums">
+          {showBalance ? fmt(valorDestaque) : "R$ ••••"}
+        </p>
+        {/* Se há fatura fechada E aberta, mostra aberta menor embaixo */}
+        {showFaturaFechada && faturaAberta > 0 && (
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            + {showBalance ? fmt(faturaAberta) : "R$ ••••"} acumulando
+          </p>
+        )}
+      </div>
+
+      {/* Linha 3: Melhor dia + status */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+          📅 Melhor dia: {cartao.melhor_dia_compra}
+        </span>
+
+        {showFaturaFechada && (
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500">
+            ⏳ Aguardando pagamento
+          </span>
+        )}
+        {isCycleOpen && isClosingSoon && (
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500">
+            ⚠️ Fecha em {daysUntilClose} dia{daysUntilClose !== 1 ? "s" : ""}
+          </span>
+        )}
+        {isCycleOpen && !isClosingSoon && (
+          <span className="text-[10px] text-muted-foreground">
+            Fecha em {daysUntilClose} dias
+          </span>
+        )}
+      </div>
+    </div>
+  );
 };
+
+export default CartaoCard;

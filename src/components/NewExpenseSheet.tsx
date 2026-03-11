@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useRef } from "react";
 import { X, CalendarIcon, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -11,7 +11,6 @@ import { Switch } from "@/components/ui/switch";
 import {
   useAddLancamento,
   useAddMultipleLancamentos,
-  useLancamentos,
 } from "@/hooks/useLancamentos";
 import { useCartoes } from "@/hooks/useCartoes";
 import {
@@ -28,9 +27,17 @@ interface NewExpenseSheetProps {
 }
 
 type Tela = 1 | 2;
+type TipoDespesa = "normal" | "pais";
 
 const FORMA_PAGAMENTO = ["Débito", "Crédito", "PIX", "Dinheiro", "Outros"] as const;
 type FormaPagamento = (typeof FORMA_PAGAMENTO)[number];
+
+const SUBCAT_PAIS = [
+  { value: "paguei_por_eles",      label: "💸 Paguei por eles" },
+  { value: "paguei_recebo_depois", label: "↩️ Paguei, recebo depois" },
+  { value: "eles_pagaram",         label: "📋 Eles pagaram" },
+  { value: "usaram_meu_cartao",    label: "💳 Usaram meu cartão" },
+];
 
 const incomeCategories = [
   "Salário",
@@ -62,42 +69,30 @@ const NewExpenseSheet = ({
   const [valor, setValor] = useState("");
   const [data, setData] = useState<Date>(new Date());
 
-  // Tela 2 - despesa
+  const [tipoDespesa, setTipoDespesa] = useState<TipoDespesa>("normal");
+  const [subcatPais, setSubcatPais] = useState("paguei_por_eles");
   const [subcategoria, setSubcategoria] = useState<string | null>(null);
   const [categoriaMacro, setCategoriaMacro] = useState<string | null>(null);
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>("Débito");
   const [cartaoId, setCartaoId] = useState<string | null>(null);
-  const [isPais, setIsPais] = useState(false);
   const [isParcelado, setIsParcelado] = useState(false);
   const [numParcelas, setNumParcelas] = useState("2");
   const [isRecorrente, setIsRecorrente] = useState(false);
   const [diaRecorrencia, setDiaRecorrencia] = useState("1");
   const [recorrenciaAte, setRecorrenciaAte] = useState<Date | undefined>(undefined);
 
-  // Tela 2 - receita
+  const [sugestaoSubcat, setSugestaoSubcat] = useState<string | null>(null);
+  const [sugestaoMacro, setSugestaoMacro] = useState<string | null>(null);
+  const sugestaoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [incomeCategoria, setIncomeCategoria] = useState<IncomeCategory>("Salário");
+  const [isRecorrenteReceita, setIsRecorrenteReceita] = useState(false);
+  const [diaRecorrenteReceita, setDiaRecorrenteReceita] = useState("1");
+  const [recorrenciaAteReceita, setRecorrenciaAteReceita] = useState<Date | undefined>(undefined);
 
   const addLancamento = useAddLancamento();
   const addMultiple = useAddMultipleLancamentos();
   const { data: cartoes = [] } = useCartoes();
-  const { data: allLancamentos = [] } = useLancamentos();
-
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const suggestions = useMemo(() => {
-    if (!descricao || descricao.length < 2) return [];
-    const q = descricao.toLowerCase();
-    const map = new Map<string, typeof allLancamentos[0]>();
-    for (const l of allLancamentos) {
-      const normalizado = l.descricao.replace(/\s*\(\d+\/\d+\)\s*$/, "").trim();
-      if (!normalizado.toLowerCase().includes(q)) continue;
-      if (!map.has(normalizado) || l.created_at > map.get(normalizado)!.created_at) {
-        map.set(normalizado, { ...l, descricao: normalizado });
-      }
-    }
-    return Array.from(map.values())
-      .filter((l) => l.descricao.toLowerCase() !== descricao.toLowerCase())
-      .slice(0, 4);
-  }, [descricao, allLancamentos]);
 
   const isPending = addLancamento.isPending || addMultiple.isPending;
 
@@ -107,23 +102,26 @@ const NewExpenseSheet = ({
     setDescricao("");
     setValor("");
     setData(new Date());
+    setTipoDespesa("normal");
+    setSubcatPais("paguei_por_eles");
     setSubcategoria(null);
     setCategoriaMacro(null);
+    setSugestaoSubcat(null);
+    setSugestaoMacro(null);
     setFormaPagamento("Débito");
     setCartaoId(null);
-    setIsPais(false);
     setIsParcelado(false);
     setNumParcelas("2");
     setIsRecorrente(false);
     setDiaRecorrencia("1");
     setRecorrenciaAte(undefined);
     setIncomeCategoria("Salário");
+    setIsRecorrenteReceita(false);
+    setDiaRecorrenteReceita("1");
+    setRecorrenciaAteReceita(undefined);
   };
 
-  const handleClose = () => {
-    resetForm();
-    onClose();
-  };
+  const handleClose = () => { resetForm(); onClose(); };
 
   const handleValorChange = (raw: string) => {
     const digits = raw.replace(/\D/g, "");
@@ -134,32 +132,31 @@ const NewExpenseSheet = ({
 
   const handleDescricaoChange = (v: string) => {
     setDescricao(v);
-    setShowSuggestions(true);
-    if (tipo === "despesa") {
-      const detected = detectSubcategoria(v);
-      if (detected) {
-        setSubcategoria(detected);
-        setCategoriaMacro(detectCategoriaMacro(detected));
-      }
+    if (sugestaoTimer.current) clearTimeout(sugestaoTimer.current);
+    if (tipo === "despesa" && v.trim().length > 3) {
+      sugestaoTimer.current = setTimeout(() => {
+        const detected = detectSubcategoria(v);
+        if (detected && !subcategoria) {
+          setSugestaoSubcat(detected);
+          setSugestaoMacro(detectCategoriaMacro(detected));
+        }
+      }, 600);
+    } else {
+      setSugestaoSubcat(null);
+      setSugestaoMacro(null);
     }
   };
 
-  const applySuggestion = (l: typeof allLancamentos[0]) => {
-    setDescricao(l.descricao.replace(/\s*\(\d+\/\d+\)\s*$/, "").trim());
-    const numValor = Number(l.valor);
-    if (numValor > 0) {
-      setValor(numValor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  const aceitarSugestao = () => {
+    if (sugestaoSubcat) {
+      setSubcategoria(sugestaoSubcat);
+      setCategoriaMacro(sugestaoMacro);
+      setSugestaoSubcat(null);
+      setSugestaoMacro(null);
     }
-    if (l.subcategoria) { setSubcategoria(l.subcategoria); setCategoriaMacro(l.categoria_macro); }
-    if (l.forma_pagamento) setFormaPagamento(l.forma_pagamento as FormaPagamento);
-    if (l.cartao_id) setCartaoId(l.cartao_id);
-    if (l.categoria === "pais") setIsPais(true);
-    if (l.tipo === "receita" && l.categoria) {
-      const found = Object.entries(incomeCatMap).find(([, v]) => v === l.categoria);
-      if (found) setIncomeCategoria(found[0] as IncomeCategory);
-    }
-    setShowSuggestions(false);
   };
+
+  const recusarSugestao = () => { setSugestaoSubcat(null); setSugestaoMacro(null); };
 
   const handleNextTela = () => {
     if (!descricao.trim()) { toast.error("Preencha a descrição"); return; }
@@ -170,20 +167,19 @@ const NewExpenseSheet = ({
   const handleSave = async () => {
     const numValor = parseFloat(valor.replace(/\./g, "").replace(",", "."));
     if (isNaN(numValor) || numValor <= 0) { toast.error("Valor inválido"); return; }
-
     const mesRef = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`;
     const dateStr = format(data, "yyyy-MM-dd");
 
     try {
       if (tipo === "receita") {
-        if (isRecorrente) {
+        if (isRecorrenteReceita) {
           const recorrenciaPaiId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
           const lancamentos: any[] = [];
-          const maxMonths = recorrenciaAte ? 120 : 24;
-          const dia = parseInt(diaRecorrencia, 10) || 1;
+          const maxMonths = recorrenciaAteReceita ? 120 : 24;
+          const dia = parseInt(diaRecorrenteReceita, 10) || 1;
           for (let i = 0; i < maxMonths; i++) {
             const monthDate = addMonths(data, i);
-            if (recorrenciaAte && monthDate > recorrenciaAte) break;
+            if (recorrenciaAteReceita && monthDate > recorrenciaAteReceita) break;
             const mRef = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
             const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
             const actualDay = Math.min(dia, daysInMonth);
@@ -196,12 +192,12 @@ const NewExpenseSheet = ({
               parcela_atual: null, parcela_total: null, is_parcelado: false, parcelamento_id: null,
               pago: false, forma_pagamento: null, cartao_id: null,
               recorrente: true, dia_recorrencia: dia,
-              recorrencia_ate: recorrenciaAte ? format(recorrenciaAte, "yyyy-MM-dd") : null,
+              recorrencia_ate: recorrenciaAteReceita ? format(recorrenciaAteReceita, "yyyy-MM-dd") : null,
               recorrencia_pai_id: recorrenciaPaiId,
             });
           }
           await addMultiple.mutateAsync(lancamentos);
-
+          toast.success(`Receita recorrente criada! (${lancamentos.length} meses)`);
         } else {
           await addLancamento.mutateAsync({
             descricao, valor: numValor, tipo: "receita",
@@ -212,12 +208,16 @@ const NewExpenseSheet = ({
             pago: false, forma_pagamento: null, cartao_id: null,
             recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
           });
-
+          toast.success("Receita salva!");
         }
       } else {
+        const isPais = tipoDespesa === "pais";
         const categoria = isPais ? "pais" : "extra";
+        const subcatPaisValue = isPais ? subcatPais : null;
+        const subcatValue = isPais ? null : subcategoria;
+        const catMacroValue = isPais ? null : categoriaMacro;
 
-        if (isParcelado) {
+        if (!isPais && isParcelado) {
           const parcelas = parseInt(numParcelas, 10) || 2;
           const parcelamentoId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
           const lancamentos: any[] = [];
@@ -227,7 +227,7 @@ const NewExpenseSheet = ({
             lancamentos.push({
               descricao: `${descricao} (${i + 1}/${parcelas})`,
               valor: numValor / parcelas, tipo: "despesa", categoria,
-              subcategoria_pais: null, subcategoria, categoria_macro: categoriaMacro,
+              subcategoria_pais: null, subcategoria: subcatValue, categoria_macro: catMacroValue,
               data: format(monthDate, "yyyy-MM-dd"), mes_referencia: mRef,
               parcela_atual: i + 1, parcela_total: parcelas,
               is_parcelado: true, parcelamento_id: parcelamentoId,
@@ -238,8 +238,8 @@ const NewExpenseSheet = ({
             });
           }
           await addMultiple.mutateAsync(lancamentos);
-
-        } else if (isRecorrente) {
+          toast.success(`Despesa parcelada em ${parcelas}x salva!`);
+        } else if (!isPais && isRecorrente) {
           const recorrenciaPaiId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
           const lancamentos: any[] = [];
           const maxMonths = recorrenciaAte ? 120 : 24;
@@ -253,7 +253,7 @@ const NewExpenseSheet = ({
             const dStr = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}-${String(actualDay).padStart(2, "0")}`;
             lancamentos.push({
               descricao, valor: numValor, tipo: "despesa", categoria,
-              subcategoria_pais: null, subcategoria, categoria_macro: categoriaMacro,
+              subcategoria_pais: null, subcategoria: subcatValue, categoria_macro: catMacroValue,
               data: dStr, mes_referencia: mRef,
               parcela_atual: null, parcela_total: null, is_parcelado: false, parcelamento_id: null,
               pago: false,
@@ -265,11 +265,11 @@ const NewExpenseSheet = ({
             });
           }
           await addMultiple.mutateAsync(lancamentos);
-
+          toast.success(`Despesa recorrente criada! (${lancamentos.length} meses)`);
         } else {
           await addLancamento.mutateAsync({
             descricao, valor: numValor, tipo: "despesa", categoria,
-            subcategoria_pais: null, subcategoria, categoria_macro: categoriaMacro,
+            subcategoria_pais: subcatPaisValue, subcategoria: subcatValue, categoria_macro: catMacroValue,
             data: dateStr, mes_referencia: mesRef,
             parcela_atual: null, parcela_total: null, is_parcelado: false, parcelamento_id: null,
             pago: false,
@@ -277,7 +277,7 @@ const NewExpenseSheet = ({
             cartao_id: formaPagamento === "Crédito" ? cartaoId : null,
             recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
           });
-
+          toast.success(isPais ? "Gasto dos pais salvo!" : "Despesa salva!");
         }
       }
       handleClose();
@@ -320,7 +320,7 @@ const NewExpenseSheet = ({
                 </button>
               )}
               <h2 className="text-lg font-semibold text-foreground">
-                {tela === 1 ? "Novo lançamento" : isDespesa ? "Categoria e pagamento" : "Detalhes da receita"}
+                {tela === 1 ? "Novo lançamento" : isDespesa ? (tipoDespesa === "pais" ? "Gasto dos pais" : "Categoria e pagamento") : "Detalhes da receita"}
               </h2>
             </div>
             <button onClick={handleClose} className="p-1 rounded-full hover:bg-muted transition-colors">
@@ -359,27 +359,14 @@ const NewExpenseSheet = ({
                   placeholder="Ex: Supermercado, Salário..."
                   value={descricao}
                   onChange={(e) => handleDescricaoChange(e.target.value)}
-                  onFocus={() => setShowSuggestions(true)}
                   className="bg-secondary border-border/50"
                 />
-                {showSuggestions && suggestions.length > 0 && (
-                  <div className="rounded-xl border border-border/40 bg-card shadow-lg overflow-hidden">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border/30">
-                      <Sparkles size={11} className="text-primary" />
-                      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Do histórico</span>
-                    </div>
-                    {suggestions.map((s) => (
-                      <button
-                        key={s.id}
-                        onClick={() => applySuggestion(s)}
-                        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary/60 transition-colors border-b border-border/20 last:border-0"
-                      >
-                        <span className="text-sm text-foreground truncate text-left">{s.descricao.replace(/\s*\(\d+\/\d+\)\s*$/, "").trim()}</span>
-                        <span className={cn("text-xs font-semibold ml-2 shrink-0", s.tipo === "despesa" ? "text-destructive" : "text-primary")}>
-                          {s.tipo === "despesa" ? "-" : "+"} R$ {Number(s.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                        </span>
-                      </button>
-                    ))}
+                {sugestaoSubcat && (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-secondary/60 border border-border/30">
+                    <Sparkles size={14} className="text-primary shrink-0" />
+                    <span className="text-xs text-muted-foreground">Sugestão: <strong className="text-foreground">{sugestaoSubcat}</strong></span>
+                    <button onClick={aceitarSugestao} className="ml-auto text-[10px] font-semibold text-primary hover:underline">Usar</button>
+                    <button onClick={recusarSugestao} className="text-[10px] text-muted-foreground hover:underline">Ignorar</button>
                   </div>
                 )}
               </div>
@@ -430,134 +417,208 @@ const NewExpenseSheet = ({
           {/* ── TELA 2 - DESPESA ── */}
           {tela === 2 && isDespesa && (
             <>
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Categoria</label>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {SUBCATEGORIA_GROUPS.map((group) => (
-                    <div key={group.group}>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-                        {group.emoji} {group.group}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {group.items.map((item) => (
-                          <button
-                            key={item}
-                            onClick={() => { setSubcategoria(item); setCategoriaMacro(group.group); }}
-                            className={cn(
-                              "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                              subcategoria === item
-                                ? "bg-destructive text-destructive-foreground shadow"
-                                : "bg-secondary text-muted-foreground hover:text-foreground"
-                            )}
-                          >
-                            {item}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              {/* Toggle normal / pais */}
+              <div className="flex gap-2 p-1 rounded-xl bg-secondary/50">
+                <button
+                  onClick={() => setTipoDespesa("normal")}
+                  className={cn(
+                    "flex-1 py-2 rounded-lg text-sm font-semibold transition-all",
+                    tipoDespesa === "normal" ? "bg-destructive text-destructive-foreground shadow" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Minha despesa
+                </button>
+                <button
+                  onClick={() => setTipoDespesa("pais")}
+                  className={cn(
+                    "flex-1 py-2 rounded-lg text-sm font-semibold transition-all",
+                    tipoDespesa === "pais" ? "bg-amber-500 text-white shadow" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  👴👵 Pais
+                </button>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Forma de pagamento</label>
-                <div className="flex flex-wrap gap-2">
-                  {FORMA_PAGAMENTO.map((fp) => (
-                    <button
-                      key={fp}
-                      onClick={() => { setFormaPagamento(fp); if (fp !== "Crédito") setCartaoId(null); }}
-                      className={cn(
-                        "px-4 py-2 rounded-full text-xs font-medium transition-all",
-                        formaPagamento === fp
-                          ? "bg-destructive text-destructive-foreground shadow"
-                          : "bg-secondary text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {fp}
-                    </button>
-                  ))}
-                </div>
-                {formaPagamento === "Crédito" && cartoes.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {cartoes.map((c) => (
+              {tipoDespesa === "pais" && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground">Como foi o gasto?</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SUBCAT_PAIS.map((opt) => (
                       <button
-                        key={c.id}
-                        onClick={() => setCartaoId(c.id)}
+                        key={opt.value}
+                        onClick={() => setSubcatPais(opt.value)}
                         className={cn(
-                          "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
-                          cartaoId === c.id
-                            ? "border-destructive text-destructive bg-destructive/10"
-                            : "border-border/50 text-muted-foreground hover:text-foreground"
+                          "px-3 py-3 rounded-xl text-xs font-medium text-left transition-all leading-snug",
+                          subcatPais === opt.value ? "bg-amber-500 text-white shadow" : "bg-secondary text-muted-foreground hover:text-foreground"
                         )}
                       >
-                        {c.nome}
+                        {opt.label}
                       </button>
                     ))}
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <div className="glass-card p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-foreground">Gasto com os pais?</p>
-                    <p className="text-[10px] text-muted-foreground">Aparece na aba Pais</p>
-                  </div>
-                  <Switch checked={isPais} onCheckedChange={(v) => { setIsPais(v); if (v) { setIsParcelado(false); setIsRecorrente(false); } }} />
                 </div>
+              )}
 
-                {!isPais && (
-                  <>
-                    <div className="glass-card p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-medium text-foreground">Parcelado?</label>
-                        <Switch checked={isParcelado} onCheckedChange={(v) => { setIsParcelado(v); if (v) setIsRecorrente(false); }} />
-                      </div>
-                      {isParcelado && (
-                        <div className="space-y-1">
-                          <label className="text-[11px] text-muted-foreground">Número de parcelas</label>
-                          <Input type="number" min={2} max={60} value={numParcelas} onChange={(e) => setNumParcelas(e.target.value)} className="bg-secondary border-border/50 w-24" inputMode="numeric" />
+              {tipoDespesa === "normal" && (
+                <>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-muted-foreground">Categoria</label>
+                      {subcategoria && <span className="text-[10px] text-primary font-semibold">✓ {subcategoria}</span>}
+                    </div>
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {SUBCATEGORIA_GROUPS.map((group) => (
+                        <div key={group.group}>
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                            {group.emoji} {group.group}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {group.items.map((item) => (
+                              <button
+                                key={item}
+                                onClick={() => {
+                                  setSubcategoria(item === subcategoria ? null : item);
+                                  setCategoriaMacro(item === subcategoria ? null : group.group);
+                                }}
+                                className={cn(
+                                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                                  subcategoria === item
+                                    ? "bg-destructive text-destructive-foreground shadow"
+                                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                                )}
+                              >
+                                {item}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
+                  </div>
 
-                    <div className="glass-card p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-medium text-foreground">Recorrente?</label>
-                        <Switch checked={isRecorrente} onCheckedChange={(v) => { setIsRecorrente(v); if (v) setIsParcelado(false); }} />
-                      </div>
-                      {isRecorrente && (
-                        <>
-                          <div className="space-y-1">
-                            <label className="text-[11px] text-muted-foreground">Repetir todo mês no dia</label>
-                            <Input type="number" min={1} max={31} value={diaRecorrencia} onChange={(e) => setDiaRecorrencia(e.target.value)} className="bg-secondary border-border/50 w-24" inputMode="numeric" />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[11px] text-muted-foreground">Até quando? (vazio = 24 meses)</label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" className="w-full justify-start bg-secondary border-border/50 text-foreground text-xs">
-                                  <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                                  {recorrenciaAte ? format(recorrenciaAte, "dd/MM/yyyy") : "Indefinido"}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0 z-[80]" align="start">
-                                <Calendar mode="single" selected={recorrenciaAte} onSelect={(d) => setRecorrenciaAte(d || undefined)} initialFocus className="p-3 pointer-events-auto" disabled={(d) => d < new Date()} />
-                              </PopoverContent>
-                            </Popover>
-                            {recorrenciaAte && (
-                              <button onClick={() => setRecorrenciaAte(undefined)} className="text-[10px] text-primary hover:underline">Limpar data limite</button>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">Forma de pagamento</label>
+                    <div className="flex flex-wrap gap-2">
+                      {FORMA_PAGAMENTO.map((fp) => (
+                        <button
+                          key={fp}
+                          onClick={() => { setFormaPagamento(fp); if (fp !== "Crédito") setCartaoId(null); }}
+                          className={cn(
+                            "px-4 py-2 rounded-full text-xs font-medium transition-all",
+                            formaPagamento === fp
+                              ? "bg-destructive text-destructive-foreground shadow"
+                              : "bg-secondary text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {fp}
+                        </button>
+                      ))}
+                    </div>
+                    {formaPagamento === "Crédito" && cartoes.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {cartoes.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => setCartaoId(cartaoId === c.id ? null : c.id)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                              cartaoId === c.id
+                                ? "border-destructive text-destructive bg-destructive/10"
+                                : "border-border/50 text-muted-foreground hover:text-foreground"
                             )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
+                          >
+                            {c.nome}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-              <Button onClick={handleSave} disabled={isPending} className="w-full h-12 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-semibold text-sm rounded-xl shadow-lg">
-                {isPending ? "Salvando..." : "Salvar Despesa"}
+                  <div className="glass-card p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-foreground">Parcelado?</label>
+                      <Switch checked={isParcelado} onCheckedChange={(v) => { setIsParcelado(v); if (v) setIsRecorrente(false); }} />
+                    </div>
+                    {isParcelado && (
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-muted-foreground">Número de parcelas</label>
+                        <Input type="number" min={2} max={60} value={numParcelas} onChange={(e) => setNumParcelas(e.target.value)} className="bg-secondary border-border/50 w-24" inputMode="numeric" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="glass-card p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-foreground">Recorrente?</label>
+                      <Switch checked={isRecorrente} onCheckedChange={(v) => { setIsRecorrente(v); if (v) setIsParcelado(false); }} />
+                    </div>
+                    {isRecorrente && (
+                      <>
+                        <div className="space-y-1">
+                          <label className="text-[11px] text-muted-foreground">Repetir todo mês no dia</label>
+                          <Input type="number" min={1} max={31} value={diaRecorrencia} onChange={(e) => setDiaRecorrencia(e.target.value)} className="bg-secondary border-border/50 w-24" inputMode="numeric" />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[11px] text-muted-foreground">Até quando? (vazio = 24 meses)</label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-full justify-start bg-secondary border-border/50 text-foreground text-xs">
+                                <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                                {recorrenciaAte ? format(recorrenciaAte, "dd/MM/yyyy") : "Indefinido"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 z-[80]" align="start">
+                              <Calendar mode="single" selected={recorrenciaAte} onSelect={(d) => setRecorrenciaAte(d || undefined)} initialFocus className="p-3 pointer-events-auto" disabled={(d) => d < new Date()} />
+                            </PopoverContent>
+                          </Popover>
+                          {recorrenciaAte && (
+                            <button onClick={() => setRecorrenciaAte(undefined)} className="text-[10px] text-primary hover:underline">Limpar data limite</button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {tipoDespesa === "pais" && (
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-muted-foreground">Forma de pagamento</label>
+                  <div className="flex flex-wrap gap-2">
+                    {FORMA_PAGAMENTO.map((fp) => (
+                      <button
+                        key={fp}
+                        onClick={() => { setFormaPagamento(fp); if (fp !== "Crédito") setCartaoId(null); }}
+                        className={cn(
+                          "px-4 py-2 rounded-full text-xs font-medium transition-all",
+                          formaPagamento === fp ? "bg-amber-500 text-white shadow" : "bg-secondary text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {fp}
+                      </button>
+                    ))}
+                  </div>
+                  {formaPagamento === "Crédito" && cartoes.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {cartoes.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => setCartaoId(cartaoId === c.id ? null : c.id)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                            cartaoId === c.id ? "border-amber-500 text-amber-500 bg-amber-500/10" : "border-border/50 text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {c.nome}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Button onClick={handleSave} disabled={isPending} className={cn("w-full h-12 font-semibold text-sm rounded-xl shadow-lg", tipoDespesa === "pais" ? "bg-amber-500 hover:bg-amber-600 text-white" : "bg-destructive hover:bg-destructive/90 text-destructive-foreground")}>
+                {isPending ? "Salvando..." : tipoDespesa === "pais" ? "Salvar gasto dos pais" : "Salvar despesa"}
               </Button>
             </>
           )}
@@ -588,13 +649,13 @@ const NewExpenseSheet = ({
               <div className="glass-card p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-foreground">Receita recorrente?</label>
-                  <Switch checked={isRecorrente} onCheckedChange={setIsRecorrente} />
+                  <Switch checked={isRecorrenteReceita} onCheckedChange={setIsRecorrenteReceita} />
                 </div>
-                {isRecorrente && (
+                {isRecorrenteReceita && (
                   <>
                     <div className="space-y-1">
                       <label className="text-[11px] text-muted-foreground">Repetir todo mês no dia</label>
-                      <Input type="number" min={1} max={31} value={diaRecorrencia} onChange={(e) => setDiaRecorrencia(e.target.value)} className="bg-secondary border-border/50 w-24" inputMode="numeric" />
+                      <Input type="number" min={1} max={31} value={diaRecorrenteReceita} onChange={(e) => setDiaRecorrenteReceita(e.target.value)} className="bg-secondary border-border/50 w-24" inputMode="numeric" />
                     </div>
                     <div className="space-y-1">
                       <label className="text-[11px] text-muted-foreground">Até quando? (vazio = 24 meses)</label>
@@ -602,15 +663,15 @@ const NewExpenseSheet = ({
                         <PopoverTrigger asChild>
                           <Button variant="outline" className="w-full justify-start bg-secondary border-border/50 text-foreground text-xs">
                             <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                            {recorrenciaAte ? format(recorrenciaAte, "dd/MM/yyyy") : "Indefinido"}
+                            {recorrenciaAteReceita ? format(recorrenciaAteReceita, "dd/MM/yyyy") : "Indefinido"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 z-[80]" align="start">
-                          <Calendar mode="single" selected={recorrenciaAte} onSelect={(d) => setRecorrenciaAte(d || undefined)} initialFocus className="p-3 pointer-events-auto" disabled={(d) => d < new Date()} />
+                          <Calendar mode="single" selected={recorrenciaAteReceita} onSelect={(d) => setRecorrenciaAteReceita(d || undefined)} initialFocus className="p-3 pointer-events-auto" disabled={(d) => d < new Date()} />
                         </PopoverContent>
                       </Popover>
-                      {recorrenciaAte && (
-                        <button onClick={() => setRecorrenciaAte(undefined)} className="text-[10px] text-primary hover:underline">Limpar data limite</button>
+                      {recorrenciaAteReceita && (
+                        <button onClick={() => setRecorrenciaAteReceita(undefined)} className="text-[10px] text-primary hover:underline">Limpar data limite</button>
                       )}
                     </div>
                   </>
@@ -618,7 +679,7 @@ const NewExpenseSheet = ({
               </div>
 
               <Button onClick={handleSave} disabled={isPending} className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm rounded-xl shadow-lg">
-                {isPending ? "Salvando..." : isRecorrente ? "Salvar Receita Recorrente" : "Salvar Receita"}
+                {isPending ? "Salvando..." : isRecorrenteReceita ? "Salvar Receita Recorrente" : "Salvar Receita"}
               </Button>
             </>
           )}

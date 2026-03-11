@@ -391,18 +391,31 @@ const Despesas = () => {
 
   const renderValorItem = (item: Lancamento) => {
     const totalReemb = getTotalReembolsado(allReembolsos, item.id);
-    const valorOriginal = Number(item.valor);
+    const valorParcela = Number(item.valor);
     const isReceita = item.tipo === "receita";
     const colorClass = isReceita ? "text-emerald-400" : "text-red-400";
     const prefix = isReceita ? "+ " : "- ";
 
-    if (totalReemb <= 0) {
-      return <p className={`text-sm font-semibold tabular-nums ${colorClass}`}>{prefix}{fmt(valorOriginal)}</p>;
+    // Para parcelados: mostrar valor restante (parcelas restantes × valor da parcela)
+    if (item.is_parcelado && item.parcela_atual != null && item.parcela_total != null) {
+      const parcelasRestantes = item.parcela_total - item.parcela_atual + 1;
+      const valorRestante = valorParcela * parcelasRestantes;
+      const valorTotal = valorParcela * item.parcela_total;
+      return (
+        <div className="text-right">
+          <p className={`text-sm font-semibold tabular-nums ${colorClass}`}>{prefix}{fmt(valorRestante)}</p>
+          <p className="text-[10px] text-muted-foreground tabular-nums">de {fmt(valorTotal)}</p>
+        </div>
+      );
     }
-    const valorLiquido = Math.max(0, valorOriginal - totalReemb);
+
+    if (totalReemb <= 0) {
+      return <p className={`text-sm font-semibold tabular-nums ${colorClass}`}>{prefix}{fmt(valorParcela)}</p>;
+    }
+    const valorLiquido = Math.max(0, valorParcela - totalReemb);
     return (
       <div className="text-right">
-        <p className="text-[10px] text-muted-foreground line-through tabular-nums">{prefix}{fmt(valorOriginal)}</p>
+        <p className="text-[10px] text-muted-foreground line-through tabular-nums">{prefix}{fmt(valorParcela)}</p>
         <p className={`text-sm font-semibold tabular-nums ${colorClass}`}>{prefix}{fmt(valorLiquido)}</p>
       </div>
     );
@@ -451,9 +464,10 @@ const Despesas = () => {
             {renderSubcatLabel(item)}
           </div>
           {item.is_parcelado && item.parcela_atual != null && item.parcela_total != null && (
-            <span className="text-[10px] text-muted-foreground">{item.parcela_atual}/{item.parcela_total} parcelas
+            <span className="text-[10px] text-muted-foreground">
+              parcela {item.parcela_atual}/{item.parcela_total}
               {item.parcela_atual === item.parcela_total && (
-                <span className="ml-1 text-[9px] font-semibold text-yellow-500">🏁 Última parcela</span>
+                <span className="ml-1 text-[9px] font-semibold text-yellow-500">🏁 Última</span>
               )}
             </span>
           )}

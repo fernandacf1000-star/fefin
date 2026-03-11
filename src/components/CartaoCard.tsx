@@ -68,17 +68,23 @@ interface Props {
 const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
   const { cycleStart, cycleEnd, daysUntilClose } = getCartaoCycle(cartao.dia_fechamento);
 
-  // Soma apenas lançamentos vinculados a este cartão no ciclo atual
+  // mes_referencia do ciclo atual (ex: "2026-03")
+  const cycleMonthRef = useMemo(() => {
+    const y = cycleEnd.getFullYear();
+    const m = String(cycleEnd.getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}`;
+  }, [cycleEnd]);
+
+  // Soma lançamentos vinculados a este cartão cujo mes_referencia cai no ciclo atual
   const faturaAtual = useMemo(() => {
     return lancamentos
       .filter((l) => {
         if (!l.cartao_id || l.cartao_id !== cartao.id) return false;
         if (l.tipo !== "despesa") return false;
-        const d = new Date(l.data + "T12:00:00");
-        return d >= cycleStart && d <= cycleEnd;
+        return l.mes_referencia === cycleMonthRef;
       })
       .reduce((s, l) => s + Number(l.valor), 0);
-  }, [lancamentos, cartao.id, cycleStart, cycleEnd]);
+  }, [lancamentos, cartao.id, cycleMonthRef]);
 
   const isClosingSoon = daysUntilClose >= 0 && daysUntilClose <= 5;
   const isClosed = daysUntilClose < 0;

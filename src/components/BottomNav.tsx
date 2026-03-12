@@ -128,8 +128,8 @@ const BottomNav = () => {
 
       {/* Mobile bottom nav - hidden on tablet+ */}
       <nav
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full sm:max-w-[430px] bg-card/90 backdrop-blur-xl border-t border-border/30 md:hidden"
-        style={{ paddingBottom: "calc(8px + env(safe-area-inset-bottom, 16px))" }}
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full sm:max-w-[430px] border-t md:hidden"
+        style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderColor: "#E5E7EB", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 16px))" }}
       >
         <div className="flex justify-around items-center w-full px-0" style={{ padding: "8px 0" }}>
           {leftItems.map(renderItem)}

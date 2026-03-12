@@ -6,12 +6,10 @@ import { useProfile } from "@/hooks/useProfile";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useAllReembolsos, getTotalReembolsado } from "@/hooks/useReembolsos";
 import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";
-import CartaoCard from "@/components/CartaoCard";
-import { SUBCATEGORIA_GROUPS, getGroupEmoji, normalizeMacro } from "@/lib/subcategorias";
+import { SUBCATEGORIA_GROUPS, normalizeMacro } from "@/lib/subcategorias";
 import {
-  Eye, EyeOff, TrendingUp, TrendingDown,
-  ShoppingBag, CreditCard, Users,
-  ChevronLeft, ChevronRight, Settings, LogOut, Receipt, ClipboardList, Pencil, X,
+  Eye, EyeOff,
+  ChevronLeft, ChevronRight, Settings, LogOut, Pencil, X,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,15 +19,6 @@ import { APP_VERSION, APP_UPDATED } from "@/version";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-
-const txIcon = (categoria: string) => {
-  const map: Record<string, any> = {
-    fixa: ShoppingBag, extra: ShoppingBag, pais: Users,
-    salario: TrendingUp, reembolso_pais: Users, renda_extra: Receipt, outros: Receipt,
-  };
-  return map[categoria] || Receipt;
-};
 
 const MascotHead = ({ size = 28 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="8 5 84 80" fill="none">
@@ -64,6 +53,22 @@ const MascotHead = ({ size = 28 }: { size?: number }) => (
   </svg>
 );
 
+/* ─── light-theme tokens (inline) ─── */
+const T = {
+  bg: "#F4F7FB",
+  card: "#FFFFFF",
+  shadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)",
+  text: "#1E293B",
+  textSec: "#64748B",
+  dim: "#94A3B8",
+  accent: "#6366F1",
+  teal: "#0D9488",
+  tealBg: "rgba(13,148,136,0.06)",
+  tealBorder: "rgba(13,148,136,0.15)",
+  alert: "#E07A5F",
+  subCard: "#EDF1F8",
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
@@ -85,7 +90,6 @@ const Dashboard = () => {
     .toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const mesLabelFmt = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
-  const { data: todosLancamentos = [] } = useLancamentos(); // para calcular fatura dos cartões
   const { data: allReembolsos = [] } = useAllReembolsos();
   const { data: cartoes = [] } = useCartoes();
 
@@ -99,9 +103,11 @@ const Dashboard = () => {
       return s + Math.max(0, Number(l.valor) - reemb);
     }, 0);
   }, [despesas, allReembolsos]);
-  const saldo = totalReceitas - totalDespesas;
 
-  // Category totals by macro categories
+  const reserva = totalReceitas - totalDespesas;
+  const reservaPct = totalReceitas > 0 ? Math.round((reserva / totalReceitas) * 100) : 0;
+
+  // Category totals
   const categoryTotals = useMemo(() => {
     return SUBCATEGORIA_GROUPS.map((g) => ({
       key: g.group,
@@ -116,55 +122,54 @@ const Dashboard = () => {
     }));
   }, [despesas, allReembolsos]);
 
-  // Meta do mês - use profile meta or fallback to receitas
-  const metaMensal = profile?.meta_mensal ? Number(profile.meta_mensal) : null;
-  const metaPct = useMemo(() => {
-    const base = metaMensal || totalReceitas;
-    if (base === 0) return 0;
-    // Exclude Investimentos from gastos for meta calculation
-    const gastosParaMeta = despesas
-      .filter(d => normalizeMacro(d.categoria_macro, d.subcategoria) !== 'Investimentos')
-      .reduce((s, d) => {
-        const reemb = getTotalReembolsado(allReembolsos, d.id);
-        return s + Math.max(0, Number(d.valor) - reemb);
-      }, 0);
-    return Math.min(100, Math.round((gastosParaMeta / base) * 100));
-  }, [metaMensal, totalReceitas, despesas, allReembolsos]);
-
-  // Total despesas sem investimentos (para exibição na meta)
-  const totalDespesasSemInvest = useMemo(() => {
-    return despesas
-      .filter(d => normalizeMacro(d.categoria_macro, d.subcategoria) !== 'Investimentos')
-      .reduce((s, d) => {
-        const reemb = getTotalReembolsado(allReembolsos, d.id);
-        return s + Math.max(0, Number(d.valor) - reemb);
-      }, 0);
-  }, [despesas, allReembolsos]);
-
-  // Parcelamentos card
-  const parcelamentos = useMemo(() => {
-    const parceladas = despesas.filter(d => d.is_parcelado);
-    const total = parceladas.reduce((s, d) => s + Number(d.valor), 0);
-    const top5 = [...parceladas].sort((a, b) => Number(b.valor) - Number(a.valor)).slice(0, 5);
-    return { total, top5, count: parceladas.length };
-  }, [despesas]);
-
   // Best card logic
-  const bestCartaoId = useMemo(() => {
-    if (cartoes.length <= 1) return null;
-    let best: string | null = null;
-    let maxDays = -1;
+  const bestCartao = useMemo(() => {
+    if (cartoes.length === 0) return null;
+    let best = cartoes[0];
+    let maxDays = 0;
     for (const c of cartoes) {
       const { daysUntilClose } = getCartaoCycle(c.dia_fechamento);
       if (daysUntilClose > maxDays) {
         maxDays = daysUntilClose;
-        best = c.id;
+        best = c;
       }
     }
-    return best;
+    return { ...best, daysUntilClose: maxDays };
   }, [cartoes]);
 
-  const recentTransactions = useMemo(() => lancamentos.slice(0, 7), [lancamentos]);
+  // Quinzenas
+  const quinzenas = useMemo(() => {
+    const lastDay = new Date(mesAtual.year, mesAtual.month + 1, 0).getDate();
+    const getDay = (d: string) => parseInt(d.split("-")[2], 10);
+    const sumDesp = (items: typeof despesas) =>
+      items.reduce((s, d) => {
+        const reemb = getTotalReembolsado(allReembolsos, d.id);
+        return s + Math.max(0, Number(d.valor) - reemb);
+      }, 0);
+    const sumRec = (items: typeof receitas) =>
+      items.reduce((s, r) => s + Number(r.valor), 0);
+
+    const q1Desp = despesas.filter((d) => getDay(d.data) <= 15);
+    const q2Desp = despesas.filter((d) => getDay(d.data) >= 16);
+    const q1Rec = receitas.filter((r) => getDay(r.data) <= 15);
+    const q2Rec = receitas.filter((r) => getDay(r.data) >= 16);
+
+    const q1DespTotal = sumDesp(q1Desp);
+    const q2DespTotal = sumDesp(q2Desp);
+    const q1RecTotal = sumRec(q1Rec);
+    const q2RecTotal = sumRec(q2Rec);
+
+    const totalDesp = q1DespTotal + q2DespTotal;
+
+    return {
+      q1: { desp: q1DespTotal, rec: q1RecTotal, reserva: q1RecTotal - q1DespTotal, pct: totalDesp > 0 ? Math.round((q1DespTotal / totalDesp) * 100) : 0 },
+      q2: { desp: q2DespTotal, rec: q2RecTotal, reserva: q2RecTotal - q2DespTotal, pct: totalDesp > 0 ? Math.round((q2DespTotal / totalDesp) * 100) : 0 },
+      lastDay,
+    };
+  }, [despesas, receitas, allReembolsos, mesAtual]);
+
+  // Meta (kept for future use)
+  const metaMensal = profile?.meta_mensal ? Number(profile.meta_mensal) : null;
 
   const nome = profile?.nome || profile?.full_name || "";
   const email = profile?.email || user?.email || "";
@@ -192,269 +197,185 @@ const Dashboard = () => {
 
   const hasData = lancamentos.length > 0;
 
+  const monthNames = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const monthShort = monthNames[mesAtual.month];
+
   return (
-    <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
-      <div className="px-4 pt-12 w-full max-w-4xl md:mx-auto">
+    <div className="min-h-screen overflow-x-hidden pb-[90px] md:pb-6" style={{ background: T.bg }}>
+      <div className="px-4 pt-10 w-full max-w-4xl md:mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 animate-fade-up">
+        <div className="flex items-center justify-between mb-1 animate-fade-up">
           <div>
-            <p className="text-muted-foreground text-sm">Olá,</p>
-            <h1 className="text-xl font-semibold text-foreground">{nome ? `${nome} ✨` : "✨"}</h1>
+            <h1 className="text-xl font-bold" style={{ color: T.text }}>
+              Olá, {nome || "FeFin"} ✨
+            </h1>
           </div>
-          <button onClick={() => setProfileOpen(true)} className="w-[44px] h-[44px] rounded-full flex items-center justify-center overflow-hidden" style={{ background: "#1a1a2e", border: "2px solid hsl(var(--primary))" }}>
-            <MascotHead size={36} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowBalance(!showBalance)} className="p-2 rounded-full" style={{ color: T.dim }}>
+              {showBalance ? <Eye size={18} /> : <EyeOff size={18} />}
+            </button>
+            <button onClick={() => setProfileOpen(true)} className="w-[38px] h-[38px] rounded-full flex items-center justify-center overflow-hidden" style={{ background: "#F0EFFF", border: `2px solid ${T.accent}` }}>
+              <MascotHead size={30} />
+            </button>
+          </div>
         </div>
 
         {/* Month Selector */}
-        <div className="flex items-center justify-center gap-3 mb-6 animate-fade-up" style={{ animationDelay: "0.03s" }}>
-          <button onClick={() => setMesAtual(p => { const d = new Date(p.year, p.month - 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors">
+        <div className="flex items-center justify-center gap-3 mb-5 animate-fade-up" style={{ animationDelay: "0.03s" }}>
+          <button onClick={() => setMesAtual(p => { const d = new Date(p.year, p.month - 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="p-2 rounded-full transition-colors" style={{ color: T.dim }}>
             <ChevronLeft size={18} />
           </button>
-          <span className="text-sm font-semibold text-foreground min-w-[160px] text-center">{mesLabelFmt}</span>
-          <button onClick={() => setMesAtual(p => { const d = new Date(p.year, p.month + 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors">
+          <span className="text-sm font-semibold min-w-[160px] text-center" style={{ color: T.text }}>{mesLabelFmt}</span>
+          <button onClick={() => setMesAtual(p => { const d = new Date(p.year, p.month + 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="p-2 rounded-full transition-colors" style={{ color: T.dim }}>
             <ChevronRight size={18} />
           </button>
-        </div>
-
-        {/* Balance Card */}
-        <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Saldo disponível</span>
-            <button onClick={() => setShowBalance(!showBalance)} className="text-muted-foreground p-1">
-              {showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
-            </button>
-          </div>
-          <p className="text-3xl font-bold text-foreground tracking-tight">
-            {showBalance ? fmt(saldo) : "••••••"}
-          </p>
-          <div className="flex gap-3 mt-5">
-            <div className="flex-1 bg-secondary/60 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <TrendingUp size={14} className="text-primary" />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Receitas</span>
-              </div>
-              <p className="text-sm font-semibold text-foreground">{showBalance ? fmt(totalReceitas) : "••••"}</p>
-            </div>
-            <div className="flex-1 bg-secondary/60 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <TrendingDown size={14} className="text-destructive" />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Despesas</span>
-              </div>
-              <p className="text-sm font-semibold text-foreground">{showBalance ? fmt(totalDespesas) : "••••"}</p>
-            </div>
-          </div>
         </div>
 
         {!hasData && !isLoading ? (
           <EmptyState title="Adicione seu primeiro lançamento! 🚀" />
         ) : (
-          <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start">
-            {/* Meta do mês */}
-            <div className="glass-card p-4 mb-6 animate-fade-up" style={{ animationDelay: "0.15s", minHeight: "100px" }}>
-              <div className="flex items-start justify-between mb-1">
-                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <span className="text-base shrink-0">🎯</span>
-                  <span className="text-sm font-semibold text-foreground whitespace-nowrap">Meta do mês</span>
+          <>
+            {/* Main Card */}
+            <div className="rounded-[20px] p-5 mb-5 animate-fade-up" style={{ background: T.card, boxShadow: T.shadow, animationDelay: "0.08s" }}>
+              {/* Best card chip */}
+              {bestCartao && (
+                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg mb-3" style={{ background: `${T.accent}08`, fontSize: 11, color: T.accent, fontWeight: 600 }}>
+                  💳 {bestCartao.nome} · fecha em {bestCartao.daysUntilClose}d
                 </div>
-                <button onClick={() => { setMetaValue(metaMensal ? String(metaMensal) : ""); setMetaOpen(true); }} className="p-1 text-muted-foreground hover:text-foreground transition-colors shrink-0 ml-2">
-                  <Pencil size={14} />
-                </button>
-              </div>
-              {!metaMensal && (
-                <p className="text-[11px] mb-2" style={{ color: "#475569" }}>Toque em ✏️ para definir sua meta</p>
               )}
-              {metaMensal && (
-                <>
-                  <p className="text-xs font-semibold text-primary mb-2">{metaPct}% usado</p>
-                  <div className="relative w-full h-2.5 rounded-full bg-secondary/60 overflow-hidden">
-                    <div
-                      className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ${
-                        metaPct >= 90 ? "bg-destructive" : metaPct >= 70 ? "bg-yellow-500" : "gradient-emerald"
-                      }`}
-                      style={{ width: `${metaPct}%` }}
-                    />
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">
-                    {metaPct >= 90
-                      ? "Cuidado! Gastos próximos da meta 🚨"
-                      : metaPct >= 70
-                      ? "Atenção com os gastos este mês ⚠️"
-                      : "Dentro do orçamento 💚"}
+
+              <p className="uppercase text-[10px] font-semibold tracking-[1.5px] mb-1" style={{ color: T.dim }}>
+                Despesas do mês
+              </p>
+              <p className="text-[32px] font-extrabold tabular-nums leading-tight" style={{ color: T.text }}>
+                {showBalance ? fmt(totalDespesas) : "••••••"}
+              </p>
+
+              {/* Sub-cards */}
+              <div className="flex gap-2.5 mt-4">
+                <div className="flex-1 rounded-xl p-3" style={{ background: T.subCard }}>
+                  <p className="uppercase text-[9px] font-semibold tracking-[1.5px] mb-0.5" style={{ color: T.dim }}>Receitas</p>
+                  <p className="text-sm font-bold tabular-nums" style={{ color: T.text }}>
+                    {showBalance ? fmt(totalReceitas) : "••••"}
                   </p>
-                </>
-              )}
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-[10px] text-muted-foreground">Gastos: {showBalance ? fmt(totalDespesasSemInvest) : "••••"}</span>
-                <span className="text-[10px] text-muted-foreground">{metaMensal ? `Meta: ${showBalance ? fmt(metaMensal) : "••••"}` : `Receitas: ${showBalance ? fmt(totalReceitas) : "••••"}`}</span>
+                </div>
+                <div className="flex-1 rounded-xl p-3" style={{ background: T.tealBg, border: `1px solid ${T.tealBorder}` }}>
+                  <p className="uppercase text-[9px] font-semibold tracking-[1.5px] mb-0.5" style={{ color: T.teal }}>🌿 Reserva</p>
+                  <p className="text-sm font-bold tabular-nums" style={{ color: T.teal }}>
+                    {showBalance ? fmt(reserva) : "••••"}
+                  </p>
+                  {showBalance && totalReceitas > 0 && (
+                    <p className="text-[10px] mt-0.5" style={{ color: T.teal }}>
+                      {reservaPct}% da receita
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Category Summary - 2x3 grid fixo */}
-            {(() => {
-              const displayKeys = ["Moradia", "Alimentação", "Transporte", "Saúde", "Pessoal", "Lazer"];
-              const displayCats = displayKeys.map(k => categoryTotals.find(c => c.key === k)).filter(Boolean) as typeof categoryTotals;
-              return (
-                <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-                  <div className="grid grid-cols-2 gap-2">
-                    {displayCats.map((cat) => (
-                      <div key={cat.key} className="glass-card p-3">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-base">{cat.emoji}</span>
-                          <span className="text-[10px] text-muted-foreground font-medium truncate">{cat.label}</span>
-                        </div>
-                        <p className="text-sm font-semibold text-foreground tabular-nums">
-                          {showBalance ? fmt(cat.value) : "••••"}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Compromissos Parcelados */}
-            {parcelamentos.count > 0 && (
-              <div className="glass-card p-5 mb-6 animate-fade-up" style={{ animationDelay: "0.22s" }}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <ClipboardList size={16} className="text-primary" />
-                    <span className="text-sm font-semibold text-foreground">📋 Compromissos parcelados</span>
-                  </div>
-                  <span className="text-xs font-bold text-foreground tabular-nums">{showBalance ? fmt(parcelamentos.total) : "••••"}</span>
-                </div>
-                <div className="space-y-2">
-                  {parcelamentos.top5.map(p => (
-                    <div key={p.id} className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-foreground truncate">{p.descricao}</p>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-muted-foreground">{p.parcela_atual}/{p.parcela_total} parcelas</span>
-                          {p.parcela_atual === p.parcela_total && (
-                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500">🏁 Última</span>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-xs font-semibold text-foreground tabular-nums">{showBalance ? fmt(Number(p.valor)) : "••••"}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/20">
-                  <span className="text-[10px] text-muted-foreground">{parcelamentos.count} compras parceladas · Total {showBalance ? fmt(parcelamentos.total) : "••••"} este mês</span>
-                  <button onClick={() => navigate("/despesas")} className="text-[11px] text-primary font-medium">
-                    Ver todas →
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Meus Cartões */}
-            {cartoes.length > 0 && (
-              <div className="animate-fade-up mb-6" style={{ animationDelay: "0.25s" }}>
-                <div className="flex items-center gap-1.5 mb-3">
-                  <CreditCard size={14} className="text-primary" />
-                  <h2 className="text-sm font-semibold text-foreground">💳 Meus Cartões</h2>
-                </div>
-                {cartoes.length > 1 && bestCartaoId && (
-                  <p className="text-[11px] text-primary font-medium mb-2">
-                    💡 Melhor cartão hoje: {cartoes.find(c => c.id === bestCartaoId)?.nome}
+            {/* Quinzenas */}
+            <div className="mb-5 animate-fade-up" style={{ animationDelay: "0.14s" }}>
+              <p className="uppercase text-[10px] font-semibold tracking-[1.5px] mb-2.5 px-1" style={{ color: T.dim }}>
+                Quinzenas
+              </p>
+              <div className="flex gap-2.5">
+                {/* Q1 */}
+                <div className="flex-1 rounded-[16px] p-3.5" style={{ background: T.card, boxShadow: T.shadow }}>
+                  <p className="text-xs font-semibold mb-0.5" style={{ color: T.text }}>1ª quinzena</p>
+                  <p className="text-[10px] mb-2" style={{ color: T.dim }}>1–15 {monthShort}</p>
+                  <p className="text-lg font-bold tabular-nums" style={{ color: T.text }}>
+                    {showBalance ? fmt(quinzenas.q1.desp) : "••••"}
                   </p>
-                )}
-                <div className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
-                  {cartoes.map((c) => (
-                    <CartaoCard
-                      key={c.id}
-                      cartao={c}
-                      lancamentos={todosLancamentos}
-                      showBalance={showBalance}
-                      isBest={c.id === bestCartaoId && cartoes.length > 1}
-                    />
-                  ))}
+                  <div className="w-full h-1 rounded-full mt-2 mb-2" style={{ background: T.subCard }}>
+                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${quinzenas.q1.pct}%`, background: T.accent }} />
+                  </div>
+                  <p className="text-[10px] font-medium" style={{ color: quinzenas.q1.reserva >= 0 ? T.teal : T.alert }}>
+                    🌿 {showBalance ? fmt(quinzenas.q1.reserva) : "••••"} reserva
+                  </p>
+                </div>
+                {/* Q2 */}
+                <div className="flex-1 rounded-[16px] p-3.5" style={{ background: T.card, boxShadow: T.shadow }}>
+                  <p className="text-xs font-semibold mb-0.5" style={{ color: T.text }}>2ª quinzena</p>
+                  <p className="text-[10px] mb-2" style={{ color: T.dim }}>16–{quinzenas.lastDay} {monthShort}</p>
+                  <p className="text-lg font-bold tabular-nums" style={{ color: T.text }}>
+                    {showBalance ? fmt(quinzenas.q2.desp) : "••••"}
+                  </p>
+                  <div className="w-full h-1 rounded-full mt-2 mb-2" style={{ background: T.subCard }}>
+                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${quinzenas.q2.pct}%`, background: T.accent }} />
+                  </div>
+                  <p className="text-[10px] font-medium" style={{ color: quinzenas.q2.reserva >= 0 ? T.teal : T.alert }}>
+                    🌿 {showBalance ? fmt(quinzenas.q2.reserva) : "••••"} reserva
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Transactions */}
-            {recentTransactions.length > 0 && (
-              <div className="animate-fade-up" style={{ animationDelay: "0.3s" }}>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-foreground">Últimas transações</h2>
-                </div>
-                <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0">
-                  {recentTransactions.map((tx) => {
-                    const Icon = txIcon(tx.categoria);
-                    const val = Number(tx.valor);
-                    const isReceita = tx.tipo === "receita";
-                    return (
-                      <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors">
-                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                          <Icon size={18} className="text-muted-foreground" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{tx.descricao}</p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {tx.categoria_macro ? `${getGroupEmoji(normalizeMacro(tx.categoria_macro, tx.subcategoria))} ${normalizeMacro(tx.categoria_macro, tx.subcategoria)}` : tx.categoria} · {new Date(tx.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-                            {tx.is_parcelado && tx.parcela_atual && tx.parcela_total && (
-                              <span className="text-muted-foreground"> · {tx.parcela_atual}/{tx.parcela_total}</span>
-                            )}
-                          </p>
-                        </div>
-                        <p className={`text-sm font-semibold tabular-nums ${isReceita ? "text-primary" : "text-foreground"}`}>
-                          {isReceita ? "+" : "-"}{fmt(val)}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
+            {/* Categorias */}
+            <div className="mb-6 animate-fade-up" style={{ animationDelay: "0.2s" }}>
+              <p className="uppercase text-[10px] font-semibold tracking-[1.5px] mb-2.5 px-1" style={{ color: T.dim }}>
+                Categorias
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {categoryTotals.filter(c => c.value > 0).map((cat) => (
+                  <div key={cat.key} className="rounded-[14px] p-3" style={{ background: T.card, boxShadow: T.shadow }}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-base">{cat.emoji}</span>
+                      <span className="text-[11px] font-medium truncate" style={{ color: T.textSec }}>{cat.label}</span>
+                    </div>
+                    <p className="text-[15px] font-bold tabular-nums" style={{ color: T.text }}>
+                      {showBalance ? fmt(cat.value) : "••••"}
+                    </p>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
+          </>
         )}
       </div>
 
       {/* Profile Bottom Sheet */}
-      <div className={`fixed inset-0 z-[60] bg-background/60 backdrop-blur-sm transition-opacity duration-300 ${profileOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`} onClick={() => setProfileOpen(false)} />
-      <div className={`fixed inset-x-0 bottom-0 z-[70] transition-transform duration-300 ease-out ${profileOpen ? "translate-y-0" : "translate-y-full"}`} style={{ background: "#1a1a2e", borderRadius: "24px 24px 0 0" }}>
+      <div className={`fixed inset-0 z-[60] backdrop-blur-sm transition-opacity duration-300 ${profileOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`} style={{ background: "rgba(0,0,0,0.25)" }} onClick={() => setProfileOpen(false)} />
+      <div className={`fixed inset-x-0 bottom-0 z-[70] transition-transform duration-300 ease-out ${profileOpen ? "translate-y-0" : "translate-y-full"}`} style={{ background: T.card, borderRadius: "24px 24px 0 0", boxShadow: "0 -4px 24px rgba(0,0,0,0.08)" }}>
         <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+          <div className="w-10 h-1 rounded-full" style={{ background: "#D1D5DB" }} />
         </div>
         <div className="px-5 pb-6">
           <div className="flex items-center gap-3 pb-4">
-            <div className="w-[40px] h-[40px] rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ background: "#1a1a2e", border: "2px solid hsl(var(--primary))" }}>
+            <div className="w-[40px] h-[40px] rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ background: "#F0EFFF", border: `2px solid ${T.accent}` }}>
               <MascotHead size={28} />
             </div>
             <div>
-              <p className="text-sm font-bold text-foreground">{nome ? `Olá, ${nome}` : "Olá!"}</p>
-              <p className="text-xs text-muted-foreground">{email}</p>
+              <p className="text-sm font-bold" style={{ color: T.text }}>{nome ? `Olá, ${nome}` : "Olá!"}</p>
+              <p className="text-xs" style={{ color: T.textSec }}>{email}</p>
             </div>
           </div>
-          <div className="h-px bg-border/30 mb-2" />
-          <button onClick={() => { setProfileOpen(false); navigate("/conta"); }} className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors">
-            <Settings size={18} className="text-foreground" />
-            <span className="text-sm font-medium text-foreground">Minha conta</span>
+          <div className="h-px mb-2" style={{ background: "#E5E7EB" }} />
+          <button onClick={() => { setProfileOpen(false); navigate("/conta"); }} className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl transition-colors hover:bg-[#F1F5F9]">
+            <Settings size={18} style={{ color: T.text }} />
+            <span className="text-sm font-medium" style={{ color: T.text }}>Minha conta</span>
           </button>
-          <button onClick={() => { setProfileOpen(false); setConfirmLogout(true); }} className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl hover:bg-secondary/30 transition-colors">
-            <LogOut size={18} className="text-destructive" />
-            <span className="text-sm font-medium text-destructive">Sair</span>
+          <button onClick={() => { setProfileOpen(false); setConfirmLogout(true); }} className="flex items-center gap-3 w-full px-2 py-3.5 rounded-xl transition-colors hover:bg-[#FEF2F2]">
+            <LogOut size={18} style={{ color: T.alert }} />
+            <span className="text-sm font-medium" style={{ color: T.alert }}>Sair</span>
           </button>
-          <div className="h-px mt-2 mb-3" style={{ background: "#1e2433" }} />
-          <p className="text-center text-[11px]" style={{ color: "#475569" }}>FeFin {APP_VERSION}</p>
-          <p className="text-center text-[10px]" style={{ color: "#475569" }}>Atualizado em {APP_UPDATED}</p>
+          <div className="h-px mt-2 mb-3" style={{ background: "#E5E7EB" }} />
+          <p className="text-center text-[11px]" style={{ color: T.dim }}>FeFin {APP_VERSION}</p>
+          <p className="text-center text-[10px]" style={{ color: T.dim }}>Atualizado em {APP_UPDATED}</p>
         </div>
       </div>
 
       {/* Logout Confirmation */}
       {confirmLogout && (
         <>
-          <div className="fixed inset-0 z-[80] bg-background/70 backdrop-blur-sm" onClick={() => setConfirmLogout(false)} />
+          <div className="fixed inset-0 z-[80] backdrop-blur-sm" style={{ background: "rgba(0,0,0,0.3)" }} onClick={() => setConfirmLogout(false)} />
           <div className="fixed inset-0 z-[90] flex items-center justify-center px-8">
-            <div className="w-full max-w-xs rounded-2xl p-6 space-y-4" style={{ background: "#1a1a2e", border: "1px solid hsl(var(--primary) / 0.15)" }}>
-              <p className="text-base font-bold text-foreground text-center">Deseja sair do FeFin?</p>
+            <div className="w-full max-w-xs rounded-2xl p-6 space-y-4" style={{ background: T.card, boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
+              <p className="text-base font-bold text-center" style={{ color: T.text }}>Deseja sair do FeFin?</p>
               <div className="flex gap-3">
-                <button onClick={() => setConfirmLogout(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-secondary text-muted-foreground hover:text-foreground transition-colors">
+                <button onClick={() => setConfirmLogout(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors" style={{ background: T.subCard, color: T.textSec }}>
                   Cancelar
                 </button>
-                <button onClick={handleLogout} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-destructive text-destructive-foreground transition-colors">
+                <button onClick={handleLogout} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors" style={{ background: T.alert }}>
                   Sair
                 </button>
               </div>
@@ -463,32 +384,34 @@ const Dashboard = () => {
         </>
       )}
 
-      {/* Meta Modal */}
+      {/* Meta Modal (kept for future use) */}
       {metaOpen && (
         <>
-          <div className="fixed inset-0 z-[80] bg-background/70 backdrop-blur-sm" onClick={() => setMetaOpen(false)} />
+          <div className="fixed inset-0 z-[80] backdrop-blur-sm" style={{ background: "rgba(0,0,0,0.3)" }} onClick={() => setMetaOpen(false)} />
           <div className="fixed inset-0 z-[90] flex items-center justify-center px-8">
-            <div className="w-full max-w-xs rounded-2xl p-6 space-y-4" style={{ background: "#1a1a2e", border: "1px solid hsl(var(--primary) / 0.15)" }}>
+            <div className="w-full max-w-xs rounded-2xl p-6 space-y-4" style={{ background: T.card, boxShadow: "0 8px 32px rgba(0,0,0,0.12)" }}>
               <div className="flex items-center justify-between">
-                <p className="text-base font-bold text-foreground">🎯 Meta mensal</p>
-                <button onClick={() => setMetaOpen(false)} className="text-muted-foreground"><X size={18} /></button>
+                <p className="text-base font-bold" style={{ color: T.text }}>🎯 Meta mensal</p>
+                <button onClick={() => setMetaOpen(false)} style={{ color: T.dim }}><X size={18} /></button>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Meta mensal (R$)</label>
+                <label className="text-xs mb-1 block" style={{ color: T.textSec }}>Meta mensal (R$)</label>
                 <input
                   type="number"
                   inputMode="decimal"
                   value={metaValue}
                   onChange={(e) => setMetaValue(e.target.value)}
                   placeholder="Ex: 5000"
-                  className="w-full rounded-xl bg-secondary/60 border border-border/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2"
+                  style={{ background: T.subCard, border: "1px solid #E5E7EB", color: T.text }}
                 />
-                <p className="text-[10px] text-muted-foreground mt-1">Valor máximo de gastos por mês</p>
+                <p className="text-[10px] mt-1" style={{ color: T.dim }}>Valor máximo de gastos por mês</p>
               </div>
               <button
                 onClick={handleSaveMeta}
                 disabled={savingMeta}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold gradient-emerald text-primary-foreground transition-colors disabled:opacity-50"
+                className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                style={{ background: T.accent }}
               >
                 {savingMeta ? "Salvando..." : "Salvar"}
               </button>

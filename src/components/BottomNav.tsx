@@ -34,9 +34,9 @@ const TabletSidebar = ({
   const nome = profile?.nome || profile?.full_name || "";
 
   return (
-    <aside className="hidden md:flex flex-col w-[220px] shrink-0 border-r border-border/30 bg-card/50 backdrop-blur-xl h-screen fixed top-0 left-0 z-40">
+    <aside className="hidden md:flex flex-col w-[220px] shrink-0 border-r border-border bg-white h-screen fixed top-0 left-0 z-40">
       {/* User header */}
-      <div className="px-4 pt-6 pb-4 border-b border-border/20">
+      <div className="px-4 pt-6 pb-4 border-b border-border">
         <p className="text-sm font-semibold text-foreground truncate">{nome || "FeFin"}</p>
         <p className="text-[10px] text-muted-foreground truncate">{user?.email || ""}</p>
       </div>
@@ -54,7 +54,7 @@ const TabletSidebar = ({
                 "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
                 isActive
                   ? "gradient-emerald text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
               <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
@@ -104,7 +104,7 @@ const BottomNav = () => {
         key={item.label}
         onClick={() => navigate(item.path)}
         className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 overflow-hidden transition-all ${
-          isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+          isActive ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"
         }`}
         style={{ textAlign: "center" }}
       >
@@ -115,8 +115,6 @@ const BottomNav = () => {
       </button>
     );
   };
-
-
 
   return (
     <>
@@ -129,21 +127,20 @@ const BottomNav = () => {
       {/* Mobile bottom nav - hidden on tablet+ */}
       <nav
         className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full sm:max-w-[430px] border-t md:hidden"
-        style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderColor: "#E5E7EB", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 16px))" }}
+        style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderColor: "#DDE3EE", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 16px))" }}
       >
         <div className="flex justify-around items-center w-full px-0" style={{ padding: "8px 0" }}>
           {leftItems.map(renderItem)}
           <button
             onClick={() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); }}
-            className="w-[52px] h-[52px] -mt-6 rounded-full gradient-emerald flex items-center justify-center shadow-lg shadow-primary/30 active:scale-95 transition-transform shrink-0"
+            className="w-[52px] h-[52px] -mt-6 rounded-full gradient-emerald flex items-center justify-center shadow-lg active:scale-95 transition-transform shrink-0"
+            style={{ boxShadow: "0 4px 16px rgba(99,102,241,0.4)" }}
           >
-            <Plus size={24} className="text-primary-foreground" />
+            <Plus size={24} className="text-white" />
           </button>
           {rightItems.map(renderItem)}
         </div>
       </nav>
-
-
 
       <NewExpenseSheet open={expenseOpen} onClose={() => setExpenseOpen(false)} initialTipo={expenseInitialTipo} />
     </>

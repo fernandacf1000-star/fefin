@@ -14,15 +14,15 @@ const Splash = ({ onFinish }: { onFinish: () => void }) => {
   return (
     <div
       className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-opacity duration-500 ${fadeOut ? "opacity-0" : "opacity-100"}`}
-      style={{ background: "linear-gradient(180deg, #0d1117 0%, #0a1628 100%)" }}
+      style={{ background: "#F4F7FB" }}
     >
-      {/* Green glow */}
+      {/* Glow */}
       <div
-        className="absolute rounded-full blur-3xl opacity-20"
+        className="absolute rounded-full blur-3xl opacity-15"
         style={{
           width: 220,
           height: 220,
-          background: "radial-gradient(circle, #10B981 0%, transparent 70%)",
+          background: "radial-gradient(circle, #6366F1 0%, transparent 70%)",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -65%)",
@@ -50,7 +50,7 @@ const Splash = ({ onFinish }: { onFinish: () => void }) => {
           <ellipse cx="70" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
           <circle cx="22" cy="56" r="4" fill="#F7D070"/>
           <circle cx="78" cy="56" r="4" fill="#F7D070"/>
-          <path d="M22 92 Q20 115 22 130 L78 130 Q80 115 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#10B981"/>
+          <path d="M22 92 Q20 115 22 130 L78 130 Q80 115 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#6366F1"/>
           <g className="splash-coin-bounce">
             <circle cx="76" cy="95" r="10" fill="#F7D070" stroke="#E8B800" strokeWidth="1.5"/>
             <text x="76" y="99" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#B8860B">$</text>
@@ -61,23 +61,23 @@ const Splash = ({ onFinish }: { onFinish: () => void }) => {
 
       {/* Logo */}
       <h1 className="relative z-10 mt-6" style={{ fontFamily: "'Playfair Display', serif", fontSize: 42, fontWeight: 900 }}>
-        <span className="text-white">Fe</span>
-        <span style={{ color: "#10B981" }}>Fin</span>
+        <span style={{ color: "#1E293B" }}>Fe</span>
+        <span style={{ color: "#6366F1" }}>Fin</span>
       </h1>
 
       {/* Tagline */}
       <p
         className="relative z-10 mt-2 uppercase"
-        style={{ color: "#475569", fontSize: 10, letterSpacing: "2.5px", whiteSpace: "nowrap", fontFamily: "'Nunito', sans-serif" }}
+        style={{ color: "#94A3B8", fontSize: 10, letterSpacing: "2.5px", whiteSpace: "nowrap", fontFamily: "'Nunito', sans-serif" }}
       >
         Minhas finanças, minhas regras
       </p>
 
       {/* Progress bar */}
-      <div className="relative z-10 mt-6 w-48 h-[3px] rounded-full overflow-hidden" style={{ backgroundColor: "rgba(16,185,129,0.15)" }}>
+      <div className="relative z-10 mt-6 w-48 h-[3px] rounded-full overflow-hidden" style={{ backgroundColor: "rgba(99,102,241,0.15)" }}>
         <div
           className="h-full rounded-full splash-progress"
-          style={{ background: "linear-gradient(90deg, #10B981, #34D399)" }}
+          style={{ background: "linear-gradient(90deg, #6366F1, #818CF8)" }}
         />
       </div>
 

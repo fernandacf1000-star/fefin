@@ -32,7 +32,7 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm p-4">
       <div className="glass-card w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-foreground">
@@ -54,7 +54,7 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
             step="0.01"
             value={valor || ""}
             onChange={(e) => setValor(parseFloat(e.target.value) || 0)}
-            className="bg-secondary/40 border-border/50"
+            className="bg-secondary border-border"
           />
         </div>
 
@@ -64,7 +64,7 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
             value={quem}
             onChange={(e) => setQuem(e.target.value)}
             placeholder="Ex: Pais, Empresa, Adriano"
-            className="bg-secondary/40 border-border/50"
+            className="bg-secondary border-border"
           />
         </div>
 
@@ -74,7 +74,7 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
             type="date"
             value={data}
             onChange={(e) => setData(e.target.value)}
-            className="bg-secondary/40 border-border/50"
+            className="bg-secondary border-border"
           />
         </div>
 
@@ -84,7 +84,7 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
             value={obs}
             onChange={(e) => setObs(e.target.value)}
             placeholder="Detalhes adicionais..."
-            className="bg-secondary/40 border-border/50 min-h-[60px]"
+            className="bg-secondary border-border min-h-[60px]"
           />
         </div>
 
@@ -102,8 +102,7 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
               })
             }
             disabled={isPending || !quem || valor <= 0}
-            className="flex-1"
-            style={{ backgroundColor: "#10B981", color: "#fff" }}
+            className="flex-1 gradient-emerald text-white border-0"
           >
             {isPending ? "Salvando..." : "Salvar reembolso"}
           </Button>

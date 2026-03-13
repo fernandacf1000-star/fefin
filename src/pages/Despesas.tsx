@@ -393,7 +393,7 @@ const Despesas = () => {
     const totalReemb = getTotalReembolsado(allReembolsos, item.id);
     const valorParcela = Number(item.valor);
     const isReceita = item.tipo === "receita";
-    const colorClass = isReceita ? "text-emerald-400" : "text-red-400";
+    const colorClass = isReceita ? "text-[#0D9488]" : "text-primary";
     const prefix = isReceita ? "+ " : "- ";
 
     // Para parcelados: mostrar valor restante (parcelas restantes × valor da parcela)

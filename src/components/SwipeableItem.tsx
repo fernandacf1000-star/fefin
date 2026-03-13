@@ -56,7 +56,7 @@ const SwipeableItem = ({ children, onEdit, onDelete }: Props) => {
 
       {/* Content */}
       <div
-        className="relative z-10 bg-card transition-transform"
+        className="relative z-10 bg-white transition-transform"
         style={{ transform: `translateX(${offsetX}px)`, transitionDuration: dragging.current ? "0ms" : "200ms" }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}

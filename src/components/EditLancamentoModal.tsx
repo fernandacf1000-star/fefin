@@ -49,7 +49,6 @@ const subcatPais = [
   { value: "usaram_meu_cartao", label: "💳 Usaram meu cartão" },
 ];
 
-// 6 fixed display groups for edit modal (matching dashboard grid)
 const DISPLAY_GROUPS = [
   "Moradia", "Alimentação", "Transporte", "Saúde", "Pessoal", "Lazer",
   "Assinaturas", "Pais", "Investimentos", "Outros",
@@ -74,12 +73,12 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
 
   if (showDeleteConfirm) {
     return (
-      <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 backdrop-blur-sm">
-        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 pb-24 space-y-4" style={{ background: "#0d1117" }}>
+      <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/25 backdrop-blur-sm">
+        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 pb-24 space-y-4 bg-white border-t border-border">
           <h3 className="text-base font-semibold text-foreground text-center">Excluir lançamento?</h3>
           <p className="text-sm text-muted-foreground text-center">Tem certeza? Esta ação não pode ser desfeita.</p>
           <div className="flex gap-3">
-            <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-secondary/60 text-muted-foreground">Cancelar</button>
+            <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-secondary text-muted-foreground">Cancelar</button>
             <button onClick={onConfirmDelete} disabled={isPending} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-destructive text-destructive-foreground disabled:opacity-50">
               {isPending ? "Excluindo..." : "Excluir"}
             </button>
@@ -93,11 +92,11 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
     const isFuture = parcelamentoMode === "future";
     const count = parcelamentoCount ?? 0;
     return (
-      <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 backdrop-blur-sm">
-        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 pb-24 space-y-4" style={{ background: "#0d1117" }}>
+      <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/25 backdrop-blur-sm">
+        <div className="w-full max-w-[430px] rounded-t-[24px] p-6 pb-24 space-y-4 bg-white border-t border-border">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-yellow-500/15 flex items-center justify-center shrink-0">
-              <AlertTriangle size={18} className="text-yellow-400" />
+            <div className="w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
+              <AlertTriangle size={18} className="text-amber-500" />
             </div>
             <h3 className="text-base font-semibold text-foreground">Confirmar edição em lote</h3>
           </div>
@@ -108,12 +107,11 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
             }
           </p>
           <div className="flex gap-3">
-            <button onClick={() => { setShowConfirm(false); setPendingSaveData(null); }} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-secondary/60 text-muted-foreground">Voltar</button>
+            <button onClick={() => { setShowConfirm(false); setPendingSaveData(null); }} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-secondary text-muted-foreground">Voltar</button>
             <button
               onClick={() => { setShowConfirm(false); onSave(pendingSaveData); setPendingSaveData(null); }}
               disabled={isPending}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold disabled:opacity-50"
-              style={{ background: "#10B981", color: "#fff" }}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold disabled:opacity-50 gradient-emerald text-white"
             >
               {isPending ? "Salvando..." : `Atualizar ${count} parcela${count !== 1 ? "s" : ""}`}
             </button>
@@ -174,17 +172,16 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[80] bg-black/25 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Bottom sheet */}
       <div
-        className="fixed inset-x-0 bottom-0 z-[90] flex flex-col"
+        className="fixed inset-x-0 bottom-0 z-[90] flex flex-col bg-white border-t border-border"
         style={{
           maxHeight: "90vh",
           borderRadius: "24px 24px 0 0",
-          background: "#0d1117",
         }}
       >
         {/* Drag handle */}
@@ -198,7 +195,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
             <h3 className="text-base font-bold text-foreground">Editar lançamento</h3>
             {modeLabel && <p className="text-[10px] text-primary mt-0.5">{modeLabel}</p>}
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-secondary/60 flex items-center justify-center text-muted-foreground">
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground">
             <X size={16} />
           </button>
         </div>
@@ -221,10 +218,9 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
                     className={cn(
                       "px-4 py-1.5 rounded-full text-sm font-semibold transition-all",
                       form.categoria === opt.value
-                        ? "text-white"
-                        : "bg-secondary/60 text-muted-foreground"
+                        ? "gradient-emerald text-white"
+                        : "bg-secondary text-muted-foreground"
                     )}
-                    style={form.categoria === opt.value ? { background: "#10B981" } : {}}
                   >
                     {opt.label}
                   </button>
@@ -239,7 +235,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
             <input
               value={form.descricao}
               onChange={(e) => setForm(f => ({ ...f, descricao: e.target.value }))}
-              className="w-full rounded-xl bg-secondary/40 border border-border/40 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full rounded-xl bg-secondary border border-border px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="Ex: Supermercado"
             />
           </div>
@@ -253,7 +249,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
                 inputMode="numeric"
                 value={formatValorDisplay(form.valor)}
                 onChange={(e) => handleValorChange(e.target.value)}
-                className="w-full rounded-xl bg-secondary/40 border border-border/40 pl-8 pr-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full rounded-xl bg-secondary border border-border pl-8 pr-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="0,00"
               />
             </div>
@@ -274,10 +270,9 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
                         className={cn(
                           "flex items-center gap-2 px-3 py-2.5 rounded-xl text-[12px] font-medium transition-all text-left",
                           selected
-                            ? "ring-2 text-foreground"
-                            : "bg-secondary/40 text-muted-foreground"
+                            ? "ring-2 ring-primary bg-primary/10 text-foreground"
+                            : "bg-secondary text-muted-foreground"
                         )}
-                        style={selected ? { background: "rgba(16,185,129,0.12)", outline: "2px solid #10B981" } : {}}
                       >
                         <span className="text-base">{g.emoji}</span>
                         <span className="truncate">{g.group}</span>
@@ -299,10 +294,9 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
                         className={cn(
                           "px-3 py-1 rounded-full text-[11px] font-medium transition-all",
                           form.subcategoria === item
-                            ? "text-white"
-                            : "bg-secondary/60 text-muted-foreground"
+                            ? "gradient-emerald text-white"
+                            : "bg-secondary text-muted-foreground"
                         )}
-                        style={form.subcategoria === item ? { background: "#10B981" } : {}}
                       >
                         {item}
                       </button>
@@ -318,7 +312,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
                   type="date"
                   value={form.data}
                   onChange={(e) => setForm(f => ({ ...f, data: e.target.value }))}
-                  className="w-full rounded-xl bg-secondary/40 border border-border/40 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full rounded-xl bg-secondary border border-border px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
 
@@ -333,9 +327,8 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
                         onClick={() => setForm(f => ({ ...f, subcategoria_pais: f.subcategoria_pais === s.value ? "" : s.value }))}
                         className={cn(
                           "px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
-                          form.subcategoria_pais === s.value ? "text-white" : "bg-secondary/60 text-muted-foreground"
+                          form.subcategoria_pais === s.value ? "gradient-emerald text-white" : "bg-secondary text-muted-foreground"
                         )}
-                        style={form.subcategoria_pais === s.value ? { background: "#10B981" } : {}}
                       >
                         {s.label}
                       </button>
@@ -354,7 +347,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
                       inputMode="numeric"
                       value={form.parcela_atual ?? ""}
                       onChange={(e) => setForm(f => ({ ...f, parcela_atual: parseInt(e.target.value) || 0 }))}
-                      className="w-full rounded-xl bg-secondary/40 border border-border/40 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="w-full rounded-xl bg-secondary border border-border px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                   <div>
@@ -364,7 +357,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
                       inputMode="numeric"
                       value={form.parcela_total ?? ""}
                       onChange={(e) => setForm(f => ({ ...f, parcela_total: parseInt(e.target.value) || 0 }))}
-                      className="w-full rounded-xl bg-secondary/40 border border-border/40 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="w-full rounded-xl bg-secondary border border-border px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                 </div>
@@ -384,13 +377,12 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
                         }))}
                         className={cn(
                           "px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
-                          form.forma_pagamento === "dinheiro" ? "text-white" : "bg-secondary/60 text-muted-foreground"
+                          form.forma_pagamento === "dinheiro" ? "gradient-emerald text-white" : "bg-secondary text-muted-foreground"
                         )}
-                        style={form.forma_pagamento === "dinheiro" ? { background: "#10B981" } : {}}
                       >
                         💵 Dinheiro
                       </button>
-                      <p className="text-[12px] text-[#475569] w-full mt-1">
+                      <p className="text-[12px] text-muted-foreground w-full mt-1">
                         Adicione um cartão em Minha Conta para selecionar aqui
                       </p>
                     </>
@@ -413,9 +405,8 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
                           }))}
                           className={cn(
                             "px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
-                            isSelected ? "text-white" : "bg-secondary/60 text-muted-foreground"
+                            isSelected ? "gradient-emerald text-white" : "bg-secondary text-muted-foreground"
                           )}
-                          style={isSelected ? { background: "#10B981" } : {}}
                         >
                           {opt.label}
                         </button>
@@ -428,8 +419,8 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
           )}
 
           {isBulkMode && (
-            <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-3">
-              <p className="text-[11px] text-yellow-400">
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3">
+              <p className="text-[11px] text-amber-600">
                 {parcelamentoMode === "future"
                   ? `⚠️ Apenas descrição e valor serão atualizados em ${parcelamentoCount ?? "N"} parcela(s) futura(s).`
                   : `⚠️ Apenas descrição e valor serão atualizados em todas as ${parcelamentoCount ?? "N"} parcela(s).`
@@ -440,12 +431,11 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
         </div>
 
         {/* Fixed footer - save button */}
-        <div className="px-5 pb-8 pt-3 shrink-0 border-t border-border/20">
+        <div className="px-5 pb-8 pt-3 shrink-0 border-t border-border">
           <button
             onClick={handleSaveClick}
             disabled={isPending}
-            className="w-full py-3.5 rounded-2xl text-sm font-bold text-white disabled:opacity-50 transition-opacity"
-            style={{ background: "#10B981" }}
+            className="w-full py-3.5 rounded-2xl text-sm font-bold text-white disabled:opacity-50 transition-opacity gradient-emerald"
           >
             {isPending ? "Salvando..." : isBulkMode ? "Continuar" : "Salvar alterações"}
           </button>

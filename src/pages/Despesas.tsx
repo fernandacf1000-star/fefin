@@ -393,7 +393,7 @@ const Despesas = () => {
     const totalReemb = getTotalReembolsado(allReembolsos, item.id);
     const valorParcela = Number(item.valor);
     const isReceita = item.tipo === "receita";
-    const colorClass = isReceita ? "text-emerald-400" : "text-red-400";
+    const colorClass = isReceita ? "text-[#0D9488]" : "text-primary";
     const prefix = isReceita ? "+ " : "- ";
 
     // Para parcelados: mostrar valor restante (parcelas restantes × valor da parcela)
@@ -431,7 +431,7 @@ const Despesas = () => {
 
   const renderItem = (item: Lancamento, icon: React.ReactNode, subtitle: React.ReactNode) => {
     const isReceita = item.tipo === "receita";
-    const borderColor = isReceita ? "#10B981" : "#F87171";
+    const borderColor = isReceita ? "#0D9488" : "#6366F1";
     const isSelected = selectedIds.has(item.id);
 
     const content = (
@@ -650,11 +650,11 @@ const Despesas = () => {
         {/* Summary bar */}
         <div className="flex items-center justify-between mb-3 animate-fade-up" style={{ animationDelay: "0.05s" }}>
           <p className="text-[11px] text-muted-foreground leading-snug">
-            <span className="text-emerald-400 font-medium">↑ {fmt(totalReceitas)}</span>
+            <span className="text-[#0D9488] font-medium">↑ {fmt(totalReceitas)}</span>
             {" · "}
-            <span className="text-red-400 font-medium">↓ {fmt(totalDespesas)}</span>
+            <span className="text-primary font-medium">↓ {fmt(totalDespesas)}</span>
             {" · "}
-            <span className={`font-semibold ${saldo >= 0 ? "text-emerald-400" : "text-red-400"}`}>Saldo {fmt(saldo)}</span>
+            <span className={`font-semibold ${saldo >= 0 ? "text-[#0D9488]" : "text-destructive"}`}>Saldo {fmt(saldo)}</span>
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -887,7 +887,7 @@ const Despesas = () => {
             onClick={() => setBatchDeleteConfirm(false)}
           />
           {batchDeleteConfirm && (
-            <div className="fixed inset-x-0 bottom-0 z-[90] rounded-t-[28px] p-5 pb-24 space-y-3" style={{ background: "#1a1a2e" }}>
+            <div className="fixed inset-x-0 bottom-0 z-[90] rounded-t-[28px] p-5 pb-24 space-y-3 bg-white border-t border-border">
               <p className="text-sm font-bold text-foreground text-center">
                 Excluir {selectedIds.size} lançamento(s)?
               </p>

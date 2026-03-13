@@ -376,7 +376,7 @@ const Graficos = () => {
                               <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pctTotal}%</span>
                             </div>
                           </div>
-                          <div className="relative w-full h-[8px] rounded-full overflow-hidden" style={{ background: "#1e2433" }}>
+                          <div className="relative w-full h-[8px] rounded-full overflow-hidden bg-secondary">
                             <div
                               className="absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out"
                               style={{ width: `${pct}%`, background: item.color }}

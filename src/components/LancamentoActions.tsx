@@ -14,7 +14,7 @@ const LancamentoActions = ({ open, onClose, onEdit, onDelete, onReembolso, descr
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/25 backdrop-blur-sm" onClick={onClose} />
       <div className="absolute bottom-0 left-0 right-0 glass-card rounded-t-2xl p-6 space-y-3 animate-fade-up">
         {descricao && (
           <p className="text-xs text-muted-foreground text-center mb-2 truncate">{descricao}</p>
@@ -22,7 +22,7 @@ const LancamentoActions = ({ open, onClose, onEdit, onDelete, onReembolso, descr
 
         <button
           onClick={() => { onEdit(); onClose(); }}
-          className="w-full flex items-center gap-3 p-4 rounded-xl bg-secondary/40 hover:bg-secondary/60 transition-colors"
+          className="w-full flex items-center gap-3 p-4 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors"
         >
           <Pencil size={16} className="text-foreground" />
           <span className="text-sm font-medium text-foreground">✏️ Editar lançamento</span>
@@ -32,10 +32,10 @@ const LancamentoActions = ({ open, onClose, onEdit, onDelete, onReembolso, descr
           <button
             onClick={() => { onReembolso(); onClose(); }}
             className="w-full flex items-center gap-3 p-4 rounded-xl transition-colors"
-            style={{ backgroundColor: "rgba(16,185,129,0.1)" }}
+            style={{ backgroundColor: "rgba(13,148,136,0.1)" }}
           >
-            <RotateCcw size={16} style={{ color: "#10B981" }} />
-            <span className="text-sm font-medium" style={{ color: "#10B981" }}>↩️ Registrar reembolso</span>
+            <RotateCcw size={16} style={{ color: "#0D9488" }} />
+            <span className="text-sm font-medium" style={{ color: "#0D9488" }}>↩️ Registrar reembolso</span>
           </button>
         )}
 
@@ -49,7 +49,7 @@ const LancamentoActions = ({ open, onClose, onEdit, onDelete, onReembolso, descr
 
         <button
           onClick={onClose}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-border/50 text-xs font-medium text-muted-foreground hover:bg-secondary/30 transition-colors mt-2"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-border text-xs font-medium text-muted-foreground hover:bg-secondary transition-colors mt-2"
         >
           Cancelar
         </button>

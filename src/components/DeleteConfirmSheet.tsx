@@ -28,7 +28,7 @@ const DeleteConfirmSheet = ({ open, onClose, tipo, onDeleteSingle, onDeleteFutur
     <>
       <div
         className={cn(
-          "fixed inset-0 z-[80] bg-background/80 backdrop-blur-sm transition-opacity duration-300",
+          "fixed inset-0 z-[80] bg-black/25 backdrop-blur-sm transition-opacity duration-300",
           open ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={onClose}
@@ -36,10 +36,9 @@ const DeleteConfirmSheet = ({ open, onClose, tipo, onDeleteSingle, onDeleteFutur
 
       <div
         className={cn(
-          "fixed inset-x-0 bottom-0 z-[90] rounded-t-[28px] transition-transform duration-300 ease-out",
+          "fixed inset-x-0 bottom-0 z-[90] rounded-t-[28px] transition-transform duration-300 ease-out bg-white border-t border-border",
           open ? "translate-y-0" : "translate-y-full"
         )}
-        style={{ background: "#1a1a2e" }}
       >
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
@@ -57,7 +56,7 @@ const DeleteConfirmSheet = ({ open, onClose, tipo, onDeleteSingle, onDeleteFutur
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground text-center">Tem certeza? Esta ação não pode ser desfeita.</p>
               <div className="flex gap-3">
-                <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-secondary/60 text-muted-foreground">
+                <button onClick={onClose} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-secondary text-muted-foreground">
                   Cancelar
                 </button>
                 <button onClick={wrapDelete(onDeleteSingle)} disabled={localLoading} className="flex-1 py-3 rounded-xl text-sm font-semibold bg-destructive text-destructive-foreground disabled:opacity-50">
@@ -70,9 +69,9 @@ const DeleteConfirmSheet = ({ open, onClose, tipo, onDeleteSingle, onDeleteFutur
               <button
                 onClick={wrapDelete(onDeleteSingle)}
                 disabled={localLoading}
-                className="w-full flex items-start gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 active:scale-[0.98] transition-transform text-left disabled:opacity-50"
+                className="w-full flex items-start gap-3 p-4 rounded-2xl bg-white border border-border active:scale-[0.98] transition-transform text-left disabled:opacity-50"
               >
-                <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(239,68,68,0.15)" }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(224,122,95,0.15)" }}>
                   <Trash2 size={17} className="text-destructive" />
                 </div>
                 <div>
@@ -84,9 +83,9 @@ const DeleteConfirmSheet = ({ open, onClose, tipo, onDeleteSingle, onDeleteFutur
               <button
                 onClick={wrapDelete(onDeleteFuture)}
                 disabled={localLoading}
-                className="w-full flex items-start gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 active:scale-[0.98] transition-transform text-left disabled:opacity-50"
+                className="w-full flex items-start gap-3 p-4 rounded-2xl bg-white border border-border active:scale-[0.98] transition-transform text-left disabled:opacity-50"
               >
-                <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(239,68,68,0.15)" }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(224,122,95,0.15)" }}>
                   <Trash2 size={17} className="text-destructive" />
                 </div>
                 <div>
@@ -98,9 +97,9 @@ const DeleteConfirmSheet = ({ open, onClose, tipo, onDeleteSingle, onDeleteFutur
               <button
                 onClick={wrapDelete(onDeleteAll)}
                 disabled={localLoading}
-                className="w-full flex items-start gap-3 p-4 rounded-2xl bg-card/60 border border-border/30 active:scale-[0.98] transition-transform text-left disabled:opacity-50"
+                className="w-full flex items-start gap-3 p-4 rounded-2xl bg-white border border-border active:scale-[0.98] transition-transform text-left disabled:opacity-50"
               >
-                <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(239,68,68,0.15)" }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "rgba(224,122,95,0.15)" }}>
                   <Trash2 size={17} className="text-destructive" />
                 </div>
                 <div>

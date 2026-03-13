@@ -16,7 +16,7 @@ const BandeiraIcon = ({ bandeira }: { bandeira: string }) => {
           fontWeight: 900,
           fontSize: 12,
           color: "#1A1F71",
-          background: "white",
+          background: "#EDF1F8",
           borderRadius: 4,
           padding: "2px 6px",
           letterSpacing: 1,
@@ -54,16 +54,9 @@ const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
     daysUntilClose,
   } = getCartaoCycle(cartao.dia_fechamento);
 
-  // Ciclo atual ainda aberto → mostra acumulado (compras desde cycleStart até hoje)
-  // Ciclo fechado aguardando pagamento → mostra fatura fechada (previousCycleMonthRef)
-  // Na prática: sempre mostramos o mes_referencia correto para cada lançamento
-
-  // Fatura fechada: ciclo já fechou, mostra o que foi cobrado (previousCycleMonthRef)
-  // Fatura aberta: ciclo ainda aberto, mostra o acumulado por data
   const isCycleOpen = daysUntilClose >= 0;
 
   const faturaFechada = useMemo(() => {
-    // Lançamentos do ciclo anterior (já fechado, aguardando pagamento)
     return lancamentos
       .filter((l) => {
         if (!l.cartao_id || l.cartao_id !== cartao.id) return false;
@@ -71,7 +64,6 @@ const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
         if (l.is_parcelado || l.recorrente) {
           return l.mes_referencia === previousCycleMonthRef;
         }
-        // avulsos: data dentro do ciclo anterior
         const d = new Date(l.data + "T12:00:00");
         const prevStart = new Date(cycleStart);
         prevStart.setMonth(prevStart.getMonth() - 1);
@@ -81,7 +73,6 @@ const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
   }, [lancamentos, cartao.id, previousCycleMonthRef, cycleStart]);
 
   const faturaAberta = useMemo(() => {
-    // Lançamentos do ciclo atual aberto
     return lancamentos
       .filter((l) => {
         if (!l.cartao_id || l.cartao_id !== cartao.id) return false;
@@ -95,20 +86,15 @@ const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
       .reduce((s, l) => s + Number(l.valor), 0);
   }, [lancamentos, cartao.id, cycleMonthRef, cycleStart, cycleEnd]);
 
-  // O que mostrar em destaque:
-  // - Se ciclo fechou recentemente (daysUntilClose entre -35 e -1): mostra fatura fechada a pagar
-  // - Se ciclo aberto: mostra acumulado aberto
   const showFaturaFechada = !isCycleOpen && faturaFechada > 0;
   const valorDestaque = showFaturaFechada ? faturaFechada : faturaAberta;
-
   const isClosingSoon = isCycleOpen && daysUntilClose <= 5;
 
   return (
     <div
-      className="p-4 rounded-xl border border-border/30 space-y-3"
-      style={{ borderLeft: `3px solid ${cartao.cor}`, background: "#12121f" }}
+      className="p-4 rounded-xl border border-border space-y-3 bg-white"
+      style={{ borderLeft: `3px solid ${cartao.cor}` }}
     >
-      {/* Linha 1: Bandeira + Nome + Badge melhor */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <BandeiraIcon bandeira={cartao.bandeira} />
@@ -121,7 +107,6 @@ const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
         )}
       </div>
 
-      {/* Linha 2: Fatura em destaque */}
       <div>
         <p className="text-[10px] text-muted-foreground mb-0.5">
           {showFaturaFechada ? "Fatura fechada · a pagar" : "Fatura aberta · acumulado"}
@@ -129,7 +114,6 @@ const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
         <p className="text-xl font-bold text-foreground tabular-nums">
           {showBalance ? fmt(valorDestaque) : "R$ ••••"}
         </p>
-        {/* Se há fatura fechada E aberta, mostra aberta menor embaixo */}
         {showFaturaFechada && faturaAberta > 0 && (
           <p className="text-[11px] text-muted-foreground mt-0.5">
             + {showBalance ? fmt(faturaAberta) : "R$ ••••"} acumulando
@@ -137,19 +121,17 @@ const CartaoCard = ({ cartao, lancamentos, showBalance, isBest }: Props) => {
         )}
       </div>
 
-      {/* Linha 3: Melhor dia + status */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
           📅 Melhor dia: {cartao.melhor_dia_compra}
         </span>
-
         {showFaturaFechada && (
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500">
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600">
             ⏳ Aguardando pagamento
           </span>
         )}
         {isCycleOpen && isClosingSoon && (
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-500">
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600">
             ⚠️ Fecha em {daysUntilClose} dia{daysUntilClose !== 1 ? "s" : ""}
           </span>
         )}

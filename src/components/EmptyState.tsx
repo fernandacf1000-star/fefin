@@ -26,7 +26,7 @@ const MascotSvg = () => (
     <ellipse cx="70" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
     <circle cx="22" cy="56" r="4" fill="#F7D070"/>
     <circle cx="78" cy="56" r="4" fill="#F7D070"/>
-    <path d="M22 92 Q20 115 22 130 L78 130 Q80 115 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#10B981"/>
+    <path d="M22 92 Q20 115 22 130 L78 130 Q80 115 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#6366F1"/>
     <circle cx="76" cy="95" r="10" fill="#F7D070" stroke="#E8B800" strokeWidth="1.5"/>
     <text x="76" y="99" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#B8860B">$</text>
     <ellipse cx="24" cy="100" rx="7" ry="5" fill="#FDDBB4"/>
@@ -40,14 +40,13 @@ const EmptyState = ({ title, subtitle = "Adicione seu primeiro lançamento do m�
         <MascotSvg />
       </div>
       <h2 className="text-base font-bold text-foreground mt-6 text-center">{title}</h2>
-      <p className="text-xs mt-2 text-center max-w-[240px]" style={{ color: "#475569" }}>
+      <p className="text-xs mt-2 text-center max-w-[240px] text-muted-foreground">
         {subtitle}
       </p>
       {onAddClick && (
         <button
           onClick={onAddClick}
-          className="mt-5 px-6 py-2.5 rounded-full text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.97]"
-          style={{ backgroundColor: "#10B981", color: "#fff" }}
+          className="mt-5 px-6 py-2.5 rounded-full text-sm font-semibold transition-all hover:opacity-90 active:scale-[0.97] gradient-emerald text-white"
         >
           ＋ Adicionar lançamento
         </button>

@@ -650,11 +650,11 @@ const Despesas = () => {
         {/* Summary bar */}
         <div className="flex items-center justify-between mb-3 animate-fade-up" style={{ animationDelay: "0.05s" }}>
           <p className="text-[11px] text-muted-foreground leading-snug">
-            <span className="text-emerald-400 font-medium">↑ {fmt(totalReceitas)}</span>
+            <span className="text-[#0D9488] font-medium">↑ {fmt(totalReceitas)}</span>
             {" · "}
-            <span className="text-red-400 font-medium">↓ {fmt(totalDespesas)}</span>
+            <span className="text-primary font-medium">↓ {fmt(totalDespesas)}</span>
             {" · "}
-            <span className={`font-semibold ${saldo >= 0 ? "text-emerald-400" : "text-red-400"}`}>Saldo {fmt(saldo)}</span>
+            <span className={`font-semibold ${saldo >= 0 ? "text-[#0D9488]" : "text-destructive"}`}>Saldo {fmt(saldo)}</span>
           </p>
           <div className="flex items-center gap-2">
             <button

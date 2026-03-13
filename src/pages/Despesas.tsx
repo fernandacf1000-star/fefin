@@ -887,7 +887,7 @@ const Despesas = () => {
             onClick={() => setBatchDeleteConfirm(false)}
           />
           {batchDeleteConfirm && (
-            <div className="fixed inset-x-0 bottom-0 z-[90] rounded-t-[28px] p-5 pb-24 space-y-3" style={{ background: "#1a1a2e" }}>
+            <div className="fixed inset-x-0 bottom-0 z-[90] rounded-t-[28px] p-5 pb-24 space-y-3 bg-white border-t border-border">
               <p className="text-sm font-bold text-foreground text-center">
                 Excluir {selectedIds.size} lançamento(s)?
               </p>

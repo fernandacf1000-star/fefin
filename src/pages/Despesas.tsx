@@ -431,7 +431,7 @@ const Despesas = () => {
 
   const renderItem = (item: Lancamento, icon: React.ReactNode, subtitle: React.ReactNode) => {
     const isReceita = item.tipo === "receita";
-    const borderColor = isReceita ? "#10B981" : "#F87171";
+    const borderColor = isReceita ? "#0D9488" : "#6366F1";
     const isSelected = selectedIds.has(item.id);
 
     const content = (

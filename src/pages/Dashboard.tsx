@@ -55,7 +55,7 @@ const MascotHead = ({ size = 28 }: { size?: number }) => (
 
 /* ─── light-theme tokens (inline) ─── */
 const T = {
-  bg: "#F4F7FB",
+  bg: "#D8DDE9",
   card: "#FFFFFF",
   shadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03)",
   text: "#1E293B",

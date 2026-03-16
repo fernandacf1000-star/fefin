@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 220 25% 97%;
+    --background: 222 27% 88%;
     --foreground: 222 47% 17%;
 
     --card: 0 0% 100%;
@@ -48,7 +48,7 @@
     /* Custom tokens */
     --emerald: 239 84% 67%;
     --emerald-glow: 239 84% 72%;
-    --surface-elevated: 220 25% 95%;
+    --surface-elevated: 222 25% 92%;
     --positive: 170 80% 33%;
     --negative: 15 60% 55%;
   }
@@ -60,7 +60,7 @@
   }
 
   html, body {
-    background-color: #F4F7FB;
+    background-color: #D8DDE9;
   }
 
   body {
@@ -78,7 +78,7 @@
   }
 
   .gradient-bg {
-    background: #F4F7FB;
+    background: #D8DDE9;
   }
 
   .text-gradient {

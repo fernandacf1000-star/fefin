@@ -5,8 +5,8 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0d1117",
-  "theme_color": "#10B981",
+  "background_color": "#D8DDE9",
+  "theme_color": "#6366F1",
   "icons": [
     {
       "src": "/fefin-icon-192.png",

@@ -214,8 +214,8 @@ const NewExpenseSheet = ({
         const isPais = tipoDespesa === "pais";
         const categoria = isPais ? "pais" : "extra";
         const subcatPaisValue = isPais ? subcatPais : null;
-        const subcatValue = isPais ? null : subcategoria;
-        const catMacroValue = isPais ? null : categoriaMacro;
+         const subcatValue = subcategoria;
+         const catMacroValue = categoriaMacro;
 
         if (!isPais && isParcelado) {
           const parcelas = parseInt(numParcelas, 10) || 2;

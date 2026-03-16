@@ -3,6 +3,7 @@ import EmptyState from "@/components/EmptyState";
 import { useLancamentos, useUpdateLancamento, useDeleteLancamento } from "@/hooks/useLancamentos";
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import type { Lancamento } from "@/hooks/useLancamentos";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DollarSign, HandCoins, RefreshCw, Receipt,
   ArrowDownLeft, ChevronLeft, ChevronRight, Plus, Check,
@@ -48,6 +49,7 @@ const Pais = () => {
   const updateMut = useUpdateLancamento();
   const deleteMut = useDeleteLancamento();
   const addReembolsoMut = useAddReembolso();
+  const queryClient = useQueryClient();
 
   const paisDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa" && l.categoria === "pais"), [lancamentos]);
   const reembolsos = useMemo(() => lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais"), [lancamentos]);
@@ -77,6 +79,7 @@ const Pais = () => {
     if (!selectedLanc) return;
     try {
       await updateMut.mutateAsync({ id: selectedLanc.id, ...data });
+      await queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
       toast.success("Lançamento atualizado ✓");
       setEditOpen(false);
     } catch { toast.error("Erro ao atualizar."); }
@@ -86,6 +89,7 @@ const Pais = () => {
     if (!selectedLanc) return;
     try {
       await deleteMut.mutateAsync(selectedLanc.id);
+      await queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
       toast.success("Lançamento excluído ✓");
       setEditOpen(false); setActionsOpen(false);
     } catch { toast.error("Erro ao excluir."); }

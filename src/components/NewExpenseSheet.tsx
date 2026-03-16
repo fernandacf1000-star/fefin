@@ -214,8 +214,8 @@ const NewExpenseSheet = ({
         const isPais = tipoDespesa === "pais";
         const categoria = isPais ? "pais" : "extra";
         const subcatPaisValue = isPais ? subcatPais : null;
-        const subcatValue = isPais ? null : subcategoria;
-        const catMacroValue = isPais ? null : categoriaMacro;
+         const subcatValue = subcategoria;
+         const catMacroValue = categoriaMacro;
 
         if (!isPais && isParcelado) {
           const parcelas = parseInt(numParcelas, 10) || 2;
@@ -440,23 +440,59 @@ const NewExpenseSheet = ({
               </div>
 
               {tipoDespesa === "pais" && (
-                <div className="space-y-2">
-                  <label className="text-xs font-medium text-muted-foreground">Como foi o gasto?</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {SUBCAT_PAIS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setSubcatPais(opt.value)}
-                        className={cn(
-                          "px-3 py-3 rounded-xl text-xs font-medium text-left transition-all leading-snug",
-                          subcatPais === opt.value ? "bg-amber-500 text-white shadow" : "bg-secondary text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+                <>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">Como foi o gasto?</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {SUBCAT_PAIS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setSubcatPais(opt.value)}
+                          className={cn(
+                            "px-3 py-3 rounded-xl text-xs font-medium text-left transition-all leading-snug",
+                            subcatPais === opt.value ? "bg-amber-500 text-white shadow" : "bg-secondary text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-muted-foreground">Categoria</label>
+                      {subcategoria && <span className="text-[10px] text-primary font-semibold">✓ {subcategoria}</span>}
+                    </div>
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {SUBCATEGORIA_GROUPS.map((group) => (
+                        <div key={group.group}>
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                            {group.emoji} {group.group}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {group.items.map((item) => (
+                              <button
+                                key={item}
+                                onClick={() => {
+                                  setSubcategoria(item === subcategoria ? null : item);
+                                  setCategoriaMacro(item === subcategoria ? null : group.group);
+                                }}
+                                className={cn(
+                                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                                  subcategoria === item
+                                    ? "bg-destructive text-destructive-foreground shadow"
+                                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                                )}
+                              >
+                                {item}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
 
               {tipoDespesa === "normal" && (

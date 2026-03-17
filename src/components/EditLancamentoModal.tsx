@@ -65,6 +65,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
       setForm({ ...initial, valor: initial.valor || 0 });
       setShowConfirm(false);
       setPendingSaveData(null);
+      setValorTouched(false);
     }
   }, [open, initial]);
 

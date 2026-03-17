@@ -226,19 +226,20 @@ if (!selectedLanc) return;
 try {
 const groupId = selectedLanc.parcelamento_id || selectedLanc.recorrencia_pai_id;
 if (editMode === "future" && groupId) {
-await updateFuturasMut.mutateAsync({
-parcelamento_id: groupId,
-fromDate: selectedLanc.data >= today ? selectedLanc.data : today,
-updates: {
-descricao: data.descricao,
-valor: data.valor,
-categoria: data.categoria,
-subcategoria: data.subcategoria,
-categoria_macro: data.categoria_macro,
-forma_pagamento: data.forma_pagamento,
-cartao_id: data.cartao_id,
-},
-});
+  const updates: any = {
+    descricao: data.descricao,
+    categoria: data.categoria,
+    subcategoria: data.subcategoria,
+    categoria_macro: data.categoria_macro,
+    forma_pagamento: data.forma_pagamento,
+    cartao_id: data.cartao_id,
+  };
+  if (data.valor !== undefined) updates.valor = data.valor;
+  await updateFuturasMut.mutateAsync({
+    parcelamento_id: groupId,
+    fromDate: selectedLanc.data >= today ? selectedLanc.data : today,
+    updates,
+  });
 
   } else if (editMode === "all" && groupId) {
     await updateAllMut.mutateAsync({

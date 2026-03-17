@@ -274,24 +274,32 @@ const Graficos = () => {
                 <p className="text-[11px] text-muted-foreground mb-4">{mesLabelFmt}</p>
                 {(() => {
                   const maxVal = Math.max(totalReceitas, totalDespesas, 1);
-                  const BAR_MAX_H = 100;
-                  const hRec = totalReceitas > 0 ? Math.max(8, Math.round((totalReceitas / maxVal) * BAR_MAX_H)) : 0;
-                  const hDesp = totalDespesas > 0 ? Math.max(8, Math.round((totalDespesas / maxVal) * BAR_MAX_H)) : 0;
+                  const BAR_MAX_H = 110;
+                  const hRec = totalReceitas > 0 ? Math.max(10, Math.round((totalReceitas / maxVal) * BAR_MAX_H)) : 0;
+                  const hDesp = totalDespesas > 0 ? Math.max(10, Math.round((totalDespesas / maxVal) * BAR_MAX_H)) : 0;
                   return (
-                    <div className="flex justify-around items-end px-4" style={{ height: `${BAR_MAX_H + 8}px` }}>
+                    <div className="flex justify-around px-6">
+                      {/* Receitas column */}
                       <div className="flex flex-col items-center gap-2">
-                        <div
-                          className="w-16 rounded-t-xl transition-all duration-500"
-                          style={{ height: `${hRec}px`, background: "#0D9488" }}
-                        />
+                        {/* Bar area — fixed height, bar grows from bottom via margin-top auto */}
+                        <div style={{ height: `${BAR_MAX_H}px`, display: "flex", alignItems: "flex-end" }}>
+                          <div
+                            className="w-16 rounded-t-xl transition-all duration-500"
+                            style={{ height: `${hRec}px`, background: "#0D9488" }}
+                          />
+                        </div>
                         <span className="text-[11px] text-muted-foreground">Receitas</span>
                         <span className="text-xs font-bold" style={{ color: "#0D9488" }}>{fmt(totalReceitas)}</span>
                       </div>
+
+                      {/* Despesas column */}
                       <div className="flex flex-col items-center gap-2">
-                        <div
-                          className="w-16 rounded-t-xl transition-all duration-500"
-                          style={{ height: `${hDesp}px`, background: "#6366F1" }}
-                        />
+                        <div style={{ height: `${BAR_MAX_H}px`, display: "flex", alignItems: "flex-end" }}>
+                          <div
+                            className="w-16 rounded-t-xl transition-all duration-500"
+                            style={{ height: `${hDesp}px`, background: "#6366F1" }}
+                          />
+                        </div>
                         <span className="text-[11px] text-muted-foreground">Despesas</span>
                         <span className="text-xs font-bold" style={{ color: "#6366F1" }}>{fmt(totalDespesas)}</span>
                       </div>

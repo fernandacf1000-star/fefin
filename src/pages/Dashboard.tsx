@@ -31,26 +31,47 @@ const BandeiraLogo = ({ bandeira, size = 28 }: { bandeira: string; size?: number
   return null;
 };
 
-// ── Mascot ─────────────────────────────────────────────────────────────────
-const MascotHead = ({ size = 64 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="36" cy="32" rx="20" ry="22" fill="#1A1A2E" />
-    <rect x="10" y="28" width="7" height="18" rx="3.5" fill="#1A1A2E" />
-    <rect x="55" y="28" width="7" height="18" rx="3.5" fill="#1A1A2E" />
-    <ellipse cx="36" cy="36" rx="17" ry="18" fill="#D4956A" />
-    <ellipse cx="29" cy="34" rx="2.5" ry="3" fill="#1A1A2E" />
-    <ellipse cx="43" cy="34" rx="2.5" ry="3" fill="#1A1A2E" />
-    <circle cx="30" cy="33" r="1" fill="white" />
-    <circle cx="44" cy="33" r="1" fill="white" />
-    <path d="M29 42 Q36 48 43 42" stroke="#1A1A2E" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-    <ellipse cx="24" cy="40" rx="4" ry="2.5" fill="#E8A07A" opacity="0.5" />
-    <ellipse cx="48" cy="40" rx="4" ry="2.5" fill="#E8A07A" opacity="0.5" />
-    <ellipse cx="36" cy="20" rx="17" ry="8" fill="#1A1A2E" />
-    <path d="M20 62 Q22 54 36 54 Q50 54 52 62" fill="#6366F1" />
-    <circle cx="19" cy="38" r="2.5" fill="#F5C842" />
-    <circle cx="53" cy="38" r="2.5" fill="#F5C842" />
-  </svg>
-);
+// ── Mascot — identical to Splash.tsx canonical SVG ─────────────────────────
+const MascotHead = ({ size = 64 }: { size?: number }) => {
+  const scale = size / 100;
+  return (
+    <svg width={size} height={Math.round(size * 1.1)} viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Hair / head back */}
+      <ellipse cx="50" cy="42" rx="34" ry="36" fill="#2C1810"/>
+      {/* Pigtails */}
+      <path d="M74 45 Q88 55 85 80 Q82 95 75 100 Q80 80 76 65 Q74 55 74 45Z" fill="#2C1810"/>
+      <path d="M26 45 Q12 58 15 82 Q18 96 24 100 Q20 80 24 65 Q26 55 26 45Z" fill="#2C1810"/>
+      {/* Face */}
+      <ellipse cx="50" cy="50" rx="28" ry="30" fill="#FDDBB4"/>
+      {/* Hair fringe */}
+      <ellipse cx="50" cy="18" rx="16" ry="10" fill="#2C1810"/>
+      {/* Eyebrows */}
+      <path d="M32 40 Q39 36 44 39" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none"/>
+      <path d="M56 39 Q61 36 68 40" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none"/>
+      {/* Eyes white */}
+      <ellipse cx="38" cy="47" rx="5" ry="5.5" fill="white"/>
+      <ellipse cx="62" cy="47" rx="5" ry="5.5" fill="white"/>
+      {/* Pupils */}
+      <ellipse cx="38.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314"/>
+      <ellipse cx="62.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314"/>
+      {/* Eye shine */}
+      <circle cx="40" cy="46" r="1.2" fill="white"/>
+      <circle cx="64" cy="46" r="1.2" fill="white"/>
+      {/* Smile */}
+      <path d="M38 63 Q50 72 62 63" stroke="#C68642" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+      {/* Blush */}
+      <ellipse cx="30" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
+      <ellipse cx="70" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
+      {/* Earrings */}
+      <circle cx="22" cy="56" r="4" fill="#F7D070"/>
+      <circle cx="78" cy="56" r="4" fill="#F7D070"/>
+      {/* Body/outfit */}
+      <path d="M22 92 Q20 110 22 110 L78 110 Q80 110 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#6366F1"/>
+      {/* Left hand */}
+      <ellipse cx="24" cy="100" rx="7" ry="5" fill="#FDDBB4"/>
+    </svg>
+  );
+};
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function getMesRef(year: number, month: number) {
@@ -197,7 +218,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <MascotHead size={52} />
+            <MascotHead size={48} />
             <div>
               <p className="text-[11px] text-muted-foreground">Olá,</p>
               <p className="text-base font-bold text-foreground">{firstName} 👋</p>
@@ -370,7 +391,7 @@ export default function Dashboard() {
         {/* Empty */}
         {!isLoading && lancamentos.length === 0 && (
           <div className="flex flex-col items-center py-16 space-y-3">
-            <MascotHead size={56} />
+            <MascotHead size={48} />
             <p className="text-sm text-muted-foreground">Nenhum lançamento neste mês</p>
           </div>
         )}

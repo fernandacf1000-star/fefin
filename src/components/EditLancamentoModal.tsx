@@ -52,7 +52,7 @@ const normalizeInitial = (initial: Props["initial"]) => ({
   valor: initial.valor || 0,
   forma_pagamento: initial.cartao_id ? "cartao" : (initial.forma_pagamento || "dinheiro"),
   cartao_id: initial.cartao_id || null,
-  subcategoria_pais: initial.categoria === "pais" ? "paguei_por_eles" : (initial.subcategoria_pais || null),
+  subcategoria_pais: initial.categoria === "pais" ? "pais" : (initial.subcategoria_pais || null),
 });
 
 const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDeleteConfirm, initial, isPending, parcelamentoMode, parcelamentoCount }: Props) => {
@@ -145,7 +145,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
       descricao: form.descricao,
       categoria: form.categoria,
       data: form.data,
-      subcategoria_pais: form.categoria === "pais" ? "paguei_por_eles" : undefined,
+      subcategoria_pais: form.categoria === "pais" ? "pais" : undefined,
       subcategoria: form.subcategoria || undefined,
       categoria_macro: form.categoria_macro || undefined,
       parcela_atual: form.parcela_atual ?? undefined,

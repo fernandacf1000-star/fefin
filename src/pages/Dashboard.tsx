@@ -337,22 +337,32 @@ export default function Dashboard() {
         {categorias.length > 0 && (
           <div className="glass-card p-4 space-y-3">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              Por categoria
+              Despesas por categoria
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              {categorias.map(({ cat, valor, emoji }) => (
-                <div
-                  key={cat}
-                  className="flex items-center gap-2 p-2.5 rounded-xl"
-                  style={{ background: "#E8ECF5" }}
-                >
-                  <span className="text-sm shrink-0">{emoji}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] text-muted-foreground truncate">{cat}</p>
-                    <p className="text-[11px] font-bold text-foreground">{fmt(valor)}</p>
+            <div className="space-y-2.5">
+              {categorias.map(({ cat, valor, emoji }) => {
+                const pct = totalDespesas > 0 ? (valor / totalDespesas) * 100 : 0;
+                return (
+                  <div key={cat} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-sm shrink-0">{emoji}</span>
+                        <span className="text-[12px] font-medium text-foreground truncate">{cat}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className="text-[10px] text-muted-foreground">{pct.toFixed(0)}%</span>
+                        <span className="text-[12px] font-bold text-foreground">{fmt(valor)}</span>
+                      </div>
+                    </div>
+                    <div className="h-1 rounded-full bg-[#E8ECF5] overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%`, background: "#6366F1" }}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

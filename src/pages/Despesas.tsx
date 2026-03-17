@@ -242,17 +242,18 @@ if (editMode === "future" && groupId) {
   });
 
   } else if (editMode === "all" && groupId) {
+    const updates: any = {
+      descricao: data.descricao,
+      categoria: data.categoria,
+      subcategoria: data.subcategoria,
+      categoria_macro: data.categoria_macro,
+      forma_pagamento: data.forma_pagamento,
+      cartao_id: data.cartao_id,
+    };
+    if (data.valor !== undefined) updates.valor = data.valor;
     await updateAllMut.mutateAsync({
       parcelamento_id: groupId,
-      updates: { 
-        descricao: data.descricao, 
-        valor: data.valor,
-        categoria: data.categoria,
-        subcategoria: data.subcategoria,
-        categoria_macro: data.categoria_macro,
-        forma_pagamento: data.forma_pagamento,
-        cartao_id: data.cartao_id,
-      },
+      updates,
     });
 
   } else {

@@ -271,7 +271,7 @@ const NewExpenseSheet = ({
       } else {
         const isPais = tipoDespesa === "pais";
         const categoria = isPais ? "pais" : "extra";
-        const subcatPaisValue = isPais ? "paguei_por_eles" : null;
+        const subcatPaisValue = isPais ? "pais" : null;
         const subcatValue = subcategoria;
         const catMacroValue = categoriaMacro;
 
@@ -287,7 +287,7 @@ const NewExpenseSheet = ({
               valor: numValor,
               tipo: "despesa",
               categoria,
-              subcategoria_pais: null,
+              subcategoria_pais: subcatPaisValue,
               subcategoria: subcatValue,
               categoria_macro: catMacroValue,
               data: format(monthDate, "yyyy-MM-dd"),
@@ -323,7 +323,7 @@ const NewExpenseSheet = ({
               valor: numValor,
               tipo: "despesa",
               categoria,
-              subcategoria_pais: null,
+              subcategoria_pais: subcatPaisValue,
               subcategoria: subcatValue,
               categoria_macro: catMacroValue,
               data: dStr,

@@ -58,6 +58,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
   const [form, setForm] = useState({ ...initial, valor: initial.valor || 0 });
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingSaveData, setPendingSaveData] = useState<any>(null);
+  const [valorTouched, setValorTouched] = useState(false);
 
   useEffect(() => {
     if (open) {

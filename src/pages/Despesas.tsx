@@ -98,7 +98,7 @@ const saldo = totalReceitas - totalDespesas;
 
 const applyFiltersToList = useCallback((list: Lancamento[], tipo: TipoFilter, cats: string[], subcats: string[]) => {
 let filtered = list;
-if (tipo === "Despesas") filtered = filtered.filter(d => d.tipo === "despesa" && !d.is_parcelado && d.categoria !== "pais");
+if (tipo === "Despesas") filtered = filtered.filter(d => d.tipo === "despesa" && !d.is_parcelado);
 else if (tipo === "Receitas") filtered = filtered.filter(d => d.tipo === "receita");
 else if (tipo === "Parceladas") filtered = filtered.filter(d => d.is_parcelado);
 else if (tipo === "Pais") filtered = filtered.filter(d => d.categoria === "pais");

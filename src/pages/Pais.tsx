@@ -158,7 +158,6 @@ return (
 </button>
 </div>
 
-```
     {/* Month Selector */}
     <div className="flex items-center justify-center gap-3 mb-5 animate-fade-up" style={{ animationDelay: "0.03s" }}>
       <button onClick={() => setMesAtual(p => { const d = new Date(p.year, p.month - 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors">
@@ -334,7 +333,6 @@ return (
 
   <BottomNav />
 </div>
-```
 
 );
 };

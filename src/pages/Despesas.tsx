@@ -1,16 +1,452 @@
-export default function Despesas({ despesas }) {
-  // 🔹 NÃO filtra mais pais → visão unificada
-  const lista = despesas || [];
+import { useState, useMemo, useCallback } from "react";
+import { ChevronLeft, ChevronRight, Trash2, CheckSquare, Square } from "lucide-react";
+import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
+import LancamentoActions from "@/components/LancamentoActions";
+import DeleteConfirmSheet from "@/components/DeleteConfirmSheet";
+import EditLancamentoModal from "@/components/EditLancamentoModal";
+import ReembolsoModal from "@/components/ReembolsoModal";
+import {
+  useLancamentos,
+  useDeleteLancamento,
+  useDeleteFutureParcelamento,
+  useDeleteAllParcelamento,
+  useDeleteFutureRecorrencia,
+  useDeleteAllRecorrencia,
+  useUpdateLancamento,
+  type Lancamento,
+} from "@/hooks/useLancamentos";
+import { useCartoes } from "@/hooks/useCartoes";
+import { useAddReembolso } from "@/hooks/useReembolsos";
+import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const fmt = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+function getMesRef(year: number, month: number) {
+  return `${year}-${String(month + 1).padStart(2, "0")}`;
+}
+function getMesLabel(year: number, month: number) {
+  const label = new Date(year, month, 1).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+function formatDate(dateStr: string) {
+  const [y, m, d] = dateStr.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+// ── Row ────────────────────────────────────────────────────────────────────
+interface RowProps {
+  lancamento: Lancamento;
+  onLongPress: (l: Lancamento) => void;
+  selected: boolean;
+  selectionMode: boolean;
+  onToggleSelect: (id: string) => void;
+}
+
+const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, onToggleSelect }: RowProps) => {
+  const group = getSubcategoriaGroup(l.subcategoria || "") || l.categoria_macro || l.categoria || "Outros";
+  const emoji = getGroupEmoji(group);
+  const isReceita = l.tipo === "receita";
+  const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
+  const isRecorrente = l.recorrente;
+
+  let pressTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const handleTouchStart = () => {
+    pressTimer = setTimeout(() => {
+      if (!selectionMode) onLongPress(l);
+    }, 500);
+  };
+  const handleTouchEnd = () => {
+    if (pressTimer) clearTimeout(pressTimer);
+  };
 
   return (
-    <div>
-      <h2>Despesas</h2>
+    <div
+      className={cn(
+        "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors",
+        selected ? "border-primary/40 bg-primary/5" : "bg-white border-transparent"
+      )}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onClick={() => selectionMode && onToggleSelect(l.id)}
+    >
+      {selectionMode && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSelect(l.id); }}
+          className="shrink-0 text-primary"
+        >
+          {selected ? <CheckSquare size={18} /> : <Square size={18} className="text-muted-foreground" />}
+        </button>
+      )}
 
-      {lista.map((d) => (
-        <div key={d.id}>
-          {d.descricao} - R$ {d.valor}
+      <div
+        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-base"
+        style={{ background: "#E8ECF5" }}
+      >
+        {emoji}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-foreground truncate">{l.descricao}</p>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[10px] text-muted-foreground">{formatDate(l.data)}</span>
+          {isParcelado && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8ECF5] text-muted-foreground">
+              {l.parcela_atual}/{l.parcela_total}x
+            </span>
+          )}
+          {isRecorrente && !isParcelado && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8ECF5] text-muted-foreground">
+              recorrente
+            </span>
+          )}
+          {l.subcategoria && (
+            <span className="text-[10px] text-muted-foreground/70 truncate">{l.subcategoria}</span>
+          )}
         </div>
-      ))}
+      </div>
+
+      <p
+        className="text-sm font-bold shrink-0"
+        style={{ color: isReceita ? "#0D9488" : "#1E2A45" }}
+      >
+        {isReceita ? "+" : "-"}{fmt(Number(l.valor))}
+      </p>
+    </div>
+  );
+};
+
+// ── Despesas ───────────────────────────────────────────────────────────────
+export default function Despesas() {
+  const [mesAtual, setMesAtual] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+
+  const mesRef = getMesRef(mesAtual.year, mesAtual.month);
+  const mesLabel = getMesLabel(mesAtual.year, mesAtual.month);
+
+  const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
+  const { data: cartoes = [] } = useCartoes();
+
+  const deleteLancamento = useDeleteLancamento();
+  const deleteFutureParcelamento = useDeleteFutureParcelamento();
+  const deleteAllParcelamento = useDeleteAllParcelamento();
+  const deleteFutureRecorrencia = useDeleteFutureRecorrencia();
+  const deleteAllRecorrencia = useDeleteAllRecorrencia();
+  const updateLancamento = useUpdateLancamento();
+  const addReembolso = useAddReembolso();
+
+  // ── state ─────────────────────────────────────────────────────────────────
+  const [actionsLanc, setActionsLanc] = useState<Lancamento | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Lancamento | null>(null);
+  const [editTarget, setEditTarget] = useState<Lancamento | null>(null);
+  const [reembolsoTarget, setReembolsoTarget] = useState<Lancamento | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [filterTipo, setFilterTipo] = useState<"todos" | "despesa" | "receita">("todos");
+
+  const prevMes = () =>
+    setMesAtual(({ year, month }) =>
+      month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }
+    );
+  const nextMes = () =>
+    setMesAtual(({ year, month }) =>
+      month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }
+    );
+
+  // ── filter ────────────────────────────────────────────────────────────────
+  const lista = useMemo(() => {
+    if (filterTipo === "todos") return lancamentos;
+    return lancamentos.filter((l) => l.tipo === filterTipo);
+  }, [lancamentos, filterTipo]);
+
+  const totalDespesas = useMemo(
+    () => lancamentos.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentos]
+  );
+  const totalReceitas = useMemo(
+    () => lancamentos.filter((l) => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentos]
+  );
+
+  // ── selection ─────────────────────────────────────────────────────────────
+  const toggleSelect = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const exitSelection = () => {
+    setSelectionMode(false);
+    setSelected(new Set());
+  };
+
+  // ── delete helpers ────────────────────────────────────────────────────────
+  const getTipo = (l: Lancamento): "parcelado" | "recorrente" | "simples" => {
+    if (l.is_parcelado && l.parcelamento_id) return "parcelado";
+    if (l.recorrente && l.recorrencia_pai_id) return "recorrente";
+    return "simples";
+  };
+
+  const handleDeleteSingle = async () => {
+    if (!deleteTarget) return;
+    await deleteLancamento.mutateAsync(deleteTarget.id);
+    setDeleteTarget(null);
+    toast.success("Lançamento excluído", { duration: 1500 });
+  };
+
+  const handleDeleteFuture = async () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.is_parcelado && deleteTarget.parcelamento_id) {
+      await deleteFutureParcelamento.mutateAsync({
+        parcelamento_id: deleteTarget.parcelamento_id,
+        fromDate: deleteTarget.data,
+      });
+    } else if (deleteTarget.recorrente && deleteTarget.recorrencia_pai_id) {
+      await deleteFutureRecorrencia.mutateAsync({
+        recorrencia_pai_id: deleteTarget.recorrencia_pai_id,
+        fromDate: deleteTarget.data,
+      });
+    }
+    setDeleteTarget(null);
+    toast.success("Lançamentos excluídos", { duration: 1500 });
+  };
+
+  const handleDeleteAll = async () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.is_parcelado && deleteTarget.parcelamento_id) {
+      await deleteAllParcelamento.mutateAsync(deleteTarget.parcelamento_id);
+    } else if (deleteTarget.recorrente && deleteTarget.recorrencia_pai_id) {
+      await deleteAllRecorrencia.mutateAsync(deleteTarget.recorrencia_pai_id);
+    }
+    setDeleteTarget(null);
+    toast.success("Grupo excluído", { duration: 1500 });
+  };
+
+  // ── bulk delete ───────────────────────────────────────────────────────────
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selected);
+    for (const id of ids) {
+      await deleteLancamento.mutateAsync(id);
+    }
+    exitSelection();
+    setBulkDeleteOpen(false);
+    toast.success(`${ids.length} lançamento(s) excluído(s)`, { duration: 1500 });
+  };
+
+  // ── edit ──────────────────────────────────────────────────────────────────
+  const handleSaveEdit = async (updates: Partial<Lancamento>) => {
+    if (!editTarget) return;
+    await updateLancamento.mutateAsync({ id: editTarget.id, ...updates });
+    setEditTarget(null);
+    toast.success("Lançamento atualizado", { duration: 1500 });
+  };
+
+  // ── reembolso ─────────────────────────────────────────────────────────────
+  const handleSaveReembolso = async (data: {
+    valor_reembolsado: number;
+    quem_reembolsou: string;
+    data_reembolso: string;
+    observacao?: string;
+  }) => {
+    if (!reembolsoTarget) return;
+    await addReembolso.mutateAsync({
+      lancamento_id: reembolsoTarget.id,
+      ...data,
+    });
+    setReembolsoTarget(null);
+    toast.success("Reembolso registrado", { duration: 1500 });
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  return (
+    <div className="gradient-bg min-h-screen pb-28">
+      <BottomNav />
+
+      <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold text-foreground">Transações</h1>
+            {!selectionMode && (
+              <p className="text-[11px] text-muted-foreground">{mesLabel}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {selectionMode ? (
+              <>
+                {selected.size > 0 && (
+                  <button
+                    onClick={() => setBulkDeleteOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-destructive/10 text-destructive text-xs font-semibold"
+                  >
+                    <Trash2 size={13} />
+                    {selected.size}
+                  </button>
+                )}
+                <button
+                  onClick={exitSelection}
+                  className="px-3 py-1.5 rounded-xl bg-secondary text-muted-foreground text-xs font-semibold"
+                >
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={prevMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
+                  <ChevronLeft size={15} />
+                </button>
+                <button onClick={nextMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
+                  <ChevronRight size={15} />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Resumo */}
+        {!selectionMode && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="glass-card px-4 py-3 border-l-2" style={{ borderLeftColor: "#6366F1" }}>
+              <p className="text-[10px] text-muted-foreground">Despesas</p>
+              <p className="text-base font-bold text-foreground">{fmt(totalDespesas)}</p>
+            </div>
+            <div className="glass-card px-4 py-3 border-l-2" style={{ borderLeftColor: "#0D9488" }}>
+              <p className="text-[10px] text-muted-foreground">Receitas</p>
+              <p className="text-base font-bold text-foreground">{fmt(totalReceitas)}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Filtros */}
+        {!selectionMode && (
+          <div className="flex gap-2">
+            {(["todos", "despesa", "receita"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setFilterTipo(t)}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors",
+                  filterTipo === t
+                    ? "gradient-emerald text-primary-foreground"
+                    : "bg-white border border-border text-muted-foreground"
+                )}
+              >
+                {t === "todos" ? "Todos" : t === "despesa" ? "Despesas" : "Receitas"}
+              </button>
+            ))}
+            <button
+              onClick={() => { setSelectionMode(true); setSelected(new Set()); }}
+              className="ml-auto px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-border text-muted-foreground"
+            >
+              Selecionar
+            </button>
+          </div>
+        )}
+
+        {/* Lista */}
+        {isLoading ? (
+          <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>
+        ) : lista.length === 0 ? (
+          <EmptyState
+            title="Nenhum lançamento"
+            subtitle="Adicione sua primeira transação pelo botão +"
+          />
+        ) : (
+          <div className="space-y-2">
+            {lista.map((l) => (
+              <div
+                key={l.id}
+                onClick={() => !selectionMode && setActionsLanc(l)}
+              >
+                <LancamentoRow
+                  lancamento={l}
+                  onLongPress={(ll) => {
+                    setSelectionMode(true);
+                    setSelected(new Set([ll.id]));
+                  }}
+                  selected={selected.has(l.id)}
+                  selectionMode={selectionMode}
+                  onToggleSelect={toggleSelect}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Actions sheet */}
+      <LancamentoActions
+        open={!!actionsLanc}
+        onClose={() => setActionsLanc(null)}
+        descricao={actionsLanc?.descricao}
+        onEdit={() => { setEditTarget(actionsLanc); setActionsLanc(null); }}
+        onDelete={() => { setDeleteTarget(actionsLanc); setActionsLanc(null); }}
+        onReembolso={
+          actionsLanc?.tipo === "despesa"
+            ? () => { setReembolsoTarget(actionsLanc); setActionsLanc(null); }
+            : undefined
+        }
+      />
+
+      {/* Delete confirm */}
+      {deleteTarget && (
+        <DeleteConfirmSheet
+          open={!!deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          tipo={getTipo(deleteTarget)}
+          descricao={deleteTarget.descricao}
+          onDeleteSingle={handleDeleteSingle}
+          onDeleteFuture={handleDeleteFuture}
+          onDeleteAll={handleDeleteAll}
+        />
+      )}
+
+      {/* Bulk delete confirm */}
+      <DeleteConfirmSheet
+        open={bulkDeleteOpen}
+        onClose={() => setBulkDeleteOpen(false)}
+        tipo="simples"
+        descricao={`${selected.size} lançamento(s) selecionado(s)`}
+        onDeleteSingle={handleBulkDelete}
+        onDeleteFuture={handleBulkDelete}
+        onDeleteAll={handleBulkDelete}
+      />
+
+      {/* Edit modal */}
+      {editTarget && (
+        <EditLancamentoModal
+          open={!!editTarget}
+          lancamento={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSave={handleSaveEdit}
+          cartoes={cartoes}
+        />
+      )}
+
+      {/* Reembolso modal */}
+      {reembolsoTarget && (
+        <ReembolsoModal
+          open={!!reembolsoTarget}
+          onClose={() => setReembolsoTarget(null)}
+          descricao={reembolsoTarget.descricao}
+          valorOriginal={Number(reembolsoTarget.valor)}
+          onSave={handleSaveReembolso}
+        />
+      )}
     </div>
   );
 }

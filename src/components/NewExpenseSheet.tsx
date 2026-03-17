@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, CalendarIcon, ChevronLeft } from "lucide-react";
+import { X, CalendarIcon, ChevronLeft, Users } from "lucide-react";
 import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -54,6 +54,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
   const [recorrente, setRecorrente] = useState(false);
   const [diaRecorrencia, setDiaRecorrencia] = useState("1");
   const [recorrenciaAte, setRecorrenciaAte] = useState<Date | undefined>(undefined);
+  const [isPais, setIsPais] = useState(false);
 
   // ── Screen 2 — receita ────────────────────────────────────────────────────
   const [receitaCat, setReceitaCat] = useState<ReceitaCat>("Salário");
@@ -76,6 +77,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
     setDiaRecorrencia("1");
     setRecorrenciaAte(undefined);
     setReceitaCat("Salário");
+    setIsPais(false);
   };
 
   const handleClose = () => {
@@ -92,6 +94,11 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
 
   const getNumValor = () => {
     return parseFloat(valor.replace(/\./g, "").replace(",", ".")) || 0;
+  };
+
+  const getPaisValue = () => {
+    if (!isPais) return null;
+    return subcategoria || "paguei_por_eles";
   };
 
   // ── Screen 1 → 2 ──────────────────────────────────────────────────────────
@@ -134,7 +141,6 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
           recorrencia_ate: null,
           recorrencia_pai_id: null,
         });
-        toast.success("Receita salva!", { duration: 1500 });
         handleClose();
         return;
       }
@@ -143,6 +149,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
       const macro = detectCategoriaMacro(subcategoria || "") || null;
       const forma = formaPagamento === "Dinheiro" ? "dinheiro" : "credito";
       const cartao = formaPagamento === "Crédito" ? (cartaoId || cartoes[0]?.id || null) : null;
+      const subcPais = getPaisValue();
 
       if (isParcelado && !recorrente) {
         const nParcelas = parseInt(parcelas, 10) || 2;
@@ -157,7 +164,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
             valor: numValor,
             tipo: "despesa",
             categoria: "extra",
-            subcategoria_pais: null,
+            subcategoria_pais: subcPais,
             subcategoria: subcategoria || null,
             categoria_macro: macro,
             data: dateStr,
@@ -176,7 +183,6 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
           });
         }
         await addMultiple.mutateAsync(rows);
-        toast.success(`Parcelado em ${nParcelas}x!`, { duration: 1500 });
       } else if (recorrente && !isParcelado) {
         const dia = parseInt(diaRecorrencia, 10) || 1;
         const recorrenciaPaiId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -194,7 +200,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
             valor: numValor,
             tipo: "despesa",
             categoria: "extra",
-            subcategoria_pais: null,
+            subcategoria_pais: subcPais,
             subcategoria: subcategoria || null,
             categoria_macro: macro,
             data: dateStr,
@@ -213,14 +219,13 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
           });
         }
         await addMultiple.mutateAsync(rows);
-        toast.success(`Recorrente criado! (${rows.length} meses)`, { duration: 1500 });
       } else {
         await addLancamento.mutateAsync({
           descricao,
           valor: numValor,
           tipo: "despesa",
           categoria: "extra",
-          subcategoria_pais: null,
+          subcategoria_pais: subcPais,
           subcategoria: subcategoria || null,
           categoria_macro: macro,
           data: format(data, "yyyy-MM-dd"),
@@ -237,7 +242,6 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
           recorrencia_ate: null,
           recorrencia_pai_id: null,
         });
-        toast.success("Despesa salva!", { duration: 1500 });
       }
 
       handleClose();
@@ -407,6 +411,35 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
               {/* ── Despesa: subcategoria + pagamento + opções ─────────────── */}
               {tipo === "despesa" && (
                 <>
+                  {/* Toggle Despesa dos pais */}
+                  <button
+                    onClick={() => setIsPais(!isPais)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors text-left",
+                      isPais
+                        ? "bg-amber-50 border-amber-400"
+                        : "bg-white border-border"
+                    )}
+                  >
+                    <Users size={18} className={isPais ? "text-amber-600" : "text-muted-foreground"} />
+                    <div className="flex-1 min-w-0">
+                      <p className={cn("text-sm font-semibold", isPais ? "text-amber-700" : "text-foreground")}>
+                        Despesa dos pais
+                      </p>
+                      {isPais && (
+                        <p className="text-[10px] text-amber-600">
+                          Aparece na aba Pais e nas Transações
+                        </p>
+                      )}
+                    </div>
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                      isPais ? "border-amber-500 bg-amber-500" : "border-muted-foreground/30"
+                    )}>
+                      {isPais && <div className="w-2 h-2 rounded-full bg-white" />}
+                    </div>
+                  </button>
+
                   {/* Subcategoria */}
                   <div className="space-y-2">
                     <label className="text-xs font-medium text-muted-foreground">Categoria</label>
@@ -567,10 +600,17 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
               <Button
                 onClick={handleSave}
                 disabled={isPending}
-                className="w-full h-12 gradient-emerald text-primary-foreground font-semibold text-sm rounded-xl"
+                className={cn(
+                  "w-full h-12 font-semibold text-sm rounded-xl",
+                  isPais && tipo === "despesa"
+                    ? "bg-amber-500 hover:bg-amber-600 text-white"
+                    : "gradient-emerald text-primary-foreground"
+                )}
               >
                 {isPending
                   ? "Salvando..."
+                  : isPais && tipo === "despesa"
+                  ? "👨‍👩‍👧 Salvar despesa dos pais"
                   : tipo === "receita"
                   ? "💰 Salvar Receita"
                   : isParcelado

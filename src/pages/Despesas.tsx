@@ -55,6 +55,7 @@ const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, on
   const isReceita = l.tipo === "receita";
   const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
   const isRecorrente = l.recorrente;
+  const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");
 
   let pressTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -71,7 +72,11 @@ const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, on
     <div
       className={cn(
         "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors",
-        selected ? "border-primary/40 bg-primary/5" : "bg-white border-transparent"
+        selected
+          ? "border-primary/40 bg-primary/5"
+          : isPais
+          ? "bg-amber-50 border-amber-200"
+          : "bg-white border-transparent"
       )}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -88,13 +93,20 @@ const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, on
 
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-base"
-        style={{ background: "#E8ECF5" }}
+        style={{ background: isPais ? "rgba(251,191,36,0.2)" : "#E8ECF5" }}
       >
-        {emoji}
+        {isPais ? "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}" : emoji}
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate">{l.descricao}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-semibold text-foreground truncate">{l.descricao}</p>
+          {isPais && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-700 font-semibold shrink-0">
+              PAIS
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[10px] text-muted-foreground">{formatDate(l.data)}</span>
           {isParcelado && (
@@ -115,7 +127,7 @@ const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, on
 
       <p
         className="text-sm font-bold shrink-0"
-        style={{ color: isReceita ? "#0D9488" : "#1E2A45" }}
+        style={{ color: isPais ? "#B45309" : isReceita ? "#0D9488" : "#1E2A45" }}
       >
         {isReceita ? "+" : "-"}{fmt(Number(l.valor))}
       </p>
@@ -204,7 +216,6 @@ export default function Despesas() {
     if (!deleteTarget) return;
     await deleteLancamento.mutateAsync(deleteTarget.id);
     setDeleteTarget(null);
-    toast.success("Lançamento excluído", { duration: 1500 });
   };
 
   const handleDeleteFuture = async () => {
@@ -221,7 +232,6 @@ export default function Despesas() {
       });
     }
     setDeleteTarget(null);
-    toast.success("Lançamentos excluídos", { duration: 1500 });
   };
 
   const handleDeleteAll = async () => {
@@ -232,7 +242,6 @@ export default function Despesas() {
       await deleteAllRecorrencia.mutateAsync(deleteTarget.recorrencia_pai_id);
     }
     setDeleteTarget(null);
-    toast.success("Grupo excluído", { duration: 1500 });
   };
 
   // ── bulk delete ───────────────────────────────────────────────────────────
@@ -243,7 +252,6 @@ export default function Despesas() {
     }
     exitSelection();
     setBulkDeleteOpen(false);
-    toast.success(`${ids.length} lançamento(s) excluído(s)`, { duration: 1500 });
   };
 
   // ── edit ──────────────────────────────────────────────────────────────────
@@ -251,7 +259,6 @@ export default function Despesas() {
     if (!editTarget) return;
     await updateLancamento.mutateAsync({ id: editTarget.id, ...updates });
     setEditTarget(null);
-    toast.success("Lançamento atualizado", { duration: 1500 });
   };
 
   // ── reembolso ─────────────────────────────────────────────────────────────
@@ -264,10 +271,12 @@ export default function Despesas() {
     if (!reembolsoTarget) return;
     await addReembolso.mutateAsync({
       lancamento_id: reembolsoTarget.id,
-      ...data,
+      valor_reembolsado: data.valor_reembolsado,
+      quem_reembolsou: data.quem_reembolsou,
+      data_reembolso: data.data_reembolso,
+      observacao: data.observacao ?? null,
     });
     setReembolsoTarget(null);
-    toast.success("Reembolso registrado", { duration: 1500 });
   };
 
   // ─────────────────────────────────────────────────────────────────────────

@@ -58,7 +58,6 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
       if (recorrente) {
         const recorrenciaPaiId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
         const lancamentos: any[] = [];
-        // Create current + future months (up to 12 months or until recorrenciaAte)
         const maxMonths = recorrenciaAte ? 120 : 24;
         for (let i = 0; i < maxMonths; i++) {
           const monthDate = addMonths(data, i);
@@ -91,7 +90,6 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
           });
         }
         await addMultiple.mutateAsync(lancamentos);
-        toast.success(`Receita recorrente criada! (${lancamentos.length} meses)`);
       } else {
         await addLancamento.mutateAsync({
           descricao,
@@ -115,7 +113,6 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
           recorrencia_ate: null,
           recorrencia_pai_id: null,
         });
-        toast.success("Receita salva!");
       }
       onClose();
       setDescricao("");

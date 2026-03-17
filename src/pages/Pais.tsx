@@ -1,30 +1,30 @@
-import BottomNav from “@/components/BottomNav”;
-import EmptyState from “@/components/EmptyState”;
-import { useLancamentos, useUpdateLancamento, useDeleteLancamento } from “@/hooks/useLancamentos”;
-import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from “@/hooks/useReembolsos”;
-import type { Lancamento } from “@/hooks/useLancamentos”;
-import { useQueryClient } from “@tanstack/react-query”;
+import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
+import { useLancamentos, useUpdateLancamento, useDeleteLancamento } from "@/hooks/useLancamentos";
+import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
+import type { Lancamento } from "@/hooks/useLancamentos";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 DollarSign, HandCoins, RefreshCw, Receipt,
 ArrowDownLeft, ChevronLeft, ChevronRight, Plus, Check,
-} from “lucide-react”;
-import { useState, useMemo } from “react”;
-import { toast } from “sonner”;
-import SwipeableItem from “@/components/SwipeableItem”;
-import LancamentoActions from “@/components/LancamentoActions”;
-import EditLancamentoModal from “@/components/EditLancamentoModal”;
-import ReembolsoModal from “@/components/ReembolsoModal”;
-import ReembolsoFixoModal from “@/components/ReembolsoFixoModal”;
-import { getGroupEmoji } from “@/lib/subcategorias”;
+} from "lucide-react";
+import { useState, useMemo } from "react";
+import { toast } from "sonner";
+import SwipeableItem from "@/components/SwipeableItem";
+import LancamentoActions from "@/components/LancamentoActions";
+import EditLancamentoModal from "@/components/EditLancamentoModal";
+import ReembolsoModal from "@/components/ReembolsoModal";
+import ReembolsoFixoModal from "@/components/ReembolsoFixoModal";
+import { getGroupEmoji } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
-v.toLocaleString(“pt-BR”, { style: “currency”, currency: “BRL” });
+v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const subcatLabels: Record<string, string> = {
-paguei_por_eles: “Paguei por eles”,
-paguei_recebo_depois: “Paguei, recebo depois”,
-eles_pagaram: “Eles pagaram”,
-usaram_meu_cartao: “Usaram meu cartão”,
+paguei_por_eles: "Paguei por eles",
+paguei_recebo_depois: "Paguei, recebo depois",
+eles_pagaram: "Eles pagaram",
+usaram_meu_cartao: "Usaram meu cartão",
 };
 
 const Pais = () => {
@@ -41,7 +41,7 @@ const [reembolsoFixoOpen, setReembolsoFixoOpen] = useState(false);
 
 const mesRef = `${mesAtual.year}-${String(mesAtual.month + 1).padStart(2, "0")}`;
 const mesLabel = new Date(mesAtual.year, mesAtual.month, 1)
-.toLocaleDateString(“pt-BR”, { month: “long”, year: “numeric” });
+.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 const mesLabelFmt = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
 const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
 const { data: allReembolsos = [] } = useAllReembolsos();
@@ -50,13 +50,13 @@ const deleteMut = useDeleteLancamento();
 const addReembolsoMut = useAddReembolso();
 const queryClient = useQueryClient();
 
-const paisDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === “despesa” && l.categoria === “pais”), [lancamentos]);
-const reembolsos = useMemo(() => lancamentos.filter((l) => l.tipo === “receita” && l.categoria === “reembolso_pais”), [lancamentos]);
+const paisDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa" && l.categoria === "pais"), [lancamentos]);
+const reembolsos = useMemo(() => lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais"), [lancamentos]);
 
 const custoTotal = useMemo(() => paisDespesas.reduce((s, d) => s + Number(d.valor), 0), [paisDespesas]);
 const euPaguei = useMemo(() =>
 paisDespesas
-.filter((d) => d.subcategoria_pais === “paguei_por_eles” || d.subcategoria_pais === “paguei_recebo_depois”)
+.filter((d) => d.subcategoria_pais === "paguei_por_eles" || d.subcategoria_pais === "paguei_recebo_depois")
 .reduce((s, d) => s + Number(d.valor), 0),
 [paisDespesas]
 );
@@ -64,7 +64,7 @@ const reembolsado = useMemo(() => reembolsos.reduce((s, l) => s + Number(l.valor
 const subsidioLiquido = euPaguei - reembolsado;
 
 const historico = useMemo(() => {
-return […paisDespesas, …reembolsos].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+return [...paisDespesas, ...reembolsos].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
 }, [paisDespesas, reembolsos]);
 
 const hasData = historico.length > 0;
@@ -77,21 +77,21 @@ const openReembolso = (lanc: Lancamento) => { setSelectedLanc(lanc); setReembols
 const handleSave = async (data: any) => {
 if (!selectedLanc) return;
 try {
-await updateMut.mutateAsync({ id: selectedLanc.id, …data });
-await queryClient.invalidateQueries({ queryKey: [“lancamentos”] });
+await updateMut.mutateAsync({ id: selectedLanc.id, ...data });
+await queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
 setEditOpen(false);
 setActionsOpen(false);
-} catch { toast.error(“Erro ao atualizar.”); }
+} catch { toast.error("Erro ao atualizar."); }
 };
 
 const handleDelete = async () => {
 if (!selectedLanc) return;
 try {
 await deleteMut.mutateAsync(selectedLanc.id);
-await queryClient.invalidateQueries({ queryKey: [“lancamentos”] });
+await queryClient.invalidateQueries({ queryKey: ["lancamentos"] });
 setEditOpen(false);
 setActionsOpen(false);
-} catch { toast.error(“Erro ao excluir.”); }
+} catch { toast.error("Erro ao excluir."); }
 };
 
 const handleReembolso = async (data: { valor_reembolsado: number; quem_reembolsou: string; data_reembolso: string; observacao?: string }) => {
@@ -104,16 +104,16 @@ quem_reembolsou: data.quem_reembolsou,
 data_reembolso: data.data_reembolso,
 observacao: data.observacao || null,
 });
-toast.success(“Reembolso registrado ✓”);
+toast.success("Reembolso registrado ✓");
 setReembolsoOpen(false);
-} catch { toast.error(“Erro ao registrar reembolso.”); }
+} catch { toast.error("Erro ao registrar reembolso."); }
 };
 
 const handleMarkReceived = async (item: Lancamento) => {
 try {
 await updateMut.mutateAsync({ id: item.id, pago: true });
-toast.success(“Reembolso marcado como recebido ✓”);
-} catch { toast.error(“Erro ao atualizar.”); }
+toast.success("Reembolso marcado como recebido ✓");
+} catch { toast.error("Erro ao atualizar."); }
 };
 
 const renderReembolsoBadge = (item: Lancamento) => {
@@ -123,7 +123,7 @@ const valorOriginal = Number(item.valor);
 const isTotal = totalReemb >= valorOriginal;
 return (
 <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-primary/15 text-primary">
-{isTotal ? “↩️ Reembolso total · Quitado ✓” : `↩️ Reembolso parcial: ${fmt(totalReemb)}`}
+{isTotal ? "↩️ Reembolso total · Quitado ✓" : `↩️ Reembolso parcial: ${fmt(totalReemb)}`}
 </span>
 );
 };
@@ -131,7 +131,7 @@ return (
 const renderValor = (item: Lancamento, isReembolso: boolean) => {
 const totalReemb = getTotalReembolsado(allReembolsos, item.id);
 const valorOriginal = Number(item.valor);
-const prefix = isReembolso ? “+” : “-”;
+const prefix = isReembolso ? "+" : "-";
 if (totalReemb <= 0) {
 return (
 <p className={`text-sm font-semibold tabular-nums ${isReembolso ? "text-primary" : "text-foreground"}`}>
@@ -153,12 +153,11 @@ return (
 <div className="px-4 pt-12 w-full">
 <div className="flex items-center justify-between mb-4 animate-fade-up">
 <h1 className="text-xl font-semibold text-foreground">Pais</h1>
-<button onClick={() => setReembolsoFixoOpen(true)} className=“flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-lg”>
+<button onClick={() => setReembolsoFixoOpen(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold shadow-lg">
 <Plus size={14} /> Reembolso fixo
 </button>
 </div>
 
-```
     {/* Month Selector */}
     <div className="flex items-center justify-center gap-3 mb-5 animate-fade-up" style={{ animationDelay: "0.03s" }}>
       <button onClick={() => setMesAtual(p => { const d = new Date(p.year, p.month - 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors">
@@ -334,7 +333,6 @@ return (
 
   <BottomNav />
 </div>
-```
 
 );
 };

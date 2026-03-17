@@ -174,6 +174,7 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
     const digits = raw.replace(/\D/g, "");
     const num = parseInt(digits || "0", 10) / 100;
     setForm(f => ({ ...f, valor: num }));
+    setValorTouched(true);
   };
 
   return (

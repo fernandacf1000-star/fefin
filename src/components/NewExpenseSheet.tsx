@@ -226,7 +226,7 @@ const NewExpenseSheet = ({
             const mRef = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
             lancamentos.push({
               descricao: `${descricao} (${i + 1}/${parcelas})`,
-              valor: numValor / parcelas, tipo: "despesa", categoria,
+              valor: numValor, tipo: "despesa", categoria,
               subcategoria_pais: null, subcategoria: subcatValue, categoria_macro: catMacroValue,
               data: format(monthDate, "yyyy-MM-dd"), mes_referencia: mRef,
               parcela_atual: i + 1, parcela_total: parcelas,

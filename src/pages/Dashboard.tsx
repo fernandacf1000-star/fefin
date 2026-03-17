@@ -202,11 +202,13 @@ export default function Dashboard() {
   const categorias = useMemo(() => {
     const map: Record<string, number> = {};
     despesas.forEach((l) => {
-      const cat = l.categoria_macro || l.categoria || "Outros";
+      const cat = (l.subcategoria_pais && l.subcategoria_pais !== "")
+        ? "Pais"
+        : l.categoria_macro || l.categoria || "Outros";
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });
     return Object.entries(map)
-      .map(([cat, valor]) => ({ cat, valor, emoji: getGroupEmoji(cat) }))
+      .map(([cat, valor]) => ({ cat, valor, emoji: cat === "Pais" ? "👨‍👩‍👧" : getGroupEmoji(cat) }))
       .sort((a, b) => b.valor - a.valor);
   }, [despesas]);
 

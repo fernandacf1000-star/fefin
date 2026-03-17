@@ -157,8 +157,8 @@ const Graficos = () => {
     return (
       <div style={tooltipStyle} className="px-3 py-2.5 min-w-[140px]">
         <p className="text-xs font-bold text-foreground mb-1.5">{label}</p>
-        <p className="text-[11px]" style={{ color: "#10B981" }}>↑ Receitas: {fmt(r)}</p>
-        <p className="text-[11px]" style={{ color: "#F87171" }}>↓ Despesas: {fmt(d)}</p>
+        <p className="text-[11px]" style={{ color: "#0D9488" }}>↑ Receitas: {fmt(r)}</p>
+        <p className="text-[11px]" style={{ color: "#6366F1" }}>↓ Despesas: {fmt(d)}</p>
         <div className="border-t border-border/30 mt-1.5 pt-1.5">
           <p className={`text-[11px] font-bold ${saldo >= 0 ? "text-primary" : "text-destructive"}`}>
             Saldo: {fmt(saldo)}
@@ -199,12 +199,12 @@ const Graficos = () => {
                     <ComposedChart data={annualData} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
                       <defs>
                         <linearGradient id="gradRec" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#10B981" stopOpacity={0.25} />
-                          <stop offset="100%" stopColor="#10B981" stopOpacity={0.02} />
+                          <stop offset="0%" stopColor="#0D9488" stopOpacity={0.25} />
+                          <stop offset="100%" stopColor="#0D9488" stopOpacity={0.02} />
                         </linearGradient>
                         <linearGradient id="gradDesp" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#F87171" stopOpacity={0.22} />
-                          <stop offset="100%" stopColor="#F87171" stopOpacity={0.02} />
+                          <stop offset="0%" stopColor="#6366F1" stopOpacity={0.22} />
+                          <stop offset="100%" stopColor="#6366F1" stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.25} />
@@ -213,12 +213,12 @@ const Graficos = () => {
                       <Tooltip content={<CustomAnnualTooltip />} />
 
                       {/* Área preenchida — passado */}
-                      <Area type="monotone" dataKey="receitasPast" stroke="#10B981" strokeWidth={2} fill="url(#gradRec)" dot={false} connectNulls={false} legendType="none" />
-                      <Area type="monotone" dataKey="despesasPast" stroke="#F87171" strokeWidth={2} fill="url(#gradDesp)" dot={false} connectNulls={false} legendType="none" />
+                      <Area type="monotone" dataKey="receitasPast" stroke="#0D9488" strokeWidth={2} fill="url(#gradRec)" dot={false} connectNulls={false} legendType="none" />
+                      <Area type="monotone" dataKey="despesasPast" stroke="#6366F1" strokeWidth={2} fill="url(#gradDesp)" dot={false} connectNulls={false} legendType="none" />
 
                       {/* Linhas tracejadas — futuro */}
-                      <Line type="monotone" dataKey="receitasFuture" stroke="#475569" strokeWidth={1.5} strokeDasharray="5 4" dot={false} connectNulls={false} legendType="none" />
-                      <Line type="monotone" dataKey="despesasFuture" stroke="#475569" strokeWidth={1.5} strokeDasharray="5 4" dot={false} connectNulls={false} legendType="none" />
+                      <Line type="monotone" dataKey="receitasFuture" stroke="#0D9488" strokeWidth={1.5} strokeDasharray="5 4" dot={false} connectNulls={false} legendType="none" opacity={0.5} />
+                      <Line type="monotone" dataKey="despesasFuture" stroke="#6366F1" strokeWidth={1.5} strokeDasharray="5 4" dot={false} connectNulls={false} legendType="none" opacity={0.5} />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
@@ -226,11 +226,11 @@ const Graficos = () => {
                 {/* Legenda */}
                 <div className="flex items-center justify-center gap-5 mt-2">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-full" style={{ background: "#10B981" }} />
+                    <div className="w-3 h-3 rounded-full" style={{ background: "#0D9488" }} />
                     <span className="text-[11px] text-muted-foreground font-medium">Receitas</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-full" style={{ background: "#F87171" }} />
+                    <div className="w-3 h-3 rounded-full" style={{ background: "#6366F1" }} />
                     <span className="text-[11px] text-muted-foreground font-medium">Despesas</span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -244,23 +244,23 @@ const Graficos = () => {
 
                 {/* Cards resumo */}
                 <div className="grid grid-cols-3 gap-2 mt-3">
-                  <div className="rounded-xl p-3 text-center" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#10B981" }}>Total Receitas</span>
-                    <span className="text-xs font-bold" style={{ color: "#10B981" }}>{fmt(annualTotals.receitas)}</span>
+                  <div className="rounded-xl p-3 text-center" style={{ background: "rgba(13,148,136,0.08)", border: "1px solid rgba(13,148,136,0.2)" }}>
+                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#0D9488" }}>Total Receitas</span>
+                    <span className="text-xs font-bold" style={{ color: "#0D9488" }}>{fmt(annualTotals.receitas)}</span>
                   </div>
-                  <div className="rounded-xl p-3 text-center" style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
-                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#F87171" }}>Total Despesas</span>
-                    <span className="text-xs font-bold" style={{ color: "#F87171" }}>{fmt(annualTotals.despesas)}</span>
+                  <div className="rounded-xl p-3 text-center" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#6366F1" }}>Total Despesas</span>
+                    <span className="text-xs font-bold" style={{ color: "#6366F1" }}>{fmt(annualTotals.despesas)}</span>
                   </div>
                   <div
                     className="rounded-xl p-3 text-center"
                     style={{
-                      background: annualTotals.saldo >= 0 ? "rgba(16,185,129,0.08)" : "rgba(248,113,113,0.08)",
-                      border: `1px solid ${annualTotals.saldo >= 0 ? "rgba(16,185,129,0.2)" : "rgba(248,113,113,0.2)"}`,
+                      background: annualTotals.saldo >= 0 ? "rgba(13,148,136,0.08)" : "rgba(217,112,82,0.08)",
+                      border: `1px solid ${annualTotals.saldo >= 0 ? "rgba(13,148,136,0.2)" : "rgba(217,112,82,0.2)"}`,
                     }}
                   >
                     <span className="text-[9px] uppercase tracking-wider block mb-1 text-muted-foreground">Saldo Acum.</span>
-                    <span className={`text-xs font-bold ${annualTotals.saldo >= 0 ? "text-primary" : "text-destructive"}`}>{fmt(annualTotals.saldo)}</span>
+                    <span className="text-xs font-bold" style={{ color: annualTotals.saldo >= 0 ? "#0D9488" : "#D97052" }}>{fmt(annualTotals.saldo)}</span>
                   </div>
                 </div>
               </section>
@@ -270,19 +270,34 @@ const Graficos = () => {
             <div className="md:grid md:grid-cols-2 md:gap-4 space-y-6 md:space-y-0">
               {/* Monthly bars */}
               <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.05s" }}>
-                <h2 className="text-sm font-semibold text-foreground mb-4">Receitas vs Despesas — {mesLabelFmt}</h2>
-                <div className="flex justify-around items-end px-4 h-32">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-16 rounded-t-lg gradient-emerald" style={{ height: `${Math.max(8, totalReceitas > 0 ? 100 : 0)}px` }} />
-                    <span className="text-[11px] text-muted-foreground">Receitas</span>
-                    <span className="text-xs font-bold text-primary">{fmt(totalReceitas)}</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-16 rounded-t-lg bg-destructive" style={{ height: `${Math.max(8, totalReceitas > 0 ? (totalDespesas / totalReceitas) * 100 : totalDespesas > 0 ? 100 : 0)}px` }} />
-                    <span className="text-[11px] text-muted-foreground">Despesas</span>
-                    <span className="text-xs font-bold text-destructive">{fmt(totalDespesas)}</span>
-                  </div>
-                </div>
+                <h2 className="text-sm font-semibold text-foreground mb-1">Receitas vs Despesas</h2>
+                <p className="text-[11px] text-muted-foreground mb-4">{mesLabelFmt}</p>
+                {(() => {
+                  const maxVal = Math.max(totalReceitas, totalDespesas, 1);
+                  const BAR_MAX_H = 100;
+                  const hRec = totalReceitas > 0 ? Math.max(8, Math.round((totalReceitas / maxVal) * BAR_MAX_H)) : 0;
+                  const hDesp = totalDespesas > 0 ? Math.max(8, Math.round((totalDespesas / maxVal) * BAR_MAX_H)) : 0;
+                  return (
+                    <div className="flex justify-around items-end px-4" style={{ height: `${BAR_MAX_H + 8}px` }}>
+                      <div className="flex flex-col items-center gap-2">
+                        <div
+                          className="w-16 rounded-t-xl transition-all duration-500"
+                          style={{ height: `${hRec}px`, background: "#0D9488" }}
+                        />
+                        <span className="text-[11px] text-muted-foreground">Receitas</span>
+                        <span className="text-xs font-bold" style={{ color: "#0D9488" }}>{fmt(totalReceitas)}</span>
+                      </div>
+                      <div className="flex flex-col items-center gap-2">
+                        <div
+                          className="w-16 rounded-t-xl transition-all duration-500"
+                          style={{ height: `${hDesp}px`, background: "#6366F1" }}
+                        />
+                        <span className="text-[11px] text-muted-foreground">Despesas</span>
+                        <span className="text-xs font-bold" style={{ color: "#6366F1" }}>{fmt(totalDespesas)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </section>
 
               {/* Composição por Categoria — Donut */}

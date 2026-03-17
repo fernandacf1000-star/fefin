@@ -28,7 +28,6 @@ const MascotHead = () => (
     <path d="M26 45 Q12 58 15 82 Q18 96 24 100 Q20 80 24 65 Q26 55 26 45Z" fill="#2C1810"/>
     <ellipse cx="50" cy="50" rx="28" ry="30" fill="#FDDBB4"/>
     <ellipse cx="50" cy="18" rx="16" ry="10" fill="#2C1810"/>
-    <ellipse cx="50" cy="16" rx="10" ry="7" fill="#3D2314"/>
     <path d="M32 40 Q39 36 44 39" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none"/>
     <path d="M56 39 Q61 36 68 40" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none"/>
     <ellipse cx="38" cy="47" rx="5" ry="5.5" fill="white"/>
@@ -37,12 +36,13 @@ const MascotHead = () => (
     <ellipse cx="62.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314"/>
     <circle cx="40" cy="46" r="1.2" fill="white"/>
     <circle cx="64" cy="46" r="1.2" fill="white"/>
-    <path d="M48 56 Q50 59 52 56" stroke="#C68642" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
     <path d="M38 63 Q50 72 62 63" stroke="#C68642" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
     <ellipse cx="30" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
     <ellipse cx="70" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
-    <circle cx="22" cy="56" r="4" fill="#F7D070"/>
-    <circle cx="78" cy="56" r="4" fill="#F7D070"/>
+    <circle cx="21" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2"/>
+    <text x="21" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
+    <circle cx="79" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2"/>
+    <text x="79" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
   </svg>
 );
 

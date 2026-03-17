@@ -67,7 +67,7 @@ const Login = () => {
         {/* Mascot + Logo */}
         <div className="text-center pt-16 animate-fade-up flex flex-col items-center">
           <div className="mascot-login">
-            <svg width="90" height="113" viewBox="0 0 100 130" fill="none">
+            <svg width="90" height="108" viewBox="0 0 100 120" fill="none">
               <ellipse cx="50" cy="42" rx="34" ry="36" fill="#2C1810"/>
               <path d="M74 45 Q88 55 85 80 Q82 95 75 100 Q80 80 76 65 Q74 55 74 45Z" fill="#2C1810"/>
               <path d="M26 45 Q12 58 15 82 Q18 96 24 100 Q20 80 24 65 Q26 55 26 45Z" fill="#2C1810"/>
@@ -84,12 +84,13 @@ const Login = () => {
               <path d="M38 63 Q50 72 62 63" stroke="#C68642" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
               <ellipse cx="30" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
               <ellipse cx="70" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
-              <circle cx="22" cy="56" r="4" fill="#F7D070"/>
-              <circle cx="78" cy="56" r="4" fill="#F7D070"/>
-              <path d="M22 92 Q20 115 22 130 L78 130 Q80 115 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#10B981"/>
-              <circle cx="76" cy="95" r="10" fill="#F7D070" stroke="#E8B800" strokeWidth="1.5"/>
-              <text x="76" y="99" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#B8860B">$</text>
-              <ellipse cx="24" cy="100" rx="7" ry="5" fill="#FDDBB4"/>
+              <circle cx="21" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2"/>
+              <text x="21" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
+              <circle cx="79" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2"/>
+              <text x="79" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
+              <path d="M22 92 Q20 112 22 118 L78 118 Q80 112 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#6366F1"/>
+              <ellipse cx="16" cy="104" rx="7" ry="5" fill="#FDDBB4"/>
+              <ellipse cx="84" cy="104" rx="7" ry="5" fill="#FDDBB4"/>
             </svg>
           </div>
           <h1 className="text-[38px] font-bold mt-3" style={{ fontFamily: "'Playfair Display', serif" }}>

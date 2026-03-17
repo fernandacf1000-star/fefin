@@ -135,19 +135,25 @@ const EditLancamentoModal = ({ open, onClose, onSave, onConfirmDelete, showDelet
   };
   const modeLabel = getModeLabel();
 
-  const buildSaveData = () => ({
-    descricao: form.descricao,
-    valor: form.valor,
-    categoria: form.categoria,
-    data: form.data,
-    subcategoria_pais: form.subcategoria_pais || undefined,
-    subcategoria: form.subcategoria || undefined,
-    categoria_macro: form.categoria_macro || undefined,
-    parcela_atual: form.parcela_atual ?? undefined,
-    parcela_total: form.parcela_total ?? undefined,
-    forma_pagamento: form.forma_pagamento || undefined,
-    cartao_id: form.cartao_id || undefined,
-  });
+  const buildSaveData = () => {
+    const data: any = {
+      descricao: form.descricao,
+      categoria: form.categoria,
+      data: form.data,
+      subcategoria_pais: form.subcategoria_pais || undefined,
+      subcategoria: form.subcategoria || undefined,
+      categoria_macro: form.categoria_macro || undefined,
+      parcela_atual: form.parcela_atual ?? undefined,
+      parcela_total: form.parcela_total ?? undefined,
+      forma_pagamento: form.forma_pagamento || undefined,
+      cartao_id: form.cartao_id || undefined,
+    };
+    // For bulk mode, only include valor if user explicitly changed it
+    if (!isBulkMode || valorTouched) {
+      data.valor = form.valor;
+    }
+    return data;
+  };
 
   const handleSaveClick = () => {
     const data = buildSaveData();

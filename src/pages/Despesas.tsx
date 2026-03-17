@@ -1,5 +1,5 @@
-import BottomNav from “@/components/BottomNav”;
-import EmptyState from “@/components/EmptyState”;
+import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
 import {
 useLancamentos,
 useUpdateLancamento,
@@ -11,36 +11,36 @@ useDeleteAllParcelamento,
 useDeleteFutureRecorrencia,
 useDeleteAllRecorrencia,
 fetchParcelamentoCount,
-} from “@/hooks/useLancamentos”;
-import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from “@/hooks/useReembolsos”;
+} from "@/hooks/useLancamentos";
+import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import {
 CreditCard, Users, CircleDollarSign,
 Receipt, ChevronLeft, ChevronRight, X, SlidersHorizontal,
 ArrowUpRight, CheckSquare, Trash2,
-} from “lucide-react”;
-import { Checkbox } from “@/components/ui/checkbox”;
-import { useState, useMemo, useCallback } from “react”;
-import { useQueryClient } from “@tanstack/react-query”;
-import { toast } from “sonner”;
-import SwipeableItem from “@/components/SwipeableItem”;
-import LancamentoActions from “@/components/LancamentoActions”;
-import EditLancamentoModal, { type ParcelamentoMode } from “@/components/EditLancamentoModal”;
-import ReembolsoModal from “@/components/ReembolsoModal”;
-import ParcelamentoEditSheet from “@/components/ParcelamentoEditSheet”;
-import DeleteConfirmSheet from “@/components/DeleteConfirmSheet”;
-import type { Lancamento } from “@/hooks/useLancamentos”;
-import { Sheet, SheetContent } from “@/components/ui/sheet”;
-import { SUBCATEGORIA_GROUPS, getGroupEmoji } from “@/lib/subcategorias”;
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useState, useMemo, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import SwipeableItem from "@/components/SwipeableItem";
+import LancamentoActions from "@/components/LancamentoActions";
+import EditLancamentoModal, { type ParcelamentoMode } from "@/components/EditLancamentoModal";
+import ReembolsoModal from "@/components/ReembolsoModal";
+import ParcelamentoEditSheet from "@/components/ParcelamentoEditSheet";
+import DeleteConfirmSheet from "@/components/DeleteConfirmSheet";
+import type { Lancamento } from "@/hooks/useLancamentos";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { SUBCATEGORIA_GROUPS, getGroupEmoji } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
-v.toLocaleString(“pt-BR”, { style: “currency”, currency: “BRL” });
+v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-type TipoFilter = “Todas” | “Despesas” | “Receitas” | “Parceladas” | “Pais”;
+type TipoFilter = "Todas" | "Despesas" | "Receitas" | "Parceladas" | "Pais";
 
-const today = new Date().toISOString().split(“T”)[0];
+const today = new Date().toISOString().split("T")[0];
 
 const Despesas = () => {
-const [tipoFilter, setTipoFilter] = useState<TipoFilter>(“Todas”);
+const [tipoFilter, setTipoFilter] = useState<TipoFilter>("Todas");
 const [catFilters, setCatFilters] = useState<string[]>([]);
 const [subcatFilters, setSubcatFilters] = useState<string[]>([]);
 const [mesAtual, setMesAtual] = useState(() => {
@@ -49,7 +49,7 @@ return { year: now.getFullYear(), month: now.getMonth() };
 });
 const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
-const [draftTipo, setDraftTipo] = useState<TipoFilter>(“Todas”);
+const [draftTipo, setDraftTipo] = useState<TipoFilter>("Todas");
 const [draftCats, setDraftCats] = useState<string[]>([]);
 const [draftSubcats, setDraftSubcats] = useState<string[]>([]);
 
@@ -74,7 +74,7 @@ const [parcelamentoCount, setParcelamentoCount] = useState(0);
 const queryClient = useQueryClient();
 const mesRef = `${mesAtual.year}-${String(mesAtual.month + 1).padStart(2, "0")}`;
 const mesLabel = new Date(mesAtual.year, mesAtual.month, 1)
-.toLocaleDateString(“pt-BR”, { month: “long”, year: “numeric” });
+.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 const mesLabelFmt = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
 const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
 const { data: allReembolsos = [] } = useAllReembolsos();
@@ -88,8 +88,8 @@ const deleteFutureRec = useDeleteFutureRecorrencia();
 const deleteAllRec = useDeleteAllRecorrencia();
 const addReembolsoMut = useAddReembolso();
 
-const todasDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === “despesa”), [lancamentos]);
-const todasReceitas = useMemo(() => lancamentos.filter((l) => l.tipo === “receita”), [lancamentos]);
+const todasDespesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
+const todasReceitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
 
 // Summary
 const totalReceitas = useMemo(() => todasReceitas.reduce((s, l) => s + Number(l.valor), 0), [todasReceitas]);
@@ -98,10 +98,10 @@ const saldo = totalReceitas - totalDespesas;
 
 const applyFiltersToList = useCallback((list: Lancamento[], tipo: TipoFilter, cats: string[], subcats: string[]) => {
 let filtered = list;
-if (tipo === “Despesas”) filtered = filtered.filter(d => d.tipo === “despesa” && !d.is_parcelado && d.categoria !== “pais”);
-else if (tipo === “Receitas”) filtered = filtered.filter(d => d.tipo === “receita”);
-else if (tipo === “Parceladas”) filtered = filtered.filter(d => d.is_parcelado);
-else if (tipo === “Pais”) filtered = filtered.filter(d => d.categoria === “pais”);
+if (tipo === "Despesas") filtered = filtered.filter(d => d.tipo === "despesa" && !d.is_parcelado && d.categoria !== "pais");
+else if (tipo === "Receitas") filtered = filtered.filter(d => d.tipo === "receita");
+else if (tipo === "Parceladas") filtered = filtered.filter(d => d.is_parcelado);
+else if (tipo === "Pais") filtered = filtered.filter(d => d.categoria === "pais");
 if (cats.length > 0) filtered = filtered.filter(d => d.categoria_macro && cats.includes(d.categoria_macro));
 if (subcats.length > 0) filtered = filtered.filter(d => d.subcategoria && subcats.includes(d.subcategoria));
 return filtered;
@@ -110,20 +110,20 @@ return filtered;
 const filteredAll = useMemo(() => applyFiltersToList(lancamentos, tipoFilter, catFilters, subcatFilters), [lancamentos, tipoFilter, catFilters, subcatFilters, applyFiltersToList]);
 const draftFiltered = useMemo(() => applyFiltersToList(lancamentos, draftTipo, draftCats, draftSubcats), [lancamentos, draftTipo, draftCats, draftSubcats, applyFiltersToList]);
 
-const filteredPais = useMemo(() => filteredAll.filter(d => d.categoria === “pais”), [filteredAll]);
+const filteredPais = useMemo(() => filteredAll.filter(d => d.categoria === "pais"), [filteredAll]);
 
 const unifiedList = useMemo(
-() => […filteredAll].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
+() => [...filteredAll].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
 [filteredAll]
 );
 
 const paisTotals = useMemo(() => {
 const custoTotal = filteredPais.reduce((s, d) => s + Number(d.valor), 0);
 const euPaguei = filteredPais
-.filter((d) => d.subcategoria_pais === “paguei_por_eles” || d.subcategoria_pais === “paguei_recebo_depois”)
+.filter((d) => d.subcategoria_pais === "paguei_por_eles" || d.subcategoria_pais === "paguei_recebo_depois")
 .reduce((s, d) => s + Number(d.valor), 0);
 const reembolsado = todasReceitas
-.filter((l) => l.categoria === “reembolso_pais”)
+.filter((l) => l.categoria === "reembolso_pais")
 .reduce((s, l) => s + Number(l.valor), 0);
 return { custoTotal, euPaguei, reembolsado, subsidioLiquido: euPaguei - reembolsado };
 }, [filteredPais, todasReceitas]);
@@ -132,7 +132,7 @@ const totalFiltrado = useMemo(() => filteredAll.reduce((s, d) => s + Number(d.va
 
 const activeFilterCount = useMemo(() => {
 let count = 0;
-if (tipoFilter !== “Todas”) count++;
+if (tipoFilter !== "Todas") count++;
 count += catFilters.length;
 count += subcatFilters.length;
 return count;
@@ -142,8 +142,8 @@ const hasData = lancamentos.length > 0;
 
 const openFilterSheet = () => {
 setDraftTipo(tipoFilter);
-setDraftCats([…catFilters]);
-setDraftSubcats([…subcatFilters]);
+setDraftCats([...catFilters]);
+setDraftSubcats([...subcatFilters]);
 setFilterSheetOpen(true);
 };
 
@@ -155,24 +155,24 @@ setFilterSheetOpen(false);
 };
 
 const clearAllFilters = () => {
-setDraftTipo(“Todas”);
+setDraftTipo("Todas");
 setDraftCats([]);
 setDraftSubcats([]);
 };
 
-const removeFilter = (type: “tipo” | “cat” | “subcat”, value?: string) => {
-if (type === “tipo”) setTipoFilter(“Todas”);
-if (type === “cat” && value) setCatFilters(p => p.filter(c => c !== value));
-if (type === “subcat” && value) setSubcatFilters(p => p.filter(s => s !== value));
+const removeFilter = (type: "tipo" | "cat" | "subcat", value?: string) => {
+if (type === "tipo") setTipoFilter("Todas");
+if (type === "cat" && value) setCatFilters(p => p.filter(c => c !== value));
+if (type === "subcat" && value) setSubcatFilters(p => p.filter(s => s !== value));
 };
 
 const toggleDraftCat = (cat: string) => {
-setDraftCats(p => p.includes(cat) ? p.filter(c => c !== cat) : […p, cat]);
+setDraftCats(p => p.includes(cat) ? p.filter(c => c !== cat) : [...p, cat]);
 setDraftSubcats([]);
 };
 
 const toggleDraftSubcat = (sub: string) => {
-setDraftSubcats(p => p.includes(sub) ? p.filter(s => s !== sub) : […p, sub]);
+setDraftSubcats(p => p.includes(sub) ? p.filter(s => s !== sub) : [...p, sub]);
 };
 
 const draftAvailableSubcats = useMemo(() => {
@@ -189,7 +189,7 @@ if ((lanc.is_parcelado && lanc.parcelamento_id) || (lanc.recorrente && lanc.reco
 // Show parcelamento/recorrente choice sheet
 setParcelamentoSheetOpen(true);
 } else {
-setEditMode(“single”);
+setEditMode("single");
 setEditOpen(true);
 }
 };
@@ -198,7 +198,7 @@ const openDelete = (lanc: Lancamento) => { setSelectedLanc(lanc); setDeleteSheet
 const openReembolso = (lanc: Lancamento) => { setSelectedLanc(lanc); setReembolsoOpen(true); };
 
 const handleSelectParcelamentoSingle = () => {
-setEditMode(“single”);
+setEditMode("single");
 setParcelamentoCount(0);
 setEditOpen(true);
 };
@@ -208,7 +208,7 @@ const groupId = selectedLanc?.parcelamento_id || selectedLanc?.recorrencia_pai_i
 if (!groupId) return;
 const count = await fetchParcelamentoCount(groupId, today);
 setParcelamentoCount(count);
-setEditMode(“future”);
+setEditMode("future");
 setEditOpen(true);
 };
 
@@ -217,7 +217,7 @@ const groupId = selectedLanc?.parcelamento_id || selectedLanc?.recorrencia_pai_i
 if (!groupId) return;
 const count = await fetchParcelamentoCount(groupId);
 setParcelamentoCount(count);
-setEditMode(“all”);
+setEditMode("all");
 setEditOpen(true);
 };
 
@@ -225,7 +225,7 @@ const handleSave = async (data: any) => {
 if (!selectedLanc) return;
 try {
 const groupId = selectedLanc.parcelamento_id || selectedLanc.recorrencia_pai_id;
-if (editMode === “future” && groupId) {
+if (editMode === "future" && groupId) {
 await updateFuturasMut.mutateAsync({
 parcelamento_id: groupId,
 fromDate: selectedLanc.data >= today ? selectedLanc.data : today,
@@ -279,7 +279,7 @@ if (!selectedLanc) return;
 const lancToDelete = selectedLanc;
 // Remove da UI imediatamente
 queryClient.setQueriesData(
-{ queryKey: [“lancamentos”], exact: false },
+{ queryKey: ["lancamentos"], exact: false },
 (old: any) => Array.isArray(old)
 ? old.filter((l: any) => l.id !== lancToDelete.id)
 : old
@@ -291,8 +291,8 @@ setSelectedLanc(null);
 try {
 await deleteMut.mutateAsync(lancToDelete.id);
 } catch (e: any) {
-queryClient.refetchQueries({ queryKey: [“lancamentos”], exact: false });
-toast.error(“Erro ao excluir: “ + (e?.message || JSON.stringify(e)));
+queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
+toast.error("Erro ao excluir: " + (e?.message || JSON.stringify(e)));
 }
 };
 
@@ -310,7 +310,7 @@ await deleteFutureParc.mutateAsync({ parcelamento_id: lanc.parcelamento_id, from
 } else if (lanc.recorrencia_pai_id) {
 await deleteFutureRec.mutateAsync({ recorrencia_pai_id: lanc.recorrencia_pai_id, fromDate: lanc.data });
 }
-queryClient.refetchQueries({ queryKey: [“lancamentos”], exact: false });
+queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
 
 ```
 } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
@@ -332,7 +332,7 @@ await deleteAllParc.mutateAsync(lanc.parcelamento_id);
 } else if (lanc.recorrencia_pai_id) {
 await deleteAllRec.mutateAsync(lanc.recorrencia_pai_id);
 }
-queryClient.refetchQueries({ queryKey: [“lancamentos”], exact: false });
+queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
 
 ```
 } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
@@ -382,9 +382,9 @@ quem_reembolsou: data.quem_reembolsou,
 data_reembolso: data.data_reembolso,
 observacao: data.observacao || null,
 });
-toast.success(“Reembolso registrado ✓”);
+toast.success("Reembolso registrado ✓");
 setReembolsoOpen(false);
-} catch (e: any) { toast.error(“Erro: “ + (e?.message || JSON.stringify(e))); }
+} catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
 };
 
 const renderReembolsoBadge = (item: Lancamento) => {
@@ -394,7 +394,7 @@ const valorOriginal = Number(item.valor);
 const isTotal = totalReemb >= valorOriginal;
 return (
 <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full inline-block mt-0.5 bg-primary/15 text-primary">
-{isTotal ? “↩️ Reembolso total · Quitado ✓” : `↩️ Reembolso parcial: ${fmt(totalReemb)}`}
+{isTotal ? "↩️ Reembolso total · Quitado ✓" : `↩️ Reembolso parcial: ${fmt(totalReemb)}`}
 </span>
 );
 };
@@ -402,9 +402,9 @@ return (
 const renderValorItem = (item: Lancamento) => {
 const totalReemb = getTotalReembolsado(allReembolsos, item.id);
 const valorParcela = Number(item.valor);
-const isReceita = item.tipo === “receita”;
-const colorClass = isReceita ? “text-[#0D9488]” : “text-primary”;
-const prefix = isReceita ? “+ “ : “- “;
+const isReceita = item.tipo === "receita";
+const colorClass = isReceita ? "text-[#0D9488]" : "text-primary";
+const prefix = isReceita ? "+ " : "- ";
 
 ```
 // Para parcelados: mostrar valor restante (parcelas restantes × valor da parcela)
@@ -439,12 +439,12 @@ const parts: string[] = [];
 if (item.categoria_macro) parts.push(`${getGroupEmoji(item.categoria_macro)} ${item.categoria_macro}`);
 if (item.subcategoria) parts.push(item.subcategoria);
 if (parts.length === 0) return null;
-return <span className="text-[11px] ml-1 text-muted-foreground">· {parts.join(” · “)}</span>;
+return <span className="text-[11px] ml-1 text-muted-foreground">· {parts.join(" · ")}</span>;
 };
 
 const renderItem = (item: Lancamento, icon: React.ReactNode, subtitle: React.ReactNode) => {
-const isReceita = item.tipo === “receita”;
-const borderColor = isReceita ? “#0D9488” : “#6366F1”;
+const isReceita = item.tipo === "receita";
+const borderColor = isReceita ? "#0D9488" : "#6366F1";
 const isSelected = selectedIds.has(item.id);
 
 ```
@@ -502,15 +502,15 @@ return (
 };
 
 const getItemIcon = (item: Lancamento) => {
-if (item.tipo === “receita”) return <ArrowUpRight size={17} className="text-emerald-400" />;
+if (item.tipo === "receita") return <ArrowUpRight size={17} className="text-emerald-400" />;
 if (item.is_parcelado) return <Receipt size={17} className="text-muted-foreground" />;
-if (item.categoria === “pais”) return <Users size={17} className="text-muted-foreground" />;
+if (item.categoria === "pais") return <Users size={17} className="text-muted-foreground" />;
 return <CircleDollarSign size={17} className="text-muted-foreground" />;
 };
 
 const getItemSubtitle = (item: Lancamento) => (
 <p className="text-[11px] text-muted-foreground">
-{new Date(item.data + “T12:00:00”).toLocaleDateString(“pt-BR”, { day: “2-digit”, month: “short” })}
+{new Date(item.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
 </p>
 );
 
@@ -518,11 +518,11 @@ const draftPreviewTotal = draftFiltered.reduce((s, d) => s + Number(d.valor), 0)
 
 // Inline filter helpers for tablet sidebar
 const toggleInlineCat = (cat: string) => {
-setCatFilters(p => p.includes(cat) ? p.filter(c => c !== cat) : […p, cat]);
+setCatFilters(p => p.includes(cat) ? p.filter(c => c !== cat) : [...p, cat]);
 setSubcatFilters([]);
 };
 const toggleInlineSubcat = (sub: string) => {
-setSubcatFilters(p => p.includes(sub) ? p.filter(s => s !== sub) : […p, sub]);
+setSubcatFilters(p => p.includes(sub) ? p.filter(s => s !== sub) : [...p, sub]);
 };
 const inlineAvailableSubcats = useMemo(() => {
 if (catFilters.length === 0) return [];
@@ -533,12 +533,12 @@ const filterPanel = (
 <div className="space-y-4">
 <div className="flex items-center justify-between">
 <h3 className="text-xs font-semibold text-foreground">Filtros</h3>
-<button onClick={() => { setTipoFilter(“Todas”); setCatFilters([]); setSubcatFilters([]); }} className=“text-[10px] font-semibold text-destructive”>Limpar</button>
+<button onClick={() => { setTipoFilter("Todas"); setCatFilters([]); setSubcatFilters([]); }} className="text-[10px] font-semibold text-destructive">Limpar</button>
 </div>
 <div>
 <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">TIPO</p>
 <div className="flex flex-wrap gap-1.5">
-{([“Todas”, “Despesas”, “Receitas”, “Parceladas”, “Pais”] as TipoFilter[]).map(t => (
+{(["Todas", "Despesas", "Receitas", "Parceladas", "Pais"] as TipoFilter[]).map(t => (
 <button key={t} onClick={() => setTipoFilter(t)} className={`px-2.5 py-1.5 rounded-full text-[10px] font-semibold transition-all ${tipoFilter === t ? "bg-primary text-primary-foreground shadow-md" : "bg-secondary/60 text-muted-foreground"}`}>
 {t}
 </button>
@@ -580,8 +580,8 @@ return (
 const transactionList = (
 <>
 {/* Pais summary block */}
-{filteredPais.length > 0 && tipoFilter === “Pais” && (
-<div className=“mb-4 animate-fade-up” style={{ animationDelay: “0.08s” }}>
+{filteredPais.length > 0 && tipoFilter === "Pais" && (
+<div className="mb-4 animate-fade-up" style={{ animationDelay: "0.08s" }}>
 <div className="flex items-center gap-2 mb-2">
 <Users size={14} className="text-primary" />
 <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Resumo Pais</h2>

@@ -240,7 +240,6 @@ cartao_id: data.cartao_id,
 },
 });
 
-```
   } else if (editMode === "all" && groupId) {
     await updateAllMut.mutateAsync({
       parcelamento_id: groupId,
@@ -270,7 +269,6 @@ cartao_id: data.cartao_id,
 } catch (e: any) {
   toast.error("Erro: " + (e?.message || JSON.stringify(e)));
 }
-```
 
 };
 
@@ -312,9 +310,7 @@ await deleteFutureRec.mutateAsync({ recorrencia_pai_id: lanc.recorrencia_pai_id,
 }
 queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
 
-```
 } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
-```
 
 };
 
@@ -334,9 +330,7 @@ await deleteAllRec.mutateAsync(lanc.recorrencia_pai_id);
 }
 queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
 
-```
 } catch (e: any) { toast.error("Erro: " + (e?.message || JSON.stringify(e))); }
-```
 
 };
 
@@ -361,14 +355,12 @@ setBatchDeleting(true);
 try {
 await Promise.all(Array.from(selectedIds).map(id => deleteMut.mutateAsync(id)));
 
-```
   exitSelectMode();
 } catch (e: any) {
   toast.error("Erro ao excluir: " + (e?.message || JSON.stringify(e)));
 } finally {
   setBatchDeleting(false);
 }
-```
 
 };
 
@@ -406,7 +398,6 @@ const isReceita = item.tipo === "receita";
 const colorClass = isReceita ? "text-[#0D9488]" : "text-primary";
 const prefix = isReceita ? "+ " : "- ";
 
-```
 // Para parcelados: mostrar valor restante (parcelas restantes × valor da parcela)
 if (item.is_parcelado && item.parcela_atual != null && item.parcela_total != null) {
   const parcelasRestantes = item.parcela_total - item.parcela_atual + 1;
@@ -430,7 +421,6 @@ return (
     <p className={`text-sm font-semibold tabular-nums ${colorClass}`}>{prefix}{fmt(valorLiquido)}</p>
   </div>
 );
-```
 
 };
 
@@ -447,7 +437,6 @@ const isReceita = item.tipo === "receita";
 const borderColor = isReceita ? "#0D9488" : "#6366F1";
 const isSelected = selectedIds.has(item.id);
 
-```
 const content = (
   <div
     onClick={() => selectMode ? toggleSelectId(item.id) : openActions(item)}
@@ -497,7 +486,6 @@ return (
     {content}
   </SwipeableItem>
 );
-```
 
 };
 
@@ -607,7 +595,6 @@ const transactionList = (
 </div>
 )}
 
-```
   {/* Unified sorted list */}
   {unifiedList.length > 0 ? (
     <div className="space-y-1 md:grid md:grid-cols-2 md:gap-2 md:space-y-0 animate-fade-up" style={{ animationDelay: "0.1s" }}>
@@ -625,7 +612,6 @@ const transactionList = (
     )
   )}
 </>
-```
 
 );
 
@@ -636,7 +622,6 @@ return (
 <div className="px-4 pt-12 w-full max-w-4xl md:mx-auto">
 <h1 className="text-xl font-semibold text-foreground mb-4 animate-fade-up">Transações</h1>
 
-```
     {/* Month Selector */}
     <div className="flex items-center justify-center gap-3 mb-4 animate-fade-up" style={{ animationDelay: "0.03s" }}>
       <button
@@ -942,7 +927,6 @@ return (
 
   {!selectMode && <BottomNav />}
 </div>
-```
 
 );
 };

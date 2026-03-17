@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, TrendingDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingDown, RotateCcw, Wallet } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import { useLancamentos } from "@/hooks/useLancamentos";
+import { useAllReembolsos, getTotalReembolsado } from "@/hooks/useReembolsos";
 import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
@@ -20,7 +21,7 @@ function getMesLabel(year: number, month: number) {
 }
 function formatDate(dateStr: string) {
   const [y, m, d] = dateStr.split("-");
-  return `${d}/${m}/${y}`;
+  return `${d}/${m}`;
 }
 
 export default function Pais() {
@@ -32,9 +33,8 @@ export default function Pais() {
   const mesRef = getMesRef(mesAtual.year, mesAtual.month);
   const mesLabel = getMesLabel(mesAtual.year, mesAtual.month);
 
-  // Pais lancamentos are stored with subcategoria_pais set (categoria = "extra", pais flag)
-  // We fetch all lancamentos and filter those with subcategoria_pais not null
   const { data: todos = [], isLoading } = useLancamentos(mesRef);
+  const { data: todosReembolsos = [] } = useAllReembolsos();
 
   const prevMes = () =>
     setMesAtual(({ year, month }) =>
@@ -45,33 +45,59 @@ export default function Pais() {
       month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }
     );
 
-  // Filter: lancamentos dos pais = subcategoria_pais is not null
+  // Lançamentos dos pais = subcategoria_pais preenchida
   const lancamentos = useMemo(
-    () => todos.filter((l) => l.subcategoria_pais !== null && l.subcategoria_pais !== ""),
+    () =>
+      todos.filter(
+        (l) => l.subcategoria_pais !== null && l.subcategoria_pais !== ""
+      ),
     [todos]
   );
 
-  const total = useMemo(
-    () => lancamentos.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0),
+  const despesasPais = useMemo(
+    () => lancamentos.filter((l) => l.tipo === "despesa"),
     [lancamentos]
   );
 
-  // Por categoria (subcategoria_pais)
+  // ── Totais consolidados ────────────────────────────────────────────────
+  const totalPago = useMemo(
+    () => despesasPais.reduce((s, l) => s + Number(l.valor), 0),
+    [despesasPais]
+  );
+
+  const totalReembolsado = useMemo(() => {
+    // Reembolsos cujo lancamento_id está entre os lançamentos dos pais deste mês
+    const idsDoMes = new Set(despesasPais.map((l) => l.id));
+    return todosReembolsos
+      .filter((r) => idsDoMes.has(r.lancamento_id))
+      .reduce((s, r) => s + Number(r.valor_reembolsado), 0);
+  }, [despesasPais, todosReembolsos]);
+
+  const totalLiquido = totalPago - totalReembolsado;
+
+  // ── Por categoria ──────────────────────────────────────────────────────
   const porCategoria = useMemo(() => {
     const map: Record<string, number> = {};
-    lancamentos
-      .filter((l) => l.tipo === "despesa")
-      .forEach((l) => {
-        const cat = l.subcategoria_pais || l.categoria_macro || "Outros";
-        map[cat] = (map[cat] || 0) + Number(l.valor);
-      });
+    despesasPais.forEach((l) => {
+      const cat = l.subcategoria_pais || l.categoria_macro || "Outros";
+      map[cat] = (map[cat] || 0) + Number(l.valor);
+    });
     return Object.entries(map)
       .map(([cat, valor]) => {
         const group = getSubcategoriaGroup(cat) || cat;
         return { cat, valor, emoji: getGroupEmoji(group) };
       })
       .sort((a, b) => b.valor - a.valor);
-  }, [lancamentos]);
+  }, [despesasPais]);
+
+  // ── Lançamentos com reembolso por item ─────────────────────────────────
+  const lancamentosComReembolso = useMemo(() => {
+    return despesasPais.map((l) => {
+      const reembolsado = getTotalReembolsado(todosReembolsos, l.id);
+      const liquido = Number(l.valor) - reembolsado;
+      return { ...l, reembolsado, liquido };
+    });
+  }, [despesasPais, todosReembolsos]);
 
   return (
     <div className="gradient-bg min-h-screen pb-28">
@@ -82,7 +108,7 @@ export default function Pais() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-foreground">Despesas dos Pais</h1>
+            <h1 className="text-lg font-bold text-foreground">Pais</h1>
             <p className="text-[11px] text-muted-foreground">{mesLabel}</p>
           </div>
           <div className="flex items-center gap-1">
@@ -101,42 +127,117 @@ export default function Pais() {
           </div>
         </div>
 
-        {/* Total */}
-        {lancamentos.length > 0 && (
-          <div className="glass-card p-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TrendingDown size={15} className="text-destructive" />
-              <span className="text-sm text-muted-foreground font-medium">Total do mês</span>
+        {/* ── Resumo consolidado ── */}
+        {despesasPais.length > 0 && (
+          <div className="glass-card p-4 space-y-3">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Resumo do mês
+            </p>
+
+            {/* Pago */}
+            <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(99,102,241,0.12)" }}>
+                  <TrendingDown size={14} className="text-primary" />
+                </div>
+                <span className="text-sm text-muted-foreground">Total pago</span>
+              </div>
+              <span className="text-sm font-bold text-foreground">{fmt(totalPago)}</span>
             </div>
-            <span className="text-xl font-bold text-foreground">{fmt(total)}</span>
+
+            {/* Reembolsado */}
+            <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(13,148,136,0.12)" }}>
+                  <RotateCcw size={14} style={{ color: "#0D9488" }} />
+                </div>
+                <span className="text-sm text-muted-foreground">Reembolsado</span>
+              </div>
+              <span className="text-sm font-bold" style={{ color: "#0D9488" }}>
+                {totalReembolsado > 0 ? `− ${fmt(totalReembolsado)}` : fmt(0)}
+              </span>
+            </div>
+
+            {/* Líquido */}
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(217,112,82,0.12)" }}>
+                  <Wallet size={14} style={{ color: "#D97052" }} />
+                </div>
+                <span className="text-sm font-semibold text-foreground">Líquido (meu custo)</span>
+              </div>
+              <span className="text-lg font-bold" style={{ color: totalLiquido > 0 ? "#D97052" : "#0D9488" }}>
+                {fmt(totalLiquido)}
+              </span>
+            </div>
+
+            {/* Barra de reembolso */}
+            {totalPago > 0 && (
+              <div className="space-y-1 pt-1">
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>reembolsado</span>
+                  <span>{totalPago > 0 ? ((totalReembolsado / totalPago) * 100).toFixed(0) : 0}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-[#E8ECF5] overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(100, totalPago > 0 ? (totalReembolsado / totalPago) * 100 : 0)}%`,
+                      background: "#0D9488",
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Por categoria */}
+        {/* ── Por categoria ── */}
         {porCategoria.length > 0 && (
           <div className="glass-card p-4 space-y-3">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              Por categoria
+              Despesas por categoria
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              {porCategoria.map(({ cat, valor, emoji }) => (
-                <div
-                  key={cat}
-                  className="flex items-center gap-2 p-2.5 rounded-xl"
-                  style={{ background: "#E8ECF5" }}
-                >
-                  <span className="text-sm shrink-0">{emoji}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] text-muted-foreground truncate">{cat}</p>
-                    <p className="text-[11px] font-bold text-foreground">{fmt(valor)}</p>
+            <div className="space-y-2.5">
+              {porCategoria.map(({ cat, valor, emoji }) => {
+                const pct = totalPago > 0 ? (valor / totalPago) * 100 : 0;
+                // reembolsado desta categoria
+                const reembolsadoCat = lancamentosComReembolso
+                  .filter((l) => (l.subcategoria_pais || l.categoria_macro || "Outros") === cat)
+                  .reduce((s, l) => s + l.reembolsado, 0);
+                const liquidoCat = valor - reembolsadoCat;
+                return (
+                  <div key={cat} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-sm shrink-0">{emoji}</span>
+                        <span className="text-[12px] font-medium text-foreground truncate">{cat}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className="text-[10px] text-muted-foreground">{pct.toFixed(0)}%</span>
+                        <span className="text-[12px] font-bold text-foreground">{fmt(valor)}</span>
+                      </div>
+                    </div>
+                    <div className="h-1 rounded-full bg-[#E8ECF5] overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%`, background: "#6366F1" }}
+                      />
+                    </div>
+                    {reembolsadoCat > 0 && (
+                      <div className="flex justify-end gap-3 text-[10px]">
+                        <span style={{ color: "#0D9488" }}>− {fmt(reembolsadoCat)} reimb.</span>
+                        <span className="text-muted-foreground font-semibold">líq. {fmt(liquidoCat)}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Lista */}
+        {/* ── Lançamentos individuais ── */}
         {isLoading ? (
           <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>
         ) : lancamentos.length === 0 ? (
@@ -149,31 +250,40 @@ export default function Pais() {
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
               Lançamentos
             </p>
-            <div className="space-y-2">
-              {lancamentos.map((l) => {
+            <div className="space-y-1">
+              {lancamentosComReembolso.map((l) => {
                 const group = getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros";
                 const emoji = getGroupEmoji(group);
-                const isReceita = l.tipo === "receita";
                 return (
-                  <div key={l.id} className="flex items-center gap-3 py-2">
+                  <div key={l.id} className="flex items-center gap-3 py-2.5 border-b border-[#E8ECF5] last:border-0">
                     <div
                       className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
                       style={{ background: "#E8ECF5" }}
                     >
                       {emoji}
                     </div>
+
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{l.descricao}</p>
+                      <p className="text-[13px] font-semibold text-foreground truncate">{l.descricao}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {formatDate(l.data)}{l.subcategoria_pais ? ` · ${l.subcategoria_pais}` : ""}
+                        {formatDate(l.data)}
+                        {l.subcategoria_pais ? ` · ${l.subcategoria_pais}` : ""}
                       </p>
                     </div>
-                    <p
-                      className="text-sm font-bold shrink-0"
-                      style={{ color: isReceita ? "#0D9488" : "#1E2A45" }}
-                    >
-                      {isReceita ? "+" : "-"}{fmt(Number(l.valor))}
-                    </p>
+
+                    <div className="text-right shrink-0">
+                      <p className="text-[13px] font-bold text-foreground">{fmt(Number(l.valor))}</p>
+                      {l.reembolsado > 0 && (
+                        <p className="text-[10px]" style={{ color: "#0D9488" }}>
+                          reimb. {fmt(l.reembolsado)}
+                        </p>
+                      )}
+                      {l.reembolsado > 0 && (
+                        <p className="text-[10px] text-muted-foreground font-semibold">
+                          líq. {fmt(l.liquido)}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 );
               })}

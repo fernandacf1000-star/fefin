@@ -38,10 +38,10 @@ export const useReembolsosByLancamento = (lancamentoId?: string) => {
   return useQuery({
     queryKey: ["reembolsos", "lancamento", lancamentoId],
     queryFn: async () => {
-const { data, error } = await supabase
+      const { data, error } = await supabase
         .from("reembolsos")
         .select("*")
-        .eq("user_id", user!.id)
+        .eq("lancamento_id", lancamentoId!)
         .order("data_reembolso", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Reembolso[];
@@ -59,6 +59,7 @@ export const useAllReembolsos = () => {
       const { data, error } = await supabase
         .from("reembolsos")
         .select("*")
+        .eq("user_id", user!.id)
         .order("data_reembolso", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Reembolso[];
@@ -110,3 +111,4 @@ export const getTotalReembolsado = (reembolsos: Reembolso[], lancamentoId: strin
     .filter((r) => r.lancamento_id === lancamentoId)
     .reduce((sum, r) => sum + Number(r.valor_reembolsado), 0);
 };
+

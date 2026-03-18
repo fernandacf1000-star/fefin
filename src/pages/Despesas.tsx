@@ -90,7 +90,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
             : "rgba(99,102,241,0.10)"
         }}
       >
-        {isPais ? "👨‍👩‍👧" : emoji}
+        {isPais ? "🏠👴👵" : emoji}
       </div>
 
       <div className="flex-1 min-w-0">

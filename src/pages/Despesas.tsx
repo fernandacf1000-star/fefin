@@ -372,16 +372,32 @@ export default function Despesas() {
           />
         ) : (
           <div className="space-y-2">
-            {lista.map((l) => (
-              <LancamentoRow
-                key={l.id}
-                lancamento={l}
-                onTap={(ll) => setActionsLanc(ll)}
-                selected={selected.has(l.id)}
-                selectionMode={selectionMode}
-                onToggleSelect={toggleSelect}
-              />
-            ))}
+            {lista.map((l) =>
+              selectionMode ? (
+                <LancamentoRow
+                  key={l.id}
+                  lancamento={l}
+                  onTap={(ll) => setActionsLanc(ll)}
+                  selected={selected.has(l.id)}
+                  selectionMode={selectionMode}
+                  onToggleSelect={toggleSelect}
+                />
+              ) : (
+                <SwipeableItem
+                  key={l.id}
+                  onEdit={() => setEditTarget(l)}
+                  onDelete={() => setDeleteTarget(l)}
+                >
+                  <LancamentoRow
+                    lancamento={l}
+                    onTap={(ll) => setActionsLanc(ll)}
+                    selected={false}
+                    selectionMode={false}
+                    onToggleSelect={toggleSelect}
+                  />
+                </SwipeableItem>
+              )
+            )}
           </div>
         )}
       </div>

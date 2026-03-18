@@ -8,8 +8,7 @@ import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/
 import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
 import { toast } from "sonner";
 
-const fmt = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function getMesRef(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
@@ -39,33 +38,20 @@ export default function Pais() {
   const { data: todosReembolsos = [] } = useAllReembolsos();
 
   const prevMes = () =>
-    setMesAtual(({ year, month }) =>
-      month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }
-    );
+    setMesAtual(({ year, month }) => (month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }));
   const nextMes = () =>
-    setMesAtual(({ year, month }) =>
-      month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }
-    );
+    setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
 
   // Lançamentos dos pais = subcategoria_pais preenchida
   const lancamentos = useMemo(
-    () =>
-      todos.filter(
-        (l) => l.subcategoria_pais !== null && l.subcategoria_pais !== ""
-      ),
-    [todos]
+    () => todos.filter((l) => l.subcategoria_pais !== null && l.subcategoria_pais !== ""),
+    [todos],
   );
 
-  const despesasPais = useMemo(
-    () => lancamentos.filter((l) => l.tipo === "despesa"),
-    [lancamentos]
-  );
+  const despesasPais = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
 
   // ── Totais consolidados ────────────────────────────────────────────────
-  const totalPago = useMemo(
-    () => despesasPais.reduce((s, l) => s + Number(l.valor), 0),
-    [despesasPais]
-  );
+  const totalPago = useMemo(() => despesasPais.reduce((s, l) => s + Number(l.valor), 0), [despesasPais]);
 
   const totalReembolsado = useMemo(() => {
     // Reembolsos cujo lancamento_id está entre os lançamentos dos pais deste mês
@@ -82,9 +68,7 @@ export default function Pais() {
     const map: Record<string, number> = {};
     despesasPais.forEach((l) => {
       const subP = l.subcategoria_pais;
-      const cat = (subP && subP !== "" && subP !== "Geral")
-        ? subP
-        : l.categoria_macro || "Outros";
+      const cat = subP && subP !== "" && subP !== "Geral" ? subP : l.categoria_macro || "Outros";
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });
     return Object.entries(map)
@@ -134,7 +118,6 @@ export default function Pais() {
       <BottomNav />
 
       <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
-
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -160,14 +143,15 @@ export default function Pais() {
         {/* ── Resumo consolidado ── */}
         {despesasPais.length > 0 && (
           <div className="glass-card p-4 space-y-3">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              Resumo do mês
-            </p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Resumo do mês</p>
 
             {/* Pago */}
             <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(99,102,241,0.12)" }}>
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center"
+                  style={{ background: "rgba(99,102,241,0.12)" }}
+                >
                   <TrendingDown size={14} className="text-primary" />
                 </div>
                 <span className="text-sm text-muted-foreground">Total pago</span>
@@ -178,7 +162,10 @@ export default function Pais() {
             {/* Reembolsado */}
             <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(13,148,136,0.12)" }}>
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center"
+                  style={{ background: "rgba(13,148,136,0.12)" }}
+                >
                   <RotateCcw size={14} style={{ color: "#0D9488" }} />
                 </div>
                 <span className="text-sm text-muted-foreground">Reembolsado</span>
@@ -191,7 +178,10 @@ export default function Pais() {
             {/* Líquido */}
             <div className="flex items-center justify-between pt-1">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(217,112,82,0.12)" }}>
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center"
+                  style={{ background: "rgba(217,112,82,0.12)" }}
+                >
                   <Wallet size={14} style={{ color: "#D97052" }} />
                 </div>
                 <span className="text-sm font-semibold text-foreground">Líquido (meu custo)</span>
@@ -235,7 +225,7 @@ export default function Pais() {
                 const reembolsadoCat = lancamentosComReembolso
                   .filter((l) => {
                     const subP = l.subcategoria_pais;
-                    const c = (subP && subP !== "" && subP !== "Geral") ? subP : l.categoria_macro || "Outros";
+                    const c = subP && subP !== "" && subP !== "Geral" ? subP : l.categoria_macro || "Outros";
                     return c === cat;
                   })
                   .reduce((s, l) => s + l.reembolsado, 0);
@@ -275,21 +265,20 @@ export default function Pais() {
         {isLoading ? (
           <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>
         ) : lancamentos.length === 0 ? (
-          <EmptyState
-            title="Sem lançamentos dos pais"
-            subtitle="Nenhuma despesa dos pais registrada neste mês"
-          />
+          <EmptyState title="Sem lançamentos dos pais" subtitle="Nenhuma despesa dos pais registrada neste mês" />
         ) : (
           <div className="glass-card p-4 space-y-3">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              Lançamentos
-            </p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lançamentos</p>
             <div className="space-y-1">
               {lancamentosComReembolso.map((l) => {
-                    const group = getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros";
-                    const emoji = l.subcategoria_pais === "Vicente" ? "👦" : getGroupEmoji(group);
+                const group = getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros";
+                const emoji = l.subcategoria_pais === "Vicente" ? "👦" : getGroupEmoji(group);
                 return (
-                  <div key={l.id} onClick={() => setReembolsoTarget(l)} className="flex items-center gap-3 py-2.5 border-b border-amber-100 last:border-0 cursor-pointer active:opacity-70">
+                  <div
+                    key={l.id}
+                    onClick={() => setReembolsoTarget(l)}
+                    className="flex items-center gap-3 py-2.5 border-b border-amber-100 last:border-0 cursor-pointer active:opacity-70"
+                  >
                     <div
                       className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
                       style={{ background: "rgba(251,191,36,0.2)" }}
@@ -313,9 +302,7 @@ export default function Pais() {
                         </p>
                       )}
                       {l.reembolsado > 0 && (
-                        <p className="text-[10px] text-muted-foreground font-semibold">
-                          líq. {fmt(l.liquido)}
-                        </p>
+                        <p className="text-[10px] text-muted-foreground font-semibold">líq. {fmt(l.liquido)}</p>
                       )}
                     </div>
                   </div>

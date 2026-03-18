@@ -98,7 +98,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
 
   const getPaisValue = () => {
     if (!isPais) return null;
-    return subcategoria || "paguei_por_eles";
+    return subcategoria || macro || "Geral";
   };
 
   // ── Screen 1 → 2 ──────────────────────────────────────────────────────────

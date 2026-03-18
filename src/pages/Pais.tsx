@@ -274,7 +274,7 @@ export default function Pais() {
                       <p className="text-[13px] font-semibold text-foreground truncate">{l.descricao}</p>
                       <p className="text-[10px] text-muted-foreground">
                         {formatDate(l.data)}
-                        {l.subcategoria_pais ? ` · ${l.subcategoria_pais}` : ""}
+                        {l.subcategoria_pais && l.subcategoria_pais !== "Geral" ? ` · ${l.subcategoria_pais}` : ""}
                       </p>
                     </div>
 

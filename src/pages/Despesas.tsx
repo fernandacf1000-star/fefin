@@ -18,7 +18,7 @@ import {
 } from "@/hooks/useLancamentos";
 import { useCartoes } from "@/hooks/useCartoes";
 import { useAddReembolso } from "@/hooks/useReembolsos";
-import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
+import { getGroupEmoji, getSubcategoriaGroup, detectSubcategoria } from "@/lib/subcategorias";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -50,9 +50,10 @@ interface RowProps {
 }
 
 const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggleSelect }: RowProps) => {
-  const group = getSubcategoriaGroup(l.subcategoria || "") || l.categoria_macro || l.categoria || "Outros";
-  const emoji = getGroupEmoji(group);
   const isReceita = l.tipo === "receita";
+  const subDetectada = l.subcategoria || detectSubcategoria(l.descricao || "") || null;
+  const group = getSubcategoriaGroup(subDetectada || "") || l.categoria_macro || l.categoria || null;
+  const emoji = group ? getGroupEmoji(group) : isReceita ? "💰" : "💸";
   const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");

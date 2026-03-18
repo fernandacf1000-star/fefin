@@ -1,6 +1,7 @@
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import { useLancamentos } from "@/hooks/useLancamentos";
+import { useAllReembolsos } from "@/hooks/useReembolsos";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
@@ -41,6 +42,7 @@ const Graficos = () => {
     .toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const mesLabelFmt = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
+  const { data: todosReembolsos = [] } = useAllReembolsos();
 
   // Fetch ALL lancamentos for the year (no month filter)
   const { data: allYearLancamentos = [] } = useLancamentos();
@@ -74,31 +76,67 @@ const Graficos = () => {
     return { receitas: r, despesas: d, saldo: r - d };
   }, [annualData]);
 
+  const reembolsosMes = useMemo(() => {
+    const ids = new Set(lancamentos.filter(l => l.tipo === "despesa").map(l => l.id));
+    return todosReembolsos.filter(r => ids.has(r.lancamento_id));
+  }, [lancamentos, todosReembolsos]);
+
+  const totalReembolsadoMes = useMemo(() =>
+    reembolsosMes.reduce((s, r) => s + Number(r.valor_reembolsado), 0),
+    [reembolsosMes]
+  );
+
   const totalReceitas = useMemo(() =>
     lancamentos.filter((l) => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0),
     [lancamentos]
   );
   const totalDespesas = useMemo(() =>
-    lancamentos.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0),
-    [lancamentos]
+    lancamentos.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,
+    [lancamentos, totalReembolsadoMes]
   );
+
+  const emojiMapGraf: Record<string, string> = {
+    "Moradia": "🏘️", "Alimentação": "🥗", "Transporte": "🚗",
+    "Saúde": "💊", "Pessoal": "💅", "Lazer": "🎮", "Investimentos": "📈",
+    "Pais": "🧓", "Vicente": "👦", "Sem categoria": "🔴",
+  };
+  const colorMapGraf: Record<string, string> = {
+    ...CAT_COLORS,
+    "Pais": "#F59E0B",
+    "Vicente": "#3B82F6",
+    "Sem categoria": "#94A3B8",
+  };
 
   const composicao = useMemo(() => {
     const despesas = lancamentos.filter((l) => l.tipo === "despesa");
     const map: Record<string, number> = {};
     despesas.forEach(d => {
-      const key = normalizeMacro(d.categoria_macro, d.subcategoria);
+      const isVicente = d.subcategoria_pais === "Vicente";
+      const isPais = !!(d.subcategoria_pais && d.subcategoria_pais !== "") && !isVicente;
+      const key = isVicente ? "Vicente" : isPais ? "Pais" : normalizeMacro(d.categoria_macro, d.subcategoria);
       map[key] = (map[key] || 0) + Number(d.valor);
+    });
+    // Deduzir reembolsos de Pais e Vicente
+    reembolsosMes.forEach(r => {
+      const lanc = despesas.find(d => d.id === r.lancamento_id);
+      if (!lanc) return;
+      const isVicente = lanc.subcategoria_pais === "Vicente";
+      const isPais = !!(lanc.subcategoria_pais && lanc.subcategoria_pais !== "") && !isVicente;
+      const key = isVicente ? "Vicente" : isPais ? "Pais" : null;
+      if (key && map[key] !== undefined) {
+        map[key] = Math.max(0, map[key] - Number(r.valor_reembolsado));
+      }
     });
     return Object.entries(map)
       .map(([name, value]) => ({
         name,
         value,
-        color: CAT_COLORS[name] || "#475569",
+        color: colorMapGraf[name] || "#475569",
+        emoji: emojiMapGraf[name] || getGroupEmoji(name),
       }))
       .filter(c => c.value > 0)
       .sort((a, b) => b.value - a.value);
-  }, [lancamentos]);
+  }, [lancamentos, reembolsosMes]);
 
   const totalMes = composicao.reduce((s, c) => s + c.value, 0);
 
@@ -336,7 +374,7 @@ const Graficos = () => {
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       {activeEntry ? (
                         <>
-                          <span className="text-[11px] text-muted-foreground">{getGroupEmoji(activeEntry.name)} {activeEntry.name}</span>
+                          <span className="text-[11px] text-muted-foreground">{(activeEntry as any).emoji || getGroupEmoji(activeEntry.name)} {activeEntry.name}</span>
                           <span className="text-lg font-bold text-foreground tabular-nums">{fmt(activeEntry.value)}</span>
                           <span className="text-[10px] text-muted-foreground">{Math.round((activeEntry.value / totalMes) * 100)}%</span>
                         </>
@@ -353,7 +391,7 @@ const Graficos = () => {
                       <div key={c.name} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: c.color }} />
-                          <span className="text-[11px] text-foreground">{getGroupEmoji(c.name)} {c.name}</span>
+                          <span className="text-[11px] text-foreground">{(c as any).emoji || getGroupEmoji(c.name)} {c.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-[11px] font-semibold text-foreground tabular-nums">{fmt(c.value)}</span>

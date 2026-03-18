@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-const fmt = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 interface Props {
   open: boolean;
@@ -58,9 +57,7 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/25 backdrop-blur-sm p-4">
       <div className="glass-card w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-foreground">
-            Registrar reembolso
-          </h3>
+          <h3 className="text-base font-semibold text-foreground">Registrar reembolso</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X size={18} />
           </button>
@@ -84,7 +81,9 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-[11px] text-muted-foreground">Quem reembolsou <span className="opacity-50">(opcional)</span></Label>
+          <Label className="text-[11px] text-muted-foreground">
+            Quem reembolsou <span className="opacity-50">(opcional)</span>
+          </Label>
           <Input
             value={quem}
             onChange={(e) => setQuem(e.target.value)}
@@ -95,16 +94,13 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
 
         <div className="space-y-1.5">
           <Label className="text-[11px] text-muted-foreground">Data do reembolso</Label>
-          <Input
-            type="date"
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-            className="bg-[#E8ECF5] border-0"
-          />
+          <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="bg-[#E8ECF5] border-0" />
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-[11px] text-muted-foreground">Observação <span className="opacity-50">(opcional)</span></Label>
+          <Label className="text-[11px] text-muted-foreground">
+            Observação <span className="opacity-50">(opcional)</span>
+          </Label>
           <Textarea
             value={obs}
             onChange={(e) => setObs(e.target.value)}

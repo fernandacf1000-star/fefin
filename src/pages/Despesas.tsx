@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Trash2, CheckSquare, Square } from "lucide-react";
+import SwipeableItem from "@/components/SwipeableItem";
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import LancamentoActions from "@/components/LancamentoActions";
@@ -53,7 +54,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
   const isReceita = l.tipo === "receita";
   const subDetectada = l.subcategoria || detectSubcategoria(l.descricao || "") || null;
   const group = getSubcategoriaGroup(subDetectada || "") || l.categoria_macro || l.categoria || null;
-  const emoji = group ? getGroupEmoji(group) : isReceita ? "💰" : "💸";
+  const emoji = group ? getGroupEmoji(group) : isReceita ? "💵" : "🧾";
   const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");
@@ -89,7 +90,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
             : "rgba(99,102,241,0.10)"
         }}
       >
-        {isPais ? "👨‍👩‍👧" : emoji}
+        {isPais ? "🏠👴👵" : emoji}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -371,16 +372,32 @@ export default function Despesas() {
           />
         ) : (
           <div className="space-y-2">
-            {lista.map((l) => (
-              <LancamentoRow
-                key={l.id}
-                lancamento={l}
-                onTap={(ll) => setActionsLanc(ll)}
-                selected={selected.has(l.id)}
-                selectionMode={selectionMode}
-                onToggleSelect={toggleSelect}
-              />
-            ))}
+            {lista.map((l) =>
+              selectionMode ? (
+                <LancamentoRow
+                  key={l.id}
+                  lancamento={l}
+                  onTap={(ll) => setActionsLanc(ll)}
+                  selected={selected.has(l.id)}
+                  selectionMode={selectionMode}
+                  onToggleSelect={toggleSelect}
+                />
+              ) : (
+                <SwipeableItem
+                  key={l.id}
+                  onEdit={() => setEditTarget(l)}
+                  onDelete={() => setDeleteTarget(l)}
+                >
+                  <LancamentoRow
+                    lancamento={l}
+                    onTap={(ll) => setActionsLanc(ll)}
+                    selected={false}
+                    selectionMode={false}
+                    onToggleSelect={toggleSelect}
+                  />
+                </SwipeableItem>
+              )
+            )}
           </div>
         )}
       </div>

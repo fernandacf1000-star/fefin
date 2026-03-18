@@ -63,7 +63,7 @@ export const detectSubcategoria = (descricao: string): string | null => {
 
   // Pessoal
   if (/ZARA|CENTAURO|NIKE|CRIS BARROS|LAFORT|CATRAN|GRUPO BRABUS|SHOP2GETHER|VINDI|BOBO PATIO|E-COM HERING|SEPHORA|INVICTU|NETSHOES|ANSELMI|PORTO COMERCIO|STUDIO MORMAII|GRANADO|BELEZA NA WEB|RETRO HAIR|STUDIO GARCIA|MP\*STUDIOGARCIA|ACADEMIA|SMART FIT/.test(d)) return "Roupas/Cuidados pessoais";
-  if (/JIM\.COM|CURSO|UDEMY|ALURA|ESCOLA/.test(d)) return "Cursos/Desenvolvimento";
+  if (/JIM\.COM|CURSO|UDEMY|ALURA|ESCOLA/.test(d)) return "Outros";
   if (/CASAR \*PRE\*SENTE/.test(d)) return "Presentes";
 
   // Lazer

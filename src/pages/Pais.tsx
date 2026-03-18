@@ -79,7 +79,10 @@ export default function Pais() {
   const porCategoria = useMemo(() => {
     const map: Record<string, number> = {};
     despesasPais.forEach((l) => {
-      const cat = l.subcategoria_pais || l.categoria_macro || "Outros";
+      const subP = l.subcategoria_pais;
+      const cat = (subP && subP !== "" && subP !== "Geral")
+        ? subP
+        : l.categoria_macro || "Outros";
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });
     return Object.entries(map)

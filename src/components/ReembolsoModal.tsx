@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,14 +29,33 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
   const [data, setData] = useState(today);
   const [obs, setObs] = useState("");
 
+  // Resetar estado sempre que o modal abrir com novo lançamento
+  useEffect(() => {
+    if (open) {
+      setValor(valorOriginal);
+      setQuem("");
+      setData(today);
+      setObs("");
+    }
+  }, [open, valorOriginal]);
+
   if (!open) return null;
 
+  const handleSave = () => {
+    onSave({
+      valor_reembolsado: valor,
+      quem_reembolsou: quem.trim() || "Pais",
+      data_reembolso: data,
+      observacao: obs.trim() || undefined,
+    });
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/25 backdrop-blur-sm p-4">
       <div className="glass-card w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-foreground">
-            Reembolso — {descricao}
+            Registrar reembolso
           </h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X size={18} />
@@ -44,7 +63,8 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Valor pago: <span className="font-semibold">{fmt(valorOriginal)}</span>
+          <span className="font-semibold text-foreground">{descricao}</span>
+          {" · "}Valor pago: <span className="font-semibold">{fmt(valorOriginal)}</span>
         </p>
 
         <div className="space-y-1.5">
@@ -54,17 +74,18 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
             step="0.01"
             value={valor || ""}
             onChange={(e) => setValor(parseFloat(e.target.value) || 0)}
-            className="bg-secondary border-border"
+            className="bg-[#E8ECF5] border-0 text-base font-bold"
+            autoFocus
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-[11px] text-muted-foreground">Quem reembolsou</Label>
+          <Label className="text-[11px] text-muted-foreground">Quem reembolsou <span className="opacity-50">(opcional)</span></Label>
           <Input
             value={quem}
             onChange={(e) => setQuem(e.target.value)}
-            placeholder="Ex: Pais, Empresa, Adriano"
-            className="bg-secondary border-border"
+            placeholder="Ex: Pais, Adriano..."
+            className="bg-[#E8ECF5] border-0"
           />
         </div>
 
@@ -74,17 +95,17 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
             type="date"
             value={data}
             onChange={(e) => setData(e.target.value)}
-            className="bg-secondary border-border"
+            className="bg-[#E8ECF5] border-0"
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-[11px] text-muted-foreground">Observação (opcional)</Label>
+          <Label className="text-[11px] text-muted-foreground">Observação <span className="opacity-50">(opcional)</span></Label>
           <Textarea
             value={obs}
             onChange={(e) => setObs(e.target.value)}
             placeholder="Detalhes adicionais..."
-            className="bg-secondary border-border min-h-[60px]"
+            className="bg-[#E8ECF5] border-0 min-h-[60px]"
           />
         </div>
 
@@ -93,14 +114,7 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
             Cancelar
           </Button>
           <Button
-            onClick={() =>
-              onSave({
-                valor_reembolsado: valor,
-                quem_reembolsou: quem,
-                data_reembolso: data,
-                observacao: obs || undefined,
-              })
-            }
+            onClick={handleSave}
             disabled={isPending || valor <= 0}
             className="flex-1 gradient-emerald text-white border-0"
           >

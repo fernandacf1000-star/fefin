@@ -97,10 +97,20 @@ const Graficos = () => {
     return todosReembolsos.filter((r) => ids.has(r.lancamento_id));
   }, [lancamentos, todosReembolsos]);
 
-  const totalReembolsadoMes = useMemo(
+  const totalReembolsadoMesTabela = useMemo(
     () => reembolsosMes.reduce((s, r) => s + Number(r.valor_reembolsado), 0),
     [reembolsosMes],
   );
+
+  // Receitas "Reembolso pais" também deduzem dos totais de despesas dos pais
+  const totalReembolsadoMesReceitas = useMemo(
+    () => lancamentos
+      .filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais")
+      .reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentos],
+  );
+
+  const totalReembolsadoMes = totalReembolsadoMesTabela + totalReembolsadoMesReceitas;
 
   const totalReceitas = useMemo(
     () => lancamentos.filter((l) => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0),
@@ -140,7 +150,7 @@ const Graficos = () => {
       const key = isVicente ? "Vicente" : isPais ? "Pais" : normalizeMacro(d.categoria_macro, d.subcategoria);
       map[key] = (map[key] || 0) + Number(d.valor);
     });
-    // Deduzir reembolsos de Pais e Vicente
+    // Deduzir reembolsos (tabela) de Pais e Vicente
     reembolsosMes.forEach((r) => {
       const lanc = despesas.find((d) => d.id === r.lancamento_id);
       if (!lanc) return;
@@ -151,6 +161,10 @@ const Graficos = () => {
         map[key] = Math.max(0, map[key] - Number(r.valor_reembolsado));
       }
     });
+    // Deduzir receitas "Reembolso pais" do slice Pais
+    if (map["Pais"] !== undefined && totalReembolsadoMesReceitas > 0) {
+      map["Pais"] = Math.max(0, map["Pais"] - totalReembolsadoMesReceitas);
+    }
     return Object.entries(map)
       .map(([name, value]) => ({
         name,
@@ -160,7 +174,7 @@ const Graficos = () => {
       }))
       .filter((c) => c.value > 0)
       .sort((a, b) => b.value - a.value);
-  }, [lancamentos, reembolsosMes]);
+  }, [lancamentos, reembolsosMes, totalReembolsadoMesReceitas]);
 
   const totalMes = composicao.reduce((s, c) => s + c.value, 0);
 

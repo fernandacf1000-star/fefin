@@ -393,21 +393,14 @@ export default function Despesas() {
         ) : (
           <div className="space-y-2">
             {lista.map((l) => (
-              <div
+              <LancamentoRow
                 key={l.id}
-                onClick={() => !selectionMode && setActionsLanc(l)}
-              >
-                <LancamentoRow
-                  lancamento={l}
-                  onLongPress={(ll) => {
-                    setSelectionMode(true);
-                    setSelected(new Set([ll.id]));
-                  }}
-                  selected={selected.has(l.id)}
-                  selectionMode={selectionMode}
-                  onToggleSelect={toggleSelect}
-                />
-              </div>
+                lancamento={l}
+                onTap={(ll) => setActionsLanc(ll)}
+                selected={selected.has(l.id)}
+                selectionMode={selectionMode}
+                onToggleSelect={toggleSelect}
+              />
             ))}
           </div>
         )}

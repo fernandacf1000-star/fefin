@@ -4,6 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";
 import { useProfile } from "@/hooks/useProfile";
+import { useAllReembolsos } from "@/hooks/useReembolsos";
 import { getGroupEmoji } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>

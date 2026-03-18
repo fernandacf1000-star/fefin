@@ -115,6 +115,11 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
               PAIS
             </span>
           )}
+          {isVicente && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-200 text-blue-700 font-semibold shrink-0">
+              VICENTE
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[10px] text-muted-foreground">{formatDate(l.data)}</span>

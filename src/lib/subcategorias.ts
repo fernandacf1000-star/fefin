@@ -10,7 +10,7 @@ export const SUBCATEGORIA_GROUPS: SubcategoriaGroup[] = [
   { group: "Alimentação", emoji: "🍔", items: ["Supermercado", "Restaurantes", "Delivery"] },
   { group: "Transporte", emoji: "🚗", items: ["Combustível", "Uber/Taxi", "Estacionamento/Pedágio", "Manutenção/Seguro"] },
   { group: "Saúde", emoji: "🏥", items: ["Plano de saúde", "Consultas/Exames", "Medicamentos"] },
-  { group: "Pessoal", emoji: "🛍️", items: ["Roupas/Cuidados pessoais", "Cursos/Desenvolvimento", "Presentes", "Outros"] },
+  { group: "Pessoal", emoji: "🛍️", items: ["Roupas/Cuidados pessoais", "Presentes", "Outros"] },
   { group: "Lazer", emoji: "🎉", items: ["Viagens", "Entretenimento", "Assinaturas"] },
   { group: "Investimentos", emoji: "💰", items: ["Renda fixa", "Ações/ETF", "Fundos", "Previdência"] },
 ];

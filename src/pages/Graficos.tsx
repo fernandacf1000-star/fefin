@@ -3,15 +3,29 @@ import EmptyState from "@/components/EmptyState";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useAllReembolsos } from "@/hooks/useReembolsos";
 import {
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  ComposedChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
 } from "recharts";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
-import { SUBCATEGORIA_GROUPS, getGroupEmoji, CAT_COLORS, normalizeMacro, getSubcategoriaColor } from "@/lib/subcategorias";
+import {
+  SUBCATEGORIA_GROUPS,
+  getGroupEmoji,
+  CAT_COLORS,
+  normalizeMacro,
+  getSubcategoriaColor,
+} from "@/lib/subcategorias";
 
-const fmt = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const fmtK = (v: number) => {
   if (v >= 1000) return `${(v / 1000).toFixed(0)}k`;
@@ -38,8 +52,10 @@ const Graficos = () => {
   const [subcatCatFilter, setSubcatCatFilter] = useState<string | null>(null);
   const [activePieIndex, setActivePieIndex] = useState<number | undefined>(undefined);
   const mesRef = `${mesAtual.year}-${String(mesAtual.month + 1).padStart(2, "0")}`;
-  const mesLabel = new Date(mesAtual.year, mesAtual.month, 1)
-    .toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const mesLabel = new Date(mesAtual.year, mesAtual.month, 1).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
   const mesLabelFmt = mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1);
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
   const { data: todosReembolsos = [] } = useAllReembolsos();
@@ -51,9 +67,9 @@ const Graficos = () => {
   const annualData = useMemo(() => {
     return MONTH_LABELS.map((label, i) => {
       const mesKey = `${currentYear}-${String(i + 1).padStart(2, "0")}`;
-      const mesLancs = allYearLancamentos.filter(l => l.mes_referencia === mesKey);
-      const receitas = mesLancs.filter(l => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0);
-      const despesas = mesLancs.filter(l => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0);
+      const mesLancs = allYearLancamentos.filter((l) => l.mes_referencia === mesKey);
+      const receitas = mesLancs.filter((l) => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0);
+      const despesas = mesLancs.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0);
       const isFuture = i > currentMonthIdx;
       const isTransition = i === currentMonthIdx; // current month acts as bridge
       return {
@@ -62,8 +78,8 @@ const Graficos = () => {
         receitasPast: !isFuture ? receitas : undefined,
         despesasPast: !isFuture ? despesas : undefined,
         // Future dashed (bridge from current month)
-        receitasFuture: (isFuture || isTransition) ? receitas : undefined,
-        despesasFuture: (isFuture || isTransition) ? despesas : undefined,
+        receitasFuture: isFuture || isTransition ? receitas : undefined,
+        despesasFuture: isFuture || isTransition ? despesas : undefined,
         saldo: receitas - despesas,
         isFuture,
       };
@@ -77,48 +93,56 @@ const Graficos = () => {
   }, [annualData]);
 
   const reembolsosMes = useMemo(() => {
-    const ids = new Set(lancamentos.filter(l => l.tipo === "despesa").map(l => l.id));
-    return todosReembolsos.filter(r => ids.has(r.lancamento_id));
+    const ids = new Set(lancamentos.filter((l) => l.tipo === "despesa").map((l) => l.id));
+    return todosReembolsos.filter((r) => ids.has(r.lancamento_id));
   }, [lancamentos, todosReembolsos]);
 
-  const totalReembolsadoMes = useMemo(() =>
-    reembolsosMes.reduce((s, r) => s + Number(r.valor_reembolsado), 0),
-    [reembolsosMes]
+  const totalReembolsadoMes = useMemo(
+    () => reembolsosMes.reduce((s, r) => s + Number(r.valor_reembolsado), 0),
+    [reembolsosMes],
   );
 
-  const totalReceitas = useMemo(() =>
-    lancamentos.filter((l) => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0),
-    [lancamentos]
+  const totalReceitas = useMemo(
+    () => lancamentos.filter((l) => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentos],
   );
-  const totalDespesas = useMemo(() =>
-    lancamentos.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,
-    [lancamentos, totalReembolsadoMes]
+  const totalDespesas = useMemo(
+    () =>
+      lancamentos.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,
+    [lancamentos, totalReembolsadoMes],
   );
 
   const emojiMapGraf: Record<string, string> = {
-    "Moradia": "🏘️", "Alimentação": "🥗", "Transporte": "🚗",
-    "Saúde": "💊", "Pessoal": "💅", "Lazer": "🎮", "Investimentos": "📈",
-    "Pais": "🧓", "Vicente": "👦", "Sem categoria": "🔴",
+    Moradia: "🏘️",
+    Alimentação: "🥗",
+    Transporte: "🚗",
+    Saúde: "💊",
+    Pessoal: "💅",
+    Lazer: "🎮",
+    Investimentos: "📈",
+    Pais: "🧓",
+    Vicente: "👦",
+    "Sem categoria": "🔴",
   };
   const colorMapGraf: Record<string, string> = {
     ...CAT_COLORS,
-    "Pais": "#F59E0B",
-    "Vicente": "#3B82F6",
+    Pais: "#F59E0B",
+    Vicente: "#3B82F6",
     "Sem categoria": "#94A3B8",
   };
 
   const composicao = useMemo(() => {
     const despesas = lancamentos.filter((l) => l.tipo === "despesa");
     const map: Record<string, number> = {};
-    despesas.forEach(d => {
+    despesas.forEach((d) => {
       const isVicente = d.subcategoria_pais === "Vicente";
       const isPais = !!(d.subcategoria_pais && d.subcategoria_pais !== "") && !isVicente;
       const key = isVicente ? "Vicente" : isPais ? "Pais" : normalizeMacro(d.categoria_macro, d.subcategoria);
       map[key] = (map[key] || 0) + Number(d.valor);
     });
     // Deduzir reembolsos de Pais e Vicente
-    reembolsosMes.forEach(r => {
-      const lanc = despesas.find(d => d.id === r.lancamento_id);
+    reembolsosMes.forEach((r) => {
+      const lanc = despesas.find((d) => d.id === r.lancamento_id);
       if (!lanc) return;
       const isVicente = lanc.subcategoria_pais === "Vicente";
       const isPais = !!(lanc.subcategoria_pais && lanc.subcategoria_pais !== "") && !isVicente;
@@ -134,7 +158,7 @@ const Graficos = () => {
         color: colorMapGraf[name] || "#475569",
         emoji: emojiMapGraf[name] || getGroupEmoji(name),
       }))
-      .filter(c => c.value > 0)
+      .filter((c) => c.value > 0)
       .sort((a, b) => b.value - a.value);
   }, [lancamentos, reembolsosMes]);
 
@@ -142,10 +166,8 @@ const Graficos = () => {
 
   const subcatData = useMemo(() => {
     // Exclui lançamentos dos pais e Vicente — eles aparecem na composicao como categorias próprias
-    let despesas = lancamentos.filter((l) =>
-      l.tipo === "despesa" &&
-      l.subcategoria &&
-      !(l.subcategoria_pais && l.subcategoria_pais !== "")
+    let despesas = lancamentos.filter(
+      (l) => l.tipo === "despesa" && l.subcategoria && !(l.subcategoria_pais && l.subcategoria_pais !== ""),
     );
     if (subcatCatFilter) {
       despesas = despesas.filter((l) => normalizeMacro(l.categoria_macro, l.subcategoria) === subcatCatFilter);
@@ -173,7 +195,7 @@ const Graficos = () => {
 
   const catFilterOptions = [
     { key: null, label: "Todas" },
-    ...SUBCATEGORIA_GROUPS.map(g => ({ key: g.group, label: `${g.emoji} ${g.group}` })),
+    ...SUBCATEGORIA_GROUPS.map((g) => ({ key: g.group, label: `${g.emoji} ${g.group}` })),
   ];
 
   const hasData = lancamentos.length > 0;
@@ -192,16 +214,24 @@ const Graficos = () => {
   const CustomAnnualTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     // Merge values from past and future lines
-    const r = (payload.find((p: any) => p.dataKey === "receitasPast")?.value
-            ?? payload.find((p: any) => p.dataKey === "receitasFuture")?.value) ?? 0;
-    const d = (payload.find((p: any) => p.dataKey === "despesasPast")?.value
-            ?? payload.find((p: any) => p.dataKey === "despesasFuture")?.value) ?? 0;
+    const r =
+      payload.find((p: any) => p.dataKey === "receitasPast")?.value ??
+      payload.find((p: any) => p.dataKey === "receitasFuture")?.value ??
+      0;
+    const d =
+      payload.find((p: any) => p.dataKey === "despesasPast")?.value ??
+      payload.find((p: any) => p.dataKey === "despesasFuture")?.value ??
+      0;
     const saldo = r - d;
     return (
       <div style={tooltipStyle} className="px-3 py-2.5 min-w-[140px]">
         <p className="text-xs font-bold text-foreground mb-1.5">{label}</p>
-        <p className="text-[11px]" style={{ color: "#0D9488" }}>↑ Receitas: {fmt(r)}</p>
-        <p className="text-[11px]" style={{ color: "#6366F1" }}>↓ Despesas: {fmt(d)}</p>
+        <p className="text-[11px]" style={{ color: "#0D9488" }}>
+          ↑ Receitas: {fmt(r)}
+        </p>
+        <p className="text-[11px]" style={{ color: "#6366F1" }}>
+          ↓ Despesas: {fmt(d)}
+        </p>
         <div className="border-t border-border/30 mt-1.5 pt-1.5">
           <p className={`text-[11px] font-bold ${saldo >= 0 ? "text-primary" : "text-destructive"}`}>
             Saldo: {fmt(saldo)}
@@ -218,11 +248,27 @@ const Graficos = () => {
 
         {/* Month Selector */}
         <div className="flex items-center justify-center gap-3 animate-fade-up" style={{ animationDelay: "0.03s" }}>
-          <button onClick={() => setMesAtual(p => { const d = new Date(p.year, p.month - 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors">
+          <button
+            onClick={() =>
+              setMesAtual((p) => {
+                const d = new Date(p.year, p.month - 1, 1);
+                return { year: d.getFullYear(), month: d.getMonth() };
+              })
+            }
+            className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors"
+          >
             <ChevronLeft size={18} />
           </button>
           <span className="text-sm font-semibold text-foreground min-w-[160px] text-center">{mesLabelFmt}</span>
-          <button onClick={() => setMesAtual(p => { const d = new Date(p.year, p.month + 1, 1); return { year: d.getFullYear(), month: d.getMonth() }; })} className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors">
+          <button
+            onClick={() =>
+              setMesAtual((p) => {
+                const d = new Date(p.year, p.month + 1, 1);
+                return { year: d.getFullYear(), month: d.getMonth() };
+              })
+            }
+            className="p-2 rounded-full text-muted-foreground hover:text-foreground transition-colors"
+          >
             <ChevronRight size={18} />
           </button>
         </div>
@@ -235,7 +281,9 @@ const Graficos = () => {
             {hasAnyData && (
               <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.04s" }}>
                 <h2 className="text-sm font-semibold text-foreground">Receitas vs Despesas — {currentYear}</h2>
-                <p className="text-[11px] text-muted-foreground mb-3">Evolução mensal · linha tracejada = meses futuros</p>
+                <p className="text-[11px] text-muted-foreground mb-3">
+                  Evolução mensal · linha tracejada = meses futuros
+                </p>
 
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
@@ -251,17 +299,65 @@ const Graficos = () => {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.25} />
-                      <XAxis dataKey="name" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} tickFormatter={fmtK} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={fmtK}
+                      />
                       <Tooltip content={<CustomAnnualTooltip />} />
 
                       {/* Área preenchida — passado */}
-                      <Area type="monotone" dataKey="receitasPast" stroke="#0D9488" strokeWidth={2} fill="url(#gradRec)" dot={false} connectNulls={false} legendType="none" />
-                      <Area type="monotone" dataKey="despesasPast" stroke="#6366F1" strokeWidth={2} fill="url(#gradDesp)" dot={false} connectNulls={false} legendType="none" />
+                      <Area
+                        type="monotone"
+                        dataKey="receitasPast"
+                        stroke="#0D9488"
+                        strokeWidth={2}
+                        fill="url(#gradRec)"
+                        dot={false}
+                        connectNulls={false}
+                        legendType="none"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="despesasPast"
+                        stroke="#6366F1"
+                        strokeWidth={2}
+                        fill="url(#gradDesp)"
+                        dot={false}
+                        connectNulls={false}
+                        legendType="none"
+                      />
 
                       {/* Linhas tracejadas — futuro */}
-                      <Line type="monotone" dataKey="receitasFuture" stroke="#0D9488" strokeWidth={1.5} strokeDasharray="5 4" dot={false} connectNulls={false} legendType="none" opacity={0.5} />
-                      <Line type="monotone" dataKey="despesasFuture" stroke="#6366F1" strokeWidth={1.5} strokeDasharray="5 4" dot={false} connectNulls={false} legendType="none" opacity={0.5} />
+                      <Line
+                        type="monotone"
+                        dataKey="receitasFuture"
+                        stroke="#0D9488"
+                        strokeWidth={1.5}
+                        strokeDasharray="5 4"
+                        dot={false}
+                        connectNulls={false}
+                        legendType="none"
+                        opacity={0.5}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="despesasFuture"
+                        stroke="#6366F1"
+                        strokeWidth={1.5}
+                        strokeDasharray="5 4"
+                        dot={false}
+                        connectNulls={false}
+                        legendType="none"
+                        opacity={0.5}
+                      />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
@@ -287,13 +383,27 @@ const Graficos = () => {
 
                 {/* Cards resumo */}
                 <div className="grid grid-cols-3 gap-2 mt-3">
-                  <div className="rounded-xl p-3 text-center" style={{ background: "rgba(13,148,136,0.08)", border: "1px solid rgba(13,148,136,0.2)" }}>
-                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#0D9488" }}>Total Receitas</span>
-                    <span className="text-xs font-bold" style={{ color: "#0D9488" }}>{fmt(annualTotals.receitas)}</span>
+                  <div
+                    className="rounded-xl p-3 text-center"
+                    style={{ background: "rgba(13,148,136,0.08)", border: "1px solid rgba(13,148,136,0.2)" }}
+                  >
+                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#0D9488" }}>
+                      Total Receitas
+                    </span>
+                    <span className="text-xs font-bold" style={{ color: "#0D9488" }}>
+                      {fmt(annualTotals.receitas)}
+                    </span>
                   </div>
-                  <div className="rounded-xl p-3 text-center" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
-                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#6366F1" }}>Total Despesas</span>
-                    <span className="text-xs font-bold" style={{ color: "#6366F1" }}>{fmt(annualTotals.despesas)}</span>
+                  <div
+                    className="rounded-xl p-3 text-center"
+                    style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}
+                  >
+                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#6366F1" }}>
+                      Total Despesas
+                    </span>
+                    <span className="text-xs font-bold" style={{ color: "#6366F1" }}>
+                      {fmt(annualTotals.despesas)}
+                    </span>
                   </div>
                   <div
                     className="rounded-xl p-3 text-center"
@@ -302,8 +412,15 @@ const Graficos = () => {
                       border: `1px solid ${annualTotals.saldo >= 0 ? "rgba(13,148,136,0.2)" : "rgba(217,112,82,0.2)"}`,
                     }}
                   >
-                    <span className="text-[9px] uppercase tracking-wider block mb-1 text-muted-foreground">Saldo Acum.</span>
-                    <span className="text-xs font-bold" style={{ color: annualTotals.saldo >= 0 ? "#0D9488" : "#D97052" }}>{fmt(annualTotals.saldo)}</span>
+                    <span className="text-[9px] uppercase tracking-wider block mb-1 text-muted-foreground">
+                      Saldo Acum.
+                    </span>
+                    <span
+                      className="text-xs font-bold"
+                      style={{ color: annualTotals.saldo >= 0 ? "#0D9488" : "#D97052" }}
+                    >
+                      {fmt(annualTotals.saldo)}
+                    </span>
                   </div>
                 </div>
               </section>
@@ -332,7 +449,9 @@ const Graficos = () => {
                           />
                         </div>
                         <span className="text-[11px] text-muted-foreground">Receitas</span>
-                        <span className="text-xs font-bold" style={{ color: "#0D9488" }}>{fmt(totalReceitas)}</span>
+                        <span className="text-xs font-bold" style={{ color: "#0D9488" }}>
+                          {fmt(totalReceitas)}
+                        </span>
                       </div>
 
                       {/* Despesas column */}
@@ -344,7 +463,9 @@ const Graficos = () => {
                           />
                         </div>
                         <span className="text-[11px] text-muted-foreground">Despesas</span>
-                        <span className="text-xs font-bold" style={{ color: "#6366F1" }}>{fmt(totalDespesas)}</span>
+                        <span className="text-xs font-bold" style={{ color: "#6366F1" }}>
+                          {fmt(totalDespesas)}
+                        </span>
                       </div>
                     </div>
                   );
@@ -371,7 +492,11 @@ const Graficos = () => {
                           onClick={handlePieEnter}
                         >
                           {composicao.map((entry, i) => (
-                            <Cell key={i} fill={entry.color} opacity={activePieIndex === undefined || activePieIndex === i ? 1 : 0.4} />
+                            <Cell
+                              key={i}
+                              fill={entry.color}
+                              opacity={activePieIndex === undefined || activePieIndex === i ? 1 : 0.4}
+                            />
                           ))}
                         </Pie>
                       </PieChart>
@@ -379,9 +504,15 @@ const Graficos = () => {
                     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                       {activeEntry ? (
                         <>
-                          <span className="text-[11px] text-muted-foreground">{(activeEntry as any).emoji || getGroupEmoji(activeEntry.name)} {activeEntry.name}</span>
-                          <span className="text-lg font-bold text-foreground tabular-nums">{fmt(activeEntry.value)}</span>
-                          <span className="text-[10px] text-muted-foreground">{Math.round((activeEntry.value / totalMes) * 100)}%</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {(activeEntry as any).emoji || getGroupEmoji(activeEntry.name)} {activeEntry.name}
+                          </span>
+                          <span className="text-lg font-bold text-foreground tabular-nums">
+                            {fmt(activeEntry.value)}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {Math.round((activeEntry.value / totalMes) * 100)}%
+                          </span>
                         </>
                       ) : (
                         <>
@@ -396,7 +527,9 @@ const Graficos = () => {
                       <div key={c.name} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: c.color }} />
-                          <span className="text-[11px] text-foreground">{(c as any).emoji || getGroupEmoji(c.name)} {c.name}</span>
+                          <span className="text-[11px] text-foreground">
+                            {(c as any).emoji || getGroupEmoji(c.name)} {c.name}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-[11px] font-semibold text-foreground tabular-nums">{fmt(c.value)}</span>
@@ -438,8 +571,12 @@ const Graficos = () => {
                               {item.emoji} {item.name}
                             </span>
                             <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                              <span className="text-[11px] font-semibold text-foreground tabular-nums">{fmt(item.value)}</span>
-                              <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">{pctTotal}%</span>
+                              <span className="text-[11px] font-semibold text-foreground tabular-nums">
+                                {fmt(item.value)}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">
+                                {pctTotal}%
+                              </span>
                             </div>
                           </div>
                           <div className="relative w-full h-[8px] rounded-full overflow-hidden bg-secondary">
@@ -453,7 +590,9 @@ const Graficos = () => {
                     })}
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground text-center py-6">Nenhum lançamento com subcategoria neste mês</p>
+                  <p className="text-xs text-muted-foreground text-center py-6">
+                    Nenhum lançamento com subcategoria neste mês
+                  </p>
                 )}
               </section>
             </div>

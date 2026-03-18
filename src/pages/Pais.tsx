@@ -50,16 +50,29 @@ export default function Pais() {
 
   const despesasPais = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
 
+  // Receitas do tipo "Reembolso pais" neste mês
+  const receitasReembolsoPais = useMemo(
+    () => todos.filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais"),
+    [todos],
+  );
+
   // ── Totais consolidados ────────────────────────────────────────────────
   const totalPago = useMemo(() => despesasPais.reduce((s, l) => s + Number(l.valor), 0), [despesasPais]);
 
-  const totalReembolsado = useMemo(() => {
-    // Reembolsos cujo lancamento_id está entre os lançamentos dos pais deste mês
+  const totalReembolsadoTabela = useMemo(() => {
+    // Reembolsos (tabela reembolsos) cujo lancamento_id está entre os lançamentos dos pais deste mês
     const idsDoMes = new Set(despesasPais.map((l) => l.id));
     return todosReembolsos
       .filter((r) => idsDoMes.has(r.lancamento_id))
       .reduce((s, r) => s + Number(r.valor_reembolsado), 0);
   }, [despesasPais, todosReembolsos]);
+
+  const totalReembolsadoReceitas = useMemo(
+    () => receitasReembolsoPais.reduce((s, l) => s + Number(l.valor), 0),
+    [receitasReembolsoPais],
+  );
+
+  const totalReembolsado = totalReembolsadoTabela + totalReembolsadoReceitas;
 
   const totalLiquido = totalPago - totalReembolsado;
 
@@ -264,7 +277,7 @@ export default function Pais() {
         {/* ── Lançamentos individuais ── */}
         {isLoading ? (
           <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>
-        ) : lancamentos.length === 0 ? (
+        ) : lancamentos.length === 0 && receitasReembolsoPais.length === 0 ? (
           <EmptyState title="Sem lançamentos dos pais" subtitle="Nenhuma despesa dos pais registrada neste mês" />
         ) : (
           <div className="glass-card p-4 space-y-3">
@@ -308,6 +321,34 @@ export default function Pais() {
                   </div>
                 );
               })}
+
+              {/* Receitas "Reembolso pais" */}
+              {receitasReembolsoPais.map((l) => (
+                <div
+                  key={l.id}
+                  className="flex items-center gap-3 py-2.5 border-b border-amber-100 last:border-0"
+                >
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
+                    style={{ background: "rgba(13,148,136,0.15)" }}
+                  >
+                    💸
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-foreground truncate">{l.descricao}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {formatDate(l.data)} · Reembolso recebido
+                    </p>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <p className="text-[13px] font-bold" style={{ color: "#0D9488" }}>
+                      + {fmt(Number(l.valor))}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

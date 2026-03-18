@@ -198,6 +198,8 @@ export default function Dashboard() {
     [despesas, cartoes]
   );
 
+  const emojiMapDash: Record<string, string> = { "Moradia": "🏘️", "Alimentação": "🥗", "Transporte": "🚗", "Saúde": "💊", "Pessoal": "💅", "Lazer": "🎮", "Investimentos": "📈", "Pais": "🧓" };
+
   // ── Categorias ────────────────────────────────────────────────────────────
   const categorias = useMemo(() => {
     const map: Record<string, number> = {};
@@ -208,7 +210,7 @@ export default function Dashboard() {
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });
     return Object.entries(map)
-      .map(([cat, valor]) => ({ cat, valor, emoji: cat === "Pais" ? "👨‍👩‍👧" : getGroupEmoji(cat) }))
+      .map(([cat, valor]) => ({ cat, valor, emoji: emojiMapDash[cat] || getGroupEmoji(cat) }))
       .sort((a, b) => b.valor - a.valor);
   }, [despesas]);
 

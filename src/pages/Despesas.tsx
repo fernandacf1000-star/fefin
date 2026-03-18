@@ -333,31 +333,54 @@ export default function Despesas() {
           </div>
         )}
 
-        {/* Filtros */}
-        {!selectionMode && (
-          <div className="flex gap-2">
-            {(["todos", "despesa", "receita"] as const).map((t) => (
+        {/* Filtros / Seleção */}
+        <div className="flex gap-2 items-center">
+          {selectionMode ? (
+            <>
+              <span className="text-xs text-muted-foreground font-medium">
+                {selected.size} selecionado{selected.size !== 1 ? "s" : ""}
+              </span>
+              {selected.size > 0 && (
+                <button
+                  onClick={() => setBulkDeleteOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-destructive/10 text-destructive text-xs font-semibold"
+                >
+                  <Trash2 size={13} />
+                  Excluir
+                </button>
+              )}
               <button
-                key={t}
-                onClick={() => setFilterTipo(t)}
-                className={cn(
-                  "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors",
-                  filterTipo === t
-                    ? "gradient-emerald text-primary-foreground"
-                    : "bg-white border border-border text-muted-foreground"
-                )}
+                onClick={exitSelection}
+                className="ml-auto px-3 py-1.5 rounded-xl bg-secondary text-muted-foreground text-xs font-semibold"
               >
-                {t === "todos" ? "Todos" : t === "despesa" ? "Despesas" : "Receitas"}
+                Cancelar
               </button>
-            ))}
-            <button
-              onClick={() => { setSelectionMode(true); setSelected(new Set()); }}
-              className="ml-auto px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-border text-muted-foreground"
-            >
-              Selecionar
-            </button>
-          </div>
-        )}
+            </>
+          ) : (
+            <>
+              {(["todos", "despesa", "receita"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setFilterTipo(t)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors",
+                    filterTipo === t
+                      ? "gradient-emerald text-primary-foreground"
+                      : "bg-white border border-border text-muted-foreground"
+                  )}
+                >
+                  {t === "todos" ? "Todos" : t === "despesa" ? "Despesas" : "Receitas"}
+                </button>
+              ))}
+              <button
+                onClick={() => { setSelectionMode(true); setSelected(new Set()); }}
+                className="ml-auto px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-border text-muted-foreground"
+              >
+                Selecionar
+              </button>
+            </>
+          )}
+        </div>
 
         {/* Lista */}
         {isLoading ? (

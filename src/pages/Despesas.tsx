@@ -54,7 +54,18 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
   const isReceita = l.tipo === "receita";
   const subDetectada = l.subcategoria || detectSubcategoria(l.descricao || "") || null;
   const group = getSubcategoriaGroup(subDetectada || "") || l.categoria_macro || l.categoria || null;
-  const emoji = group ? getGroupEmoji(group) : isReceita ? "💵" : "🧾";
+  const emojiMap: Record<string, string> = {
+    "Moradia": "🏘️",
+    "Alimentação": "🥗",
+    "Transporte": "🚗",
+    "Saúde": "💊",
+    "Pessoal": "💅",
+    "Lazer": "🎮",
+    "Investimentos": "📈"
+  };
+  const emoji = group
+    ? (emojiMap[group] || getGroupEmoji(group))
+    : isReceita ? "🟢" : "🔴";
   const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");

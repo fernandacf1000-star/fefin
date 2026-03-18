@@ -205,8 +205,17 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       } else if (wasRecorrente) {
         if (editScope === "este") {
           await updateLancamento.mutateAsync({ id: lancamento.id, ...baseUpdates, data: format(data, "yyyy-MM-dd") });
+        } else if (editScope === "futuras") {
+          await updateFuturasRecorrencia.mutateAsync({
+            recorrencia_pai_id: lancamento.recorrencia_pai_id!,
+            fromDate: lancamento.data,
+            updates: baseUpdates,
+          });
         } else {
-          await onSave({ ...baseUpdates, data: format(data, "yyyy-MM-dd") });
+          await updateAllRecorrencia.mutateAsync({
+            recorrencia_pai_id: lancamento.recorrencia_pai_id!,
+            updates: baseUpdates,
+          });
         }
       } else {
         await onSave({ ...baseUpdates, data: format(data, "yyyy-MM-dd") });

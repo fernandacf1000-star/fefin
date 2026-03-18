@@ -79,6 +79,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
     setRecorrenciaAte(undefined);
     setReceitaCat("Salário");
     setIsPais(false);
+    setIsVicente(false);
   };
 
   const handleClose = () => {

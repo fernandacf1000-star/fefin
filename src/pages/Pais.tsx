@@ -319,6 +319,17 @@ export default function Pais() {
           </div>
         )}
       </div>
+
+      {reembolsoTarget && (
+        <ReembolsoModal
+          open={!!reembolsoTarget}
+          onClose={() => setReembolsoTarget(null)}
+          descricao={reembolsoTarget.descricao}
+          valorOriginal={Number(reembolsoTarget.valor)}
+          onSave={handleSaveReembolso}
+          isPending={addReembolso.isPending}
+        />
+      )}
     </div>
   );
 }

@@ -124,9 +124,16 @@ export default function Dashboard() {
   const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
   const receitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
 
+  const totalReembolsadoMes = useMemo(() => {
+    const ids = new Set(despesas.map((l) => l.id));
+    return todosReembolsos
+      .filter((r) => ids.has(r.lancamento_id))
+      .reduce((s, r) => s + Number(r.valor_reembolsado), 0);
+  }, [despesas, todosReembolsos]);
+
   const totalDespesas = useMemo(
-    () => despesas.reduce((s, l) => s + Number(l.valor), 0),
-    [despesas]
+    () => despesas.reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,
+    [despesas, totalReembolsadoMes]
   );
   const totalReceitas = useMemo(
     () => receitas.reduce((s, l) => s + Number(l.valor), 0),

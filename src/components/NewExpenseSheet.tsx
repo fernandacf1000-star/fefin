@@ -98,6 +98,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
 
   const getPaisValue = () => {
     if (!isPais) return null;
+    const macro = detectCategoriaMacro(subcategoria || "") || null;
     return subcategoria || macro || "Geral";
   };
 

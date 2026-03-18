@@ -101,7 +101,7 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
                 observacao: obs || undefined,
               })
             }
-            disabled={isPending || !quem || valor <= 0}
+            disabled={isPending || valor <= 0}
             className="flex-1 gradient-emerald text-white border-0"
           >
             {isPending ? "Salvando..." : "Salvar reembolso"}

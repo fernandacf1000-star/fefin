@@ -18,7 +18,7 @@ import {
 } from "@/hooks/useLancamentos";
 import { useCartoes } from "@/hooks/useCartoes";
 import { useAddReembolso } from "@/hooks/useReembolsos";
-import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
+import { getGroupEmoji, getSubcategoriaGroup, detectSubcategoria } from "@/lib/subcategorias";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 

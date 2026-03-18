@@ -288,34 +288,12 @@ export default function Despesas() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {selectionMode ? (
-              <>
-                {selected.size > 0 && (
-                  <button
-                    onClick={() => setBulkDeleteOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-destructive/10 text-destructive text-xs font-semibold"
-                  >
-                    <Trash2 size={13} />
-                    {selected.size}
-                  </button>
-                )}
-                <button
-                  onClick={exitSelection}
-                  className="px-3 py-1.5 rounded-xl bg-secondary text-muted-foreground text-xs font-semibold"
-                >
-                  Cancelar
-                </button>
-              </>
-            ) : (
-              <>
-                <button onClick={prevMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
-                  <ChevronLeft size={15} />
-                </button>
-                <button onClick={nextMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
-                  <ChevronRight size={15} />
-                </button>
-              </>
-            )}
+            <button onClick={prevMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
+              <ChevronLeft size={15} />
+            </button>
+            <button onClick={nextMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
+              <ChevronRight size={15} />
+            </button>
           </div>
         </div>
 

@@ -55,6 +55,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
   const [diaRecorrencia, setDiaRecorrencia] = useState("1");
   const [recorrenciaAte, setRecorrenciaAte] = useState<Date | undefined>(undefined);
   const [isPais, setIsPais] = useState(false);
+  const [isVicente, setIsVicente] = useState(false);
 
   // ── Screen 2 — receita ────────────────────────────────────────────────────
   const [receitaCat, setReceitaCat] = useState<ReceitaCat>("Salário");
@@ -78,6 +79,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
     setRecorrenciaAte(undefined);
     setReceitaCat("Salário");
     setIsPais(false);
+    setIsVicente(false);
   };
 
   const handleClose = () => {
@@ -99,7 +101,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
   const getPaisValue = () => {
     if (!isPais) return null;
     const macro = detectCategoriaMacro(subcategoria || "") || null;
-    return subcategoria || macro || "Geral";
+    return isVicente ? "Vicente" : (subcategoria || macro || "Geral");
   };
 
   // ── Screen 1 → 2 ──────────────────────────────────────────────────────────
@@ -414,7 +416,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
                 <>
                   {/* Toggle Despesa dos pais */}
                   <button
-                    onClick={() => setIsPais(!isPais)}
+                    onClick={() => { setIsPais((v) => { if (v) setIsVicente(false); return !v; }); }}
                     className={cn(
                       "w-full flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors text-left",
                       isPais
@@ -440,6 +442,26 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
                       {isPais && <div className="w-2 h-2 rounded-full bg-white" />}
                     </div>
                   </button>
+
+                  {isPais && (
+                    <button
+                      onClick={() => setIsVicente((v) => !v)}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
+                        isVicente ? "border-blue-400 bg-blue-50" : "border-[#E8ECF5] bg-[#E8ECF5]"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">👦</span>
+                        <span className={cn("text-sm font-medium", isVicente ? "text-blue-700" : "text-muted-foreground")}>
+                          Despesa do Vicente
+                        </span>
+                      </div>
+                      <div className={cn("w-9 h-5 rounded-full flex items-center px-0.5 transition-all", isVicente ? "bg-blue-400 justify-end" : "bg-muted justify-start")}>
+                        <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                      </div>
+                    </button>
+                  )}
 
                   {/* Subcategoria */}
                   <div className="space-y-2">

@@ -69,6 +69,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
   const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");
+  const isVicente = l.subcategoria_pais === "Vicente";
 
   return (
     <div
@@ -94,14 +95,16 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
       <div
         className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 text-xl"
         style={{
-          background: isPais
+          background: isVicente
+            ? "#DBEAFE"
+            : isPais
             ? "#FDE68A"
             : isReceita
             ? "rgba(13,148,136,0.15)"
             : "rgba(99,102,241,0.12)"
         }}
       >
-        {isPais ? "🧓" : emoji}
+        {isVicente ? "👦" : isPais ? "🧓" : emoji}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -110,6 +113,11 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
           {isPais && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-700 font-semibold shrink-0">
               PAIS
+            </span>
+          )}
+          {isVicente && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-200 text-blue-700 font-semibold shrink-0">
+              VICENTE
             </span>
           )}
         </div>

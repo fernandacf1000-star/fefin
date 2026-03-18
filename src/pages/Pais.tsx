@@ -88,7 +88,7 @@ export default function Pais() {
     return Object.entries(map)
       .map(([cat, valor]) => {
         const group = getSubcategoriaGroup(cat) || cat;
-        return { cat, valor, emoji: getGroupEmoji(group) };
+        return { cat, valor, emoji: cat === "Vicente" ? "👦" : getGroupEmoji(group) };
       })
       .sort((a, b) => b.valor - a.valor);
   }, [despesasPais]);
@@ -259,8 +259,8 @@ export default function Pais() {
             </p>
             <div className="space-y-1">
               {lancamentosComReembolso.map((l) => {
-                const group = getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros";
-                const emoji = getGroupEmoji(group);
+                    const group = getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros";
+                    const emoji = l.subcategoria_pais === "Vicente" ? "👦" : getGroupEmoji(group);
                 return (
                   <div key={l.id} className="flex items-center gap-3 py-2.5 border-b border-amber-100 last:border-0">
                     <div

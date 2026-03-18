@@ -95,14 +95,16 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
       <div
         className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 text-xl"
         style={{
-          background: isPais
+          background: isVicente
+            ? "#DBEAFE"
+            : isPais
             ? "#FDE68A"
             : isReceita
             ? "rgba(13,148,136,0.15)"
             : "rgba(99,102,241,0.12)"
         }}
       >
-        {isPais ? "🧓" : emoji}
+        {isVicente ? "👦" : isPais ? "🧓" : emoji}
       </div>
 
       <div className="flex-1 min-w-0">

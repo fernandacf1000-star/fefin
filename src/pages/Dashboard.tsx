@@ -198,6 +198,8 @@ export default function Dashboard() {
     [despesas, cartoes]
   );
 
+  const emojiMapDash: Record<string, string> = { "Moradia": "🏘️", "Alimentação": "🥗", "Transporte": "🚗", "Saúde": "💊", "Pessoal": "💅", "Lazer": "🎮", "Investimentos": "📈", "Pais": "🧓" };
+
   // ── Categorias ────────────────────────────────────────────────────────────
   const categorias = useMemo(() => {
     const map: Record<string, number> = {};

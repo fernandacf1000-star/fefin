@@ -368,3 +368,4 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
 };
 
 export default NewExpenseSheet;
+

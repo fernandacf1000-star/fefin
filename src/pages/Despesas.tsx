@@ -43,30 +43,19 @@ function formatDate(dateStr: string) {
 // ── Row ────────────────────────────────────────────────────────────────────
 interface RowProps {
   lancamento: Lancamento;
-  onLongPress: (l: Lancamento) => void;
+  onTap: (l: Lancamento) => void;
   selected: boolean;
   selectionMode: boolean;
   onToggleSelect: (id: string) => void;
 }
 
-const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, onToggleSelect }: RowProps) => {
+const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggleSelect }: RowProps) => {
   const group = getSubcategoriaGroup(l.subcategoria || "") || l.categoria_macro || l.categoria || "Outros";
   const emoji = getGroupEmoji(group);
   const isReceita = l.tipo === "receita";
   const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");
-
-  let pressTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const handleTouchStart = () => {
-    pressTimer = setTimeout(() => {
-      if (!selectionMode) onLongPress(l);
-    }, 500);
-  };
-  const handleTouchEnd = () => {
-    if (pressTimer) clearTimeout(pressTimer);
-  };
 
   return (
     <div
@@ -78,9 +67,7 @@ const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, on
           ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
           : "bg-white border-transparent"
       )}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onClick={() => selectionMode && onToggleSelect(l.id)}
+      onClick={() => selectionMode ? onToggleSelect(l.id) : onTap(l)}
     >
       {selectionMode && (
         <button
@@ -92,10 +79,16 @@ const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, on
       )}
 
       <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-base"
-        style={{ background: isPais ? "rgba(251,191,36,0.2)" : "#E8ECF5" }}
+        className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 text-xl"
+        style={{
+          background: isPais
+            ? "rgba(251,191,36,0.25)"
+            : isReceita
+            ? "rgba(13,148,136,0.12)"
+            : "rgba(99,102,241,0.10)"
+        }}
       >
-        {isPais ? "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}" : emoji}
+        {isPais ? "👨‍👩‍👧" : emoji}
       </div>
 
       <div className="flex-1 min-w-0">

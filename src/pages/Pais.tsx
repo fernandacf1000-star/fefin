@@ -116,7 +116,7 @@ export default function Pais() {
     await addReembolso.mutateAsync({
       lancamento_id: reembolsoTarget.id,
       valor_reembolsado: data.valor_reembolsado,
-      quem_reembolsou: data.quem_reembolsou,
+      quem_reembolsou: data.quem_reembolsou || "Pais",
       data_reembolso: data.data_reembolso,
       observacao: data.observacao ?? null,
     });

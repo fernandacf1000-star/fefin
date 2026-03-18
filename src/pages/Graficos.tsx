@@ -141,7 +141,12 @@ const Graficos = () => {
   const totalMes = composicao.reduce((s, c) => s + c.value, 0);
 
   const subcatData = useMemo(() => {
-    let despesas = lancamentos.filter((l) => l.tipo === "despesa" && l.subcategoria);
+    // Exclui lançamentos dos pais e Vicente — eles aparecem na composicao como categorias próprias
+    let despesas = lancamentos.filter((l) =>
+      l.tipo === "despesa" &&
+      l.subcategoria &&
+      !(l.subcategoria_pais && l.subcategoria_pais !== "")
+    );
     if (subcatCatFilter) {
       despesas = despesas.filter((l) => normalizeMacro(l.categoria_macro, l.subcategoria) === subcatCatFilter);
     }

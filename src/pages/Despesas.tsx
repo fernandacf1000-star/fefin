@@ -50,8 +50,9 @@ interface RowProps {
 }
 
 const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggleSelect }: RowProps) => {
-  const group = getSubcategoriaGroup(l.subcategoria || "") || l.categoria_macro || l.categoria || "Outros";
-  const emoji = getGroupEmoji(group);
+  const subDetectada = l.subcategoria || detectSubcategoria(l.descricao || "") || null;
+  const group = getSubcategoriaGroup(subDetectada || "") || l.categoria_macro || l.categoria || null;
+  const emoji = group ? getGroupEmoji(group) : isReceita ? "💰" : "💸";
   const isReceita = l.tipo === "receita";
   const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
   const isRecorrente = l.recorrente;

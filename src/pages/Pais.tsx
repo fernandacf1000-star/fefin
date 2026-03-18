@@ -2,8 +2,9 @@ import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, TrendingDown, RotateCcw, Wallet } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
+import ReembolsoModal from "@/components/ReembolsoModal";
 import { useLancamentos } from "@/hooks/useLancamentos";
-import { useAllReembolsos, getTotalReembolsado } from "@/hooks/useReembolsos";
+import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>

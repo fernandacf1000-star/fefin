@@ -41,13 +41,17 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
 
   if (!open) return null;
 
-  const handleSave = () => {
-    onSave({
-      valor_reembolsado: valor,
-      quem_reembolsou: quem.trim() || "Pais",
-      data_reembolso: data,
-      observacao: obs.trim() || undefined,
-    });
+  const handleSave = async () => {
+    try {
+      await onSave({
+        valor_reembolsado: valor,
+        quem_reembolsou: quem.trim() || "Pais",
+        data_reembolso: data,
+        observacao: obs.trim() || undefined,
+      });
+    } catch (e: any) {
+      console.error("Reembolso error:", e);
+    }
   };
 
   return (

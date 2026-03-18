@@ -225,10 +225,10 @@ export default function Pais() {
                         <span className="text-[12px] font-bold text-foreground">{fmt(valor)}</span>
                       </div>
                     </div>
-                    <div className="h-1 rounded-full bg-[#E8ECF5] overflow-hidden">
+                    <div className="h-1 rounded-full bg-amber-100 overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, background: "#6366F1" }}
+                        style={{ width: `${pct}%`, background: "#F59E0B" }}
                       />
                     </div>
                     {reembolsadoCat > 0 && (

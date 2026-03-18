@@ -10,7 +10,7 @@ export const SUBCATEGORIA_GROUPS: SubcategoriaGroup[] = [
   { group: "Alimentação", emoji: "🍔", items: ["Supermercado", "Restaurantes", "Delivery"] },
   { group: "Transporte", emoji: "🚗", items: ["Combustível", "Uber/Taxi", "Estacionamento/Pedágio", "Manutenção/Seguro"] },
   { group: "Saúde", emoji: "🏥", items: ["Plano de saúde", "Consultas/Exames", "Medicamentos"] },
-  { group: "Pessoal", emoji: "🛍️", items: ["Roupas/Cuidados pessoais", "Cursos/Desenvolvimento", "Presentes", "Outros"] },
+  { group: "Pessoal", emoji: "🛍️", items: ["Roupas/Cuidados pessoais", "Presentes", "Outros"] },
   { group: "Lazer", emoji: "🎉", items: ["Viagens", "Entretenimento", "Assinaturas"] },
   { group: "Investimentos", emoji: "💰", items: ["Renda fixa", "Ações/ETF", "Fundos", "Previdência"] },
 ];
@@ -63,7 +63,7 @@ export const detectSubcategoria = (descricao: string): string | null => {
 
   // Pessoal
   if (/ZARA|CENTAURO|NIKE|CRIS BARROS|LAFORT|CATRAN|GRUPO BRABUS|SHOP2GETHER|VINDI|BOBO PATIO|E-COM HERING|SEPHORA|INVICTU|NETSHOES|ANSELMI|PORTO COMERCIO|STUDIO MORMAII|GRANADO|BELEZA NA WEB|RETRO HAIR|STUDIO GARCIA|MP\*STUDIOGARCIA|ACADEMIA|SMART FIT/.test(d)) return "Roupas/Cuidados pessoais";
-  if (/JIM\.COM|CURSO|UDEMY|ALURA|ESCOLA/.test(d)) return "Cursos/Desenvolvimento";
+  if (/JIM\.COM|CURSO|UDEMY|ALURA|ESCOLA/.test(d)) return "Outros";
   if (/CASAR \*PRE\*SENTE/.test(d)) return "Presentes";
 
   // Lazer
@@ -99,7 +99,7 @@ export const SUBCAT_COLORS: Record<string, string> = {
   "Medicamentos": "#14B8A6",
   /* PESSOAL */
   "Roupas/Cuidados pessoais": "#EC4899",
-  "Cursos/Desenvolvimento": "#A855F7",
+  
   "Presentes": "#F43F5E",
   "Outros": "#94A3B8",
   /* LAZER */
@@ -150,7 +150,7 @@ const LEGACY_SUB_MAP: Record<string, { macro: string; sub: string }> = {
   "Hotel/Hospedagem": { macro: "Lazer", sub: "Entretenimento" },
   "Objetos de arte": { macro: "Moradia", sub: "Manutenção" },
   "Miscelânea": { macro: "Pessoal", sub: "Outros" },
-  "Livros": { macro: "Pessoal", sub: "Cursos/Desenvolvimento" },
+  "Livros": { macro: "Pessoal", sub: "Outros" },
   "Loteria": { macro: "Lazer", sub: "Entretenimento" },
 };
 

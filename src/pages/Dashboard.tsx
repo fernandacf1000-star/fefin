@@ -7,8 +7,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAllReembolsos } from "@/hooks/useReembolsos";
 import { getGroupEmoji } from "@/lib/subcategorias";
 
-const fmt = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 // ── SVG logos ──────────────────────────────────────────────────────────────
 const MastercardLogo = ({ size = 28 }: { size?: number }) => (
@@ -21,7 +20,9 @@ const MastercardLogo = ({ size = 28 }: { size?: number }) => (
 
 const VisaLogo = ({ size = 28 }: { size?: number }) => (
   <svg width={size} height={Math.round(size * 0.4)} viewBox="0 0 60 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <text x="2" y="16" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="18" fill="#1A1F71" letterSpacing="-1">VISA</text>
+    <text x="2" y="16" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="18" fill="#1A1F71" letterSpacing="-1">
+      VISA
+    </text>
   </svg>
 );
 
@@ -35,43 +36,53 @@ const BandeiraLogo = ({ bandeira, size = 28 }: { bandeira: string; size?: number
 // ── Mascot — identical to Splash.tsx canonical SVG ─────────────────────────
 const MascotHead = ({ size = 64 }: { size?: number }) => {
   return (
-    <svg width={size} height={Math.round(size * 1.2)} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width={size}
+      height={Math.round(size * 1.2)}
+      viewBox="0 0 100 120"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       {/* Hair / head back */}
-      <ellipse cx="50" cy="42" rx="34" ry="36" fill="#2C1810"/>
+      <ellipse cx="50" cy="42" rx="34" ry="36" fill="#2C1810" />
       {/* Pigtails */}
-      <path d="M74 45 Q88 55 85 80 Q82 95 75 100 Q80 80 76 65 Q74 55 74 45Z" fill="#2C1810"/>
-      <path d="M26 45 Q12 58 15 82 Q18 96 24 100 Q20 80 24 65 Q26 55 26 45Z" fill="#2C1810"/>
+      <path d="M74 45 Q88 55 85 80 Q82 95 75 100 Q80 80 76 65 Q74 55 74 45Z" fill="#2C1810" />
+      <path d="M26 45 Q12 58 15 82 Q18 96 24 100 Q20 80 24 65 Q26 55 26 45Z" fill="#2C1810" />
       {/* Face */}
-      <ellipse cx="50" cy="50" rx="28" ry="30" fill="#FDDBB4"/>
+      <ellipse cx="50" cy="50" rx="28" ry="30" fill="#FDDBB4" />
       {/* Hair fringe */}
-      <ellipse cx="50" cy="18" rx="16" ry="10" fill="#2C1810"/>
+      <ellipse cx="50" cy="18" rx="16" ry="10" fill="#2C1810" />
       {/* Eyebrows */}
-      <path d="M32 40 Q39 36 44 39" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none"/>
-      <path d="M56 39 Q61 36 68 40" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none"/>
+      <path d="M32 40 Q39 36 44 39" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none" />
+      <path d="M56 39 Q61 36 68 40" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none" />
       {/* Eyes white */}
-      <ellipse cx="38" cy="47" rx="5" ry="5.5" fill="white"/>
-      <ellipse cx="62" cy="47" rx="5" ry="5.5" fill="white"/>
+      <ellipse cx="38" cy="47" rx="5" ry="5.5" fill="white" />
+      <ellipse cx="62" cy="47" rx="5" ry="5.5" fill="white" />
       {/* Pupils */}
-      <ellipse cx="38.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314"/>
-      <ellipse cx="62.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314"/>
+      <ellipse cx="38.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314" />
+      <ellipse cx="62.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314" />
       {/* Eye shine */}
-      <circle cx="40" cy="46" r="1.2" fill="white"/>
-      <circle cx="64" cy="46" r="1.2" fill="white"/>
+      <circle cx="40" cy="46" r="1.2" fill="white" />
+      <circle cx="64" cy="46" r="1.2" fill="white" />
       {/* Smile */}
-      <path d="M38 63 Q50 72 62 63" stroke="#C68642" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+      <path d="M38 63 Q50 72 62 63" stroke="#C68642" strokeWidth="2.5" strokeLinecap="round" fill="none" />
       {/* Blush */}
-      <ellipse cx="30" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
-      <ellipse cx="70" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
+      <ellipse cx="30" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5" />
+      <ellipse cx="70" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5" />
       {/* Earrings — gold coins with $ */}
-      <circle cx="21" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2"/>
-      <text x="21" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
-      <circle cx="79" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2"/>
-      <text x="79" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
+      <circle cx="21" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2" />
+      <text x="21" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">
+        $
+      </text>
+      <circle cx="79" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2" />
+      <text x="79" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">
+        $
+      </text>
       {/* Body/outfit */}
-      <path d="M22 92 Q20 112 22 118 L78 118 Q80 112 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#6366F1"/>
+      <path d="M22 92 Q20 112 22 118 L78 118 Q80 112 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#6366F1" />
       {/* Hands — two simple dots */}
-      <ellipse cx="16" cy="104" rx="7" ry="5" fill="#FDDBB4"/>
-      <ellipse cx="84" cy="104" rx="7" ry="5" fill="#FDDBB4"/>
+      <ellipse cx="16" cy="104" rx="7" ry="5" fill="#FDDBB4" />
+      <ellipse cx="84" cy="104" rx="7" ry="5" fill="#FDDBB4" />
     </svg>
   );
 };
@@ -112,13 +123,9 @@ export default function Dashboard() {
   const firstName = nome.split(" ")[0] || "você";
 
   const prevMes = () =>
-    setMesAtual(({ year, month }) =>
-      month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }
-    );
+    setMesAtual(({ year, month }) => (month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }));
   const nextMes = () =>
-    setMesAtual(({ year, month }) =>
-      month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }
-    );
+    setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
 
   // ── Totals ────────────────────────────────────────────────────────────────
   const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
@@ -133,12 +140,9 @@ export default function Dashboard() {
 
   const totalDespesas = useMemo(
     () => despesas.reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,
-    [despesas, totalReembolsadoMes]
+    [despesas, totalReembolsadoMes],
   );
-  const totalReceitas = useMemo(
-    () => receitas.reduce((s, l) => s + Number(l.valor), 0),
-    [receitas]
-  );
+  const totalReceitas = useMemo(() => receitas.reduce((s, l) => s + Number(l.valor), 0), [receitas]);
   const reserva = totalReceitas - totalDespesas;
   const reservaPct = totalReceitas > 0 ? (reserva / totalReceitas) * 100 : 0;
   const gastoPct = totalReceitas > 0 ? Math.min(100, (totalDespesas / totalReceitas) * 100) : 0;
@@ -189,9 +193,7 @@ export default function Dashboard() {
     });
   }, [cartoes]);
 
-  const melhorDays = melhorCartao
-    ? getCartaoCycle(melhorCartao.dia_fechamento).daysUntilClose
-    : 0;
+  const melhorDays = melhorCartao ? getCartaoCycle(melhorCartao.dia_fechamento).daysUntilClose : 0;
 
   // ── Por cartão ────────────────────────────────────────────────────────────
   const porCartao = useMemo(
@@ -199,23 +201,29 @@ export default function Dashboard() {
       cartoes
         .map((c) => ({
           cartao: c,
-          total: despesas
-            .filter((l) => l.cartao_id === c.id)
-            .reduce((s, l) => s + Number(l.valor), 0),
+          total: despesas.filter((l) => l.cartao_id === c.id).reduce((s, l) => s + Number(l.valor), 0),
         }))
         .filter((x) => x.total > 0),
-    [despesas, cartoes]
+    [despesas, cartoes],
   );
 
-  const emojiMapDash: Record<string, string> = { "Moradia": "🏘️", "Alimentação": "🥗", "Transporte": "🚗", "Saúde": "💊", "Pessoal": "💅", "Lazer": "🎮", "Investimentos": "📈", "Pais": "🧓" };
+  const emojiMapDash: Record<string, string> = {
+    Moradia: "🏘️",
+    Alimentação: "🥗",
+    Transporte: "🚗",
+    Saúde: "💊",
+    Pessoal: "💅",
+    Lazer: "🎮",
+    Investimentos: "📈",
+    Pais: "🧓",
+  };
 
   // ── Categorias ────────────────────────────────────────────────────────────
   const categorias = useMemo(() => {
     const map: Record<string, number> = {};
     despesas.forEach((l) => {
-      const cat = (l.subcategoria_pais && l.subcategoria_pais !== "")
-        ? "Pais"
-        : l.categoria_macro || l.categoria || "Outros";
+      const cat =
+        l.subcategoria_pais && l.subcategoria_pais !== "" ? "Pais" : l.categoria_macro || l.categoria || "Outros";
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });
     return Object.entries(map)
@@ -229,7 +237,6 @@ export default function Dashboard() {
       <BottomNav />
 
       <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
-
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -246,9 +253,7 @@ export default function Dashboard() {
             >
               <ChevronLeft size={15} />
             </button>
-            <span className="text-[11px] font-semibold text-foreground px-1 min-w-[96px] text-center">
-              {mesLabel}
-            </span>
+            <span className="text-[11px] font-semibold text-foreground px-1 min-w-[96px] text-center">{mesLabel}</span>
             <button
               onClick={nextMes}
               className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -296,17 +301,11 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="text-right">
-              <p
-                className="text-xl font-bold leading-tight"
-                style={{ color: reserva >= 0 ? "#0D9488" : "#D97052" }}
-              >
+              <p className="text-xl font-bold leading-tight" style={{ color: reserva >= 0 ? "#0D9488" : "#D97052" }}>
                 {fmt(reserva)}
               </p>
               {totalReceitas > 0 && (
-                <p
-                  className="text-[11px] font-semibold"
-                  style={{ color: reserva >= 0 ? "#0D9488" : "#D97052" }}
-                >
+                <p className="text-[11px] font-semibold" style={{ color: reserva >= 0 ? "#0D9488" : "#D97052" }}>
                   {Math.abs(reservaPct).toFixed(1)}% da receita
                 </p>
               )}
@@ -352,9 +351,7 @@ export default function Dashboard() {
         {/* Faturas por cartão */}
         {porCartao.length > 0 && (
           <div className="glass-card p-4 space-y-3">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              Faturas do mês
-            </p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Faturas do mês</p>
             <div className="space-y-2.5">
               {porCartao.map(({ cartao, total }) => (
                 <div key={cartao.id} className="flex items-center justify-between">
@@ -411,11 +408,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        {isLoading && (
-          <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>
-        )}
+        {isLoading && <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>}
       </div>
     </div>
   );
 }
-

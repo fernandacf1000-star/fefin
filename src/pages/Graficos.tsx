@@ -68,8 +68,14 @@ const Graficos = () => {
     return MONTH_LABELS.map((label, i) => {
       const mesKey = `${currentYear}-${String(i + 1).padStart(2, "0")}`;
       const mesLancs = allYearLancamentos.filter((l) => l.mes_referencia === mesKey);
-      const receitas = mesLancs.filter((l) => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0);
+      // Receitas excluem resgates de investimento
+      const receitas = mesLancs
+        .filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento")
+        .reduce((s, l) => s + Number(l.valor), 0);
       const despesas = mesLancs.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0);
+      const resgates = mesLancs
+        .filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento")
+        .reduce((s, l) => s + Number(l.valor), 0);
       const isFuture = i > currentMonthIdx;
       const isTransition = i === currentMonthIdx; // current month acts as bridge
       return {
@@ -80,6 +86,7 @@ const Graficos = () => {
         // Future dashed (bridge from current month)
         receitasFuture: isFuture || isTransition ? receitas : undefined,
         despesasFuture: isFuture || isTransition ? despesas : undefined,
+        resgates,
         saldo: receitas - despesas,
         isFuture,
       };
@@ -89,7 +96,8 @@ const Graficos = () => {
   const annualTotals = useMemo(() => {
     const r = annualData.reduce((s, d) => s + (d.receitasPast || 0), 0);
     const d = annualData.reduce((s, dd) => s + (dd.despesasPast || 0), 0);
-    return { receitas: r, despesas: d, saldo: r - d };
+    const resg = annualData.reduce((s, dd) => s + (dd.resgates || 0), 0);
+    return { receitas: r, despesas: d, saldo: r - d, resgates: resg };
   }, [annualData]);
 
   const reembolsosMes = useMemo(() => {
@@ -112,8 +120,19 @@ const Graficos = () => {
 
   const totalReembolsadoMes = totalReembolsadoMesTabela + totalReembolsadoMesReceitas;
 
+  // Resgates de investimento — separados da receita
+  const totalResgatesMes = useMemo(
+    () => lancamentos
+      .filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento")
+      .reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentos],
+  );
+
+  // Receitas excluem resgate_investimento
   const totalReceitas = useMemo(
-    () => lancamentos.filter((l) => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0),
+    () => lancamentos
+      .filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento")
+      .reduce((s, l) => s + Number(l.valor), 0),
     [lancamentos],
   );
   const totalDespesas = useMemo(
@@ -485,6 +504,30 @@ const Graficos = () => {
                   );
                 })()}
               </section>
+
+              {/* Resgates de Investimento */}
+              {totalResgatesMes > 0 && (
+                <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.07s" }}>
+                  <h2 className="text-sm font-semibold text-foreground mb-1">Resgates de Investimento</h2>
+                  <p className="text-[11px] text-muted-foreground mb-3">
+                    Movimentação de patrimônio · não conta como renda
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-8 h-8 rounded-xl flex items-center justify-center"
+                        style={{ background: "rgba(139,92,246,0.12)" }}
+                      >
+                        <span className="text-sm">📈</span>
+                      </div>
+                      <span className="text-sm text-muted-foreground">Este mês</span>
+                    </div>
+                    <span className="text-lg font-bold" style={{ color: "#8B5CF6" }}>
+                      {fmt(totalResgatesMes)}
+                    </span>
+                  </div>
+                </section>
+              )}
 
               {/* Composição por Categoria — Donut */}
               {composicao.length > 0 && (

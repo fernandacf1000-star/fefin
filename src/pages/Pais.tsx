@@ -103,6 +103,26 @@ export default function Pais() {
     });
   }, [despesasPais, todosReembolsos]);
 
+  const [reembolsoTarget, setReembolsoTarget] = useState<any>(null);
+  const addReembolso = useAddReembolso();
+
+  const handleSaveReembolso = async (data: {
+    valor_reembolsado: number;
+    quem_reembolsou: string;
+    data_reembolso: string;
+    observacao?: string;
+  }) => {
+    if (!reembolsoTarget) return;
+    await addReembolso.mutateAsync({
+      lancamento_id: reembolsoTarget.id,
+      valor_reembolsado: data.valor_reembolsado,
+      quem_reembolsou: data.quem_reembolsou,
+      data_reembolso: data.data_reembolso,
+      observacao: data.observacao ?? null,
+    });
+    setReembolsoTarget(null);
+  };
+
   return (
     <div className="gradient-bg min-h-screen pb-28">
       <BottomNav />

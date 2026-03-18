@@ -43,30 +43,19 @@ function formatDate(dateStr: string) {
 // ── Row ────────────────────────────────────────────────────────────────────
 interface RowProps {
   lancamento: Lancamento;
-  onLongPress: (l: Lancamento) => void;
+  onTap: (l: Lancamento) => void;
   selected: boolean;
   selectionMode: boolean;
   onToggleSelect: (id: string) => void;
 }
 
-const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, onToggleSelect }: RowProps) => {
+const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggleSelect }: RowProps) => {
   const group = getSubcategoriaGroup(l.subcategoria || "") || l.categoria_macro || l.categoria || "Outros";
   const emoji = getGroupEmoji(group);
   const isReceita = l.tipo === "receita";
   const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");
-
-  let pressTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const handleTouchStart = () => {
-    pressTimer = setTimeout(() => {
-      if (!selectionMode) onLongPress(l);
-    }, 500);
-  };
-  const handleTouchEnd = () => {
-    if (pressTimer) clearTimeout(pressTimer);
-  };
 
   return (
     <div
@@ -78,9 +67,7 @@ const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, on
           ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
           : "bg-white border-transparent"
       )}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onClick={() => selectionMode && onToggleSelect(l.id)}
+      onClick={() => selectionMode ? onToggleSelect(l.id) : onTap(l)}
     >
       {selectionMode && (
         <button
@@ -92,10 +79,16 @@ const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, on
       )}
 
       <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-base"
-        style={{ background: isPais ? "rgba(251,191,36,0.2)" : "#E8ECF5" }}
+        className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 text-xl"
+        style={{
+          background: isPais
+            ? "rgba(251,191,36,0.25)"
+            : isReceita
+            ? "rgba(13,148,136,0.12)"
+            : "rgba(99,102,241,0.10)"
+        }}
       >
-        {isPais ? "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}" : emoji}
+        {isPais ? "👨‍👩‍👧" : emoji}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -295,34 +288,12 @@ export default function Despesas() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {selectionMode ? (
-              <>
-                {selected.size > 0 && (
-                  <button
-                    onClick={() => setBulkDeleteOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-destructive/10 text-destructive text-xs font-semibold"
-                  >
-                    <Trash2 size={13} />
-                    {selected.size}
-                  </button>
-                )}
-                <button
-                  onClick={exitSelection}
-                  className="px-3 py-1.5 rounded-xl bg-secondary text-muted-foreground text-xs font-semibold"
-                >
-                  Cancelar
-                </button>
-              </>
-            ) : (
-              <>
-                <button onClick={prevMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
-                  <ChevronLeft size={15} />
-                </button>
-                <button onClick={nextMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
-                  <ChevronRight size={15} />
-                </button>
-              </>
-            )}
+            <button onClick={prevMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
+              <ChevronLeft size={15} />
+            </button>
+            <button onClick={nextMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
+              <ChevronRight size={15} />
+            </button>
           </div>
         </div>
 
@@ -340,31 +311,54 @@ export default function Despesas() {
           </div>
         )}
 
-        {/* Filtros */}
-        {!selectionMode && (
-          <div className="flex gap-2">
-            {(["todos", "despesa", "receita"] as const).map((t) => (
+        {/* Filtros / Seleção */}
+        <div className="flex gap-2 items-center">
+          {selectionMode ? (
+            <>
+              <span className="text-xs text-muted-foreground font-medium">
+                {selected.size} selecionado{selected.size !== 1 ? "s" : ""}
+              </span>
+              {selected.size > 0 && (
+                <button
+                  onClick={() => setBulkDeleteOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-destructive/10 text-destructive text-xs font-semibold"
+                >
+                  <Trash2 size={13} />
+                  Excluir
+                </button>
+              )}
               <button
-                key={t}
-                onClick={() => setFilterTipo(t)}
-                className={cn(
-                  "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors",
-                  filterTipo === t
-                    ? "gradient-emerald text-primary-foreground"
-                    : "bg-white border border-border text-muted-foreground"
-                )}
+                onClick={exitSelection}
+                className="ml-auto px-3 py-1.5 rounded-xl bg-secondary text-muted-foreground text-xs font-semibold"
               >
-                {t === "todos" ? "Todos" : t === "despesa" ? "Despesas" : "Receitas"}
+                Cancelar
               </button>
-            ))}
-            <button
-              onClick={() => { setSelectionMode(true); setSelected(new Set()); }}
-              className="ml-auto px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-border text-muted-foreground"
-            >
-              Selecionar
-            </button>
-          </div>
-        )}
+            </>
+          ) : (
+            <>
+              {(["todos", "despesa", "receita"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setFilterTipo(t)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors",
+                    filterTipo === t
+                      ? "gradient-emerald text-primary-foreground"
+                      : "bg-white border border-border text-muted-foreground"
+                  )}
+                >
+                  {t === "todos" ? "Todos" : t === "despesa" ? "Despesas" : "Receitas"}
+                </button>
+              ))}
+              <button
+                onClick={() => { setSelectionMode(true); setSelected(new Set()); }}
+                className="ml-auto px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-border text-muted-foreground"
+              >
+                Selecionar
+              </button>
+            </>
+          )}
+        </div>
 
         {/* Lista */}
         {isLoading ? (
@@ -377,21 +371,14 @@ export default function Despesas() {
         ) : (
           <div className="space-y-2">
             {lista.map((l) => (
-              <div
+              <LancamentoRow
                 key={l.id}
-                onClick={() => !selectionMode && setActionsLanc(l)}
-              >
-                <LancamentoRow
-                  lancamento={l}
-                  onLongPress={(ll) => {
-                    setSelectionMode(true);
-                    setSelected(new Set([ll.id]));
-                  }}
-                  selected={selected.has(l.id)}
-                  selectionMode={selectionMode}
-                  onToggleSelect={toggleSelect}
-                />
-              </div>
+                lancamento={l}
+                onTap={(ll) => setActionsLanc(ll)}
+                selected={selected.has(l.id)}
+                selectionMode={selectionMode}
+                onToggleSelect={toggleSelect}
+              />
             ))}
           </div>
         )}

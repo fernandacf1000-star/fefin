@@ -47,6 +47,8 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   const updateAll = useUpdateAllParcelamento();
   const updateFuturas = useUpdateParcelamentoFuturas();
   const addMultiple = useAddMultipleLancamentos();
+  const updateFuturasRecorrencia = useUpdateFutureRecorrencia();
+  const updateAllRecorrencia = useUpdateAllRecorrencia();
 
   useEffect(() => {
     if (!lancamento) return;

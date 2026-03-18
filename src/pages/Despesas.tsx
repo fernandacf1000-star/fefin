@@ -197,7 +197,11 @@ export default function Despesas() {
     [lancamentos],
   );
   const totalReceitas = useMemo(
-    () => lancamentos.filter((l) => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0),
+    () => lancamentos.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentos],
+  );
+  const totalResgates = useMemo(
+    () => lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
     [lancamentos],
   );
 
@@ -312,6 +316,12 @@ export default function Despesas() {
               <p className="text-base font-bold text-foreground">{fmt(totalReceitas)}</p>
             </div>
           </div>
+          {totalResgates > 0 && (
+            <div className="glass-card px-4 py-3 border-l-2" style={{ borderLeftColor: "#8B5CF6" }}>
+              <p className="text-[10px] text-muted-foreground">Resgates de investimento</p>
+              <p className="text-base font-bold text-foreground">{fmt(totalResgates)}</p>
+            </div>
+          )}
         )}
 
         {/* Filtros / Seleção */}

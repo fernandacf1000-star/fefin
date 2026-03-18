@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, ArrowDownUp } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";
@@ -148,11 +148,23 @@ export default function Dashboard() {
 
   const totalReembolsadoMes = totalReembolsadoMesTabela + totalReembolsadoMesReceitas;
 
+  // Resgates de investimento — não contam como receita/renda
+  const totalResgates = useMemo(
+    () => receitas
+      .filter((l) => l.categoria === "resgate_investimento")
+      .reduce((s, l) => s + Number(l.valor), 0),
+    [receitas],
+  );
+
   const totalDespesas = useMemo(
     () => despesas.reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,
     [despesas, totalReembolsadoMes],
   );
-  const totalReceitas = useMemo(() => receitas.reduce((s, l) => s + Number(l.valor), 0), [receitas]);
+  // Receitas excluem resgate_investimento
+  const totalReceitas = useMemo(
+    () => receitas.filter((l) => l.categoria !== "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
+    [receitas],
+  );
   const reserva = totalReceitas - totalDespesas;
   const reservaPct = totalReceitas > 0 ? (reserva / totalReceitas) * 100 : 0;
   const gastoPct = totalReceitas > 0 ? Math.min(100, (totalDespesas / totalReceitas) * 100) : 0;
@@ -299,6 +311,20 @@ export default function Dashboard() {
             <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalReceitas)}</p>
           </div>
         </div>
+
+        {/* Resgates */}
+        {totalResgates > 0 && (
+          <div className="glass-card p-4 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <ArrowDownUp size={13} style={{ color: "#8B5CF6" }} />
+              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                Resgates de investimento
+              </span>
+            </div>
+            <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalResgates)}</p>
+            <p className="text-[10px] text-muted-foreground">Movimentação de patrimônio · não conta como renda</p>
+          </div>
+        )}
 
         {/* Reserva */}
         <div className="glass-card p-4 space-y-3">

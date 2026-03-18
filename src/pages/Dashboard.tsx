@@ -4,6 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";
 import { useProfile } from "@/hooks/useProfile";
+import { useAllReembolsos } from "@/hooks/useReembolsos";
 import { getGroupEmoji } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
@@ -105,6 +106,7 @@ export default function Dashboard() {
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
   const { data: cartoes = [] } = useCartoes();
   const { data: profile } = useProfile();
+  const { data: todosReembolsos = [] } = useAllReembolsos();
 
   const nome = profile?.nome || profile?.full_name || "";
   const firstName = nome.split(" ")[0] || "você";
@@ -122,9 +124,16 @@ export default function Dashboard() {
   const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
   const receitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
 
+  const totalReembolsadoMes = useMemo(() => {
+    const ids = new Set(despesas.map((l) => l.id));
+    return todosReembolsos
+      .filter((r) => ids.has(r.lancamento_id))
+      .reduce((s, r) => s + Number(r.valor_reembolsado), 0);
+  }, [despesas, todosReembolsos]);
+
   const totalDespesas = useMemo(
-    () => despesas.reduce((s, l) => s + Number(l.valor), 0),
-    [despesas]
+    () => despesas.reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,
+    [despesas, totalReembolsadoMes]
   );
   const totalReceitas = useMemo(
     () => receitas.reduce((s, l) => s + Number(l.valor), 0),

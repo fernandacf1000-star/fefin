@@ -2,8 +2,9 @@ import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, TrendingDown, RotateCcw, Wallet } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
+import ReembolsoModal from "@/components/ReembolsoModal";
 import { useLancamentos } from "@/hooks/useLancamentos";
-import { useAllReembolsos, getTotalReembolsado } from "@/hooks/useReembolsos";
+import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
 
 const fmt = (v: number) =>
@@ -101,6 +102,26 @@ export default function Pais() {
       return { ...l, reembolsado, liquido };
     });
   }, [despesasPais, todosReembolsos]);
+
+  const [reembolsoTarget, setReembolsoTarget] = useState<any>(null);
+  const addReembolso = useAddReembolso();
+
+  const handleSaveReembolso = async (data: {
+    valor_reembolsado: number;
+    quem_reembolsou: string;
+    data_reembolso: string;
+    observacao?: string;
+  }) => {
+    if (!reembolsoTarget) return;
+    await addReembolso.mutateAsync({
+      lancamento_id: reembolsoTarget.id,
+      valor_reembolsado: data.valor_reembolsado,
+      quem_reembolsou: data.quem_reembolsou,
+      data_reembolso: data.data_reembolso,
+      observacao: data.observacao ?? null,
+    });
+    setReembolsoTarget(null);
+  };
 
   return (
     <div className="gradient-bg min-h-screen pb-28">
@@ -262,7 +283,7 @@ export default function Pais() {
                     const group = getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros";
                     const emoji = l.subcategoria_pais === "Vicente" ? "👦" : getGroupEmoji(group);
                 return (
-                  <div key={l.id} className="flex items-center gap-3 py-2.5 border-b border-amber-100 last:border-0">
+                  <div key={l.id} onClick={() => setReembolsoTarget(l)} className="flex items-center gap-3 py-2.5 border-b border-amber-100 last:border-0 cursor-pointer active:opacity-70">
                     <div
                       className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
                       style={{ background: "rgba(251,191,36,0.2)" }}
@@ -298,6 +319,17 @@ export default function Pais() {
           </div>
         )}
       </div>
+
+      {reembolsoTarget && (
+        <ReembolsoModal
+          open={!!reembolsoTarget}
+          onClose={() => setReembolsoTarget(null)}
+          descricao={reembolsoTarget.descricao}
+          valorOriginal={Number(reembolsoTarget.valor)}
+          onSave={handleSaveReembolso}
+          isPending={addReembolso.isPending}
+        />
+      )}
     </div>
   );
 }

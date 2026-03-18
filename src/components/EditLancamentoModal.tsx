@@ -105,7 +105,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       const macro = detectCategoriaMacro(subcategoria || "") || null;
       const forma = formaPagamento === "dinheiro" ? "dinheiro" : "credito";
       const cartao = formaPagamento === "credito" ? cartaoId || null : null;
-const novaData = format(data, "yyyy-MM-dd");
+      const novaData = format(data, "yyyy-MM-dd");
       const novoMesRef = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`;
       const baseUpdates = {
         descricao,
@@ -220,7 +220,7 @@ const novaData = format(data, "yyyy-MM-dd");
             updates: baseUpdates,
           });
       } else {
-        await onSave({ ...baseUpdates, data: format(data, "yyyy-MM-dd") });
+        await onSave(baseUpdates);
       }
       onClose();
     } finally {
@@ -541,3 +541,4 @@ const novaData = format(data, "yyyy-MM-dd");
 };
 
 export default EditLancamentoModal;
+

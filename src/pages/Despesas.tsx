@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Trash2, CheckSquare, Square } from "lucide-react";
+import SwipeableItem from "@/components/SwipeableItem";
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import LancamentoActions from "@/components/LancamentoActions";

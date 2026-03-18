@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
@@ -52,6 +53,23 @@ export const useReembolsosByLancamento = (lancamentoId?: string) => {
 
 export const useAllReembolsos = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Realtime: refetch automático quando reembolsos mudam no banco
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel("reembolsos-rt")
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "reembolsos",
+      }, () => {
+        queryClient.refetchQueries({ queryKey: ["reembolsos"], exact: false });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, queryClient]);
 
   return useQuery({
     queryKey: ["reembolsos", "all", user?.id],
@@ -84,8 +102,8 @@ export const useAddReembolso = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reembolsos"], exact: false });
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["reembolsos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };
@@ -99,8 +117,8 @@ export const useDeleteReembolso = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reembolsos"], exact: false });
-      queryClient.invalidateQueries({ queryKey: ["lancamentos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["reembolsos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
     },
   });
 };

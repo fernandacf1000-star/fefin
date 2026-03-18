@@ -99,7 +99,7 @@ export const SUBCAT_COLORS: Record<string, string> = {
   "Medicamentos": "#14B8A6",
   /* PESSOAL */
   "Roupas/Cuidados pessoais": "#EC4899",
-  "Cursos/Desenvolvimento": "#A855F7",
+  
   "Presentes": "#F43F5E",
   "Outros": "#94A3B8",
   /* LAZER */

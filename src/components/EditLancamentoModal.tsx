@@ -13,6 +13,8 @@ import {
   useUpdateAllParcelamento,
   useUpdateParcelamentoFuturas,
   useAddMultipleLancamentos,
+  useUpdateFutureRecorrencia,
+  useUpdateAllRecorrencia,
 } from "@/hooks/useLancamentos";
 import type { Cartao } from "@/hooks/useCartoes";
 import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from "@/lib/subcategorias";

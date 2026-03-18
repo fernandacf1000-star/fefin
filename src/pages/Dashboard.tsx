@@ -106,6 +106,7 @@ export default function Dashboard() {
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
   const { data: cartoes = [] } = useCartoes();
   const { data: profile } = useProfile();
+  const { data: todosReembolsos = [] } = useAllReembolsos();
 
   const nome = profile?.nome || profile?.full_name || "";
   const firstName = nome.split(" ")[0] || "você";

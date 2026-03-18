@@ -6,6 +6,7 @@ import ReembolsoModal from "@/components/ReembolsoModal";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
+import { toast } from "sonner";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -113,14 +114,19 @@ export default function Pais() {
     observacao?: string;
   }) => {
     if (!reembolsoTarget) return;
-    await addReembolso.mutateAsync({
-      lancamento_id: reembolsoTarget.id,
-      valor_reembolsado: data.valor_reembolsado,
-      quem_reembolsou: data.quem_reembolsou || "Pais",
-      data_reembolso: data.data_reembolso,
-      observacao: data.observacao ?? null,
-    });
-    setReembolsoTarget(null);
+    try {
+      await addReembolso.mutateAsync({
+        lancamento_id: reembolsoTarget.id,
+        valor_reembolsado: data.valor_reembolsado,
+        quem_reembolsou: data.quem_reembolsou || "Pais",
+        data_reembolso: data.data_reembolso,
+        observacao: data.observacao ?? null,
+      });
+      setReembolsoTarget(null);
+      toast.success("Reembolso registrado!");
+    } catch (e: any) {
+      toast.error("Erro ao salvar: " + (e?.message || JSON.stringify(e)));
+    }
   };
 
   return (

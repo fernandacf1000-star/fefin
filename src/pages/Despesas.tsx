@@ -23,8 +23,7 @@ import { getGroupEmoji, getSubcategoriaGroup, detectSubcategoria } from "@/lib/s
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const fmt = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function getMesRef(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
@@ -55,17 +54,15 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
   const subDetectada = l.subcategoria || detectSubcategoria(l.descricao || "") || null;
   const group = getSubcategoriaGroup(subDetectada || "") || l.categoria_macro || l.categoria || null;
   const emojiMap: Record<string, string> = {
-    "Moradia": "🏘️",
-    "Alimentação": "🥗",
-    "Transporte": "🚗",
-    "Saúde": "💊",
-    "Pessoal": "💅",
-    "Lazer": "🎮",
-    "Investimentos": "📈"
+    Moradia: "🏘️",
+    Alimentação: "🥗",
+    Transporte: "🚗",
+    Saúde: "💊",
+    Pessoal: "💅",
+    Lazer: "🎮",
+    Investimentos: "📈",
   };
-  const emoji = group
-    ? (emojiMap[group] || getGroupEmoji(group))
-    : isReceita ? "🟢" : "🔴";
+  const emoji = group ? emojiMap[group] || getGroupEmoji(group) : isReceita ? "🟢" : "🔴";
   const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");
@@ -78,14 +75,17 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
         selected
           ? "border-primary/40 bg-primary/5"
           : isPais
-          ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
-          : "bg-white border-transparent"
+            ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
+            : "bg-white border-transparent",
       )}
-      onClick={() => selectionMode ? onToggleSelect(l.id) : onTap(l)}
+      onClick={() => (selectionMode ? onToggleSelect(l.id) : onTap(l))}
     >
       {selectionMode && (
         <button
-          onClick={(e) => { e.stopPropagation(); onToggleSelect(l.id); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect(l.id);
+          }}
           className="shrink-0 text-primary"
         >
           {selected ? <CheckSquare size={18} /> : <Square size={18} className="text-muted-foreground" />}
@@ -98,10 +98,10 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
           background: isVicente
             ? "#DBEAFE"
             : isPais
-            ? "#FDE68A"
-            : isReceita
-            ? "rgba(13,148,136,0.15)"
-            : "rgba(99,102,241,0.12)"
+              ? "#FDE68A"
+              : isReceita
+                ? "rgba(13,148,136,0.15)"
+                : "rgba(99,102,241,0.12)",
         }}
       >
         {isVicente ? "👦" : isPais ? "🧓" : emoji}
@@ -123,7 +123,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[10px] text-muted-foreground">{formatDate(l.data)}</span>
-        {isParcelado && (
+          {isParcelado && (
             <>
               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8ECF5] text-muted-foreground">
                 {l.parcela_atual}/{l.parcela_total}x
@@ -140,9 +140,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
               recorrente
             </span>
           )}
-          {l.subcategoria && (
-            <span className="text-[10px] text-muted-foreground/70 truncate">{l.subcategoria}</span>
-          )}
+          {l.subcategoria && <span className="text-[10px] text-muted-foreground/70 truncate">{l.subcategoria}</span>}
         </div>
       </div>
 
@@ -150,7 +148,8 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
         className="text-sm font-bold shrink-0"
         style={{ color: isPais ? "#B45309" : isReceita ? "#0D9488" : "#1E2A45" }}
       >
-        {isReceita ? "+" : "-"}{fmt(Number(l.valor))}
+        {isReceita ? "+" : "-"}
+        {fmt(Number(l.valor))}
       </p>
     </div>
   );
@@ -188,13 +187,9 @@ export default function Despesas() {
   const [filterTipo, setFilterTipo] = useState<"todos" | "despesa" | "receita">("todos");
 
   const prevMes = () =>
-    setMesAtual(({ year, month }) =>
-      month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }
-    );
+    setMesAtual(({ year, month }) => (month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }));
   const nextMes = () =>
-    setMesAtual(({ year, month }) =>
-      month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }
-    );
+    setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
 
   // ── filter ────────────────────────────────────────────────────────────────
   const lista = useMemo(() => {
@@ -204,11 +199,11 @@ export default function Despesas() {
 
   const totalDespesas = useMemo(
     () => lancamentos.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0),
-    [lancamentos]
+    [lancamentos],
   );
   const totalReceitas = useMemo(
     () => lancamentos.filter((l) => l.tipo === "receita").reduce((s, l) => s + Number(l.valor), 0),
-    [lancamentos]
+    [lancamentos],
   );
 
   // ── selection ─────────────────────────────────────────────────────────────
@@ -306,20 +301,23 @@ export default function Despesas() {
       <BottomNav />
 
       <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
-
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-foreground">Transações</h1>
-            {!selectionMode && (
-              <p className="text-[11px] text-muted-foreground">{mesLabel}</p>
-            )}
+            {!selectionMode && <p className="text-[11px] text-muted-foreground">{mesLabel}</p>}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={prevMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
+            <button
+              onClick={prevMes}
+              className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground"
+            >
               <ChevronLeft size={15} />
             </button>
-            <button onClick={nextMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
+            <button
+              onClick={nextMes}
+              className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground"
+            >
               <ChevronRight size={15} />
             </button>
           </div>
@@ -372,14 +370,17 @@ export default function Despesas() {
                     "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors",
                     filterTipo === t
                       ? "gradient-emerald text-primary-foreground"
-                      : "bg-white border border-border text-muted-foreground"
+                      : "bg-white border border-border text-muted-foreground",
                   )}
                 >
                   {t === "todos" ? "Todos" : t === "despesa" ? "Despesas" : "Receitas"}
                 </button>
               ))}
               <button
-                onClick={() => { setSelectionMode(true); setSelected(new Set()); }}
+                onClick={() => {
+                  setSelectionMode(true);
+                  setSelected(new Set());
+                }}
                 className="ml-auto px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-border text-muted-foreground"
               >
                 Selecionar
@@ -392,10 +393,7 @@ export default function Despesas() {
         {isLoading ? (
           <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>
         ) : lista.length === 0 ? (
-          <EmptyState
-            title="Nenhum lançamento"
-            subtitle="Adicione sua primeira transação pelo botão +"
-          />
+          <EmptyState title="Nenhum lançamento" subtitle="Adicione sua primeira transação pelo botão +" />
         ) : (
           <div className="space-y-2">
             {lista.map((l) =>
@@ -409,11 +407,7 @@ export default function Despesas() {
                   onToggleSelect={toggleSelect}
                 />
               ) : (
-                <SwipeableItem
-                  key={l.id}
-                  onEdit={() => setEditTarget(l)}
-                  onDelete={() => setDeleteTarget(l)}
-                >
+                <SwipeableItem key={l.id} onEdit={() => setEditTarget(l)} onDelete={() => setDeleteTarget(l)}>
                   <LancamentoRow
                     lancamento={l}
                     onTap={(ll) => setActionsLanc(ll)}
@@ -422,7 +416,7 @@ export default function Despesas() {
                     onToggleSelect={toggleSelect}
                   />
                 </SwipeableItem>
-              )
+              ),
             )}
           </div>
         )}
@@ -433,11 +427,20 @@ export default function Despesas() {
         open={!!actionsLanc}
         onClose={() => setActionsLanc(null)}
         descricao={actionsLanc?.descricao}
-        onEdit={() => { setEditTarget(actionsLanc); setActionsLanc(null); }}
-        onDelete={() => { setDeleteTarget(actionsLanc); setActionsLanc(null); }}
+        onEdit={() => {
+          setEditTarget(actionsLanc);
+          setActionsLanc(null);
+        }}
+        onDelete={() => {
+          setDeleteTarget(actionsLanc);
+          setActionsLanc(null);
+        }}
         onReembolso={
           actionsLanc?.tipo === "despesa"
-            ? () => { setReembolsoTarget(actionsLanc); setActionsLanc(null); }
+            ? () => {
+                setReembolsoTarget(actionsLanc);
+                setActionsLanc(null);
+              }
             : undefined
         }
       />

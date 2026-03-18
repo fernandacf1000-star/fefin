@@ -75,15 +75,36 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
 
     try {
       if (tipo === "receita") {
-        await addLancamento.mutateAsync({
-          descricao, valor: numValor, tipo: "receita",
-          categoria: receitaCatMap[receitaCat],
-          subcategoria_pais: null, subcategoria: null, categoria_macro: null,
-          data: format(data, "yyyy-MM-dd"), mes_referencia: mesRef,
-          parcela_atual: null, parcela_total: null, is_parcelado: false,
-          parcelamento_id: null, pago: false, forma_pagamento: null, cartao_id: null,
-          recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
-        });
+        if (recorrente) {
+          const dia = parseInt(diaRecorrencia, 10) || 1;
+          const paiId = crypto.randomUUID?.() ?? `${Date.now()}`;
+          const rows: any[] = [];
+          for (let i = 0; i < 24; i++) {
+            const m = addMonths(data, i);
+            const daysInMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+            rows.push({
+              descricao, valor: numValor, tipo: "receita",
+              categoria: receitaCatMap[receitaCat],
+              subcategoria_pais: null, subcategoria: null, categoria_macro: null,
+              data: `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,"0")}-${String(Math.min(dia,daysInMonth)).padStart(2,"0")}`,
+              mes_referencia: `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,"0")}`,
+              parcela_atual: null, parcela_total: null, is_parcelado: false, parcelamento_id: null,
+              pago: false, forma_pagamento: null, cartao_id: null,
+              recorrente: true, dia_recorrencia: dia, recorrencia_ate: null, recorrencia_pai_id: paiId,
+            });
+          }
+          await addMultiple.mutateAsync(rows);
+        } else {
+          await addLancamento.mutateAsync({
+            descricao, valor: numValor, tipo: "receita",
+            categoria: receitaCatMap[receitaCat],
+            subcategoria_pais: null, subcategoria: null, categoria_macro: null,
+            data: format(data, "yyyy-MM-dd"), mes_referencia: mesRef,
+            parcela_atual: null, parcela_total: null, is_parcelado: false,
+            parcelamento_id: null, pago: false, forma_pagamento: null, cartao_id: null,
+            recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
+          });
+        }
         handleClose(); return;
       }
 

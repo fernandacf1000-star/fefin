@@ -206,7 +206,11 @@ export default function Pais() {
                 const pct = totalPago > 0 ? (valor / totalPago) * 100 : 0;
                 // reembolsado desta categoria
                 const reembolsadoCat = lancamentosComReembolso
-                  .filter((l) => (l.subcategoria_pais || l.categoria_macro || "Outros") === cat)
+                  .filter((l) => {
+                    const subP = l.subcategoria_pais;
+                    const c = (subP && subP !== "" && subP !== "Geral") ? subP : l.categoria_macro || "Outros";
+                    return c === cat;
+                  })
                   .reduce((s, l) => s + l.reembolsado, 0);
                 const liquidoCat = valor - reembolsadoCat;
                 return (

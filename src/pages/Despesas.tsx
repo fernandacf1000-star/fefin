@@ -123,10 +123,17 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[10px] text-muted-foreground">{formatDate(l.data)}</span>
-          {isParcelado && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8ECF5] text-muted-foreground">
-              {l.parcela_atual}/{l.parcela_total}x
-            </span>
+        {isParcelado && (
+            <>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8ECF5] text-muted-foreground">
+                {l.parcela_atual}/{l.parcela_total}x
+              </span>
+              {l.parcela_atual === l.parcela_total && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+                  🏁 última
+                </span>
+              )}
+            </>
           )}
           {isRecorrente && !isParcelado && (
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8ECF5] text-muted-foreground">
@@ -298,7 +305,7 @@ export default function Despesas() {
     <div className="gradient-bg min-h-screen pb-28">
       <BottomNav />
 
-      <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
+      <div className="max-w-lg mx-auto px-4 pt-10 space-y-4">
 
         {/* Header */}
         <div className="flex items-center justify-between">

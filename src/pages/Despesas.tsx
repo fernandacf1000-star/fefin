@@ -123,10 +123,17 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[10px] text-muted-foreground">{formatDate(l.data)}</span>
-          {isParcelado && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8ECF5] text-muted-foreground">
-              {l.parcela_atual}/{l.parcela_total}x
-            </span>
+        {isParcelado && (
+            <>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8ECF5] text-muted-foreground">
+                {l.parcela_atual}/{l.parcela_total}x
+              </span>
+              {l.parcela_atual === l.parcela_total && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+                  🏁 última
+                </span>
+              )}
+            </>
           )}
           {isRecorrente && !isParcelado && (
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E8ECF5] text-muted-foreground">

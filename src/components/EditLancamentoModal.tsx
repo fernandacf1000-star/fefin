@@ -105,6 +105,8 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       const macro = detectCategoriaMacro(subcategoria || "") || null;
       const forma = formaPagamento === "dinheiro" ? "dinheiro" : "credito";
       const cartao = formaPagamento === "credito" ? cartaoId || null : null;
+const novaData = format(data, "yyyy-MM-dd");
+      const novoMesRef = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`;
       const baseUpdates = {
         descricao,
         valor: numValor,
@@ -113,6 +115,8 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
         forma_pagamento: forma,
         cartao_id: cartao,
         subcategoria_pais: getSubPais(),
+        data: novaData,
+        mes_referencia: novoMesRef,
       };
 
       const wasParcelado = lancamento.is_parcelado && lancamento.parcelamento_id;

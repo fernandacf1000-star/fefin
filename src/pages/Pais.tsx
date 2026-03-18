@@ -79,7 +79,10 @@ export default function Pais() {
   const porCategoria = useMemo(() => {
     const map: Record<string, number> = {};
     despesasPais.forEach((l) => {
-      const cat = l.subcategoria_pais || l.categoria_macro || "Outros";
+      const subP = l.subcategoria_pais;
+      const cat = (subP && subP !== "" && subP !== "Geral")
+        ? subP
+        : l.categoria_macro || "Outros";
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });
     return Object.entries(map)
@@ -203,7 +206,11 @@ export default function Pais() {
                 const pct = totalPago > 0 ? (valor / totalPago) * 100 : 0;
                 // reembolsado desta categoria
                 const reembolsadoCat = lancamentosComReembolso
-                  .filter((l) => (l.subcategoria_pais || l.categoria_macro || "Outros") === cat)
+                  .filter((l) => {
+                    const subP = l.subcategoria_pais;
+                    const c = (subP && subP !== "" && subP !== "Geral") ? subP : l.categoria_macro || "Outros";
+                    return c === cat;
+                  })
                   .reduce((s, l) => s + l.reembolsado, 0);
                 const liquidoCat = valor - reembolsadoCat;
                 return (
@@ -218,10 +225,10 @@ export default function Pais() {
                         <span className="text-[12px] font-bold text-foreground">{fmt(valor)}</span>
                       </div>
                     </div>
-                    <div className="h-1 rounded-full bg-[#E8ECF5] overflow-hidden">
+                    <div className="h-1 rounded-full bg-amber-100 overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, background: "#6366F1" }}
+                        style={{ width: `${pct}%`, background: "#F59E0B" }}
                       />
                     </div>
                     {reembolsadoCat > 0 && (
@@ -255,10 +262,10 @@ export default function Pais() {
                 const group = getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros";
                 const emoji = getGroupEmoji(group);
                 return (
-                  <div key={l.id} className="flex items-center gap-3 py-2.5 border-b border-[#E8ECF5] last:border-0">
+                  <div key={l.id} className="flex items-center gap-3 py-2.5 border-b border-amber-100 last:border-0">
                     <div
                       className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
-                      style={{ background: "#E8ECF5" }}
+                      style={{ background: "rgba(251,191,36,0.2)" }}
                     >
                       {emoji}
                     </div>
@@ -267,7 +274,7 @@ export default function Pais() {
                       <p className="text-[13px] font-semibold text-foreground truncate">{l.descricao}</p>
                       <p className="text-[10px] text-muted-foreground">
                         {formatDate(l.data)}
-                        {l.subcategoria_pais ? ` · ${l.subcategoria_pais}` : ""}
+                        {l.subcategoria_pais && l.subcategoria_pais !== "Geral" ? ` · ${l.subcategoria_pais}` : ""}
                       </p>
                     </div>
 

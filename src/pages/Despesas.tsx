@@ -75,7 +75,7 @@ const LancamentoRow = ({ lancamento: l, onLongPress, selected, selectionMode, on
         selected
           ? "border-primary/40 bg-primary/5"
           : isPais
-          ? "bg-amber-50 border-amber-200"
+          ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
           : "bg-white border-transparent"
       )}
       onTouchStart={handleTouchStart}

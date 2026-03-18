@@ -6,7 +6,6 @@ import EmptyState from "@/components/EmptyState";
 import LancamentoActions from "@/components/LancamentoActions";
 import DeleteConfirmSheet from "@/components/DeleteConfirmSheet";
 import EditLancamentoModal from "@/components/EditLancamentoModal";
-import ReembolsoModal from "@/components/ReembolsoModal";
 import {
   useLancamentos,
   useDeleteLancamento,
@@ -18,7 +17,6 @@ import {
   type Lancamento,
 } from "@/hooks/useLancamentos";
 import { useCartoes } from "@/hooks/useCartoes";
-import { useAddReembolso } from "@/hooks/useReembolsos";
 import { getGroupEmoji, getSubcategoriaGroup, detectSubcategoria } from "@/lib/subcategorias";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -174,13 +172,10 @@ export default function Despesas() {
   const deleteFutureRecorrencia = useDeleteFutureRecorrencia();
   const deleteAllRecorrencia = useDeleteAllRecorrencia();
   const updateLancamento = useUpdateLancamento();
-  const addReembolso = useAddReembolso();
-
   // ── state ─────────────────────────────────────────────────────────────────
   const [actionsLanc, setActionsLanc] = useState<Lancamento | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Lancamento | null>(null);
   const [editTarget, setEditTarget] = useState<Lancamento | null>(null);
-  const [reembolsoTarget, setReembolsoTarget] = useState<Lancamento | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -275,24 +270,6 @@ export default function Despesas() {
     if (!editTarget) return;
     await updateLancamento.mutateAsync({ id: editTarget.id, ...updates });
     setEditTarget(null);
-  };
-
-  // ── reembolso ─────────────────────────────────────────────────────────────
-  const handleSaveReembolso = async (data: {
-    valor_reembolsado: number;
-    quem_reembolsou: string;
-    data_reembolso: string;
-    observacao?: string;
-  }) => {
-    if (!reembolsoTarget) return;
-    await addReembolso.mutateAsync({
-      lancamento_id: reembolsoTarget.id,
-      valor_reembolsado: data.valor_reembolsado,
-      quem_reembolsou: data.quem_reembolsou || "Reembolso",
-      data_reembolso: data.data_reembolso,
-      observacao: data.observacao ?? null,
-    });
-    setReembolsoTarget(null);
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -435,14 +412,6 @@ export default function Despesas() {
           setDeleteTarget(actionsLanc);
           setActionsLanc(null);
         }}
-        onReembolso={
-          actionsLanc?.tipo === "despesa"
-            ? () => {
-                setReembolsoTarget(actionsLanc);
-                setActionsLanc(null);
-              }
-            : undefined
-        }
       />
 
       {/* Delete confirm */}
@@ -480,16 +449,7 @@ export default function Despesas() {
         />
       )}
 
-      {/* Reembolso modal */}
-      {reembolsoTarget && (
-        <ReembolsoModal
-          open={!!reembolsoTarget}
-          onClose={() => setReembolsoTarget(null)}
-          descricao={reembolsoTarget.descricao}
-          valorOriginal={Number(reembolsoTarget.valor)}
-          onSave={handleSaveReembolso}
-        />
-      )}
     </div>
   );
 }
+

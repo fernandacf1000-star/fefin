@@ -75,15 +75,36 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
 
     try {
       if (tipo === "receita") {
-        await addLancamento.mutateAsync({
-          descricao, valor: numValor, tipo: "receita",
-          categoria: receitaCatMap[receitaCat],
-          subcategoria_pais: null, subcategoria: null, categoria_macro: null,
-          data: format(data, "yyyy-MM-dd"), mes_referencia: mesRef,
-          parcela_atual: null, parcela_total: null, is_parcelado: false,
-          parcelamento_id: null, pago: false, forma_pagamento: null, cartao_id: null,
-          recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
-        });
+        if (recorrente) {
+          const dia = parseInt(diaRecorrencia, 10) || 1;
+          const paiId = crypto.randomUUID?.() ?? `${Date.now()}`;
+          const rows: any[] = [];
+          for (let i = 0; i < 24; i++) {
+            const m = addMonths(data, i);
+            const daysInMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+            rows.push({
+              descricao, valor: numValor, tipo: "receita",
+              categoria: receitaCatMap[receitaCat],
+              subcategoria_pais: null, subcategoria: null, categoria_macro: null,
+              data: `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,"0")}-${String(Math.min(dia,daysInMonth)).padStart(2,"0")}`,
+              mes_referencia: `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,"0")}`,
+              parcela_atual: null, parcela_total: null, is_parcelado: false, parcelamento_id: null,
+              pago: false, forma_pagamento: null, cartao_id: null,
+              recorrente: true, dia_recorrencia: dia, recorrencia_ate: null, recorrencia_pai_id: paiId,
+            });
+          }
+          await addMultiple.mutateAsync(rows);
+        } else {
+          await addLancamento.mutateAsync({
+            descricao, valor: numValor, tipo: "receita",
+            categoria: receitaCatMap[receitaCat],
+            subcategoria_pais: null, subcategoria: null, categoria_macro: null,
+            data: format(data, "yyyy-MM-dd"), mes_referencia: mesRef,
+            parcela_atual: null, parcela_total: null, is_parcelado: false,
+            parcelamento_id: null, pago: false, forma_pagamento: null, cartao_id: null,
+            recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
+          });
+        }
         handleClose(); return;
       }
 
@@ -334,14 +355,37 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
 
           {/* ── RECEITA ── */}
           {tipo === "receita" && (
-            <div className="flex flex-wrap gap-2">
-              {RECEITA_CATS.map((cat) => (
-                <button key={cat} onClick={() => setReceitaCat(cat)}
-                  className={cn("px-3 py-1.5 rounded-xl text-xs font-medium transition-colors",
-                    receitaCat === cat ? "gradient-emerald text-primary-foreground" : "bg-[#E8ECF5] text-muted-foreground")}>
-                  {cat}
-                </button>
-              ))}
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {RECEITA_CATS.map((cat) => (
+                  <button key={cat} onClick={() => setReceitaCat(cat)}
+                    className={cn("px-3 py-1.5 rounded-xl text-xs font-medium transition-colors",
+                      receitaCat === cat ? "gradient-emerald text-primary-foreground" : "bg-[#E8ECF5] text-muted-foreground")}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setRecorrente(v => !v)}
+                className={cn("w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
+                  recorrente ? "border-primary/40 bg-primary/5" : "border-[#E8ECF5] bg-[#E8ECF5]")}>
+                <span className={cn("text-sm font-medium", recorrente ? "text-primary" : "text-muted-foreground")}>
+                  🔁 Receita recorrente
+                </span>
+                <div className={cn("w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
+                  recorrente ? "bg-primary justify-end" : "bg-muted justify-start")}>
+                  <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                </div>
+              </button>
+              {recorrente && (
+                <div className="flex items-center gap-2 px-1">
+                  <span className="text-xs text-muted-foreground">Repetir no dia</span>
+                  <input type="number" min={1} max={31} value={diaRecorrencia}
+                    onChange={(e) => setDiaRecorrencia(e.target.value)}
+                    className="w-16 text-center bg-[#E8ECF5] border-0 rounded-xl px-2 py-1.5 text-sm font-bold" />
+                  <span className="text-xs text-muted-foreground">de cada mês</span>
+                </div>
+              )}
             </div>
           )}
 

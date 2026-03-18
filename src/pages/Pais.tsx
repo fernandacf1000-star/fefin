@@ -262,10 +262,10 @@ export default function Pais() {
                 const group = getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros";
                 const emoji = getGroupEmoji(group);
                 return (
-                  <div key={l.id} className="flex items-center gap-3 py-2.5 border-b border-[#E8ECF5] last:border-0">
+                  <div key={l.id} className="flex items-center gap-3 py-2.5 border-b border-amber-100 last:border-0">
                     <div
                       className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
-                      style={{ background: "#E8ECF5" }}
+                      style={{ background: "rgba(251,191,36,0.2)" }}
                     >
                       {emoji}
                     </div>

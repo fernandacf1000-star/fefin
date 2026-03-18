@@ -170,7 +170,7 @@ const Graficos = () => {
 
   return (
     <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
-      <div className="px-4 pt-12 space-y-6 w-full max-w-4xl md:mx-auto">
+      <div className="px-4 pt-16 space-y-6 w-full max-w-4xl md:mx-auto">
         <h1 className="text-xl font-semibold text-foreground animate-fade-up">Gráficos</h1>
 
         {/* Month Selector */}

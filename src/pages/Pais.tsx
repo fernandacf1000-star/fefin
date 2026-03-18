@@ -106,7 +106,7 @@ export default function Pais() {
     <div className="gradient-bg min-h-screen pb-28">
       <BottomNav />
 
-      <div className="max-w-lg mx-auto px-4 pt-6 space-y-4">
+      <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
 
         {/* Header */}
         <div className="flex items-center justify-between">

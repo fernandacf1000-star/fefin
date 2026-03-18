@@ -38,10 +38,10 @@ export const useReembolsosByLancamento = (lancamentoId?: string) => {
   return useQuery({
     queryKey: ["reembolsos", "lancamento", lancamentoId],
     queryFn: async () => {
-      const { data, error } = await supabase
+const { data, error } = await supabase
         .from("reembolsos")
         .select("*")
-        .eq("lancamento_id", lancamentoId!)
+        .eq("user_id", user!.id)
         .order("data_reembolso", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Reembolso[];

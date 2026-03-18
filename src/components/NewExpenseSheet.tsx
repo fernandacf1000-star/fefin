@@ -55,6 +55,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
   const [diaRecorrencia, setDiaRecorrencia] = useState("1");
   const [recorrenciaAte, setRecorrenciaAte] = useState<Date | undefined>(undefined);
   const [isPais, setIsPais] = useState(false);
+  const [isVicente, setIsVicente] = useState(false);
 
   // ── Screen 2 — receita ────────────────────────────────────────────────────
   const [receitaCat, setReceitaCat] = useState<ReceitaCat>("Salário");

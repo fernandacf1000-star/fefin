@@ -127,9 +127,9 @@ export default function Dashboard() {
   const totalReembolsadoMes = useMemo(() => {
     const ids = new Set(despesas.map((l) => l.id));
     return todosReembolsos
-      .filter((r) => ids.has(r.lancamento_id))
+      .filter((r) => ids.has(r.lancamento_id) && r.data_reembolso.startsWith(mesRef))
       .reduce((s, r) => s + Number(r.valor_reembolsado), 0);
-  }, [despesas, todosReembolsos]);
+  }, [despesas, todosReembolsos, mesRef]);
 
   const totalDespesas = useMemo(
     () => despesas.reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,

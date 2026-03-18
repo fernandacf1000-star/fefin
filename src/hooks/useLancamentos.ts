@@ -272,3 +272,46 @@ export const useDeleteAllRecorrencia = () => {
     onSuccess: () => queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false }),
   });
 };
+
+export const useUpdateFutureRecorrencia = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      recorrencia_pai_id,
+      fromDate,
+      updates,
+    }: {
+      recorrencia_pai_id: string;
+      fromDate: string;
+      updates: { descricao?: string; valor?: number; subcategoria?: string | null; categoria_macro?: string | null; forma_pagamento?: string; cartao_id?: string | null };
+    }) => {
+      const { error } = await supabase
+        .from("lancamentos")
+        .update(updates as any)
+        .eq("recorrencia_pai_id", recorrencia_pai_id)
+        .gte("data", fromDate);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false }),
+  });
+};
+
+export const useUpdateAllRecorrencia = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      recorrencia_pai_id,
+      updates,
+    }: {
+      recorrencia_pai_id: string;
+      updates: { descricao?: string; valor?: number; subcategoria?: string | null; categoria_macro?: string | null; forma_pagamento?: string; cartao_id?: string | null };
+    }) => {
+      const { error } = await supabase
+        .from("lancamentos")
+        .update(updates as any)
+        .eq("recorrencia_pai_id", recorrencia_pai_id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false }),
+  });
+};

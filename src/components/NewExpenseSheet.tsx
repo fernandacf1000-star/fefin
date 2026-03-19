@@ -11,11 +11,10 @@ import { useCartoes } from "@/hooks/useCartoes";
 import { SUBCATEGORIA_GROUPS, detectSubcategoria, detectCategoriaMacro } from "@/lib/subcategorias";
 import { toast } from "sonner";
 
-const RECEITA_CATS = ["Salário", "Reembolso pais", "Renda extra", "Investimentos", "Resgate Investimento", "Outros"] as const;
+const RECEITA_CATS = ["Salário", "Reembolso Pais", "Resgate"] as const;
 type ReceitaCat = (typeof RECEITA_CATS)[number];
 const receitaCatMap: Record<ReceitaCat, string> = {
-  "Salário": "salario", "Reembolso pais": "reembolso_pais", "Renda extra": "renda_extra",
-  "Investimentos": "investimentos", "Resgate Investimento": "resgate_investimento", "Outros": "outros",
+  "Salário": "salario", "Reembolso Pais": "reembolso_pais", "Resgate": "resgate_investimento",
 };
 
 interface Props {

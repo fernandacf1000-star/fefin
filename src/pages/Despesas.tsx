@@ -49,6 +49,7 @@ interface RowProps {
 
 const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggleSelect }: RowProps) => {
   const isReceita = l.tipo === "receita";
+  const isResgate = isReceita && l.categoria === "resgate_investimento";
   const subDetectada = l.subcategoria || detectSubcategoria(l.descricao || "") || null;
   const group = getSubcategoriaGroup(subDetectada || "") || l.categoria_macro || l.categoria || null;
   const emojiMap: Record<string, string> = {
@@ -60,7 +61,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
     Lazer: "🎮",
     Investimentos: "📈",
   };
-  const emoji = group ? emojiMap[group] || getGroupEmoji(group) : isReceita ? "🟢" : "🔴";
+  const emoji = isResgate ? "📈" : group ? emojiMap[group] || getGroupEmoji(group) : isReceita ? "🟢" : "🔴";
   const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");
@@ -97,9 +98,11 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
             ? "#DBEAFE"
             : isPais
               ? "#FDE68A"
-              : isReceita
-                ? "rgba(13,148,136,0.15)"
-                : "rgba(99,102,241,0.12)",
+              : isResgate
+                ? "rgba(139,92,246,0.12)"
+                : isReceita
+                  ? "rgba(13,148,136,0.15)"
+                  : "rgba(99,102,241,0.12)",
         }}
       >
         {isVicente ? "👦" : isPais ? "🧓" : emoji}
@@ -108,6 +111,11 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-semibold text-foreground truncate">{l.descricao}</p>
+          {isResgate && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold shrink-0" style={{ background: "rgba(139,92,246,0.15)", color: "#7C3AED" }}>
+              RESGATE
+            </span>
+          )}
           {isPais && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-700 font-semibold shrink-0">
               PAIS
@@ -144,7 +152,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
 
       <p
         className="text-sm font-bold shrink-0"
-        style={{ color: isPais ? "#B45309" : isReceita ? "#0D9488" : "#1E2A45" }}
+        style={{ color: isPais ? "#B45309" : isResgate ? "#7C3AED" : isReceita ? "#0D9488" : "#1E2A45" }}
       >
         {isReceita ? "+" : "-"}
         {fmt(Number(l.valor))}
@@ -179,7 +187,7 @@ export default function Despesas() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [filterTipo, setFilterTipo] = useState<"todos" | "despesa" | "receita">("todos");
+  const [filterTipo, setFilterTipo] = useState<"todos" | "despesa" | "receita" | "resgate">("todos");
 
   const prevMes = () =>
     setMesAtual(({ year, month }) => (month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }));
@@ -189,6 +197,8 @@ export default function Despesas() {
   // ── filter ────────────────────────────────────────────────────────────────
   const lista = useMemo(() => {
     if (filterTipo === "todos") return lancamentos;
+    if (filterTipo === "resgate") return lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento");
+    if (filterTipo === "receita") return lancamentos.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento");
     return lancamentos.filter((l) => l.tipo === filterTipo);
   }, [lancamentos, filterTipo]);
 
@@ -306,22 +316,20 @@ export default function Despesas() {
 
         {/* Resumo */}
         {!selectionMode && (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="glass-card px-4 py-3 border-l-2" style={{ borderLeftColor: "#6366F1" }}>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="glass-card px-3 py-3 border-l-2" style={{ borderLeftColor: "#6366F1" }}>
               <p className="text-[10px] text-muted-foreground">Despesas</p>
-              <p className="text-base font-bold text-foreground">{fmt(totalDespesas)}</p>
+              <p className="text-sm font-bold text-foreground">{fmt(totalDespesas)}</p>
             </div>
-            <div className="glass-card px-4 py-3 border-l-2" style={{ borderLeftColor: "#0D9488" }}>
+            <div className="glass-card px-3 py-3 border-l-2" style={{ borderLeftColor: "#0D9488" }}>
               <p className="text-[10px] text-muted-foreground">Receitas</p>
-              <p className="text-base font-bold text-foreground">{fmt(totalReceitas)}</p>
+              <p className="text-sm font-bold text-foreground">{fmt(totalReceitas)}</p>
+            </div>
+            <div className="glass-card px-3 py-3 border-l-2" style={{ borderLeftColor: "#8B5CF6" }}>
+              <p className="text-[10px] text-muted-foreground">Resgates</p>
+              <p className="text-sm font-bold text-foreground">{fmt(totalResgates)}</p>
             </div>
           </div>
-          {totalResgates > 0 && (
-            <div className="glass-card px-4 py-3 border-l-2" style={{ borderLeftColor: "#8B5CF6" }}>
-              <p className="text-[10px] text-muted-foreground">Resgates de investimento</p>
-              <p className="text-base font-bold text-foreground">{fmt(totalResgates)}</p>
-            </div>
-          )}
         )}
 
         {/* Filtros / Seleção */}
@@ -349,18 +357,21 @@ export default function Despesas() {
             </>
           ) : (
             <>
-              {(["todos", "despesa", "receita"] as const).map((t) => (
+              {(["todos", "despesa", "receita", "resgate"] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setFilterTipo(t)}
                   className={cn(
                     "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors",
                     filterTipo === t
-                      ? "gradient-emerald text-primary-foreground"
+                      ? t === "resgate"
+                        ? "text-white"
+                        : "gradient-emerald text-primary-foreground"
                       : "bg-white border border-border text-muted-foreground",
                   )}
+                  style={filterTipo === t && t === "resgate" ? { background: "#8B5CF6" } : undefined}
                 >
-                  {t === "todos" ? "Todos" : t === "despesa" ? "Despesas" : "Receitas"}
+                  {t === "todos" ? "Todos" : t === "despesa" ? "Despesas" : t === "receita" ? "Receitas" : "Resgates"}
                 </button>
               ))}
               <button

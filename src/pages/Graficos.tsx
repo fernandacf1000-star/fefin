@@ -77,15 +77,15 @@ const Graficos = () => {
         .filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento")
         .reduce((s, l) => s + Number(l.valor), 0);
       const isFuture = i > currentMonthIdx;
-      const isTransition = i === currentMonthIdx; // current month acts as bridge
+      const isTransition = i === currentMonthIdx;
       return {
         name: label,
-        // Past/current data
         receitasPast: !isFuture ? receitas : undefined,
         despesasPast: !isFuture ? despesas : undefined,
-        // Future dashed (bridge from current month)
+        resgatesPast: !isFuture ? resgates : undefined,
         receitasFuture: isFuture || isTransition ? receitas : undefined,
         despesasFuture: isFuture || isTransition ? despesas : undefined,
+        resgatesFuture: isFuture || isTransition ? resgates : undefined,
         resgates,
         saldo: receitas - despesas,
         isFuture,
@@ -246,7 +246,6 @@ const Graficos = () => {
 
   const CustomAnnualTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
-    // Merge values from past and future lines
     const r =
       payload.find((p: any) => p.dataKey === "receitasPast")?.value ??
       payload.find((p: any) => p.dataKey === "receitasFuture")?.value ??
@@ -254,6 +253,10 @@ const Graficos = () => {
     const d =
       payload.find((p: any) => p.dataKey === "despesasPast")?.value ??
       payload.find((p: any) => p.dataKey === "despesasFuture")?.value ??
+      0;
+    const resg =
+      payload.find((p: any) => p.dataKey === "resgatesPast")?.value ??
+      payload.find((p: any) => p.dataKey === "resgatesFuture")?.value ??
       0;
     const saldo = r - d;
     return (
@@ -265,6 +268,11 @@ const Graficos = () => {
         <p className="text-[11px]" style={{ color: "#6366F1" }}>
           ↓ Despesas: {fmt(d)}
         </p>
+        {resg > 0 && (
+          <p className="text-[11px]" style={{ color: "#8B5CF6" }}>
+            ↕ Resgates: {fmt(resg)}
+          </p>
+        )}
         <div className="border-t border-border/30 mt-1.5 pt-1.5">
           <p className={`text-[11px] font-bold ${saldo >= 0 ? "text-primary" : "text-destructive"}`}>
             Saldo: {fmt(saldo)}
@@ -313,7 +321,7 @@ const Graficos = () => {
             {/* ══ Annual Receitas vs Despesas — linha dupla com área ══ */}
             {hasAnyData && (
               <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.04s" }}>
-                <h2 className="text-sm font-semibold text-foreground">Receitas vs Despesas — {currentYear}</h2>
+                <h2 className="text-sm font-semibold text-foreground">Receitas vs Despesas vs Resgates — {currentYear}</h2>
                 <p className="text-[11px] text-muted-foreground mb-3">
                   Evolução mensal · linha tracejada = meses futuros
                 </p>
@@ -391,12 +399,34 @@ const Graficos = () => {
                         legendType="none"
                         opacity={0.5}
                       />
+
+                      {/* Resgates — linha roxa */}
+                      <Line
+                        type="monotone"
+                        dataKey="resgatesPast"
+                        stroke="#8B5CF6"
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls={false}
+                        legendType="none"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="resgatesFuture"
+                        stroke="#8B5CF6"
+                        strokeWidth={1.5}
+                        strokeDasharray="5 4"
+                        dot={false}
+                        connectNulls={false}
+                        legendType="none"
+                        opacity={0.5}
+                      />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
 
                 {/* Legenda */}
-                <div className="flex items-center justify-center gap-5 mt-2">
+                <div className="flex items-center justify-center gap-4 mt-2 flex-wrap">
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-full" style={{ background: "#0D9488" }} />
                     <span className="text-[11px] text-muted-foreground font-medium">Receitas</span>
@@ -404,6 +434,10 @@ const Graficos = () => {
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-full" style={{ background: "#6366F1" }} />
                     <span className="text-[11px] text-muted-foreground font-medium">Despesas</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full" style={{ background: "#8B5CF6" }} />
+                    <span className="text-[11px] text-muted-foreground font-medium">Resgates</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="flex gap-0.5">
@@ -415,31 +449,42 @@ const Graficos = () => {
                 </div>
 
                 {/* Cards resumo */}
-                <div className="grid grid-cols-3 gap-2 mt-3">
+                <div className="grid grid-cols-2 gap-2 mt-3">
                   <div
-                    className="rounded-xl p-3 text-center"
+                    className="rounded-xl p-2.5 text-center"
                     style={{ background: "rgba(13,148,136,0.08)", border: "1px solid rgba(13,148,136,0.2)" }}
                   >
                     <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#0D9488" }}>
-                      Total Receitas
+                      Receitas
                     </span>
                     <span className="text-xs font-bold" style={{ color: "#0D9488" }}>
                       {fmt(annualTotals.receitas)}
                     </span>
                   </div>
                   <div
-                    className="rounded-xl p-3 text-center"
+                    className="rounded-xl p-2.5 text-center"
                     style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}
                   >
                     <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#6366F1" }}>
-                      Total Despesas
+                      Despesas
                     </span>
                     <span className="text-xs font-bold" style={{ color: "#6366F1" }}>
                       {fmt(annualTotals.despesas)}
                     </span>
                   </div>
                   <div
-                    className="rounded-xl p-3 text-center"
+                    className="rounded-xl p-2.5 text-center"
+                    style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)" }}
+                  >
+                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#8B5CF6" }}>
+                      Resgates
+                    </span>
+                    <span className="text-xs font-bold" style={{ color: "#8B5CF6" }}>
+                      {fmt(annualTotals.resgates)}
+                    </span>
+                  </div>
+                  <div
+                    className="rounded-xl p-2.5 text-center"
                     style={{
                       background: annualTotals.saldo >= 0 ? "rgba(13,148,136,0.08)" : "rgba(217,112,82,0.08)",
                       border: `1px solid ${annualTotals.saldo >= 0 ? "rgba(13,148,136,0.2)" : "rgba(217,112,82,0.2)"}`,

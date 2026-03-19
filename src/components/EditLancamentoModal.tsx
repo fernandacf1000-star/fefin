@@ -19,6 +19,15 @@ import {
 import type { Cartao } from "@/hooks/useCartoes";
 import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from "@/lib/subcategorias";
 
+const RECEITA_CATS_EDIT = ["Salário", "Reembolso Pais", "Resgate"] as const;
+type ReceitaCatEdit = (typeof RECEITA_CATS_EDIT)[number];
+const receitaCatMapEdit: Record<ReceitaCatEdit, string> = {
+  "Salário": "salario", "Reembolso Pais": "reembolso_pais", "Resgate": "resgate_investimento",
+};
+const receitaCatReverseMap: Record<string, ReceitaCatEdit> = Object.fromEntries(
+  Object.entries(receitaCatMapEdit).map(([k, v]) => [v, k as ReceitaCatEdit]),
+);
+
 interface Props {
   open: boolean;
   lancamento: Lancamento | null;
@@ -45,6 +54,8 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   // Pais / Vicente
   const [isPais, setIsPais] = useState(false);
   const [isVicente, setIsVicente] = useState(false);
+  // Receita categoria
+  const [receitaCat, setReceitaCat] = useState<ReceitaCatEdit>("Salário");
 
   const updateLancamento = useUpdateLancamento();
   const updateAll = useUpdateAllParcelamento();
@@ -75,6 +86,8 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       setFormaPagamento("dinheiro");
       setCartaoId("");
     }
+    // Receita categoria
+    setReceitaCat(receitaCatReverseMap[lancamento.categoria] || "Salário");
   }, [lancamento]);
 
   const handleValorChange = (raw: string) => {
@@ -107,17 +120,21 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       const cartao = formaPagamento === "credito" ? cartaoId || null : null;
       const novaData = format(data, "yyyy-MM-dd");
       const novoMesRef = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`;
-      const baseUpdates = {
+      const isReceitaEdit = lancamento.tipo === "receita";
+      const baseUpdates: Record<string, any> = {
         descricao,
         valor: numValor,
         subcategoria: subcategoria || null,
         categoria_macro: macro,
-        forma_pagamento: forma,
-        cartao_id: cartao,
-        subcategoria_pais: getSubPais(),
+        forma_pagamento: isReceitaEdit ? null : forma,
+        cartao_id: isReceitaEdit ? null : cartao,
+        subcategoria_pais: isReceitaEdit ? null : getSubPais(),
         data: novaData,
         mes_referencia: novoMesRef,
       };
+      if (isReceitaEdit) {
+        baseUpdates.categoria = receitaCatMapEdit[receitaCat];
+      }
 
       const wasParcelado = lancamento.is_parcelado && lancamento.parcelamento_id;
       const wasRecorrente = lancamento.recorrente && lancamento.recorrencia_pai_id;
@@ -295,6 +312,29 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
               </PopoverContent>
             </Popover>
           </div>
+
+          {/* Categoria receita */}
+          {isReceita && (
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground">Categoria</label>
+              <div className="flex flex-wrap gap-1.5">
+                {RECEITA_CATS_EDIT.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setReceitaCat(cat)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl text-xs font-medium transition-colors",
+                      receitaCat === cat
+                        ? "gradient-emerald text-primary-foreground"
+                        : "bg-[#E8ECF5] text-muted-foreground",
+                    )}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Categoria (só despesa) */}
           {!isReceita && (

@@ -317,17 +317,17 @@ export default function Despesas() {
         {/* Resumo */}
         {!selectionMode && (
           <div className="grid grid-cols-3 gap-2">
-            <div className="glass-card px-3 py-3 border-l-2" style={{ borderLeftColor: "#6366F1" }}>
+            <div className="glass-card px-2 py-3 border-l-2 min-w-0" style={{ borderLeftColor: "#6366F1" }}>
               <p className="text-[10px] text-muted-foreground">Despesas</p>
-              <p className="text-sm font-bold text-foreground">{fmt(totalDespesas)}</p>
+              <p className="text-xs font-bold text-foreground truncate">{fmt(totalDespesas)}</p>
             </div>
-            <div className="glass-card px-3 py-3 border-l-2" style={{ borderLeftColor: "#0D9488" }}>
+            <div className="glass-card px-2 py-3 border-l-2 min-w-0" style={{ borderLeftColor: "#0D9488" }}>
               <p className="text-[10px] text-muted-foreground">Receitas</p>
-              <p className="text-sm font-bold text-foreground">{fmt(totalReceitas)}</p>
+              <p className="text-xs font-bold text-foreground truncate">{fmt(totalReceitas)}</p>
             </div>
-            <div className="glass-card px-3 py-3 border-l-2" style={{ borderLeftColor: "#8B5CF6" }}>
+            <div className="glass-card px-2 py-3 border-l-2 min-w-0" style={{ borderLeftColor: "#8B5CF6" }}>
               <p className="text-[10px] text-muted-foreground">Resgates</p>
-              <p className="text-sm font-bold text-foreground">{fmt(totalResgates)}</p>
+              <p className="text-xs font-bold text-foreground truncate">{fmt(totalResgates)}</p>
             </div>
           </div>
         )}

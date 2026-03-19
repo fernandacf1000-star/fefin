@@ -296,26 +296,26 @@ export default function Dashboard() {
 
         {/* Despesas / Receitas / Resgates */}
         <div className="grid grid-cols-3 gap-2">
-          <div className="glass-card p-3 space-y-1">
+          <div className="glass-card p-3 space-y-1 min-w-0">
             <div className="flex items-center gap-1">
-              <TrendingDown size={12} className="text-destructive" />
-              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">Despesas</span>
+              <TrendingDown size={11} className="text-destructive shrink-0" />
+              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide truncate">Despesas</span>
             </div>
-            <p className="text-base font-bold text-foreground leading-tight">{fmt(totalDespesas)}</p>
+            <p className="text-sm font-bold text-foreground leading-tight truncate">{fmt(totalDespesas)}</p>
           </div>
-          <div className="glass-card p-3 space-y-1">
+          <div className="glass-card p-3 space-y-1 min-w-0">
             <div className="flex items-center gap-1">
-              <TrendingUp size={12} style={{ color: "#0D9488" }} />
-              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">Receitas</span>
+              <TrendingUp size={11} style={{ color: "#0D9488" }} className="shrink-0" />
+              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide truncate">Receitas</span>
             </div>
-            <p className="text-base font-bold text-foreground leading-tight">{fmt(totalReceitas)}</p>
+            <p className="text-sm font-bold text-foreground leading-tight truncate">{fmt(totalReceitas)}</p>
           </div>
-          <div className="glass-card p-3 space-y-1">
+          <div className="glass-card p-3 space-y-1 min-w-0">
             <div className="flex items-center gap-1">
-              <ArrowDownUp size={12} style={{ color: "#8B5CF6" }} />
-              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">Resgates</span>
+              <ArrowDownUp size={11} style={{ color: "#8B5CF6" }} className="shrink-0" />
+              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide truncate">Resgates</span>
             </div>
-            <p className="text-base font-bold text-foreground leading-tight">{fmt(totalResgates)}</p>
+            <p className="text-sm font-bold text-foreground leading-tight truncate">{fmt(totalResgates)}</p>
           </div>
         </div>
 

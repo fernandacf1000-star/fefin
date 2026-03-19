@@ -463,25 +463,25 @@ const Graficos = () => {
             <div className="md:grid md:grid-cols-2 md:gap-4 space-y-6 md:space-y-0">
               {/* Monthly bars */}
               <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.05s" }}>
-                <h2 className="text-sm font-semibold text-foreground mb-1">Receitas vs Despesas</h2>
+                <h2 className="text-sm font-semibold text-foreground mb-1">Receitas vs Despesas vs Resgates</h2>
                 <p className="text-[11px] text-muted-foreground mb-4">{mesLabelFmt}</p>
                 {(() => {
-                  const maxVal = Math.max(totalReceitas, totalDespesas, 1);
+                  const maxVal = Math.max(totalReceitas, totalDespesas, totalResgatesMes, 1);
                   const BAR_MAX_H = 110;
                   const hRec = totalReceitas > 0 ? Math.max(10, Math.round((totalReceitas / maxVal) * BAR_MAX_H)) : 0;
                   const hDesp = totalDespesas > 0 ? Math.max(10, Math.round((totalDespesas / maxVal) * BAR_MAX_H)) : 0;
+                  const hResg = totalResgatesMes > 0 ? Math.max(10, Math.round((totalResgatesMes / maxVal) * BAR_MAX_H)) : 0;
                   return (
-                    <div className="flex justify-around px-6">
+                    <div className="flex justify-around px-4">
                       {/* Receitas column */}
                       <div className="flex flex-col items-center gap-2">
-                        {/* Bar area — fixed height, bar grows from bottom via margin-top auto */}
                         <div style={{ height: `${BAR_MAX_H}px`, display: "flex", alignItems: "flex-end" }}>
                           <div
-                            className="w-16 rounded-t-xl transition-all duration-500"
+                            className="w-14 rounded-t-xl transition-all duration-500"
                             style={{ height: `${hRec}px`, background: "#0D9488" }}
                           />
                         </div>
-                        <span className="text-[11px] text-muted-foreground">Receitas</span>
+                        <span className="text-[10px] text-muted-foreground">Receitas</span>
                         <span className="text-xs font-bold" style={{ color: "#0D9488" }}>
                           {fmt(totalReceitas)}
                         </span>
@@ -491,43 +491,33 @@ const Graficos = () => {
                       <div className="flex flex-col items-center gap-2">
                         <div style={{ height: `${BAR_MAX_H}px`, display: "flex", alignItems: "flex-end" }}>
                           <div
-                            className="w-16 rounded-t-xl transition-all duration-500"
+                            className="w-14 rounded-t-xl transition-all duration-500"
                             style={{ height: `${hDesp}px`, background: "#6366F1" }}
                           />
                         </div>
-                        <span className="text-[11px] text-muted-foreground">Despesas</span>
+                        <span className="text-[10px] text-muted-foreground">Despesas</span>
                         <span className="text-xs font-bold" style={{ color: "#6366F1" }}>
                           {fmt(totalDespesas)}
+                        </span>
+                      </div>
+
+                      {/* Resgates column */}
+                      <div className="flex flex-col items-center gap-2">
+                        <div style={{ height: `${BAR_MAX_H}px`, display: "flex", alignItems: "flex-end" }}>
+                          <div
+                            className="w-14 rounded-t-xl transition-all duration-500"
+                            style={{ height: `${hResg}px`, background: "#8B5CF6" }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">Resgates</span>
+                        <span className="text-xs font-bold" style={{ color: "#8B5CF6" }}>
+                          {fmt(totalResgatesMes)}
                         </span>
                       </div>
                     </div>
                   );
                 })()}
               </section>
-
-              {/* Resgates de Investimento */}
-              {totalResgatesMes > 0 && (
-                <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.07s" }}>
-                  <h2 className="text-sm font-semibold text-foreground mb-1">Resgates de Investimento</h2>
-                  <p className="text-[11px] text-muted-foreground mb-3">
-                    Movimentação de patrimônio · não conta como renda
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-8 h-8 rounded-xl flex items-center justify-center"
-                        style={{ background: "rgba(139,92,246,0.12)" }}
-                      >
-                        <span className="text-sm">📈</span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">Este mês</span>
-                    </div>
-                    <span className="text-lg font-bold" style={{ color: "#8B5CF6" }}>
-                      {fmt(totalResgatesMes)}
-                    </span>
-                  </div>
-                </section>
-              )}
 
               {/* Composição por Categoria — Donut */}
               {composicao.length > 0 && (

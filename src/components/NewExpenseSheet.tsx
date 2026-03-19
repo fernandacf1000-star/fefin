@@ -8,8 +8,28 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAddLancamento, useAddMultipleLancamentos } from "@/hooks/useLancamentos";
 import { useCartoes } from "@/hooks/useCartoes";
+import type { Cartao } from "@/hooks/useCartoes";
 import { SUBCATEGORIA_GROUPS, detectSubcategoria, detectCategoriaMacro } from "@/lib/subcategorias";
 import { toast } from "sonner";
+
+/**
+ * Calcula o mes_referencia considerando o ciclo de fechamento do cartão.
+ * - Dinheiro / sem cartão: mes_referencia = mês da data da compra
+ * - Crédito: se dia da compra <= dia_fechamento, fatura fecha nesse mês, vence no próximo
+ *            se dia da compra > dia_fechamento, fatura fecha no mês seguinte, vence em +2
+ */
+function getMesReferenciaFatura(dataCompra: Date, cartaoSelecionado: Cartao | null): string {
+  if (!cartaoSelecionado) {
+    return `${dataCompra.getFullYear()}-${String(dataCompra.getMonth() + 1).padStart(2, "0")}`;
+  }
+  const dia = dataCompra.getDate();
+  const diaFecha = cartaoSelecionado.dia_fechamento;
+  // Se compra foi até o dia de fechamento, entra na fatura desse mês (vence mês seguinte)
+  // Se compra foi depois do fechamento, entra na fatura do mês seguinte (vence +2)
+  const mesesAFrente = dia <= diaFecha ? 1 : 2;
+  const mesVencimento = addMonths(dataCompra, mesesAFrente);
+  return `${mesVencimento.getFullYear()}-${String(mesVencimento.getMonth() + 1).padStart(2, "0")}`;
+}
 
 const RECEITA_CATS = ["Salário", "Reembolso Pais", "Resgate"] as const;
 type ReceitaCat = (typeof RECEITA_CATS)[number];
@@ -112,6 +132,9 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
       const cartao = formaPagamento === "Crédito" ? (cartaoId || cartoes[0]?.id || null) : null;
       const subPais = isPais ? (isVicente ? "Vicente" : (subcategoria || macro || "Geral")) : null;
 
+      // Resolve o cartão selecionado para calcular o ciclo de fatura
+      const cartaoObj = cartao ? cartoes.find((c) => c.id === cartao) || null : null;
+
       const baseRow = {
         descricao, valor: numValor, tipo: "despesa" as const, categoria: "extra",
         subcategoria_pais: subPais, subcategoria: subcategoria || null, categoria_macro: macro,
@@ -123,10 +146,11 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
         const parcelamentoId = crypto.randomUUID?.() ?? `${Date.now()}`;
         const rows = Array.from({ length: nParcelas }, (_, i) => {
           const d = addMonths(data, i);
+          const dataStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(data.getDate()).padStart(2,"0")}`;
           return {
             ...baseRow,
-            data: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(data.getDate()).padStart(2,"0")}`,
-            mes_referencia: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`,
+            data: dataStr,
+            mes_referencia: getMesReferenciaFatura(d, cartaoObj),
             parcela_atual: i + 1, parcela_total: nParcelas,
             is_parcelado: true, parcelamento_id: parcelamentoId,
             recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
@@ -140,10 +164,11 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
         for (let i = 0; i < 24; i++) {
           const m = addMonths(data, i);
           const daysInMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+          const dataRecorrente = new Date(m.getFullYear(), m.getMonth(), Math.min(dia, daysInMonth));
           rows.push({
             ...baseRow,
             data: `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,"0")}-${String(Math.min(dia,daysInMonth)).padStart(2,"0")}`,
-            mes_referencia: `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,"0")}`,
+            mes_referencia: getMesReferenciaFatura(dataRecorrente, cartaoObj),
             parcela_atual: null, parcela_total: null, is_parcelado: false, parcelamento_id: null,
             recorrente: true, dia_recorrencia: dia, recorrencia_ate: null, recorrencia_pai_id: paiId,
           });
@@ -152,7 +177,8 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
       } else {
         await addLancamento.mutateAsync({
           ...baseRow,
-          data: format(data, "yyyy-MM-dd"), mes_referencia: mesRef,
+          data: format(data, "yyyy-MM-dd"),
+          mes_referencia: forma === "credito" ? getMesReferenciaFatura(data, cartaoObj) : mesRef,
           parcela_atual: null, parcela_total: null, is_parcelado: false, parcelamento_id: null,
           recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
         } as any);

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, ArrowDownUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useLancamentos } from "@/hooks/useLancamentos";
 import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";
@@ -165,9 +165,6 @@ export default function Dashboard() {
     () => receitas.filter((l) => l.categoria !== "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
     [receitas],
   );
-  const reserva = totalReceitas - totalDespesas;
-  const reservaPct = totalReceitas > 0 ? (reserva / totalReceitas) * 100 : 0;
-  const gastoPct = totalReceitas > 0 ? Math.min(100, (totalDespesas / totalReceitas) * 100) : 0;
 
   // ── Quinzenas ─────────────────────────────────────────────────────────────
   const quinzenas = useMemo(() => {
@@ -294,64 +291,31 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Despesas / Receitas / Resgates */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="glass-card p-3 space-y-1 min-w-0">
-            <div className="flex items-center gap-1">
-              <TrendingDown size={11} className="text-destructive shrink-0" />
-              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide truncate">Despesas</span>
+        {/* Despesas / Receitas */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="glass-card p-4 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <TrendingDown size={13} className="text-destructive" />
+              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Despesas</span>
             </div>
-            <p className="text-sm font-bold text-foreground leading-tight truncate">{fmt(totalDespesas)}</p>
+            <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalDespesas)}</p>
           </div>
-          <div className="glass-card p-3 space-y-1 min-w-0">
-            <div className="flex items-center gap-1">
-              <TrendingUp size={11} style={{ color: "#0D9488" }} className="shrink-0" />
-              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide truncate">Receitas</span>
+          <div className="glass-card p-4 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <TrendingUp size={13} style={{ color: "#0D9488" }} />
+              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Receitas</span>
             </div>
-            <p className="text-sm font-bold text-foreground leading-tight truncate">{fmt(totalReceitas)}</p>
-          </div>
-          <div className="glass-card p-3 space-y-1 min-w-0">
-            <div className="flex items-center gap-1">
-              <ArrowDownUp size={11} style={{ color: "#8B5CF6" }} className="shrink-0" />
-              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide truncate">Resgates</span>
-            </div>
-            <p className="text-sm font-bold text-foreground leading-tight truncate">{fmt(totalResgates)}</p>
+            <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalReceitas)}</p>
           </div>
         </div>
 
-        {/* Reserva */}
-        <div className="glass-card p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🌿</span>
-              <div>
-                <p className="text-sm font-bold text-foreground">Reserva</p>
-                <p className="text-[10px] text-muted-foreground">economia do mês</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xl font-bold leading-tight" style={{ color: reserva >= 0 ? "#0D9488" : "#D97052" }}>
-                {fmt(reserva)}
-              </p>
-              {totalReceitas > 0 && (
-                <p className="text-[11px] font-semibold" style={{ color: reserva >= 0 ? "#0D9488" : "#D97052" }}>
-                  {Math.abs(reservaPct).toFixed(1)}% da receita
-                </p>
-              )}
-            </div>
+        {/* Resgates */}
+        {totalResgates > 0 && (
+          <div className="glass-card px-4 py-3 flex items-center justify-between">
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Resgates</span>
+            <span className="text-sm font-bold text-muted-foreground">{fmt(totalResgates)}</span>
           </div>
-          {totalReceitas > 0 && (
-            <div className="h-1.5 rounded-full bg-[#E8ECF5] overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${gastoPct}%`,
-                  background: reserva >= 0 ? "#6366F1" : "#D97052",
-                }}
-              />
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Quinzenas */}
         <div className="grid grid-cols-2 gap-3">

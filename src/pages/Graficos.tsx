@@ -269,7 +269,7 @@ const Graficos = () => {
           ↓ Despesas: {fmt(d)}
         </p>
         {resg > 0 && (
-          <p className="text-[11px]" style={{ color: "#8B5CF6" }}>
+          <p className="text-[11px]" style={{ color: "#78716C" }}>
             ↕ Resgates: {fmt(resg)}
           </p>
         )}
@@ -404,7 +404,7 @@ const Graficos = () => {
                       <Line
                         type="monotone"
                         dataKey="resgatesPast"
-                        stroke="#8B5CF6"
+                        stroke="#78716C"
                         strokeWidth={2}
                         dot={false}
                         connectNulls={false}
@@ -413,7 +413,7 @@ const Graficos = () => {
                       <Line
                         type="monotone"
                         dataKey="resgatesFuture"
-                        stroke="#8B5CF6"
+                        stroke="#78716C"
                         strokeWidth={1.5}
                         strokeDasharray="5 4"
                         dot={false}
@@ -436,7 +436,7 @@ const Graficos = () => {
                     <span className="text-[11px] text-muted-foreground font-medium">Despesas</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-full" style={{ background: "#8B5CF6" }} />
+                    <div className="w-3 h-3 rounded-full" style={{ background: "#78716C" }} />
                     <span className="text-[11px] text-muted-foreground font-medium">Resgates</span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -476,10 +476,10 @@ const Graficos = () => {
                     className="rounded-xl p-2.5 text-center"
                     style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)" }}
                   >
-                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#8B5CF6" }}>
+                    <span className="text-[9px] uppercase tracking-wider block mb-1" style={{ color: "#78716C" }}>
                       Resgates
                     </span>
-                    <span className="text-xs font-bold" style={{ color: "#8B5CF6" }}>
+                    <span className="text-xs font-bold" style={{ color: "#78716C" }}>
                       {fmt(annualTotals.resgates)}
                     </span>
                   </div>
@@ -551,11 +551,11 @@ const Graficos = () => {
                         <div style={{ height: `${BAR_MAX_H}px`, display: "flex", alignItems: "flex-end" }}>
                           <div
                             className="w-14 rounded-t-xl transition-all duration-500"
-                            style={{ height: `${hResg}px`, background: "#8B5CF6" }}
+                            style={{ height: `${hResg}px`, background: "#78716C" }}
                           />
                         </div>
                         <span className="text-[10px] text-muted-foreground">Resgates</span>
-                        <span className="text-xs font-bold" style={{ color: "#8B5CF6" }}>
+                        <span className="text-xs font-bold" style={{ color: "#78716C" }}>
                           {fmt(totalResgatesMes)}
                         </span>
                       </div>

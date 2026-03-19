@@ -99,7 +99,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
             : isPais
               ? "#FDE68A"
               : isResgate
-                ? "rgba(139,92,246,0.12)"
+                ? "rgba(120,113,108,0.12)"
                 : isReceita
                   ? "rgba(13,148,136,0.15)"
                   : "rgba(99,102,241,0.12)",
@@ -112,7 +112,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-semibold text-foreground truncate">{l.descricao}</p>
           {isResgate && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold shrink-0" style={{ background: "rgba(139,92,246,0.15)", color: "#7C3AED" }}>
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold shrink-0" style={{ background: "rgba(120,113,108,0.15)", color: "#78716C" }}>
               RESGATE
             </span>
           )}
@@ -152,7 +152,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
 
       <p
         className="text-sm font-bold shrink-0"
-        style={{ color: isPais ? "#B45309" : isResgate ? "#7C3AED" : isReceita ? "#0D9488" : "#1E2A45" }}
+        style={{ color: isPais ? "#B45309" : isResgate ? "#78716C" : isReceita ? "#0D9488" : "#1E2A45" }}
       >
         {isReceita ? "+" : "-"}
         {fmt(Number(l.valor))}
@@ -325,7 +325,7 @@ export default function Despesas() {
               <p className="text-[10px] text-muted-foreground">Receitas</p>
               <p className="text-xs font-bold text-foreground truncate">{fmt(totalReceitas)}</p>
             </div>
-            <div className="glass-card px-2 py-3 border-l-2 min-w-0" style={{ borderLeftColor: "#8B5CF6" }}>
+            <div className="glass-card px-2 py-3 border-l-2 min-w-0" style={{ borderLeftColor: "#78716C" }}>
               <p className="text-[10px] text-muted-foreground">Resgates</p>
               <p className="text-xs font-bold text-foreground truncate">{fmt(totalResgates)}</p>
             </div>
@@ -369,7 +369,7 @@ export default function Despesas() {
                         : "gradient-emerald text-primary-foreground"
                       : "bg-white border border-border text-muted-foreground",
                   )}
-                  style={filterTipo === t && t === "resgate" ? { background: "#8B5CF6" } : undefined}
+                  style={filterTipo === t && t === "resgate" ? { background: "#78716C" } : undefined}
                 >
                   {t === "todos" ? "Todos" : t === "despesa" ? "Despesas" : t === "receita" ? "Receitas" : "Resgates"}
                 </button>

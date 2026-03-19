@@ -294,37 +294,30 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Despesas / Receitas */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="glass-card p-4 space-y-1">
-            <div className="flex items-center gap-1.5">
-              <TrendingDown size={13} className="text-destructive" />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Despesas</span>
+        {/* Despesas / Receitas / Resgates */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="glass-card p-3 space-y-1">
+            <div className="flex items-center gap-1">
+              <TrendingDown size={12} className="text-destructive" />
+              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">Despesas</span>
             </div>
-            <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalDespesas)}</p>
+            <p className="text-base font-bold text-foreground leading-tight">{fmt(totalDespesas)}</p>
           </div>
-          <div className="glass-card p-4 space-y-1">
-            <div className="flex items-center gap-1.5">
-              <TrendingUp size={13} style={{ color: "#0D9488" }} />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Receitas</span>
+          <div className="glass-card p-3 space-y-1">
+            <div className="flex items-center gap-1">
+              <TrendingUp size={12} style={{ color: "#0D9488" }} />
+              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">Receitas</span>
             </div>
-            <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalReceitas)}</p>
+            <p className="text-base font-bold text-foreground leading-tight">{fmt(totalReceitas)}</p>
+          </div>
+          <div className="glass-card p-3 space-y-1">
+            <div className="flex items-center gap-1">
+              <ArrowDownUp size={12} style={{ color: "#8B5CF6" }} />
+              <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wide">Resgates</span>
+            </div>
+            <p className="text-base font-bold text-foreground leading-tight">{fmt(totalResgates)}</p>
           </div>
         </div>
-
-        {/* Resgates */}
-        {totalResgates > 0 && (
-          <div className="glass-card p-4 space-y-1">
-            <div className="flex items-center gap-1.5">
-              <ArrowDownUp size={13} style={{ color: "#8B5CF6" }} />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-                Resgates de investimento
-              </span>
-            </div>
-            <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalResgates)}</p>
-            <p className="text-[10px] text-muted-foreground">Movimentação de patrimônio · não conta como renda</p>
-          </div>
-        )}
 
         {/* Reserva */}
         <div className="glass-card p-4 space-y-3">

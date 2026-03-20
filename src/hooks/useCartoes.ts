@@ -8,6 +8,7 @@ export interface Cartao {
   nome: string;
   bandeira: string;
   dia_fechamento: number;
+  dia_vencimento: number;
   melhor_dia_compra: number;
   cor: string;
   ativo: boolean;

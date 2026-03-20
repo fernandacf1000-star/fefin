@@ -13,21 +13,40 @@ import { SUBCATEGORIA_GROUPS, detectSubcategoria, detectCategoriaMacro } from "@
 import { toast } from "sonner";
 
 /**
- * Calcula o mes_referencia considerando o ciclo de fechamento do cartão.
- * - Dinheiro / sem cartão: mes_referencia = mês da data da compra
- * - Crédito: se dia da compra <= dia_fechamento, fatura fecha nesse mês, vence no próximo
- *            se dia da compra > dia_fechamento, fatura fecha no mês seguinte, vence em +2
+ * Calcula o mes_referencia considerando o ciclo de fechamento e vencimento do cartão.
+ *
+ * Regra:
+ * 1. Se dia da compra <= dia_fechamento → entra na fatura que fecha neste mês
+ *    Se dia da compra > dia_fechamento  → entra na fatura que fecha no mês seguinte
+ *
+ * 2. A partir do mês de fechamento, determina o mês de vencimento:
+ *    Se dia_vencimento > dia_fechamento → vencimento é no mesmo mês do fechamento
+ *    Se dia_vencimento <= dia_fechamento → vencimento é no mês seguinte ao fechamento
+ *
+ * mes_referencia = mês do vencimento (quando você efetivamente paga)
  */
 function getMesReferenciaFatura(dataCompra: Date, cartaoSelecionado: Cartao | null): string {
   if (!cartaoSelecionado) {
     return `${dataCompra.getFullYear()}-${String(dataCompra.getMonth() + 1).padStart(2, "0")}`;
   }
-  const dia = dataCompra.getDate();
+  const diaCompra = dataCompra.getDate();
   const diaFecha = cartaoSelecionado.dia_fechamento;
-  // Se compra foi até o dia de fechamento, entra na fatura desse mês (vence mês seguinte)
-  // Se compra foi depois do fechamento, entra na fatura do mês seguinte (vence +2)
-  const mesesAFrente = dia <= diaFecha ? 1 : 2;
-  const mesVencimento = addMonths(dataCompra, mesesAFrente);
+  const diaVence = cartaoSelecionado.dia_vencimento ?? diaFecha + 5;
+
+  // Passo 1: em qual mês a fatura fecha?
+  // Se comprou antes ou no dia do fechamento → fecha neste mês
+  // Se comprou depois → fecha no mês seguinte
+  const mesFechamento = diaCompra <= diaFecha
+    ? dataCompra
+    : addMonths(dataCompra, 1);
+
+  // Passo 2: o vencimento é no mesmo mês do fechamento ou no seguinte?
+  // Se dia_vencimento > dia_fechamento → mesmo mês (ex: fecha 10, vence 15)
+  // Se dia_vencimento <= dia_fechamento → mês seguinte (ex: fecha 26, vence 1)
+  const mesVencimento = diaVence > diaFecha
+    ? mesFechamento
+    : addMonths(mesFechamento, 1);
+
   return `${mesVencimento.getFullYear()}-${String(mesVencimento.getMonth() + 1).padStart(2, "0")}`;
 }
 

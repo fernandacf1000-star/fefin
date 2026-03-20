@@ -19,6 +19,21 @@ import {
 import type { Cartao } from "@/hooks/useCartoes";
 import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from "@/lib/subcategorias";
 
+/**
+ * Calcula o mes_referencia considerando o ciclo de fechamento e vencimento do cartão.
+ */
+function getMesReferenciaFatura(dataCompra: Date, cartaoSelecionado: Cartao | null): string {
+  if (!cartaoSelecionado) {
+    return `${dataCompra.getFullYear()}-${String(dataCompra.getMonth() + 1).padStart(2, "0")}`;
+  }
+  const diaCompra = dataCompra.getDate();
+  const diaFecha = cartaoSelecionado.dia_fechamento;
+  const diaVence = cartaoSelecionado.dia_vencimento ?? diaFecha + 5;
+  const mesFechamento = diaCompra <= diaFecha ? dataCompra : addMonths(dataCompra, 1);
+  const mesVencimento = diaVence > diaFecha ? mesFechamento : addMonths(mesFechamento, 1);
+  return `${mesVencimento.getFullYear()}-${String(mesVencimento.getMonth() + 1).padStart(2, "0")}`;
+}
+
 const RECEITA_CATS_EDIT = ["Salário", "Reembolso Pais", "Resgate"] as const;
 type ReceitaCatEdit = (typeof RECEITA_CATS_EDIT)[number];
 const receitaCatMapEdit: Record<ReceitaCatEdit, string> = {
@@ -121,6 +136,13 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       const novaData = format(data, "yyyy-MM-dd");
       const novoMesRef = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`;
       const isReceitaEdit = lancamento.tipo === "receita";
+
+      // Resolver cartão para calcular ciclo de fatura
+      const cartaoObj = cartao ? cartoes.find((c) => c.id === cartao) || null : null;
+      const mesRefFatura = !isReceitaEdit && forma === "credito"
+        ? getMesReferenciaFatura(data, cartaoObj)
+        : novoMesRef;
+
       const baseUpdates: Record<string, any> = {
         descricao,
         valor: numValor,
@@ -130,7 +152,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
         cartao_id: isReceitaEdit ? null : cartao,
         subcategoria_pais: isReceitaEdit ? null : getSubPais(),
         data: novaData,
-        mes_referencia: novoMesRef,
+        mes_referencia: mesRefFatura,
       };
       if (isReceitaEdit) {
         baseUpdates.categoria = receitaCatMapEdit[receitaCat];
@@ -147,7 +169,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
           id: lancamento.id,
           ...baseUpdates,
           data: format(data, "yyyy-MM-dd"),
-          mes_referencia: `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`,
+          mes_referencia: mesRefFatura,
           is_parcelado: true,
           parcela_atual: 1,
           parcela_total: nParcelas,
@@ -161,7 +183,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
             tipo: "despesa",
             categoria: lancamento.categoria || "extra",
             data: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`,
-            mes_referencia: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+            mes_referencia: getMesReferenciaFatura(d, cartaoObj),
             parcela_atual: i + 1,
             parcela_total: nParcelas,
             is_parcelado: true,
@@ -181,7 +203,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
           id: lancamento.id,
           ...baseUpdates,
           data: format(data, "yyyy-MM-dd"),
-          mes_referencia: `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`,
+          mes_referencia: mesRefFatura,
           recorrente: true,
           dia_recorrencia: dia,
           recorrencia_pai_id: paiId,
@@ -194,12 +216,13 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
         for (let i = 1; i < 24; i++) {
           const m = addMonths(data, i);
           const daysInMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+          const dataRecorrente = new Date(m.getFullYear(), m.getMonth(), Math.min(dia, daysInMonth));
           rows.push({
             ...baseUpdates,
             tipo: "despesa",
             categoria: lancamento.categoria || "extra",
             data: `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}-${String(Math.min(dia, daysInMonth)).padStart(2, "0")}`,
-            mes_referencia: `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}`,
+            mes_referencia: getMesReferenciaFatura(dataRecorrente, cartaoObj),
             parcela_atual: null,
             parcela_total: null,
             is_parcelado: false,

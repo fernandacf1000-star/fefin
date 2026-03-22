@@ -316,6 +316,7 @@ const Conta = () => {
           nome: editingCartao.nome,
           bandeira: editingCartao.bandeira,
           dia_fechamento: editingCartao.dia_fechamento,
+          dia_vencimento: editingCartao.dia_vencimento,
           melhor_dia_compra: editingCartao.melhor_dia_compra,
           cor: editingCartao.cor,
         } : undefined}

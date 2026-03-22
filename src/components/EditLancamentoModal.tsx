@@ -1,13 +1,13 @@
-import { useEffect, useState } from “react”;
-import { X, CalendarIcon, Users } from “lucide-react”;
-import { format, addMonths } from “date-fns”;
-import { ptBR } from “date-fns/locale”;
-import { cn } from “@/lib/utils”;
-import { Button } from “@/components/ui/button”;
-import { Input } from “@/components/ui/input”;
-import { Calendar } from “@/components/ui/calendar”;
-import { Popover, PopoverContent, PopoverTrigger } from “@/components/ui/popover”;
-import type { Lancamento } from “@/hooks/useLancamentos”;
+import { useEffect, useState } from "react";
+import { X, CalendarIcon, Users } from "lucide-react";
+import { format, addMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import type { Lancamento } from "@/hooks/useLancamentos";
 import {
 useUpdateLancamento,
 useUpdateAllParcelamento,
@@ -15,9 +15,9 @@ useUpdateParcelamentoFuturas,
 useAddMultipleLancamentos,
 useUpdateFutureRecorrencia,
 useUpdateAllRecorrencia,
-} from “@/hooks/useLancamentos”;
-import type { Cartao } from “@/hooks/useCartoes”;
-import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from “@/lib/subcategorias”;
+} from "@/hooks/useLancamentos";
+import type { Cartao } from "@/hooks/useCartoes";
+import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from "@/lib/subcategorias";
 
 /**
 
@@ -35,10 +35,10 @@ import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from “@/lib/subcategorias
   return `${mesVencimento.getFullYear()}-${String(mesVencimento.getMonth() + 1).padStart(2, "0")}`;
   }
 
-const RECEITA_CATS_EDIT = [“Salário”, “Reembolso Pais”, “Resgate”] as const;
+const RECEITA_CATS_EDIT = ["Salário", "Reembolso Pais", "Resgate"] as const;
 type ReceitaCatEdit = (typeof RECEITA_CATS_EDIT)[number];
 const receitaCatMapEdit: Record<ReceitaCatEdit, string> = {
-“Salário”: “salario”, “Reembolso Pais”: “reembolso_pais”, “Resgate”: “resgate_investimento”,
+"Salário": "salario", "Reembolso Pais": "reembolso_pais", "Resgate": "resgate_investimento",
 };
 const receitaCatReverseMap: Record<string, ReceitaCatEdit> = Object.fromEntries(
 Object.entries(receitaCatMapEdit).map(([k, v]) => [v, k as ReceitaCatEdit]),
@@ -52,27 +52,27 @@ onSave: (updates: Partial<Lancamento>) => Promise<void>;
 cartoes: Cartao[];
 }
 
-type EditScope = “este” | “futuras” | “todos”;
+type EditScope = "este" | "futuras" | "todos";
 
 const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Props) => {
-const [descricao, setDescricao] = useState(””);
-const [valor, setValor] = useState(””);
+const [descricao, setDescricao] = useState("");
+const [valor, setValor] = useState("");
 const [data, setData] = useState<Date>(new Date());
 const [subcategoria, setSubcategoria] = useState<string | null>(null);
 const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-const [formaPagamento, setFormaPagamento] = useState<“dinheiro” | “credito”>(“dinheiro”);
-const [cartaoId, setCartaoId] = useState(””);
+const [formaPagamento, setFormaPagamento] = useState<"dinheiro" | "credito">("dinheiro");
+const [cartaoId, setCartaoId] = useState("");
 const [saving, setSaving] = useState(false);
 const [isParcelado, setIsParcelado] = useState(false);
-const [parcelas, setParcelas] = useState(“2”);
+const [parcelas, setParcelas] = useState("2");
 const [recorrente, setRecorrente] = useState(false);
-const [diaRecorrencia, setDiaRecorrencia] = useState(“1”);
-const [editScope, setEditScope] = useState<EditScope>(“este”);
+const [diaRecorrencia, setDiaRecorrencia] = useState("1");
+const [editScope, setEditScope] = useState<EditScope>("este");
 // Pais / Vicente
 const [isPais, setIsPais] = useState(false);
 const [isVicente, setIsVicente] = useState(false);
 // Receita categoria
-const [receitaCat, setReceitaCat] = useState<ReceitaCatEdit>(“Salário”);
+const [receitaCat, setReceitaCat] = useState<ReceitaCatEdit>("Salário");
 
 const updateLancamento = useUpdateLancamento();
 const updateAll = useUpdateAllParcelamento();
@@ -83,9 +83,9 @@ const updateAllRecorrencia = useUpdateAllRecorrencia();
 
 useEffect(() => {
 if (!lancamento) return;
-setDescricao(lancamento.descricao || “”);
-setValor(Number(lancamento.valor).toLocaleString(“pt-BR”, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-setData(lancamento.data ? new Date(lancamento.data + “T12:00:00”) : new Date());
+setDescricao(lancamento.descricao || "");
+setValor(Number(lancamento.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+setData(lancamento.data ? new Date(lancamento.data + "T12:00:00") : new Date());
 setSubcategoria(lancamento.subcategoria || null);
 // Abrir o grupo correto se já tem subcategoria
 const sub = lancamento.subcategoria || null;
@@ -99,39 +99,39 @@ setIsParcelado(lancamento.is_parcelado || false);
 setParcelas(String(lancamento.parcela_total || 2));
 setRecorrente(lancamento.recorrente || false);
 setDiaRecorrencia(String(lancamento.dia_recorrencia || 1));
-setEditScope(“este”);
+setEditScope("este");
 // Pais/Vicente
 const subP = lancamento.subcategoria_pais;
-setIsVicente(subP === “Vicente”);
-setIsPais(!!(subP && subP !== “”) && subP !== “Vicente” ? true : subP === “Vicente” ? true : false);
+setIsVicente(subP === "Vicente");
+setIsPais(!!(subP && subP !== "") && subP !== "Vicente" ? true : subP === "Vicente" ? true : false);
 if (lancamento.cartao_id) {
-setFormaPagamento(“credito”);
+setFormaPagamento("credito");
 setCartaoId(lancamento.cartao_id);
 } else {
-setFormaPagamento(“dinheiro”);
-setCartaoId(””);
+setFormaPagamento("dinheiro");
+setCartaoId("");
 }
 // Receita categoria
-setReceitaCat(receitaCatReverseMap[lancamento.categoria] || “Salário”);
+setReceitaCat(receitaCatReverseMap[lancamento.categoria] || "Salário");
 }, [lancamento]);
 
 const handleValorChange = (raw: string) => {
-const digits = raw.replace(/\D/g, “”);
+const digits = raw.replace(/\D/g, "");
 if (!digits) {
-setValor(””);
+setValor("");
 return;
 }
 setValor(
-(parseInt(digits, 10) / 100).toLocaleString(“pt-BR”, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+(parseInt(digits, 10) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
 );
 };
 
-const getNumValor = () => parseFloat(valor.replace(/./g, “”).replace(”,”, “.”)) || 0;
+const getNumValor = () => parseFloat(valor.replace(/./g, "").replace(",", ".")) || 0;
 
 const getSubPais = () => {
 if (!isPais) return null;
-if (isVicente) return “Vicente”;
-return subcategoria || detectCategoriaMacro(subcategoria || “”) || “Geral”;
+if (isVicente) return "Vicente";
+return subcategoria || detectCategoriaMacro(subcategoria || "") || "Geral";
 };
 
 const handleSave = async () => {
@@ -140,14 +140,13 @@ const numValor = getNumValor();
 if (numValor <= 0) return;
 setSaving(true);
 try {
-const macro = detectCategoriaMacro(subcategoria || “”) || null;
-const forma = formaPagamento === “dinheiro” ? “dinheiro” : “credito”;
-const cartao = formaPagamento === “credito” ? cartaoId || null : null;
-const novaData = format(data, “yyyy-MM-dd”);
+const macro = detectCategoriaMacro(subcategoria || "") || null;
+const forma = formaPagamento === "dinheiro" ? "dinheiro" : "credito";
+const cartao = formaPagamento === "credito" ? cartaoId || null : null;
+const novaData = format(data, "yyyy-MM-dd");
 const novoMesRef = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`;
-const isReceitaEdit = lancamento.tipo === “receita”;
+const isReceitaEdit = lancamento.tipo === "receita";
 
-```
   // Resolver cartão para calcular ciclo de fatura
   const cartaoObj = cartao ? cartoes.find((c) => c.id === cartao) || null : null;
   const mesRefFatura = !isReceitaEdit && forma === "credito"
@@ -277,12 +276,11 @@ const isReceitaEdit = lancamento.tipo === “receita”;
 } finally {
   setSaving(false);
 }
-```
 
 };
 
 if (!open || !lancamento) return null;
-const isReceita = lancamento.tipo === “receita”;
+const isReceita = lancamento.tipo === "receita";
 const wasParcelado = lancamento.is_parcelado && lancamento.parcelamento_id;
 const wasRecorrente = lancamento.recorrente && lancamento.recorrencia_pai_id;
 const wasSimples = !wasParcelado && !wasRecorrente;
@@ -300,7 +298,6 @@ return (
 </button>
 </div>
 
-```
       {/* Descrição */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-muted-foreground">Descrição</label>
@@ -644,7 +641,6 @@ return (
     </div>
   </div>
 </>
-```
 
 );
 };

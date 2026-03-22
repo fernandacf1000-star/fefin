@@ -1,16 +1,16 @@
-import { useState } from “react”;
-import { X, CalendarIcon, Users } from “lucide-react”;
-import { format, addMonths } from “date-fns”;
-import { ptBR } from “date-fns/locale”;
-import { cn } from “@/lib/utils”;
-import { Input } from “@/components/ui/input”;
-import { Calendar } from “@/components/ui/calendar”;
-import { Popover, PopoverContent, PopoverTrigger } from “@/components/ui/popover”;
-import { useAddLancamento, useAddMultipleLancamentos } from “@/hooks/useLancamentos”;
-import { useCartoes } from “@/hooks/useCartoes”;
-import type { Cartao } from “@/hooks/useCartoes”;
-import { SUBCATEGORIA_GROUPS, detectSubcategoria, detectCategoriaMacro } from “@/lib/subcategorias”;
-import { toast } from “sonner”;
+import { useState } from "react";
+import { X, CalendarIcon, Users } from "lucide-react";
+import { format, addMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useAddLancamento, useAddMultipleLancamentos } from "@/hooks/useLancamentos";
+import { useCartoes } from "@/hooks/useCartoes";
+import type { Cartao } from "@/hooks/useCartoes";
+import { SUBCATEGORIA_GROUPS, detectSubcategoria, detectCategoriaMacro } from "@/lib/subcategorias";
+import { toast } from "sonner";
 
 /**
 
@@ -51,66 +51,65 @@ const mesVencimento = diaVence > diaFecha
 return `${mesVencimento.getFullYear()}-${String(mesVencimento.getMonth() + 1).padStart(2, "0")}`;
 }
 
-const RECEITA_CATS = [“Salário”, “Reembolso Pais”, “Resgate”] as const;
+const RECEITA_CATS = ["Salário", "Reembolso Pais", "Resgate"] as const;
 type ReceitaCat = (typeof RECEITA_CATS)[number];
 const receitaCatMap: Record<ReceitaCat, string> = {
-“Salário”: “salario”, “Reembolso Pais”: “reembolso_pais”, “Resgate”: “resgate_investimento”,
+"Salário": "salario", "Reembolso Pais": "reembolso_pais", "Resgate": "resgate_investimento",
 };
 
 interface Props {
 open: boolean;
 onClose: () => void;
-initialTipo?: “despesa” | “receita”;
+initialTipo?: "despesa" | "receita";
 }
 
-const NewExpenseSheet = ({ open, onClose, initialTipo = “despesa” }: Props) => {
+const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
 const { data: cartoes = [] } = useCartoes();
 const addLancamento = useAddLancamento();
 const addMultiple = useAddMultipleLancamentos();
 
-const [tipo, setTipo] = useState<“despesa” | “receita”>(initialTipo);
-const [descricao, setDescricao] = useState(””);
-const [valor, setValor] = useState(””);
+const [tipo, setTipo] = useState<"despesa" | "receita">(initialTipo);
+const [descricao, setDescricao] = useState("");
+const [valor, setValor] = useState("");
 const [data, setData] = useState<Date>(new Date());
 const [subcategoria, setSubcategoria] = useState<string | null>(null);
 const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 const [isPais, setIsPais] = useState(false);
 const [isVicente, setIsVicente] = useState(false);
-const [formaPagamento, setFormaPagamento] = useState<“Dinheiro” | “Crédito”>(“Dinheiro”);
-const [cartaoId, setCartaoId] = useState<string>(””);
+const [formaPagamento, setFormaPagamento] = useState<"Dinheiro" | "Crédito">("Dinheiro");
+const [cartaoId, setCartaoId] = useState<string>("");
 const [isParcelado, setIsParcelado] = useState(false);
-const [parcelas, setParcelas] = useState(“2”);
+const [parcelas, setParcelas] = useState("2");
 const [recorrente, setRecorrente] = useState(false);
-const [diaRecorrencia, setDiaRecorrencia] = useState(“1”);
-const [receitaCat, setReceitaCat] = useState<ReceitaCat>(“Salário”);
+const [diaRecorrencia, setDiaRecorrencia] = useState("1");
+const [receitaCat, setReceitaCat] = useState<ReceitaCat>("Salário");
 
 const isPending = addLancamento.isPending || addMultiple.isPending;
 
 const reset = () => {
-setTipo(initialTipo); setDescricao(””); setValor(””); setData(new Date());
+setTipo(initialTipo); setDescricao(""); setValor(""); setData(new Date());
 setSubcategoria(null); setSelectedGroup(null); setIsPais(false); setIsVicente(false);
-setFormaPagamento(“Dinheiro”); setCartaoId(””);
-setIsParcelado(false); setParcelas(“2”);
-setRecorrente(false); setDiaRecorrencia(“1”);
-setReceitaCat(“Salário”);
+setFormaPagamento("Dinheiro"); setCartaoId("");
+setIsParcelado(false); setParcelas("2");
+setRecorrente(false); setDiaRecorrencia("1");
+setReceitaCat("Salário");
 };
 
 const handleClose = () => { reset(); onClose(); };
 
 const handleValorChange = (raw: string) => {
-const digits = raw.replace(/\D/g, “”);
-if (!digits) { setValor(””); return; }
+const digits = raw.replace(/\D/g, "");
+if (!digits) { setValor(""); return; }
 const num = parseInt(digits, 10) / 100;
-setValor(num.toLocaleString(“pt-BR”, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+setValor(num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 };
 
-const getNumValor = () => parseFloat(valor.replace(/./g, “”).replace(”,”, “.”)) || 0;
+const getNumValor = () => parseFloat(valor.replace(/./g, "").replace(",", ".")) || 0;
 
 const handleSave = async () => {
-if (!descricao.trim()) { toast.error(“Preencha a descrição”); return; }
-if (getNumValor() <= 0) { toast.error(“Preencha o valor”); return; }
+if (!descricao.trim()) { toast.error("Preencha a descrição"); return; }
+if (getNumValor() <= 0) { toast.error("Preencha o valor"); return; }
 
-```
 const numValor = getNumValor();
 const mesRef = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`;
 
@@ -209,26 +208,24 @@ try {
 } catch (e: any) {
   toast.error(e.message || "Erro ao salvar");
 }
-```
 
 };
 
 return (
 <>
 <div
-className={cn(“fixed inset-0 z-[60] bg-black/25 backdrop-blur-sm transition-opacity duration-300”,
-open ? “opacity-100” : “opacity-0 pointer-events-none”)}
+className={cn("fixed inset-0 z-[60] bg-black/25 backdrop-blur-sm transition-opacity duration-300",
+open ? "opacity-100" : "opacity-0 pointer-events-none")}
 onClick={handleClose}
 />
 <div
-className={cn(“fixed inset-x-0 bottom-0 z-[70] rounded-t-[28px] bg-white border-t border-border transition-transform duration-300 ease-out max-h-[92vh] overflow-y-auto”,
-open ? “translate-y-0” : “translate-y-full”)}
+className={cn("fixed inset-x-0 bottom-0 z-[70] rounded-t-[28px] bg-white border-t border-border transition-transform duration-300 ease-out max-h-[92vh] overflow-y-auto",
+open ? "translate-y-0" : "translate-y-full")}
 >
 <div className="flex justify-center pt-3 sticky top-0 bg-white z-10">
 <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
 </div>
 
-```
     <div className="px-5 pt-3 pb-10 space-y-4">
 
       {/* Header */}
@@ -492,7 +489,6 @@ open ? “translate-y-0” : “translate-y-full”)}
     </div>
   </div>
 </>
-```
 
 );
 };

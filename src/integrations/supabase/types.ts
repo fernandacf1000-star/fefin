@@ -54,6 +54,7 @@ export type Database = {
           cor: string
           created_at: string
           dia_fechamento: number
+          dia_vencimento: number
           id: string
           melhor_dia_compra: number
           nome: string
@@ -65,6 +66,7 @@ export type Database = {
           cor?: string
           created_at?: string
           dia_fechamento?: number
+          dia_vencimento?: number
           id?: string
           melhor_dia_compra?: number
           nome: string
@@ -76,6 +78,7 @@ export type Database = {
           cor?: string
           created_at?: string
           dia_fechamento?: number
+          dia_vencimento?: number
           id?: string
           melhor_dia_compra?: number
           nome?: string

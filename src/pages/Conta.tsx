@@ -108,7 +108,7 @@ const Conta = () => {
     }
   };
 
-  const handleSaveCartao = async (data: { nome: string; bandeira: string; dia_fechamento: number; melhor_dia_compra: number; cor: string }) => {
+  const handleSaveCartao = async (data: { nome: string; bandeira: string; dia_fechamento: number; dia_vencimento: number; melhor_dia_compra: number; cor: string }) => {
     try {
       if (editingCartao) {
         await updateCartao.mutateAsync({ id: editingCartao.id, ...data });
@@ -316,6 +316,7 @@ const Conta = () => {
           nome: editingCartao.nome,
           bandeira: editingCartao.bandeira,
           dia_fechamento: editingCartao.dia_fechamento,
+          dia_vencimento: editingCartao.dia_vencimento,
           melhor_dia_compra: editingCartao.melhor_dia_compra,
           cor: editingCartao.cor,
         } : undefined}

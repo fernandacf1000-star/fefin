@@ -21,6 +21,7 @@ interface Props {
     nome: string;
     bandeira: string;
     dia_fechamento: number;
+    dia_vencimento: number;
     melhor_dia_compra: number;
     cor: string;
   }) => void;
@@ -29,6 +30,7 @@ interface Props {
     nome: string;
     bandeira: string;
     dia_fechamento: number;
+    dia_vencimento: number;
     melhor_dia_compra: number;
     cor: string;
   };
@@ -38,6 +40,7 @@ const CartaoModal = ({ open, onClose, onSave, isPending, initial }: Props) => {
   const [nome, setNome] = useState("");
   const [bandeira, setBandeira] = useState("visa");
   const [diaFechamento, setDiaFechamento] = useState(10);
+  const [diaVencimento, setDiaVencimento] = useState(15);
   const [melhorDia, setMelhorDia] = useState(11);
   const [cor, setCor] = useState("#6366F1");
   const [melhorDiaEditado, setMelhorDiaEditado] = useState(false);
@@ -47,6 +50,7 @@ const CartaoModal = ({ open, onClose, onSave, isPending, initial }: Props) => {
       setNome(initial?.nome || "");
       setBandeira(initial?.bandeira || "visa");
       setDiaFechamento(initial?.dia_fechamento || 10);
+      setDiaVencimento(initial?.dia_vencimento || (initial?.dia_fechamento ? initial.dia_fechamento + 5 : 15));
       setMelhorDia(initial?.melhor_dia_compra || 11);
       setCor(initial?.cor || "#6366F1");
       setMelhorDiaEditado(!!initial);
@@ -103,15 +107,26 @@ const CartaoModal = ({ open, onClose, onSave, isPending, initial }: Props) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1.5">
-            <Label className="text-[11px] text-muted-foreground">Dia de vencimento</Label>
+            <Label className="text-[11px] text-muted-foreground">Fechamento</Label>
             <Input
               type="number"
               min={1}
               max={31}
               value={diaFechamento}
               onChange={(e) => setDiaFechamento(parseInt(e.target.value) || 1)}
+              className="bg-secondary border-border"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-muted-foreground">Vencimento</Label>
+            <Input
+              type="number"
+              min={1}
+              max={31}
+              value={diaVencimento}
+              onChange={(e) => setDiaVencimento(parseInt(e.target.value) || 1)}
               className="bg-secondary border-border"
             />
           </div>
@@ -150,7 +165,7 @@ const CartaoModal = ({ open, onClose, onSave, isPending, initial }: Props) => {
             Cancelar
           </Button>
           <Button
-            onClick={() => onSave({ nome, bandeira, dia_fechamento: diaFechamento, melhor_dia_compra: melhorDia, cor })}
+            onClick={() => onSave({ nome, bandeira, dia_fechamento: diaFechamento, dia_vencimento: diaVencimento, melhor_dia_compra: melhorDia, cor })}
             disabled={isPending || !nome}
             className="flex-1 gradient-emerald text-white border-0 hover:opacity-90"
           >

@@ -72,7 +72,7 @@ for (const g of SUBCATEGORIA_GROUPS) {
 const item = g.items.find((i) => i.name === sub);
 if (item) return item.emoji;
 }
-return "📋";
+return "🤑";
 };
 
 /** Format subcategoria for display: "Group > Item" */

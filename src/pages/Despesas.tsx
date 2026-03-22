@@ -61,7 +61,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
     Lazer: "🎮",
     Investimentos: "📈",
   };
-  const emoji = isResgate ? "📈" : group ? emojiMap[group] || getGroupEmoji(group) : isReceita ? "🟢" : "🔴";
+  const emoji = isResgate ? "📈" : group ? emojiMap[group] || getGroupEmoji(group) : isReceita ? "🤑" : "🔴";
   const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");

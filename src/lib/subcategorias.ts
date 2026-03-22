@@ -63,7 +63,7 @@ return undefined;
 
 /** Get emoji for a group */
 export const getGroupEmoji = (group: string): string => {
-return SUBCATEGORIA_GROUPS.find((g) => g.group === group)?.emoji || "📋";
+return SUBCATEGORIA_GROUPS.find((g) => g.group === group)?.emoji || "🤑";
 };
 
 /** Get emoji for a specific subcategoria */

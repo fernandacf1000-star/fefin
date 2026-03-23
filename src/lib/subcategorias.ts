@@ -207,6 +207,7 @@ const LEGACY_SUB_MAP: Record<string, { macro: string; sub: string }> = {
 "Miscelânea": { macro: "Pessoal", sub: "Roupas" },
 "Livros": { macro: "Pessoal", sub: "Educação" },
 "Loteria": { macro: "Lazer", sub: "Entretenimento" },
+"casa_manutencao": { macro: "Moradia", sub: "Casa" },
 // Investimentos → Aportes
 "Renda fixa": { macro: "Aportes", sub: "Aportes" },
 "Ações/ETF": { macro: "Aportes", sub: "Aportes" },

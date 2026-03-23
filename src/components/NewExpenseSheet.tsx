@@ -104,7 +104,7 @@ const num = parseInt(digits, 10) / 100;
 setValor(num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 };
 
-const getNumValor = () => parseFloat(valor.replace(/./g, "").replace(",", ".")) || 0;
+const getNumValor = () => parseFloat(valor.replace(/\./g, "").replace(",", ".")) || 0;
 
 const handleSave = async () => {
 if (!descricao.trim()) { toast.error("Preencha a descrição"); return; }

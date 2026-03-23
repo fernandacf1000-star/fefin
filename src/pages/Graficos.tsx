@@ -569,15 +569,15 @@ const Graficos = () => {
                 <section className="glass-card p-4 animate-fade-up" style={{ animationDelay: "0.1s" }}>
                   <h2 className="text-sm font-semibold text-foreground">Composição por Categoria</h2>
                   <p className="text-[11px] text-muted-foreground mb-4">{mesLabelFmt}</p>
-                  <div className="relative h-52 flex items-center justify-center">
+                  <div className="relative h-64 flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={composicao}
                           dataKey="value"
-                          innerRadius="60%"
-                          outerRadius="85%"
-                          paddingAngle={3}
+                          innerRadius="55%"
+                          outerRadius="72%"
+                          paddingAngle={4}
                           stroke="none"
                           onMouseEnter={handlePieEnter}
                           onMouseLeave={handlePieLeave}

@@ -74,9 +74,11 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
         "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors",
         selected
           ? "border-primary/40 bg-primary/5"
-          : isPais
-            ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
-            : "bg-white border-transparent",
+          : isLuisa
+            ? "bg-white border-l-2 border-l-pink-400 border-t-transparent border-r-transparent border-b-transparent"
+            : isPais
+              ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
+              : "bg-white border-transparent",
       )}
       onClick={() => (selectionMode ? onToggleSelect(l.id) : onTap(l))}
     >

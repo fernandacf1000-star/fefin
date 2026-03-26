@@ -99,16 +99,18 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
         style={{
           background: isVicente
             ? "#DBEAFE"
-            : isPais
-              ? "#FDE68A"
-              : isResgate
-                ? "rgba(120,113,108,0.12)"
-                : isReceita
-                  ? "rgba(13,148,136,0.15)"
-                  : "rgba(99,102,241,0.12)",
+            : isLuisa
+              ? "#FCE7F3"
+              : isPais
+                ? "#FDE68A"
+                : isResgate
+                  ? "rgba(120,113,108,0.12)"
+                  : isReceita
+                    ? "rgba(13,148,136,0.15)"
+                    : "rgba(99,102,241,0.12)",
         }}
       >
-        {isVicente ? "👦" : isPais ? "🧓" : emoji}
+        {isVicente ? "👦" : isLuisa ? "👧" : isPais ? "🧓" : emoji}
       </div>
 
       <div className="flex-1 min-w-0">

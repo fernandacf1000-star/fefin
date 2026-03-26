@@ -158,6 +158,7 @@ const Graficos = () => {
     ...CAT_COLORS,
     Pais: "#F59E0B",
     Vicente: "#3B82F6",
+    Luísa: "#EC4899",
     "Sem categoria": "#94A3B8",
   };
 

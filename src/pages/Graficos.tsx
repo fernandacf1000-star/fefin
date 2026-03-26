@@ -167,8 +167,9 @@ const Graficos = () => {
     const map: Record<string, number> = {};
     despesas.forEach((d) => {
       const isVicente = d.subcategoria_pais === "Vicente";
-      const isPais = !!(d.subcategoria_pais && d.subcategoria_pais !== "") && !isVicente;
-      const key = isVicente ? "Vicente" : isPais ? "Pais" : normalizeMacro(d.categoria_macro, d.subcategoria);
+      const isLuisa = d.subcategoria_pais === "Luísa";
+      const isPais = !!(d.subcategoria_pais && d.subcategoria_pais !== "") && !isVicente && !isLuisa;
+      const key = isVicente ? "Vicente" : isLuisa ? "Luísa" : isPais ? "Pais" : normalizeMacro(d.categoria_macro, d.subcategoria);
       map[key] = (map[key] || 0) + Number(d.valor);
     });
     // Deduzir reembolsos (tabela) de Pais e Vicente

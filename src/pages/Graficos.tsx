@@ -151,6 +151,7 @@ const Graficos = () => {
     Investimentos: "📈",
     Pais: "🧓",
     Vicente: "👦",
+    Luísa: "👧",
     "Sem categoria": "🔴",
   };
   const colorMapGraf: Record<string, string> = {

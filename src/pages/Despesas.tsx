@@ -66,6 +66,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");
   const isVicente = l.subcategoria_pais === "Vicente";
+  const isLuisa = l.subcategoria_pais === "Luísa";
 
   return (
     <div

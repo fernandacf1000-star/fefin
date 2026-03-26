@@ -146,7 +146,7 @@ const Graficos = () => {
     Alimentação: "🥗",
     Transporte: "🚗",
     Saúde: "💊",
-    Pessoal: "💅",
+    Pessoal: "🛍️",
     Lazer: "🎮",
     Investimentos: "📈",
     Pais: "🧓",

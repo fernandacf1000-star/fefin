@@ -131,9 +131,10 @@ setValor(
 const getNumValor = () => parseFloat(valor.replace(/\./g, "").replace(",", ".")) || 0;
 
 const getSubPais = () => {
-if (!isPais) return null;
-if (isVicente) return "Vicente";
-return subcategoria || detectCategoriaMacro(subcategoria || "") || "Geral";
+    if (!isPais) return null;
+    if (isVicente) return "Vicente";
+    if (isLuisa) return "Luísa";
+    return subcategoria || detectCategoriaMacro(subcategoria || "") || "Geral";
 };
 
 const handleSave = async () => {

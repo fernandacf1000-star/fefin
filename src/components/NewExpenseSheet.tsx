@@ -76,6 +76,7 @@ const [subcategoria, setSubcategoria] = useState<string | null>(null);
 const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 const [isPais, setIsPais] = useState(false);
 const [isVicente, setIsVicente] = useState(false);
+const [isLuisa, setIsLuisa] = useState(false);
 const [formaPagamento, setFormaPagamento] = useState<"Dinheiro" | "Crédito">("Dinheiro");
 const [cartaoId, setCartaoId] = useState<string>("");
 const [isParcelado, setIsParcelado] = useState(false);
@@ -88,7 +89,7 @@ const isPending = addLancamento.isPending || addMultiple.isPending;
 
 const reset = () => {
 setTipo(initialTipo); setDescricao(""); setValor(""); setData(new Date());
-setSubcategoria(null); setSelectedGroup(null); setIsPais(false); setIsVicente(false);
+setSubcategoria(null); setSelectedGroup(null); setIsPais(false); setIsVicente(false); setIsLuisa(false);
 setFormaPagamento("Dinheiro"); setCartaoId("");
 setIsParcelado(false); setParcelas("2");
 setRecorrente(false); setDiaRecorrencia("1");
@@ -151,7 +152,7 @@ try {
   const macro = detectCategoriaMacro(subcategoria || "") || null;
   const forma = formaPagamento === "Dinheiro" ? "dinheiro" : "credito";
   const cartao = formaPagamento === "Crédito" ? (cartaoId || cartoes[0]?.id || null) : null;
-  const subPais = isPais ? (isVicente ? "Vicente" : (subcategoria || macro || "Geral")) : null;
+  const subPais = isPais ? (isVicente ? "Vicente" : isLuisa ? "Luísa" : (subcategoria || macro || "Geral")) : null;
 
   // Resolve o cartão selecionado para calcular o ciclo de fatura
   const cartaoObj = cartao ? cartoes.find((c) => c.id === cartao) || null : null;
@@ -398,7 +399,7 @@ open ? "translate-y-0" : "translate-y-full")}
 
           {/* Toggle Pais */}
           <button
-            onClick={() => { setIsPais(v => { if (v) setIsVicente(false); return !v; }); }}
+            onClick={() => { setIsPais(v => { if (v) { setIsVicente(false); setIsLuisa(false); } return !v; }); }}
             className={cn("w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
               isPais ? "border-amber-400 bg-amber-50" : "border-[#E8ECF5] bg-[#E8ECF5]")}>
             <div className="flex items-center gap-2">
@@ -416,7 +417,7 @@ open ? "translate-y-0" : "translate-y-full")}
           {/* Toggle Vicente */}
           {isPais && (
             <button
-              onClick={() => setIsVicente(v => !v)}
+              onClick={() => { setIsVicente(v => { if (!v) setIsLuisa(false); return !v; }); }}
               className={cn("w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
                 isVicente ? "border-blue-400 bg-blue-50" : "border-[#E8ECF5] bg-[#E8ECF5]")}>
               <div className="flex items-center gap-2">
@@ -427,6 +428,25 @@ open ? "translate-y-0" : "translate-y-full")}
               </div>
               <div className={cn("w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
                 isVicente ? "bg-blue-400 justify-end" : "bg-muted justify-start")}>
+                <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+              </div>
+            </button>
+          )}
+
+          {/* Toggle Luísa */}
+          {isPais && (
+            <button
+              onClick={() => { setIsLuisa(v => { if (!v) setIsVicente(false); return !v; }); }}
+              className={cn("w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
+                isLuisa ? "border-pink-400 bg-pink-50" : "border-[#E8ECF5] bg-[#E8ECF5]")}>
+              <div className="flex items-center gap-2">
+                <span className="text-base">👧</span>
+                <span className={cn("text-sm font-medium", isLuisa ? "text-pink-700" : "text-muted-foreground")}>
+                  Despesa da Luísa
+                </span>
+              </div>
+              <div className={cn("w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
+                isLuisa ? "bg-pink-400 justify-end" : "bg-muted justify-start")}>
                 <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
               </div>
             </button>
@@ -476,10 +496,12 @@ open ? "translate-y-0" : "translate-y-full")}
         disabled={isPending}
         className={cn("w-full h-12 font-semibold text-sm rounded-2xl text-white transition-all disabled:opacity-50",
           isVicente ? "bg-blue-500" :
+          isLuisa ? "bg-pink-500" :
           isPais ? "bg-amber-500" :
           "gradient-emerald")}>
         {isPending ? "Salvando..." :
           isVicente ? "👦 Salvar despesa do Vicente" :
+          isLuisa ? "👧 Salvar despesa da Luísa" :
           isPais ? "🧓 Salvar despesa dos pais" :
           tipo === "receita" ? "💰 Salvar receita" :
           isParcelado ? `💳 Salvar em ${parcelas}x` :

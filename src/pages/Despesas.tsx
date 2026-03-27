@@ -74,11 +74,9 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
         "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors",
         selected
           ? "border-primary/40 bg-primary/5"
-          : isLuisa
-            ? "bg-white border-l-2 border-l-pink-400 border-t-transparent border-r-transparent border-b-transparent"
-            : isPais
-              ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
-              : "bg-white border-transparent",
+          : isPais
+            ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
+            : "bg-white border-transparent",
       )}
       onClick={() => (selectionMode ? onToggleSelect(l.id) : onTap(l))}
     >
@@ -102,12 +100,12 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
             : isLuisa
               ? "#FCE7F3"
               : isPais
-                ? "#FDE68A"
-                : isResgate
-                  ? "rgba(120,113,108,0.12)"
-                  : isReceita
-                    ? "rgba(13,148,136,0.15)"
-                    : "rgba(99,102,241,0.12)",
+              ? "#FDE68A"
+              : isResgate
+                ? "rgba(120,113,108,0.12)"
+                : isReceita
+                  ? "rgba(13,148,136,0.15)"
+                  : "rgba(99,102,241,0.12)",
         }}
       >
         {isVicente ? "👦" : isLuisa ? "👧" : isPais ? "🧓" : emoji}
@@ -162,7 +160,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
 
       <p
         className="text-sm font-bold shrink-0"
-        style={{ color: isLuisa ? "#BE185D" : isPais ? "#B45309" : isResgate ? "#78716C" : isReceita ? "#0D9488" : "#1E2A45" }}
+        style={{ color: isPais ? "#B45309" : isResgate ? "#78716C" : isReceita ? "#0D9488" : "#1E2A45" }}
       >
         {isReceita ? "+" : "-"}
         {fmt(Number(l.valor))}
@@ -206,12 +204,10 @@ export default function Despesas() {
 
   // ── filter ────────────────────────────────────────────────────────────────
   const lista = useMemo(() => {
-    let filtered: typeof lancamentos;
-    if (filterTipo === "todos") filtered = lancamentos;
-    else if (filterTipo === "resgate") filtered = lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento");
-    else if (filterTipo === "receita") filtered = lancamentos.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento");
-    else filtered = lancamentos.filter((l) => l.tipo === filterTipo);
-    return [...filtered].sort((a, b) => Number(a.valor) - Number(b.valor));
+    if (filterTipo === "todos") return lancamentos;
+    if (filterTipo === "resgate") return lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento");
+    if (filterTipo === "receita") return lancamentos.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento");
+    return lancamentos.filter((l) => l.tipo === filterTipo);
   }, [lancamentos, filterTipo]);
 
   const totalDespesas = useMemo(

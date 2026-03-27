@@ -94,10 +94,12 @@ const Graficos = () => {
   }, [allYearLancamentos]);
 
   const annualTotals = useMemo(() => {
-    const r = annualData.reduce((s, d) => s + (d.receitasPast || d.receitasFuture || 0), 0);
-    const d = annualData.reduce((s, dd) => s + (dd.despesasPast || dd.despesasFuture || 0), 0);
+    const receitas = annualData.reduce((s, dd) =>
+      s + (!dd.isFuture ? (dd.receitasPast || 0) : (dd.receitasFuture || 0)), 0);
+    const despesasTotal = annualData.reduce((s, dd) =>
+      s + (!dd.isFuture ? (dd.despesasPast || 0) : (dd.despesasFuture || 0)), 0);
     const resg = annualData.reduce((s, dd) => s + (dd.resgates || 0), 0);
-    return { receitas: r, despesas: d, saldo: r - d, resgates: resg };
+    return { receitas, despesas: despesasTotal, saldo: receitas - despesasTotal, resgates: resg };
   }, [annualData]);
 
   const reembolsosMes = useMemo(() => {

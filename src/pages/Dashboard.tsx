@@ -220,7 +220,7 @@ export default function Dashboard() {
       cartoes
         .map((c) => ({
           cartao: c,
-          total: despesas.filter((l) => l.cartao_id === c.id).reduce((s, l) => s + Number(l.valor), 0),
+          total: lancamentos.filter((l) => l.cartao_id === c.id).reduce((s, l) => s + Number(l.valor), 0),
         }))
         .filter((x) => x.total > 0),
     [despesas, cartoes],

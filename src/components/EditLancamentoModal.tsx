@@ -70,7 +70,8 @@ const [diaRecorrencia, setDiaRecorrencia] = useState("1");
 const [editScope, setEditScope] = useState<EditScope>("este");
 // Pais / Vicente
 const [isPais, setIsPais] = useState(false);
-const [isVicente, setIsVicente] = useState(false);
+  const [isVicente, setIsVicente] = useState(false);
+  const [isLuisa, setIsLuisa] = useState(false);
 // Receita categoria
 const [receitaCat, setReceitaCat] = useState<ReceitaCatEdit>("Salário");
 

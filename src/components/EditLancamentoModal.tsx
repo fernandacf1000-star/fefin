@@ -103,8 +103,9 @@ setDiaRecorrencia(String(lancamento.dia_recorrencia || 1));
 setEditScope("este");
 // Pais/Vicente
 const subP = lancamento.subcategoria_pais;
-setIsVicente(subP === "Vicente");
-setIsPais(!!(subP && subP !== "") && subP !== "Vicente" ? true : subP === "Vicente" ? true : false);
+    setIsVicente(subP === "Vicente");
+    setIsLuisa(subP === "Luísa");
+    setIsPais(!!(subP && subP !== "") ? true : false);
 if (lancamento.cartao_id) {
 setFormaPagamento("credito");
 setCartaoId(lancamento.cartao_id);

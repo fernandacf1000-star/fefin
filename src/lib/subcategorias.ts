@@ -11,6 +11,7 @@ export const SUBCATEGORIA_GROUPS: SubcategoriaGroup[] = [
 { name: "Contas", emoji: "💡" },
 { name: "Internet/Celular", emoji: "📱" },
 { name: "Casa", emoji: "🔧" },
+{ name: "Seguro", emoji: "🛡️" },
 ]},
 { group: "Alimentação", emoji: "🍔", items: [
 { name: "Supermercado", emoji: "🛒" },

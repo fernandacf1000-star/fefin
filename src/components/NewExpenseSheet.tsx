@@ -405,7 +405,7 @@ open ? "translate-y-0" : "translate-y-full")}
             <div className="flex items-center gap-2">
               <Users size={15} className={isPais ? "text-amber-600" : "text-muted-foreground"} />
               <span className={cn("text-sm font-medium", isPais ? "text-amber-700" : "text-muted-foreground")}>
-                Despesa dos pais
+                Despesa dos Pais
               </span>
             </div>
             <div className={cn("w-9 h-5 rounded-full flex items-center px-0.5 transition-all",

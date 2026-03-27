@@ -473,7 +473,7 @@ return (
           <button
             onClick={() => {
               setIsPais((v) => {
-                if (v) setIsVicente(false);
+                if (v) { setIsVicente(false); setIsLuisa(false); }
                 return !v;
               });
             }}

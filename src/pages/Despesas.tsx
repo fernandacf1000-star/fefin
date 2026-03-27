@@ -162,7 +162,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
 
       <p
         className="text-sm font-bold shrink-0"
-        style={{ color: isPais ? "#B45309" : isResgate ? "#78716C" : isReceita ? "#0D9488" : "#1E2A45" }}
+        style={{ color: isLuisa ? "#BE185D" : isPais ? "#B45309" : isResgate ? "#78716C" : isReceita ? "#0D9488" : "#1E2A45" }}
       >
         {isReceita ? "+" : "-"}
         {fmt(Number(l.valor))}

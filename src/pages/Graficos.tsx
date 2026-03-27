@@ -177,8 +177,9 @@ const Graficos = () => {
       const lanc = despesas.find((d) => d.id === r.lancamento_id);
       if (!lanc) return;
       const isVicente = lanc.subcategoria_pais === "Vicente";
-      const isPais = !!(lanc.subcategoria_pais && lanc.subcategoria_pais !== "") && !isVicente;
-      const key = isVicente ? "Vicente" : isPais ? "Pais" : null;
+      const isLuisa = lanc.subcategoria_pais === "Luísa";
+      const isPais = !!(lanc.subcategoria_pais && lanc.subcategoria_pais !== "") && !isVicente && !isLuisa;
+      const key = isVicente ? "Vicente" : isLuisa ? "Luísa" : isPais ? "Pais" : null;
       if (key && map[key] !== undefined) {
         map[key] = Math.max(0, map[key] - Number(r.valor_reembolsado));
       }

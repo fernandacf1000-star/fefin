@@ -66,6 +66,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");
   const isVicente = l.subcategoria_pais === "Vicente";
+  const isLuisa = l.subcategoria_pais === "Luísa";
 
   return (
     <div
@@ -73,9 +74,11 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
         "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors",
         selected
           ? "border-primary/40 bg-primary/5"
-          : isPais
-            ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
-            : "bg-white border-transparent",
+          : isLuisa
+            ? "bg-white border-l-2 border-l-pink-400 border-t-transparent border-r-transparent border-b-transparent"
+            : isPais
+              ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
+              : "bg-white border-transparent",
       )}
       onClick={() => (selectionMode ? onToggleSelect(l.id) : onTap(l))}
     >
@@ -96,16 +99,18 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
         style={{
           background: isVicente
             ? "#DBEAFE"
-            : isPais
-              ? "#FDE68A"
-              : isResgate
-                ? "rgba(120,113,108,0.12)"
-                : isReceita
-                  ? "rgba(13,148,136,0.15)"
-                  : "rgba(99,102,241,0.12)",
+            : isLuisa
+              ? "#FCE7F3"
+              : isPais
+                ? "#FDE68A"
+                : isResgate
+                  ? "rgba(120,113,108,0.12)"
+                  : isReceita
+                    ? "rgba(13,148,136,0.15)"
+                    : "rgba(99,102,241,0.12)",
         }}
       >
-        {isVicente ? "👦" : isPais ? "🧓" : emoji}
+        {isVicente ? "👦" : isLuisa ? "👧" : isPais ? "🧓" : emoji}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -124,6 +129,11 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
           {isVicente && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-200 text-blue-700 font-semibold shrink-0">
               VICENTE
+            </span>
+          )}
+          {isLuisa && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-pink-200 text-pink-700 font-semibold shrink-0">
+              LUÍSA
             </span>
           )}
         </div>
@@ -152,7 +162,7 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
 
       <p
         className="text-sm font-bold shrink-0"
-        style={{ color: isPais ? "#B45309" : isResgate ? "#78716C" : isReceita ? "#0D9488" : "#1E2A45" }}
+        style={{ color: isLuisa ? "#BE185D" : isPais ? "#B45309" : isResgate ? "#78716C" : isReceita ? "#0D9488" : "#1E2A45" }}
       >
         {isReceita ? "+" : "-"}
         {fmt(Number(l.valor))}

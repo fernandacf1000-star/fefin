@@ -151,12 +151,14 @@ const Graficos = () => {
     Investimentos: "📈",
     Pais: "🧓",
     Vicente: "👦",
+    Luísa: "👧",
     "Sem categoria": "🔴",
   };
   const colorMapGraf: Record<string, string> = {
     ...CAT_COLORS,
     Pais: "#F59E0B",
     Vicente: "#3B82F6",
+    Luísa: "#EC4899",
     "Sem categoria": "#94A3B8",
   };
 
@@ -165,8 +167,9 @@ const Graficos = () => {
     const map: Record<string, number> = {};
     despesas.forEach((d) => {
       const isVicente = d.subcategoria_pais === "Vicente";
-      const isPais = !!(d.subcategoria_pais && d.subcategoria_pais !== "") && !isVicente;
-      const key = isVicente ? "Vicente" : isPais ? "Pais" : normalizeMacro(d.categoria_macro, d.subcategoria);
+      const isLuisa = d.subcategoria_pais === "Luísa";
+      const isPais = !!(d.subcategoria_pais && d.subcategoria_pais !== "") && !isVicente && !isLuisa;
+      const key = isVicente ? "Vicente" : isLuisa ? "Luísa" : isPais ? "Pais" : normalizeMacro(d.categoria_macro, d.subcategoria);
       map[key] = (map[key] || 0) + Number(d.valor);
     });
     // Deduzir reembolsos (tabela) de Pais e Vicente
@@ -174,8 +177,9 @@ const Graficos = () => {
       const lanc = despesas.find((d) => d.id === r.lancamento_id);
       if (!lanc) return;
       const isVicente = lanc.subcategoria_pais === "Vicente";
-      const isPais = !!(lanc.subcategoria_pais && lanc.subcategoria_pais !== "") && !isVicente;
-      const key = isVicente ? "Vicente" : isPais ? "Pais" : null;
+      const isLuisa = lanc.subcategoria_pais === "Luísa";
+      const isPais = !!(lanc.subcategoria_pais && lanc.subcategoria_pais !== "") && !isVicente && !isLuisa;
+      const key = isVicente ? "Vicente" : isLuisa ? "Luísa" : isPais ? "Pais" : null;
       if (key && map[key] !== undefined) {
         map[key] = Math.max(0, map[key] - Number(r.valor_reembolsado));
       }

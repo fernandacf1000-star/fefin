@@ -180,7 +180,7 @@ const nParcelas = parseInt(parcelas, 10) || 2;
 const parcelamentoId = crypto.randomUUID?.() ?? `${Date.now()}`;
 await updateLancamento.mutateAsync({
 id: lancamento.id,
-…baseUpdates,
+...baseUpdates,
 data: format(data, "yyyy-MM-dd"),
 mes_referencia: mesRefFatura,
 is_parcelado: true,
@@ -192,7 +192,7 @@ const rows: any[] = [];
 for (let i = 1; i < nParcelas; i++) {
 const d = addMonths(data, i);
 rows.push({
-…baseUpdates,
+...baseUpdates,
 tipo: "despesa",
 categoria: lancamento.categoria || "extra",
 data: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`,
@@ -214,7 +214,7 @@ const dia = parseInt(diaRecorrencia, 10) || 1;
 const paiId = crypto.randomUUID?.() ?? `${Date.now()}`;
 await updateLancamento.mutateAsync({
 id: lancamento.id,
-…baseUpdates,
+...baseUpdates,
 data: format(data, "yyyy-MM-dd"),
 mes_referencia: mesRefFatura,
 recorrente: true,
@@ -231,7 +231,7 @@ const m = addMonths(data, i);
 const daysInMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
 const dataRecorrente = new Date(m.getFullYear(), m.getMonth(), Math.min(dia, daysInMonth));
 rows.push({
-…baseUpdates,
+...baseUpdates,
 tipo: "despesa",
 categoria: lancamento.categoria || "extra",
 data: `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}-${String(Math.min(dia, daysInMonth)).padStart(2, "0")}`,
@@ -250,7 +250,7 @@ recorrencia_pai_id: paiId,
 await addMultiple.mutateAsync(rows);
 } else if (wasParcelado) {
 if (editScope === "este")
-await updateLancamento.mutateAsync({ id: lancamento.id, …baseUpdates, data: format(data, "yyyy-MM-dd") });
+await updateLancamento.mutateAsync({ id: lancamento.id, ...baseUpdates, data: format(data, "yyyy-MM-dd") });
 else if (editScope === "futuras")
 await updateFuturas.mutateAsync({
 parcelamento_id: lancamento.parcelamento_id!,
@@ -260,7 +260,7 @@ updates: baseUpdates,
 else await updateAll.mutateAsync({ parcelamento_id: lancamento.parcelamento_id!, updates: baseUpdates });
 } else if (wasRecorrente) {
 if (editScope === "este")
-await updateLancamento.mutateAsync({ id: lancamento.id, …baseUpdates, data: format(data, "yyyy-MM-dd") });
+await updateLancamento.mutateAsync({ id: lancamento.id, ...baseUpdates, data: format(data, "yyyy-MM-dd") });
 else if (editScope === "futuras")
 await updateFuturasRecorrencia.mutateAsync({
 recorrencia_pai_id: lancamento.recorrencia_pai_id!,
@@ -302,7 +302,6 @@ return (
 </button>
 </div>
 
-```
   {/* Descrição */}
   <div className="space-y-1.5">
     <label className="text-xs font-medium text-muted-foreground">Descrição</label>
@@ -669,7 +668,6 @@ return (
     </Button>
   </div>
 </div>
-```
 
   </div>
 </>

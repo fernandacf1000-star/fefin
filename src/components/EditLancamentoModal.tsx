@@ -172,7 +172,7 @@ baseUpdates.categoria = receitaCatMapEdit[receitaCat];
 }
 
 const wasParcelado = lancamento.is_parcelado;
-const wasRecorrente = lancamento.recorrente && lancamento.recorrencia_pai_id;
+const wasRecorrente = lancamento.recorrente;
 const wasSimples = !wasParcelado && !wasRecorrente;
 
 if (wasSimples && isParcelado && !recorrente) {
@@ -285,7 +285,7 @@ setSaving(false);
 if (!open || !lancamento) return null;
 const isReceita = lancamento.tipo === “receita”;
 const wasParcelado = lancamento.is_parcelado;
-const wasRecorrente = lancamento.recorrente && lancamento.recorrencia_pai_id;
+const wasRecorrente = lancamento.recorrente;
 const wasSimples = !wasParcelado && !wasRecorrente;
 
 return (

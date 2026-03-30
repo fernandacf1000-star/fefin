@@ -1,11 +1,11 @@
-import { useState, useMemo, useCallback } from “react”;
-import { ChevronLeft, ChevronRight, Trash2, CheckSquare, Square } from “lucide-react”;
-import SwipeableItem from “@/components/SwipeableItem”;
-import BottomNav from “@/components/BottomNav”;
-import EmptyState from “@/components/EmptyState”;
-import LancamentoActions from “@/components/LancamentoActions”;
-import DeleteConfirmSheet from “@/components/DeleteConfirmSheet”;
-import EditLancamentoModal from “@/components/EditLancamentoModal”;
+import { useState, useMemo, useCallback } from "react";
+import { ChevronLeft, ChevronRight, Trash2, CheckSquare, Square } from "lucide-react";
+import SwipeableItem from "@/components/SwipeableItem";
+import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
+import LancamentoActions from "@/components/LancamentoActions";
+import DeleteConfirmSheet from "@/components/DeleteConfirmSheet";
+import EditLancamentoModal from "@/components/EditLancamentoModal";
 import {
 useLancamentos,
 useDeleteLancamento,
@@ -15,26 +15,26 @@ useDeleteFutureRecorrencia,
 useDeleteAllRecorrencia,
 useUpdateLancamento,
 type Lancamento,
-} from “@/hooks/useLancamentos”;
-import { useCartoes } from “@/hooks/useCartoes”;
-import { getGroupEmoji, getSubcategoriaGroup, detectSubcategoria } from “@/lib/subcategorias”;
-import { toast } from “sonner”;
-import { cn } from “@/lib/utils”;
+} from "@/hooks/useLancamentos";
+import { useCartoes } from "@/hooks/useCartoes";
+import { getGroupEmoji, getSubcategoriaGroup, detectSubcategoria } from "@/lib/subcategorias";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-const fmt = (v: number) => v.toLocaleString(“pt-BR”, { style: “currency”, currency: “BRL” });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function getMesRef(year: number, month: number) {
 return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 function getMesLabel(year: number, month: number) {
-const label = new Date(year, month, 1).toLocaleDateString(“pt-BR”, {
-month: “long”,
-year: “numeric”,
+const label = new Date(year, month, 1).toLocaleDateString("pt-BR", {
+month: "long",
+year: "numeric",
 });
 return label.charAt(0).toUpperCase() + label.slice(1);
 }
 function formatDate(dateStr: string) {
-const [y, m, d] = dateStr.split(”-”);
+const [y, m, d] = dateStr.split("-");
 return `${d}/${m}/${y}`;
 }
 
@@ -48,35 +48,35 @@ onToggleSelect: (id: string) => void;
 }
 
 const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggleSelect }: RowProps) => {
-const isReceita = l.tipo === “receita”;
-const isResgate = isReceita && l.categoria === “resgate_investimento”;
-const subDetectada = l.subcategoria || detectSubcategoria(l.descricao || “”) || null;
-const group = getSubcategoriaGroup(subDetectada || “”) || l.categoria_macro || l.categoria || null;
+const isReceita = l.tipo === "receita";
+const isResgate = isReceita && l.categoria === "resgate_investimento";
+const subDetectada = l.subcategoria || detectSubcategoria(l.descricao || "") || null;
+const group = getSubcategoriaGroup(subDetectada || "") || l.categoria_macro || l.categoria || null;
 const emojiMap: Record<string, string> = {
-Moradia: “🏘️”,
-Alimentação: “🥗”,
-Transporte: “🚗”,
-Saúde: “💊”,
-Pessoal: “💅”,
-Lazer: “🎮”,
-Investimentos: “📈”,
+Moradia: "🏘️",
+Alimentação: "🥗",
+Transporte: "🚗",
+Saúde: "💊",
+Pessoal: "💅",
+Lazer: "🎮",
+Investimentos: "📈",
 };
-const emoji = isResgate ? “📈” : group ? emojiMap[group] || getGroupEmoji(group) : isReceita && Number(l.valor) > 0 ? “🤑” : isReceita ? emojiMap[group || “”] || getGroupEmoji(group || “”) || “↩️” : “🔴”;
+const emoji = isResgate ? "📈" : group ? emojiMap[group] || getGroupEmoji(group) : isReceita && Number(l.valor) > 0 ? "🤑" : isReceita ? emojiMap[group || ""] || getGroupEmoji(group || "") || "↩️" : "🔴";
 const isParcelado = l.is_parcelado && l.parcela_total && l.parcela_total > 1;
 const isRecorrente = l.recorrente;
-const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== “”);
-const isVicente = l.subcategoria_pais === “Vicente”;
-const isLuisa = l.subcategoria_pais === “Luísa”;
+const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");
+const isVicente = l.subcategoria_pais === "Vicente";
+const isLuisa = l.subcategoria_pais === "Luísa";
 
 return (
 <div
 className={cn(
-“flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors”,
+"flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors",
 selected
-? “border-primary/40 bg-primary/5”
+? "border-primary/40 bg-primary/5"
 : isPais
-? “bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent”
-: “bg-white border-transparent”,
+? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
+: "bg-white border-transparent",
 )}
 onClick={() => (selectionMode ? onToggleSelect(l.id) : onTap(l))}
 >
@@ -86,7 +86,7 @@ onClick={(e) => {
 e.stopPropagation();
 onToggleSelect(l.id);
 }}
-className=“shrink-0 text-primary”
+className="shrink-0 text-primary"
 >
 {selected ? <CheckSquare size={18} /> : <Square size={18} className="text-muted-foreground" />}
 </button>
@@ -198,7 +198,7 @@ const [editTarget, setEditTarget] = useState<Lancamento | null>(null);
 const [selectionMode, setSelectionMode] = useState(false);
 const [selected, setSelected] = useState<Set<string>>(new Set());
 const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-const [filterTipo, setFilterTipo] = useState<“todos” | “despesa” | “receita” | “resgate”>(“todos”);
+const [filterTipo, setFilterTipo] = useState<"todos" | "despesa" | "receita" | "resgate">("todos");
 
 const prevMes = () =>
 setMesAtual(({ year, month }) => (month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }));
@@ -208,23 +208,23 @@ setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : 
 // ── filter ────────────────────────────────────────────────────────────────
 const lista = useMemo(() => {
 let filtered: typeof lancamentos;
-if (filterTipo === “todos”) filtered = […lancamentos];
-else if (filterTipo === “resgate”) filtered = lancamentos.filter((l) => l.tipo === “receita” && l.categoria === “resgate_investimento”);
-else if (filterTipo === “receita”) filtered = lancamentos.filter((l) => l.tipo === “receita” && l.categoria !== “resgate_investimento”);
+if (filterTipo === "todos") filtered = [...lancamentos];
+else if (filterTipo === "resgate") filtered = lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento");
+else if (filterTipo === "receita") filtered = lancamentos.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento");
 else filtered = lancamentos.filter((l) => l.tipo === filterTipo);
 return filtered.sort((a, b) => Number(a.valor) - Number(b.valor));
 }, [lancamentos, filterTipo]);
 
 const totalDespesas = useMemo(
-() => lancamentos.filter((l) => l.tipo === “despesa”).reduce((s, l) => s + Number(l.valor), 0),
+() => lancamentos.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0),
 [lancamentos],
 );
 const totalReceitas = useMemo(
-() => lancamentos.filter((l) => l.tipo === “receita” && l.categoria !== “resgate_investimento”).reduce((s, l) => s + Number(l.valor), 0),
+() => lancamentos.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
 [lancamentos],
 );
 const totalResgates = useMemo(
-() => lancamentos.filter((l) => l.tipo === “receita” && l.categoria === “resgate_investimento”).reduce((s, l) => s + Number(l.valor), 0),
+() => lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
 [lancamentos],
 );
 
@@ -244,10 +244,10 @@ setSelected(new Set());
 };
 
 // ── delete helpers ────────────────────────────────────────────────────────
-const getTipo = (l: Lancamento): “parcelado” | “recorrente” | “simples” => {
-if (l.is_parcelado && l.parcelamento_id) return “parcelado”;
-if (l.recorrente && l.recorrencia_pai_id) return “recorrente”;
-return “simples”;
+const getTipo = (l: Lancamento): "parcelado" | "recorrente" | "simples" => {
+if (l.is_parcelado && l.parcelamento_id) return "parcelado";
+if (l.recorrente && l.recorrencia_pai_id) return "recorrente";
+return "simples";
 };
 
 const handleDeleteSingle = async () => {
@@ -295,7 +295,7 @@ setBulkDeleteOpen(false);
 // ── edit ──────────────────────────────────────────────────────────────────
 const handleSaveEdit = async (updates: Partial<Lancamento>) => {
 if (!editTarget) return;
-await updateLancamento.mutateAsync({ id: editTarget.id, …updates });
+await updateLancamento.mutateAsync({ id: editTarget.id, ...updates });
 setEditTarget(null);
 };
 

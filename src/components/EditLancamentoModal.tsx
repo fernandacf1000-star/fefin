@@ -330,26 +330,25 @@ return (
   {/* Data */}
   <div className="space-y-1.5">
     <label className="text-xs font-medium text-muted-foreground">Data</label>
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className="w-full justify-start bg-[#E8ECF5] border-0 text-foreground text-sm rounded-xl"
-        >
-          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-          {format(data, "dd 'de' MMMM, yyyy", { locale: ptBR })}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 z-[100]" align="start">
+    <Button
+      variant="outline"
+      className="w-full justify-start bg-[#E8ECF5] border-0 text-foreground text-sm rounded-xl"
+      onClick={() => setCalendarOpen((v) => !v)}
+    >
+      <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+      {format(data, "dd 'de' MMMM, yyyy", { locale: ptBR })}
+    </Button>
+    {calendarOpen && (
+      <div className="rounded-xl overflow-hidden border border-border bg-white shadow-md">
         <Calendar
           mode="single"
           selected={data}
-          onSelect={(d) => d && setData(d)}
+          onSelect={(d) => { if (d) { setData(d); setCalendarOpen(false); } }}
           initialFocus
           className="p-3 pointer-events-auto"
         />
-      </PopoverContent>
-    </Popover>
+      </div>
+    )}
   </div>
 
   {/* Categoria receita */}

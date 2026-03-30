@@ -63,6 +63,7 @@ const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 const [formaPagamento, setFormaPagamento] = useState<"dinheiro" | "credito">("dinheiro");
 const [cartaoId, setCartaoId] = useState("");
 const [saving, setSaving] = useState(false);
+const [calendarOpen, setCalendarOpen] = useState(false);
 const [isParcelado, setIsParcelado] = useState(false);
 const [parcelas, setParcelas] = useState("2");
 const [recorrente, setRecorrente] = useState(false);

@@ -404,34 +404,32 @@ isActive ? "text-primary" : hasSelection ? "text-primary/70" : "text-muted-foreg
 </button>
 );
 })}
-</div>
-
-  {selectedGroup && (() => {
-    const group = SUBCATEGORIA_GROUPS.find((g) => g.group === selectedGroup);
-    if (!group) return null;
-    return (
-      <div className="rounded-xl p-2.5 space-y-1.5" style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.12)" }}>
-        <p className="text-[9px] font-semibold text-primary uppercase tracking-wider">{group.group}</p>
-        <div className="flex flex-wrap gap-1.5">
-          {group.items.map((item) => (
-            <button key={item.name}
-              onClick={() => setSubcategoria(subcategoria === item.name ? null : item.name)}
-              className={cn(
-                "px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors",
-                subcategoria === item.name
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-white border border-border text-muted-foreground",
-              )}>
-              {item.name}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  })()}
-</div>
-
-)}
+            </div>
+            {selectedGroup && (() => {
+              const group = SUBCATEGORIA_GROUPS.find((g) => g.group === selectedGroup);
+              if (!group) return null;
+              return (
+                <div className="rounded-xl p-2.5 space-y-1.5" style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.12)" }}>
+                  <p className="text-[9px] font-semibold text-primary uppercase tracking-wider">{group.group}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.items.map((item) => (
+                      <button key={item.name}
+                        onClick={() => setSubcategoria(subcategoria === item.name ? null : item.name)}
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors",
+                          subcategoria === item.name
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-white border border-border text-muted-foreground",
+                        )}>
+                        {item.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
 {/* Pagamento (só despesa) */}
 {!isReceita && (
@@ -503,58 +501,57 @@ isPais ? "bg-amber-400 justify-end" : "bg-muted justify-start",
 </div>
 </button>
 
-  {isPais && (
-    <>
-      <button
-        onClick={() => { setIsVicente((v) => !v); setIsLuisa(false); }}
-        className={cn(
-          "w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
-          isVicente ? "border-blue-400 bg-blue-50" : "border-[#E8ECF5] bg-[#E8ECF5]",
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-base">👦</span>
-          <span className={cn("text-sm font-medium", isVicente ? "text-blue-700" : "text-muted-foreground")}>
-            Despesa do Vicente
-          </span>
-        </div>
-        <div
-          className={cn(
-            "w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
-            isVicente ? "bg-blue-400 justify-end" : "bg-muted justify-start",
-          )}
-        >
-          <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
-        </div>
-      </button>
+          {isPais && (
+            <>
+              <button
+                onClick={() => { setIsVicente((v) => !v); setIsLuisa(false); }}
+                className={cn(
+                  "w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
+                  isVicente ? "border-blue-400 bg-blue-50" : "border-[#E8ECF5] bg-[#E8ECF5]",
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">👦</span>
+                  <span className={cn("text-sm font-medium", isVicente ? "text-blue-700" : "text-muted-foreground")}>
+                    Despesa do Vicente
+                  </span>
+                </div>
+                <div
+                  className={cn(
+                    "w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
+                    isVicente ? "bg-blue-400 justify-end" : "bg-muted justify-start",
+                  )}
+                >
+                  <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                </div>
+              </button>
 
-      <button
-        onClick={() => { setIsLuisa((v) => !v); setIsVicente(false); }}
-        className={cn(
-          "w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
-          isLuisa ? "border-pink-400 bg-pink-50" : "border-[#E8ECF5] bg-[#E8ECF5]",
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-base">👧</span>
-          <span className={cn("text-sm font-medium", isLuisa ? "text-pink-700" : "text-muted-foreground")}>
-            Despesa da Luísa
-          </span>
-        </div>
-        <div
-          className={cn(
-            "w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
-            isLuisa ? "bg-pink-400 justify-end" : "bg-muted justify-start",
+              <button
+                onClick={() => { setIsLuisa((v) => !v); setIsVicente(false); }}
+                className={cn(
+                  "w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
+                  isLuisa ? "border-pink-400 bg-pink-50" : "border-[#E8ECF5] bg-[#E8ECF5]",
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">👧</span>
+                  <span className={cn("text-sm font-medium", isLuisa ? "text-pink-700" : "text-muted-foreground")}>
+                    Despesa da Luísa
+                  </span>
+                </div>
+                <div
+                  className={cn(
+                    "w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
+                    isLuisa ? "bg-pink-400 justify-end" : "bg-muted justify-start",
+                  )}
+                >
+                  <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                </div>
+              </button>
+            </>
           )}
-        >
-          <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
-        </div>
-      </button>
-    </>
-  )}
-</>
-
-)}
+        </>
+        )}
 
 {/* Converter (só despesa simples) */}
 {!isReceita && wasSimples && (

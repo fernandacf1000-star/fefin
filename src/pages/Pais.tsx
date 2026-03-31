@@ -1,27 +1,27 @@
-import { useState, useMemo } from “react”;
-import { ChevronLeft, ChevronRight, TrendingDown, RotateCcw, Wallet } from “lucide-react”;
-import BottomNav from “@/components/BottomNav”;
-import EmptyState from “@/components/EmptyState”;
-import ReembolsoModal from “@/components/ReembolsoModal”;
-import { useLancamentos } from “@/hooks/useLancamentos”;
-import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from “@/hooks/useReembolsos”;
-import { getGroupEmoji, getSubcategoriaGroup } from “@/lib/subcategorias”;
-import { toast } from “sonner”;
+import { useState, useMemo } from "react";
+import { ChevronLeft, ChevronRight, TrendingDown, RotateCcw, Wallet } from "lucide-react";
+import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
+import ReembolsoModal from "@/components/ReembolsoModal";
+import { useLancamentos } from "@/hooks/useLancamentos";
+import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
+import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
+import { toast } from "sonner";
 
-const fmt = (v: number) => v.toLocaleString(“pt-BR”, { style: “currency”, currency: “BRL” });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function getMesRef(year: number, month: number) {
 return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 function getMesLabel(year: number, month: number) {
-const label = new Date(year, month, 1).toLocaleDateString(“pt-BR”, {
-month: “long”,
-year: “numeric”,
+const label = new Date(year, month, 1).toLocaleDateString("pt-BR", {
+month: "long",
+year: "numeric",
 });
 return label.charAt(0).toUpperCase() + label.slice(1);
 }
 function formatDate(dateStr: string) {
-const [y, m, d] = dateStr.split(”-”);
+const [y, m, d] = dateStr.split("-");
 return `${d}/${m}`;
 }
 
@@ -44,15 +44,15 @@ setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : 
 
 // Lançamentos dos pais = subcategoria_pais preenchida
 const lancamentos = useMemo(
-() => todos.filter((l) => l.subcategoria_pais !== null && l.subcategoria_pais !== “”),
+() => todos.filter((l) => l.subcategoria_pais !== null && l.subcategoria_pais !== ""),
 [todos],
 );
 
-const despesasPais = useMemo(() => lancamentos.filter((l) => l.tipo === “despesa”), [lancamentos]);
+const despesasPais = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
 
-// Receitas do tipo “Reembolso pais” neste mês
+// Receitas do tipo "Reembolso pais" neste mês
 const receitasReembolsoPais = useMemo(
-() => todos.filter((l) => l.tipo === “receita” && l.categoria === “reembolso_pais”),
+() => todos.filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais"),
 [todos],
 );
 
@@ -81,13 +81,13 @@ const porCategoria = useMemo(() => {
 const map: Record<string, number> = {};
 despesasPais.forEach((l) => {
 const subP = l.subcategoria_pais;
-const cat = subP && subP !== “” && subP !== “Geral” ? subP : l.categoria_macro || “Outros”;
+const cat = subP && subP !== "" && subP !== "Geral" ? subP : l.categoria_macro || "Outros";
 map[cat] = (map[cat] || 0) + Number(l.valor);
 });
 return Object.entries(map)
 .map(([cat, valor]) => {
 const group = getSubcategoriaGroup(cat) || cat;
-return { cat, valor, emoji: cat === “Vicente” ? “👦” : getGroupEmoji(group) };
+return { cat, valor, emoji: cat === "Vicente" ? "👦" : getGroupEmoji(group) };
 })
 .sort((a, b) => b.valor - a.valor);
 }, [despesasPais]);
@@ -97,7 +97,7 @@ const lancamentosComReembolso = useMemo(() => {
 return despesasPais.map((l) => {
 const reembolsado = getTotalReembolsado(todosReembolsos, l.id);
 const liquido = Number(l.valor) - reembolsado;
-return { …l, reembolsado, liquido };
+return { ...l, reembolsado, liquido };
 }).sort((a, b) => Number(a.valor) - Number(b.valor));
 }, [despesasPais, todosReembolsos]);
 
@@ -115,14 +115,14 @@ try {
 await addReembolso.mutateAsync({
 lancamento_id: reembolsoTarget.id,
 valor_reembolsado: data.valor_reembolsado,
-quem_reembolsou: data.quem_reembolsou || “Pais”,
+quem_reembolsou: data.quem_reembolsou || "Pais",
 data_reembolso: data.data_reembolso,
 observacao: data.observacao ?? null,
 });
 setReembolsoTarget(null);
-toast.success(“Reembolso registrado!”);
+toast.success("Reembolso registrado!");
 } catch (e: any) {
-toast.error(“Erro ao salvar: “ + (e?.message || JSON.stringify(e)));
+toast.error("Erro ao salvar: " + (e?.message || JSON.stringify(e)));
 }
 };
 

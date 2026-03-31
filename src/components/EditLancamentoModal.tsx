@@ -406,7 +406,6 @@ isActive ? "text-primary" : hasSelection ? "text-primary/70" : "text-muted-foreg
 })}
 </div>
 
-```
   {selectedGroup && (() => {
     const group = SUBCATEGORIA_GROUPS.find((g) => g.group === selectedGroup);
     if (!group) return null;
@@ -431,7 +430,6 @@ isActive ? "text-primary" : hasSelection ? "text-primary/70" : "text-muted-foreg
     );
   })()}
 </div>
-```
 
 )}
 
@@ -505,7 +503,6 @@ isPais ? "bg-amber-400 justify-end" : "bg-muted justify-start",
 </div>
 </button>
 
-```
   {isPais && (
     <>
       <button
@@ -556,7 +553,6 @@ isPais ? "bg-amber-400 justify-end" : "bg-muted justify-start",
     </>
   )}
 </>
-```
 
 )}
 

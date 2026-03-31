@@ -404,34 +404,32 @@ isActive ? "text-primary" : hasSelection ? "text-primary/70" : "text-muted-foreg
 </button>
 );
 })}
-</div>
-
-  {selectedGroup && (() => {
-    const group = SUBCATEGORIA_GROUPS.find((g) => g.group === selectedGroup);
-    if (!group) return null;
-    return (
-      <div className="rounded-xl p-2.5 space-y-1.5" style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.12)" }}>
-        <p className="text-[9px] font-semibold text-primary uppercase tracking-wider">{group.group}</p>
-        <div className="flex flex-wrap gap-1.5">
-          {group.items.map((item) => (
-            <button key={item.name}
-              onClick={() => setSubcategoria(subcategoria === item.name ? null : item.name)}
-              className={cn(
-                "px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors",
-                subcategoria === item.name
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-white border border-border text-muted-foreground",
-              )}>
-              {item.name}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  })()}
-</div>
-
-)}
+            </div>
+            {selectedGroup && (() => {
+              const group = SUBCATEGORIA_GROUPS.find((g) => g.group === selectedGroup);
+              if (!group) return null;
+              return (
+                <div className="rounded-xl p-2.5 space-y-1.5" style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.12)" }}>
+                  <p className="text-[9px] font-semibold text-primary uppercase tracking-wider">{group.group}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.items.map((item) => (
+                      <button key={item.name}
+                        onClick={() => setSubcategoria(subcategoria === item.name ? null : item.name)}
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors",
+                          subcategoria === item.name
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-white border border-border text-muted-foreground",
+                        )}>
+                        {item.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
 {/* Pagamento (só despesa) */}
 {!isReceita && (

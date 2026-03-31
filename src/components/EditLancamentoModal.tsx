@@ -1,13 +1,13 @@
-import { useEffect, useState } from “react”;
-import { X, CalendarIcon, Users } from “lucide-react”;
-import { format, addMonths } from “date-fns”;
-import { ptBR } from “date-fns/locale”;
-import { cn } from “@/lib/utils”;
-import { Button } from “@/components/ui/button”;
-import { Input } from “@/components/ui/input”;
-import { Calendar } from “@/components/ui/calendar”;
+import { useEffect, useState } from "react";
+import { X, CalendarIcon, Users } from "lucide-react";
+import { format, addMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
 
-import type { Lancamento } from “@/hooks/useLancamentos”;
+import type { Lancamento } from "@/hooks/useLancamentos";
 import {
 useUpdateLancamento,
 useUpdateAllParcelamento,
@@ -15,9 +15,9 @@ useUpdateParcelamentoFuturas,
 useAddMultipleLancamentos,
 useUpdateFutureRecorrencia,
 useUpdateAllRecorrencia,
-} from “@/hooks/useLancamentos”;
-import type { Cartao } from “@/hooks/useCartoes”;
-import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from “@/lib/subcategorias”;
+} from "@/hooks/useLancamentos";
+import type { Cartao } from "@/hooks/useCartoes";
+import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from "@/lib/subcategorias";
 
 /**
 
@@ -35,10 +35,10 @@ import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from “@/lib/subcategorias
   return `${mesVencimento.getFullYear()}-${String(mesVencimento.getMonth() + 1).padStart(2, "0")}`;
   }
 
-const RECEITA_CATS_EDIT = [“Salário”, “Reembolso Pais”, “Resgate”] as const;
+const RECEITA_CATS_EDIT = ["Salário", "Reembolso Pais", "Resgate"] as const;
 type ReceitaCatEdit = (typeof RECEITA_CATS_EDIT)[number];
 const receitaCatMapEdit: Record<ReceitaCatEdit, string> = {
-“Salário”: “salario”, “Reembolso Pais”: “reembolso_pais”, “Resgate”: “resgate_investimento”,
+"Salário": "salario", "Reembolso Pais": "reembolso_pais", "Resgate": "resgate_investimento",
 };
 const receitaCatReverseMap: Record<string, ReceitaCatEdit> = Object.fromEntries(
 Object.entries(receitaCatMapEdit).map(([k, v]) => [v, k as ReceitaCatEdit]),
@@ -52,29 +52,29 @@ onSave: (updates: Partial<Lancamento>) => Promise<void>;
 cartoes: Cartao[];
 }
 
-type EditScope = “este” | “futuras” | “todos”;
+type EditScope = "este" | "futuras" | "todos";
 
 const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Props) => {
-const [descricao, setDescricao] = useState(””);
-const [valor, setValor] = useState(””);
+const [descricao, setDescricao] = useState("");
+const [valor, setValor] = useState("");
 const [data, setData] = useState<Date>(new Date());
 const [subcategoria, setSubcategoria] = useState<string | null>(null);
 const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-const [formaPagamento, setFormaPagamento] = useState<“dinheiro” | “credito”>(“dinheiro”);
-const [cartaoId, setCartaoId] = useState(””);
+const [formaPagamento, setFormaPagamento] = useState<"dinheiro" | "credito">("dinheiro");
+const [cartaoId, setCartaoId] = useState("");
 const [saving, setSaving] = useState(false);
 const [calendarOpen, setCalendarOpen] = useState(false);
 const [isParcelado, setIsParcelado] = useState(false);
-const [parcelas, setParcelas] = useState(“2”);
+const [parcelas, setParcelas] = useState("2");
 const [recorrente, setRecorrente] = useState(false);
-const [diaRecorrencia, setDiaRecorrencia] = useState(“1”);
-const [editScope, setEditScope] = useState<EditScope>(“este”);
+const [diaRecorrencia, setDiaRecorrencia] = useState("1");
+const [editScope, setEditScope] = useState<EditScope>("este");
 // Pais / Vicente
 const [isPais, setIsPais] = useState(false);
 const [isVicente, setIsVicente] = useState(false);
 const [isLuisa, setIsLuisa] = useState(false);
 // Receita categoria
-const [receitaCat, setReceitaCat] = useState<ReceitaCatEdit>(“Salário”);
+const [receitaCat, setReceitaCat] = useState<ReceitaCatEdit>("Salário");
 
 const updateLancamento = useUpdateLancamento();
 const updateAll = useUpdateAllParcelamento();
@@ -85,9 +85,9 @@ const updateAllRecorrencia = useUpdateAllRecorrencia();
 
 useEffect(() => {
 if (!lancamento) return;
-setDescricao(lancamento.descricao || “”);
-setValor(Number(lancamento.valor).toLocaleString(“pt-BR”, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-setData(lancamento.data ? new Date(lancamento.data + “T12:00:00”) : new Date());
+setDescricao(lancamento.descricao || "");
+setValor(Number(lancamento.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+setData(lancamento.data ? new Date(lancamento.data + "T12:00:00") : new Date());
 setSubcategoria(lancamento.subcategoria || null);
 // Abrir o grupo correto se já tem subcategoria
 const sub = lancamento.subcategoria || null;
@@ -101,41 +101,41 @@ setIsParcelado(lancamento.is_parcelado || false);
 setParcelas(String(lancamento.parcela_total || 2));
 setRecorrente(lancamento.recorrente || false);
 setDiaRecorrencia(String(lancamento.dia_recorrencia || 1));
-setEditScope(“este”);
+setEditScope("este");
 // Pais/Vicente
 const subP = lancamento.subcategoria_pais;
-setIsVicente(subP === “Vicente”);
-setIsLuisa(subP === “Luísa”);
-setIsPais(!!(subP && subP !== “”) ? true : false);
+setIsVicente(subP === "Vicente");
+setIsLuisa(subP === "Luísa");
+setIsPais(!!(subP && subP !== "") ? true : false);
 if (lancamento.cartao_id) {
-setFormaPagamento(“credito”);
+setFormaPagamento("credito");
 setCartaoId(lancamento.cartao_id);
 } else {
-setFormaPagamento(“dinheiro”);
-setCartaoId(””);
+setFormaPagamento("dinheiro");
+setCartaoId("");
 }
 // Receita categoria
-setReceitaCat(receitaCatReverseMap[lancamento.categoria] || “Salário”);
+setReceitaCat(receitaCatReverseMap[lancamento.categoria] || "Salário");
 }, [lancamento]);
 
 const handleValorChange = (raw: string) => {
-const digits = raw.replace(/\D/g, “”);
+const digits = raw.replace(/\D/g, "");
 if (!digits) {
-setValor(””);
+setValor("");
 return;
 }
 setValor(
-(parseInt(digits, 10) / 100).toLocaleString(“pt-BR”, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+(parseInt(digits, 10) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
 );
 };
 
-const getNumValor = () => parseFloat(valor.replace(/./g, “”).replace(”,”, “.”)) || 0;
+const getNumValor = () => parseFloat(valor.replace(/./g, "").replace(",", ".")) || 0;
 
 const getSubPais = () => {
 if (!isPais) return null;
-if (isVicente) return “Vicente”;
-if (isLuisa) return “Luísa”;
-return subcategoria || detectCategoriaMacro(subcategoria || “”) || “Geral”;
+if (isVicente) return "Vicente";
+if (isLuisa) return "Luísa";
+return subcategoria || detectCategoriaMacro(subcategoria || "") || "Geral";
 };
 
 const handleSave = async () => {
@@ -144,16 +144,16 @@ const numValor = getNumValor();
 if (numValor <= 0) return;
 setSaving(true);
 try {
-const macro = detectCategoriaMacro(subcategoria || “”) || null;
-const forma = formaPagamento === “dinheiro” ? “dinheiro” : “credito”;
-const cartao = formaPagamento === “credito” ? cartaoId || null : null;
-const novaData = format(data, “yyyy-MM-dd”);
+const macro = detectCategoriaMacro(subcategoria || "") || null;
+const forma = formaPagamento === "dinheiro" ? "dinheiro" : "credito";
+const cartao = formaPagamento === "credito" ? cartaoId || null : null;
+const novaData = format(data, "yyyy-MM-dd");
 const novoMesRef = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`;
-const isReceitaEdit = lancamento.tipo === “receita”;
+const isReceitaEdit = lancamento.tipo === "receita";
 
 // Resolver cartão para calcular ciclo de fatura
 const cartaoObj = cartao ? cartoes.find((c) => c.id === cartao) || null : null;
-const mesRefFatura = !isReceitaEdit && forma === “credito”
+const mesRefFatura = !isReceitaEdit && forma === "credito"
 ? getMesReferenciaFatura(data, cartaoObj)
 : novoMesRef;
 
@@ -182,7 +182,7 @@ const parcelamentoId = crypto.randomUUID?.() ?? `${Date.now()}`;
 await updateLancamento.mutateAsync({
 id: lancamento.id,
 …baseUpdates,
-data: format(data, “yyyy-MM-dd”),
+data: format(data, "yyyy-MM-dd"),
 mes_referencia: mesRefFatura,
 is_parcelado: true,
 parcela_atual: 1,
@@ -194,8 +194,8 @@ for (let i = 1; i < nParcelas; i++) {
 const d = addMonths(data, i);
 rows.push({
 …baseUpdates,
-tipo: “despesa”,
-categoria: lancamento.categoria || “extra”,
+tipo: "despesa",
+categoria: lancamento.categoria || "extra",
 data: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`,
 mes_referencia: getMesReferenciaFatura(d, cartaoObj),
 parcela_atual: i + 1,
@@ -216,7 +216,7 @@ const paiId = crypto.randomUUID?.() ?? `${Date.now()}`;
 await updateLancamento.mutateAsync({
 id: lancamento.id,
 …baseUpdates,
-data: format(data, “yyyy-MM-dd”),
+data: format(data, "yyyy-MM-dd"),
 mes_referencia: mesRefFatura,
 recorrente: true,
 dia_recorrencia: dia,
@@ -233,8 +233,8 @@ const daysInMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
 const dataRecorrente = new Date(m.getFullYear(), m.getMonth(), Math.min(dia, daysInMonth));
 rows.push({
 …baseUpdates,
-tipo: “despesa”,
-categoria: lancamento.categoria || “extra”,
+tipo: "despesa",
+categoria: lancamento.categoria || "extra",
 data: `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}-${String(Math.min(dia, daysInMonth)).padStart(2, "0")}`,
 mes_referencia: getMesReferenciaFatura(dataRecorrente, cartaoObj),
 parcela_atual: null,
@@ -250,9 +250,9 @@ recorrencia_pai_id: paiId,
 }
 await addMultiple.mutateAsync(rows);
 } else if (wasParcelado) {
-if (editScope === “este”)
-await updateLancamento.mutateAsync({ id: lancamento.id, …baseUpdates, data: format(data, “yyyy-MM-dd”) });
-else if (editScope === “futuras”)
+if (editScope === "este")
+await updateLancamento.mutateAsync({ id: lancamento.id, …baseUpdates, data: format(data, "yyyy-MM-dd") });
+else if (editScope === "futuras")
 await updateFuturas.mutateAsync({
 parcelamento_id: lancamento.parcelamento_id!,
 fromDate: lancamento.data,
@@ -260,9 +260,9 @@ updates: baseUpdates,
 });
 else await updateAll.mutateAsync({ parcelamento_id: lancamento.parcelamento_id!, updates: baseUpdates });
 } else if (wasRecorrente) {
-if (editScope === “este”)
-await updateLancamento.mutateAsync({ id: lancamento.id, …baseUpdates, data: format(data, “yyyy-MM-dd”) });
-else if (editScope === “futuras”)
+if (editScope === "este")
+await updateLancamento.mutateAsync({ id: lancamento.id, …baseUpdates, data: format(data, "yyyy-MM-dd") });
+else if (editScope === "futuras")
 await updateFuturasRecorrencia.mutateAsync({
 recorrencia_pai_id: lancamento.recorrencia_pai_id!,
 fromDate: lancamento.data,
@@ -284,7 +284,7 @@ setSaving(false);
 };
 
 if (!open || !lancamento) return null;
-const isReceita = lancamento.tipo === “receita”;
+const isReceita = lancamento.tipo === "receita";
 const wasParcelado = lancamento.is_parcelado;
 const wasRecorrente = lancamento.recorrente;
 const wasSimples = !wasParcelado && !wasRecorrente;
@@ -364,10 +364,10 @@ return (
 key={cat}
 onClick={() => setReceitaCat(cat)}
 className={cn(
-“px-3 py-1.5 rounded-xl text-xs font-medium transition-colors”,
+"px-3 py-1.5 rounded-xl text-xs font-medium transition-colors",
 receitaCat === cat
-? “gradient-emerald text-primary-foreground”
-: “bg-[#E8ECF5] text-muted-foreground”,
+? "gradient-emerald text-primary-foreground"
+: "bg-[#E8ECF5] text-muted-foreground",
 )}
 >
 {cat}
@@ -389,16 +389,16 @@ return (
 <button key={group.group}
 onClick={() => setSelectedGroup(isActive ? null : group.group)}
 className={cn(
-“flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all”,
+"flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all",
 isActive
-? “bg-primary/10 ring-2 ring-primary”
+? "bg-primary/10 ring-2 ring-primary"
 : hasSelection
-? “bg-primary/5 ring-1 ring-primary/30”
-: “bg-[#E8ECF5]”,
+? "bg-primary/5 ring-1 ring-primary/30"
+: "bg-[#E8ECF5]",
 )}>
 <span className="text-lg">{group.emoji}</span>
-<span className={cn(“text-[9px] font-medium”,
-isActive ? “text-primary” : hasSelection ? “text-primary/70” : “text-muted-foreground”)}>
+<span className={cn("text-[9px] font-medium",
+isActive ? "text-primary" : hasSelection ? "text-primary/70" : "text-muted-foreground")}>
 {group.group}
 </span>
 </button>
@@ -440,30 +440,30 @@ isActive ? “text-primary” : hasSelection ? “text-primary/70” : “text-m
 <div className="space-y-2">
 <label className="text-xs font-medium text-muted-foreground">Pagamento</label>
 <div className="flex gap-1 p-1 rounded-xl bg-[#E8ECF5]">
-{([“dinheiro”, “credito”] as const).map((f) => (
+{(["dinheiro", "credito"] as const).map((f) => (
 <button
 key={f}
 onClick={() => setFormaPagamento(f)}
 className={cn(
-“flex-1 py-2 rounded-lg text-xs font-semibold transition-all”,
-formaPagamento === f ? “bg-white shadow-sm text-foreground” : “text-muted-foreground”,
+"flex-1 py-2 rounded-lg text-xs font-semibold transition-all",
+formaPagamento === f ? "bg-white shadow-sm text-foreground" : "text-muted-foreground",
 )}
 >
-{f === “dinheiro” ? “💵 Dinheiro” : “💳 Crédito”}
+{f === "dinheiro" ? "💵 Dinheiro" : "💳 Crédito"}
 </button>
 ))}
 </div>
-{formaPagamento === “credito” && cartoes.length > 0 && (
+{formaPagamento === "credito" && cartoes.length > 0 && (
 <div className="flex gap-2 flex-wrap">
 {cartoes.map((c) => (
 <button
 key={c.id}
 onClick={() => setCartaoId(c.id)}
 className={cn(
-“px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors”,
+"px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors",
 cartaoId === c.id
-? “bg-primary text-primary-foreground border-primary”
-: “bg-white border-border text-muted-foreground”,
+? "bg-primary text-primary-foreground border-primary"
+: "bg-white border-border text-muted-foreground",
 )}
 >
 {c.nome}
@@ -485,20 +485,20 @@ return !v;
 });
 }}
 className={cn(
-“w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all”,
-isPais ? “border-amber-400 bg-amber-50” : “border-[#E8ECF5] bg-[#E8ECF5]”,
+"w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
+isPais ? "border-amber-400 bg-amber-50" : "border-[#E8ECF5] bg-[#E8ECF5]",
 )}
 >
 <div className="flex items-center gap-2">
-<Users size={15} className={isPais ? “text-amber-600” : “text-muted-foreground”} />
-<span className={cn(“text-sm font-medium”, isPais ? “text-amber-700” : “text-muted-foreground”)}>
+<Users size={15} className={isPais ? "text-amber-600" : "text-muted-foreground"} />
+<span className={cn("text-sm font-medium", isPais ? "text-amber-700" : "text-muted-foreground")}>
 Despesa dos pais
 </span>
 </div>
 <div
 className={cn(
-“w-9 h-5 rounded-full flex items-center px-0.5 transition-all”,
-isPais ? “bg-amber-400 justify-end” : “bg-muted justify-start”,
+"w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
+isPais ? "bg-amber-400 justify-end" : "bg-muted justify-start",
 )}
 >
 <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
@@ -571,23 +571,23 @@ setIsParcelado((v) => !v);
 if (!isParcelado) setRecorrente(false);
 }}
 className={cn(
-“flex-1 flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium border transition-all”,
+"flex-1 flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium border transition-all",
 isParcelado
-? “border-primary/40 bg-primary/5 text-primary”
-: “border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground”,
+? "border-primary/40 bg-primary/5 text-primary"
+: "border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground",
 )}
 >
 <span>📆 Parcelado</span>
 {isParcelado && (
 <input
-type=“number”
+type="number"
 min={2}
 max={48}
 value={parcelas}
 onChange={(e) => setParcelas(e.target.value)}
 onClick={(e) => e.stopPropagation()}
-className=“w-10 text-center bg-white rounded-lg border border-border text-xs font-bold text-foreground”
-inputMode=“numeric”
+className="w-10 text-center bg-white rounded-lg border border-border text-xs font-bold text-foreground"
+inputMode="numeric"
 />
 )}
 </button>
@@ -597,10 +597,10 @@ setRecorrente((v) => !v);
 if (!recorrente) setIsParcelado(false);
 }}
 className={cn(
-“flex-1 flex items-center justify-center px-3 py-2.5 rounded-xl text-sm font-medium border transition-all”,
+"flex-1 flex items-center justify-center px-3 py-2.5 rounded-xl text-sm font-medium border transition-all",
 recorrente
-? “border-primary/40 bg-primary/5 text-primary”
-: “border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground”,
+? "border-primary/40 bg-primary/5 text-primary"
+: "border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground",
 )}
 >
 🔁 Recorrente
@@ -610,13 +610,13 @@ recorrente
 <div className="flex items-center gap-2 px-1">
 <span className="text-xs text-muted-foreground">Repetir no dia</span>
 <Input
-type=“number”
+type="number"
 min={1}
 max={31}
 value={diaRecorrencia}
 onChange={(e) => setDiaRecorrencia(e.target.value)}
-className=“bg-[#E8ECF5] border-0 w-16 text-center rounded-xl”
-inputMode=“numeric”
+className="bg-[#E8ECF5] border-0 w-16 text-center rounded-xl"
+inputMode="numeric"
 />
 <span className="text-xs text-muted-foreground">de cada mês</span>
 </div>
@@ -630,24 +630,24 @@ inputMode=“numeric”
 <label className="text-xs font-medium text-muted-foreground">Aplicar alteração em</label>
 <div className="flex flex-col gap-1.5">
 {[
-{ key: “este”, label: “Só este lançamento” },
-{ key: “futuras”, label: wasParcelado ? “Este e próximas parcelas” : “Este e próximas recorrências” },
-{ key: “todos”, label: wasParcelado ? “Todas as parcelas” : “Todas as recorrências” },
+{ key: "este", label: "Só este lançamento" },
+{ key: "futuras", label: wasParcelado ? "Este e próximas parcelas" : "Este e próximas recorrências" },
+{ key: "todos", label: wasParcelado ? "Todas as parcelas" : "Todas as recorrências" },
 ].map((opt) => (
 <button
 key={opt.key}
 onClick={() => setEditScope(opt.key as EditScope)}
 className={cn(
-“flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all text-left”,
+"flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all text-left",
 editScope === opt.key
-? “border-primary/40 bg-primary/5 text-primary”
-: “border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground”,
+? "border-primary/40 bg-primary/5 text-primary"
+: "border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground",
 )}
 >
 <div
 className={cn(
-“w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0”,
-editScope === opt.key ? “border-primary” : “border-muted-foreground/40”,
+"w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
+editScope === opt.key ? "border-primary" : "border-muted-foreground/40",
 )}
 >
 {editScope === opt.key && <div className="w-2 h-2 rounded-full bg-primary" />}

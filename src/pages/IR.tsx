@@ -161,10 +161,10 @@ export default function IR() {
   const doacoes = useMemo(() => {
     const ir = projecao.irProjetado;
     return {
-      tetoConjunto6pct: ir * 0.06,
-      esporte7pct: ir * 0.07,
-      pronon1pct: ir * 0.01,
-      pronas1pct: ir * 0.01,
+      teto7pct: ir * 0.07,       // teto global: esporte+ECA+idoso+cultura+audiovisual+reciclagem
+      subTeto6pct: ir * 0.06,    // sub-teto: ECA+idoso+cultura+audiovisual+reciclagem (sem esporte)
+      pronon1pct: ir * 0.01,     // independente
+      pronas1pct: ir * 0.01,     // independente
     };
   }, [projecao]);
 
@@ -361,35 +361,43 @@ export default function IR() {
             <div className="glass-card p-3 flex gap-2 items-start">
               <Info size={14} className="text-primary mt-0.5 shrink-0" />
               <p className="text-[11px] text-muted-foreground">
-                Valores calculados sobre o IR anual projetado de {fmt(projecao.irProjetado)}. Doações devem ser feitas até 31/dez para deduzir no ano seguinte.
+                Valores sobre IR projetado de {fmt(projecao.irProjetado)}. Pessoa física — modelo completo. Doações até 31/dez deduzem na declaração de 2027. Fonte: Receita Federal / Lei 15.270/2025.
               </p>
             </div>
 
+            {/* Teto 7% — Esporte + todos os outros compartilhados */}
             <div className="glass-card p-4 space-y-3">
               <div className="flex justify-between items-center">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Teto compartilhado — até 6% do IR</p>
-                <span className="text-sm font-bold text-green-600">{fmt(doacoes.tetoConjunto6pct)}</span>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Teto global — até 7% do IR devido</p>
+                <span className="text-sm font-bold text-green-600">{fmt(doacoes.teto7pct)}</span>
               </div>
-              <p className="text-[10px] text-muted-foreground">As leis abaixo competem entre si. O total não pode ultrapassar {fmt(doacoes.tetoConjunto6pct)}.</p>
-              {["ECA / FIA — Criança e Adolescente", "Fundo do Idoso", "Lei Rouanet — Cultura", "Lei do Audiovisual"].map(lei => (
-                <div key={lei} className="flex justify-between items-center py-2 border-b border-[#E8ECF5] last:border-0">
-                  <span className="text-[12px] text-foreground">{lei}</span>
-                  <span className="text-[10px] text-muted-foreground bg-[#E8ECF5] px-2 py-0.5 rounded-full">compartilha 6%</span>
+              <p className="text-[10px] text-muted-foreground mb-1">
+                Esporte + ECA + Idoso + Cultura + Audiovisual + Reciclagem competem entre si. O total não pode ultrapassar {fmt(doacoes.teto7pct)}.
+              </p>
+              {[
+                { nome: "Lei do Esporte (LC 222/2025)", destaque: true },
+                { nome: "ECA / FIA — Criança e Adolescente", destaque: false },
+                { nome: "Fundo do Idoso", destaque: false },
+                { nome: "Lei Rouanet — Cultura", destaque: false },
+                { nome: "Lei do Audiovisual", destaque: false },
+                { nome: "Lei de Incentivo à Reciclagem", destaque: false },
+              ].map(lei => (
+                <div key={lei.nome} className="flex justify-between items-center py-2 border-b border-[#E8ECF5] last:border-0">
+                  <span className={`text-[12px] ${lei.destaque ? "font-semibold text-foreground" : "text-foreground"}`}>{lei.nome}</span>
+                  <span className="text-[10px] text-muted-foreground bg-[#E8ECF5] px-2 py-0.5 rounded-full">compartilha 7%</span>
                 </div>
               ))}
-            </div>
-
-            <div className="glass-card p-4 space-y-2">
-              <div className="flex justify-between items-center">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lei do Esporte — até 7%</p>
-                <span className="text-sm font-bold text-blue-500">{fmt(doacoes.esporte7pct)}</span>
+              <div className="rounded-xl p-2.5 mt-1" style={{ background: "rgba(22,163,74,0.06)" }}>
+                <p className="text-[10px]" style={{ color: "#16A34A" }}>
+                  ⚠️ Dentro do teto de 7%, as doações a ECA+Idoso+Cultura+Audiovisual+Reciclagem somadas não podem ultrapassar 6%. O esporte pode usar o 7% adicional exclusivamente.
+                </p>
               </div>
-              <p className="text-[10px] text-muted-foreground">Limite próprio de 7%. Não concorre com o teto de 6% acima. (LC 222/2025)</p>
             </div>
 
+            {/* PRONON + PRONAS — independentes */}
             <div className="glass-card p-4 space-y-2">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Saúde — limites independentes (+2%)</p>
-              <p className="text-[10px] text-muted-foreground">Cada um tem 1% próprio, não concorre com os demais.</p>
+              <p className="text-[10px] text-muted-foreground">Cada um tem 1% próprio. Não concorrem com o teto de 7% acima.</p>
               {[
                 { nome: "PRONON — Oncologia", val: doacoes.pronon1pct },
                 { nome: "PRONAS/PCD — Deficiência", val: doacoes.pronas1pct },
@@ -401,12 +409,13 @@ export default function IR() {
               ))}
             </div>
 
+            {/* Total máximo */}
             <div className="glass-card p-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-bold text-foreground">Total máximo possível</span>
-                <span className="text-lg font-bold text-green-600">{fmt(doacoes.tetoConjunto6pct + doacoes.esporte7pct + doacoes.pronon1pct + doacoes.pronas1pct)}</span>
+                <span className="text-lg font-bold text-green-600">{fmt(doacoes.teto7pct + doacoes.pronon1pct + doacoes.pronas1pct)}</span>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">6% (compartilhado) + 7% (esporte) + 1% PRONON + 1% PRONAS</p>
+              <p className="text-[10px] text-muted-foreground mt-1">7% (compartilhado: esporte+cultura+ECA+idoso+reciclagem) + 1% PRONON + 1% PRONAS</p>
             </div>
           </div>
         )}

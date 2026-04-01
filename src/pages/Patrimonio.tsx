@@ -38,7 +38,9 @@ export default function Patrimonio() {
   const [idadeAposentadoria, setIdadeAposentadoria] = useState(55);
   const [rentPGBLRealPct, setRentPGBLRealPct] = useState(4.0); // IPCA + X%
   const [aumentoAportesPct, setAumentoAportesPct] = useState(4.5); // % aa aumento aportes
-  const [ipcaPct, setIpcaPct] = useState(IPCA_DEFAULT);
+  const [ipcaPct, setIpcaPct]             = useState(IPCA_DEFAULT);
+  const [aporteBonus, setAporteBonus]     = useState(25000);   // aporte anual do bônus
+  const [aumentoBonusPct, setAumentoBonus] = useState(4.5);   // reajuste anual do bônus %
 
   // Constantes
   const IDADE_ATUAL = 43.4;
@@ -63,8 +65,9 @@ export default function Patrimonio() {
       { label: `IPCA + ${rentPGBLRealPct.toFixed(0)}%`,       rent: rentPGBLReal },
       { label: `IPCA + ${(rentPGBLRealPct + 1).toFixed(0)}%`, rent: rentPGBLReal + 0.01 },
     ].map(c => {
-      const brutoCte    = projetar(saldoPGBL, aporteAnualPGBL, anosAteAposentadoria, c.rent, 0);
-      const brutoAument = projetar(saldoPGBL, aporteAnualPGBL, anosAteAposentadoria, c.rent, aumentoAportes);
+      const aporteTotal       = aporteAnualPGBL + aporteBonus;
+      const brutoCte    = projetar(saldoPGBL, aporteTotal, anosAteAposentadoria, c.rent, 0);
+      const brutoAument = projetar(saldoPGBL, aporteTotal, anosAteAposentadoria, c.rent, Math.max(aumentoAportes, aumentoBonusPct / 100));
       const ir = irPGBL(anosAteAposentadoria);
       return {
         label: c.label,
@@ -202,6 +205,66 @@ export default function Patrimonio() {
                 </div>
               ))}
 
+              {/* Bônus */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Aporte anual do bônus no PGBL</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+                  <input
+                    type="number" step="1000" value={aporteBonus || ""}
+                    onChange={e => setAporteBonus(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-[#E8ECF5] border-0 rounded-xl pl-9 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    inputMode="decimal" placeholder="0,00"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Reajuste anual do bônus</label>
+                <div className="relative">
+                  <input
+                    type="number" step="0.1" value={aumentoBonusPct || ""}
+                    onChange={e => setAumentoBonus(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-[#E8ECF5] border-0 rounded-xl px-4 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    inputMode="decimal" placeholder="0.0"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">% aa</span>
+                </div>
+              </div>
+
+              {/* Aporte bônus */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Aporte anual do bônus no PGBL</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+                  <input
+                    type="number"
+                    step="1000"
+                    value={aporteBonus || ""}
+                    onChange={e => setAporteBonus(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-[#E8ECF5] border-0 rounded-xl pl-9 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    inputMode="decimal"
+                    placeholder="0,00"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Reajuste anual do bônus</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={aumentoBonusPct || ""}
+                    onChange={e => setAumentoBonusPct(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-[#E8ECF5] border-0 rounded-xl px-4 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    inputMode="decimal"
+                    placeholder="0.0"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">% aa</span>
+                </div>
+              </div>
+
               <div className="rounded-xl p-3" style={{ background: "rgba(99,102,241,0.06)" }}>
                 <p className="text-[11px] text-muted-foreground">
                   FGTS: TR + 3% aa nominal (~{(FGTS_NOMINAL - ipcaPct).toFixed(1)}% real). Isento de IR na aposentadoria.
@@ -225,7 +288,7 @@ export default function Patrimonio() {
             {/* Destaque total */}
             <div className="glass-card p-4">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                Cenário moderado · PGBL + FGTS · aportes +{aumentoAportesPct}%/ano
+                Cenário moderado · PGBL + FGTS · aportes +{aumentoAportesPct}%/ano · bônus +{aumentoBonusPct}%/ano
               </p>
               <div className="flex gap-4">
                 <div className="flex-1">
@@ -258,8 +321,9 @@ export default function Patrimonio() {
               </div>
               <div className="text-[10px] text-muted-foreground space-y-0.5 pt-1 border-t border-[#E8ECF5]">
                 <div className="flex justify-between"><span>Saldo atual</span><span className="font-semibold">{fmt(saldoPGBL)}</span></div>
-                <div className="flex justify-between"><span>Aporte mensal atual</span><span className="font-semibold">{fmt(aporteMensalPGBL)}</span></div>
-                <div className="flex justify-between"><span>Aporte anual atual</span><span className="font-semibold">{fmt(aporteAnualPGBL)}</span></div>
+                <div className="flex justify-between"><span>Aporte mensal salário</span><span className="font-semibold">{fmt(aporteMensalPGBL)}</span></div>
+                <div className="flex justify-between"><span>Aporte anual bônus</span><span className="font-semibold">{fmt(aporteBonus)}</span></div>
+                <div className="flex justify-between"><span>Aporte anual total</span><span className="font-semibold">{fmt(aporteAnualPGBL + aporteBonus)}</span></div>
               </div>
             </div>
 

@@ -90,19 +90,6 @@ export default function Patrimonio() {
 
   const [abaAtiva, setAbaAtiva] = useState<"simulacao" | "inputs">("simulacao");
 
-  const NumInput = ({ label, value, onChange, prefix = "R$", step = 1000 }: any) => (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{prefix}</span>
-        <input type="number" value={value} step={step}
-          onChange={e => onChange(parseFloat(e.target.value) || 0)}
-          className="w-full bg-[#E8ECF5] border-0 rounded-xl pl-9 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-          inputMode="decimal" />
-      </div>
-    </div>
-  );
-
   const SliderRow = ({ label, value, onChange, min, max, step = 0.5, suffix = "%" }: any) => (
     <div className="space-y-1">
       <div className="flex justify-between items-center">
@@ -143,44 +130,81 @@ export default function Patrimonio() {
 
         {abaAtiva === "inputs" && (
           <div className="space-y-4">
+
             {/* Saldos */}
-            <div className="glass-card p-4 space-y-3">
+            <div className="glass-card p-4 space-y-4">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Saldos atuais</p>
-              <NumInput label="Saldo PGBL" value={saldoPGBL} onChange={setSaldoPGBL} step={10000} />
-              <NumInput label="Aporte mensal PGBL" value={aporteMensalPGBL} onChange={setAporteMensalPGBL} step={100} />
-              <NumInput label="Saldo FGTS" value={saldoFGTS} onChange={setSaldoFGTS} step={10000} />
-              <NumInput label="Salário bruto mensal" value={salarioBruto} onChange={setSalarioBruto} step={1000} />
+              {([
+                { label: "Saldo PGBL", val: saldoPGBL, set: setSaldoPGBL },
+                { label: "Aporte mensal PGBL", val: aporteMensalPGBL, set: setAporteMensalPGBL },
+                { label: "Saldo FGTS", val: saldoFGTS, set: setSaldoFGTS },
+                { label: "Salário bruto mensal", val: salarioBruto, set: setSalarioBruto },
+              ] as const).map((row: any) => (
+                <div key={row.label} className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">{row.label}</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={row.val || ""}
+                      onChange={e => row.set(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-[#E8ECF5] border-0 rounded-xl pl-9 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      inputMode="decimal"
+                      placeholder="0,00"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Parâmetros */}
             <div className="glass-card p-4 space-y-4">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Parâmetros da simulação</p>
 
-              <div className="space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-[12px] text-muted-foreground">Idade de aposentadoria</span>
-                  <span className="text-[12px] font-bold">{idadeAposentadoria} anos</span>
-                </div>
-                <input type="range" min={50} max={70} step={1} value={idadeAposentadoria}
-                  onChange={e => setIdadeAposentadoria(parseInt(e.target.value))}
-                  className="w-full accent-primary" />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>50</span><span>55</span><span>60</span><span>65</span><span>70</span>
+              {/* Idade aposentadoria */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Idade de aposentadoria</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="1"
+                    value={idadeAposentadoria || ""}
+                    onChange={e => setIdadeAposentadoria(parseInt(e.target.value) || 55)}
+                    className="w-full bg-[#E8ECF5] border-0 rounded-xl px-4 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    inputMode="numeric"
+                    placeholder="55"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">anos</span>
                 </div>
               </div>
 
-              <SliderRow label="Rentabilidade real PGBL (acima do IPCA)" value={rentPGBLRealPct}
-                onChange={setRentPGBLRealPct} min={1} max={8} step={0.5} />
-
-              <SliderRow label="Aumento anual dos aportes" value={aumentoAportesPct}
-                onChange={setAumentoAportesPct} min={0} max={10} step={0.5} />
-
-              <SliderRow label="IPCA assumido (meta longo prazo)" value={ipcaPct}
-                onChange={setIpcaPct} min={2} max={8} step={0.5} />
+              {/* % inputs */}
+              {([
+                { label: "Rentabilidade real PGBL (acima do IPCA)", val: rentPGBLRealPct, set: setRentPGBLRealPct },
+                { label: "Aumento anual dos aportes", val: aumentoAportesPct, set: setAumentoAportesPct },
+                { label: "IPCA assumido (meta longo prazo)", val: ipcaPct, set: setIpcaPct },
+              ] as const).map((row: any) => (
+                <div key={row.label} className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">{row.label}</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={row.val || ""}
+                      onChange={e => row.set(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-[#E8ECF5] border-0 rounded-xl px-4 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      inputMode="decimal"
+                      placeholder="0.0"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">% aa</span>
+                  </div>
+                </div>
+              ))}
 
               <div className="rounded-xl p-3" style={{ background: "rgba(99,102,241,0.06)" }}>
                 <p className="text-[11px] text-muted-foreground">
-                  FGTS: TR + 3% aa nominal (~{(FGTS_NOMINAL - ipcaPct).toFixed(1)}% real com IPCA de {ipcaPct}%). Isento de IR na aposentadoria.
+                  FGTS: TR + 3% aa nominal (~{(FGTS_NOMINAL - ipcaPct).toFixed(1)}% real). Isento de IR na aposentadoria.
                 </p>
               </div>
             </div>

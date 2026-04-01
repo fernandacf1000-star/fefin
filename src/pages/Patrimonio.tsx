@@ -35,6 +35,13 @@ export default function Patrimonio() {
   const [saldoFGTS, setSaldoFGTS]         = useState(392261.93);
   const [salarioBruto, setSalarioBruto]   = useState(52845.28);
 
+  // String states para formatação automática dos campos de valor
+  const toFmt = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const [pgblStr, setPgblStr]     = useState(toFmt(1324846.88));
+  const [aporteStr, setAporteStr] = useState(toFmt(6341.44));
+  const [fgtsStr, setFgtsStr]     = useState(toFmt(392261.93));
+  const [salarioStr, setSalarioStr] = useState(toFmt(52845.28));
+
   const [idadeAposentadoria, setIdadeAposentadoria] = useState(55);
   const [rentPGBLRealPct, setRentPGBLRealPct] = useState(4.0); // IPCA + X%
   const [aumentoAportesPct, setAumentoAportesPct] = useState(4.5); // % aa aumento aportes
@@ -138,22 +145,27 @@ export default function Patrimonio() {
             <div className="glass-card p-4 space-y-4">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Saldos atuais</p>
               {([
-                { label: "Saldo PGBL", val: saldoPGBL, set: setSaldoPGBL },
-                { label: "Aporte mensal PGBL", val: aporteMensalPGBL, set: setAporteMensalPGBL },
-                { label: "Saldo FGTS", val: saldoFGTS, set: setSaldoFGTS },
-                { label: "Salário bruto mensal", val: salarioBruto, set: setSalarioBruto },
+                { label: "Saldo PGBL", valStr: pgblStr, setStr: setPgblStr, setNum: setSaldoPGBL },
+                { label: "Aporte mensal PGBL", valStr: aporteStr, setStr: setAporteStr, setNum: setAporteMensalPGBL },
+                { label: "Saldo FGTS", valStr: fgtsStr, setStr: setFgtsStr, setNum: setSaldoFGTS },
+                { label: "Salário bruto mensal", valStr: salarioStr, setStr: setSalarioStr, setNum: setSalarioBruto },
               ] as const).map((row: any) => (
                 <div key={row.label} className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">{row.label}</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
                     <input
-                      type="number"
-                      step="0.01"
-                      value={row.val || ""}
-                      onChange={e => row.set(parseFloat(e.target.value) || 0)}
+                      type="text"
+                      value={row.valStr}
+                      onChange={e => {
+                        const digits = e.target.value.replace(/\D/g, "");
+                        if (!digits) { row.setStr(""); row.setNum(0); return; }
+                        const num = parseInt(digits, 10) / 100;
+                        row.setStr(num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                        row.setNum(num);
+                      }}
                       className="w-full bg-[#E8ECF5] border-0 rounded-xl pl-9 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                      inputMode="decimal"
+                      inputMode="numeric"
                       placeholder="0,00"
                     />
                   </div>

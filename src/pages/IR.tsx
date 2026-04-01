@@ -78,24 +78,59 @@ export default function IR() {
     return { salario, bonus, irPago, inss, pgbl, saude, medicas, doacoes, fgts };
   }, [dados]);
 
+  // Último mês com dados reais
+  const ultimoMesPreenchido = useMemo(() => {
+    let ultimo = VAZIO;
+    for (let m = 0; m < 12; m++) {
+      const d = dados[m];
+      if (d && d.salarioBruto > 0) ultimo = d;
+    }
+    return ultimo;
+  }, [dados]);
+
+  // Quantos meses já foram preenchidos
+  const mesesPreenchidos = useMemo(() =>
+    Object.values(dados).filter(d => d && d.salarioBruto > 0).length,
+  [dados]);
+
+  // Projeção: meses reais + meses futuros usando o último mês como base
   const projecao = useMemo(() => {
-    const salarioProjetado  = totais.salario;
-    const pgblProjetado     = totais.pgbl;
-    const saudeProjetado    = totais.saude;
-    const medicasProjetado  = totais.medicas;
-    const doacoesProjetado  = totais.doacoes;
-    const inssProjetado     = totais.inss;
-    const limPGBL = salarioProjetado * 0.12;
-    const pgblDedutivel = Math.min(pgblProjetado, limPGBL);
-    const base = Math.max(0, salarioProjetado - inssProjetado - pgblDedutivel - saudeProjetado - medicasProjetado - doacoesProjetado);
+    const mesesFuturos = 12 - mesesPreenchidos;
+    const ref = ultimoMesPreenchido;
+
+    // Acumulado real
+    const salarioReal  = totais.salario;
+    const inssReal     = totais.inss;
+    const pgblReal     = totais.pgbl;
+    const saudeReal    = totais.saude;
+    const medicasReal  = totais.medicas;
+    const doacoesReal  = totais.doacoes;
+    const irPagoReal   = totais.irPago;
+
+    // Projeção dos meses restantes (usando último mês como base)
+    const salarioProj  = salarioReal  + ref.salarioBruto  * mesesFuturos;
+    const inssProj     = inssReal     + ref.inss           * mesesFuturos;
+    const pgblProj     = pgblReal     + ref.pgbl           * mesesFuturos;
+    const saudeProj    = saudeReal    + ref.planoDeSaude   * mesesFuturos;
+    const medicasProj  = medicasReal  + ref.despesasMedicas * mesesFuturos;
+    const doacoesProj  = doacoesReal  + ref.doacoes        * mesesFuturos;
+    const irPagoProj   = irPagoReal   + ref.irPago         * mesesFuturos;
+
+    const limPGBL = salarioProj * 0.12;
+    const pgblDedutivel = Math.min(pgblProj, limPGBL);
+    const base = Math.max(0, salarioProj - inssProj - pgblDedutivel - saudeProj - medicasProj - doacoesProj);
     const irProjetado = calcIRAnual(base);
-    const irPagoAteAgora = totais.irPago;
-    const saldoIR = irProjetado - irPagoAteAgora;
-    const pgblRestante = Math.max(0, limPGBL - pgblProjetado);
+    const saldoIR = irProjetado - irPagoProj;
+    const pgblRestante = Math.max(0, limPGBL - pgblProj);
     const baseComPGBLMax = Math.max(0, base - pgblRestante);
     const economiaIRPGBL = irProjetado - calcIRAnual(baseComPGBLMax);
-    return { base, irProjetado, irPagoAteAgora, saldoIR, pgblRestante, economiaIRPGBL, limPGBL, pgblDedutivel };
-  }, [totais]);
+
+    return {
+      base, irProjetado, irPagoAteAgora: irPagoProj, saldoIR,
+      pgblRestante, economiaIRPGBL, limPGBL, pgblDedutivel,
+      salarioProj, mesesFuturos, mesesPreenchidos,
+    };
+  }, [totais, ultimoMesPreenchido, mesesPreenchidos]);
 
   const doacoes = useMemo(() => {
     const ir = projecao.irProjetado;
@@ -225,17 +260,17 @@ export default function IR() {
             <div className="glass-card p-3 flex gap-2 items-start">
               <Info size={14} className="text-primary mt-0.5 shrink-0" />
               <p className="text-[11px] text-muted-foreground">
-                Tabela IR 2026 (Lei 15.270/2025) · Isenção total até R$5.000/mês · Desconto gradual até R$7.350/mês · Bônus/PLR não entra na base (tributação exclusiva na fonte)
+                Tabela IR 2026 (Lei 15.270/2025) · {projecao.mesesPreenchidos} {projecao.mesesPreenchidos === 1 ? "mês real" : "meses reais"} + {projecao.mesesFuturos} projetados com base no último mês preenchido · Bônus/PLR não entra na base
               </p>
             </div>
 
             <div className="glass-card p-4 space-y-2">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Base de cálculo projetada</p>
               {[
-                { label: "Salário bruto anual", val: totais.salario },
-                { label: "(-) INSS", val: totais.inss, color: "#EF4444" },
-                { label: `(-) PGBL dedutível (máx 12%)`, val: projecao.pgblDedutivel, color: "#8B5CF6" },
-                { label: "(-) Plano de saúde", val: totais.saude, color: "#EF4444" },
+                { label: `Salário bruto projetado (${projecao.mesesPreenchidos}r + ${projecao.mesesFuturos}p)`, val: projecao.salarioProj },
+                { label: "(-) INSS projetado", val: totais.inss + (ultimoMesPreenchido.inss * projecao.mesesFuturos), color: "#EF4444" },
+                { label: "(-) PGBL dedutível (máx 12%)", val: projecao.pgblDedutivel, color: "#8B5CF6" },
+                { label: "(-) Plano de saúde projetado", val: totais.saude + (ultimoMesPreenchido.planoDeSaude * projecao.mesesFuturos), color: "#EF4444" },
                 { label: "(-) Despesas médicas", val: totais.medicas, color: "#EF4444" },
                 { label: "(-) Doações dedutíveis", val: totais.doacoes, color: "#EF4444" },
                 { label: "= Base tributável", val: projecao.base, bold: true },

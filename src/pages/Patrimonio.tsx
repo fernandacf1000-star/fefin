@@ -247,38 +247,6 @@ export default function Patrimonio() {
                 </div>
               </div>
 
-              {/* Aporte bônus */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Aporte anual do bônus no PGBL</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
-                  <input
-                    type="number"
-                    step="1000"
-                    value={aporteBonus || ""}
-                    onChange={e => setAporteBonus(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-[#E8ECF5] border-0 rounded-xl pl-9 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    inputMode="decimal"
-                    placeholder="0,00"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Reajuste anual do bônus</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={aumentoBonusPct || ""}
-                    onChange={e => setAumentoBonusPct(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-[#E8ECF5] border-0 rounded-xl px-4 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    inputMode="decimal"
-                    placeholder="0.0"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">% aa</span>
-                </div>
-              </div>
 
               <div className="rounded-xl p-3" style={{ background: "rgba(99,102,241,0.06)" }}>
                 <p className="text-[11px] text-muted-foreground">

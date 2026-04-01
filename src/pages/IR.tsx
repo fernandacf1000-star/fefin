@@ -45,7 +45,11 @@ interface DadosMes {
 
 const VAZIO: DadosMes = { salarioBruto: 0, bonus: 0, irPago: 0, inss: 0, pgbl: 0, planoDeSaude: 0, despesasMedicas: 0, doacoes: 0 };
 
-const DADOS_INICIAIS: Record<number, DadosMes> = {};
+const DADOS_INICIAIS: Record<number, DadosMes> = {
+  0: { salarioBruto: 52845.28, bonus: 49031.89, irPago: 110644.59, inss: 988.07, pgbl: 25295.79, planoDeSaude: 133, despesasMedicas: 0, doacoes: 0 },
+  1: { salarioBruto: 52845.28, bonus: 0,         irPago: 11608.11,  inss: 988.07, pgbl: 6341.44,  planoDeSaude: 133, despesasMedicas: 0, doacoes: 0 },
+  2: { salarioBruto: 52845.28, bonus: 0,         irPago: 13352.00,  inss: 988.07, pgbl: 6341.44,  planoDeSaude: 133, despesasMedicas: 0, doacoes: 0 },
+};
 
 export default function IR() {
   const anoAtual = new Date().getFullYear();

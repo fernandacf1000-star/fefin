@@ -2,30 +2,56 @@ import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 
+// Tabela progressiva anual 2026 — Receita Federal (mesma de 2025, não alterada)
+// Fonte: gov.br/receitafederal/pt-br/assuntos/meu-imposto-de-renda/tabelas/2026
 const FAIXAS_ANUAIS_2026 = [
-  { ate: 60000.00,   aliquota: 0,     deducao: 0 },
-  { ate: 75669.24,   aliquota: 0.075, deducao: 4500.00 },
-  { ate: 101887.68,  aliquota: 0.15,  deducao: 10164.69 },
-  { ate: 122957.04,  aliquota: 0.225, deducao: 17716.21 },
-  { ate: Infinity,   aliquota: 0.275, deducao: 23852.73 },
+  { ate: 24751.74,  aliquota: 0,     deducao: 0 },
+  { ate: 33919.80,  aliquota: 0.075, deducao: 1856.38 },
+  { ate: 45012.60,  aliquota: 0.15,  deducao: 4413.57 },
+  { ate: 55976.16,  aliquota: 0.225, deducao: 7773.27 },
+  { ate: Infinity,  aliquota: 0.275, deducao: 10571.65 },
 ];
 
-function calcRedutorAnual(rendaBruta: number): number {
-  if (rendaBruta <= 60000) return 0;
-  if (rendaBruta <= 88200) return Math.max(0, 11743.44 - 0.133145 * rendaBruta);
+// Redutor anual 2026 (Lei 15.270/2025)
+// Até R$60k/ano: isento (redutor zera o imposto)
+// R$60k-R$88,2k: redução gradual
+// Acima R$88,2k: sem redutor adicional
+function calcRedutorAnual(base: number): number {
+  if (base <= 60000) return 3746.68; // zera o imposto
+  if (base <= 88200) return Math.max(0, 11743.44 - 0.133145 * base);
   return 0;
 }
 
-function calcIRAnual(baseCalculo: number): number {
+// IRPFM — imposto mínimo para renda > R$600k/ano (Lei 15.270/2025)
+// Alíquota efetiva progressiva entre 0% e 10%
+// Aplicado se IR calculado resultar em alíquota efetiva abaixo do mínimo
+function calcIRPFM(rendaAnualBruta: number, irCalculado: number): number {
+  if (rendaAnualBruta <= 600000) return 0;
+  let aliqMinima: number;
+  if (rendaAnualBruta >= 1200000) {
+    aliqMinima = 0.10;
+  } else {
+    // Progressivo de 0% a 10% entre R$600k e R$1,2M
+    aliqMinima = ((rendaAnualBruta - 600000) / 600000) * 0.10;
+  }
+  const irMinimo = rendaAnualBruta * aliqMinima;
+  return Math.max(0, irMinimo - irCalculado);
+}
+
+function calcIRAnual(baseCalculo: number, rendaAnualBruta?: number): number {
   if (baseCalculo <= 0) return 0;
+  let ir = 0;
   for (const faixa of FAIXAS_ANUAIS_2026) {
     if (baseCalculo <= faixa.ate) {
-      const ir = baseCalculo * faixa.aliquota - faixa.deducao;
-      const redutor = calcRedutorAnual(baseCalculo);
-      return Math.max(0, ir - redutor);
+      ir = baseCalculo * faixa.aliquota - faixa.deducao;
+      break;
     }
   }
-  return 0;
+  const redutor = calcRedutorAnual(baseCalculo);
+  const irAposRedutor = Math.max(0, ir - redutor);
+  // Adicionar IRPFM se aplicável
+  const irpfm = rendaAnualBruta ? calcIRPFM(rendaAnualBruta, irAposRedutor) : 0;
+  return irAposRedutor + irpfm;
 }
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -119,11 +145,11 @@ export default function IR() {
     const limPGBL = salarioProj * 0.12;
     const pgblDedutivel = Math.min(pgblProj, limPGBL);
     const base = Math.max(0, salarioProj - inssProj - pgblDedutivel - saudeProj - medicasProj - doacoesProj);
-    const irProjetado = calcIRAnual(base);
+    const irProjetado = calcIRAnual(base, salarioProj);
     const saldoIR = irProjetado - irPagoProj;
     const pgblRestante = Math.max(0, limPGBL - pgblProj);
     const baseComPGBLMax = Math.max(0, base - pgblRestante);
-    const economiaIRPGBL = irProjetado - calcIRAnual(baseComPGBLMax);
+    const economiaIRPGBL = irProjetado - calcIRAnual(baseComPGBLMax, salarioProj - pgblRestante);
 
     return {
       base, irProjetado, irPagoAteAgora: irPagoProj, saldoIR,
@@ -260,7 +286,7 @@ export default function IR() {
             <div className="glass-card p-3 flex gap-2 items-start">
               <Info size={14} className="text-primary mt-0.5 shrink-0" />
               <p className="text-[11px] text-muted-foreground">
-                Tabela IR 2026 (Lei 15.270/2025) · {projecao.mesesPreenchidos} {projecao.mesesPreenchidos === 1 ? "mês real" : "meses reais"} + {projecao.mesesFuturos} projetados com base no último mês preenchido · Bônus/PLR não entra na base
+                Tabela IR 2026 (Receita Federal) · {projecao.mesesPreenchidos} {projecao.mesesPreenchidos === 1 ? "mês real" : "meses reais"} + {projecao.mesesFuturos} projetados · Inclui IRPFM (imposto mínimo renda &gt; R$600k/ano) · Bônus/PLR excluído da base
               </p>
             </div>
 

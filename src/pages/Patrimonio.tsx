@@ -1,261 +1,295 @@
+import { useState, useMemo } from "react";
+import { Info, TrendingUp } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import EmptyState from "@/components/EmptyState";
-import { usePatrimonioData, usePatrimonioMovimentacoes } from "@/hooks/usePatrimonio";
-import { Lock, CheckCircle2, AlertTriangle, TrendingUp, Wallet, ShieldCheck, Landmark, Info, AlertOctagon } from "lucide-react";
-import { useMemo } from "react";
 
-const fmt = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const fmtPct = (v: number) => (v * 100).toFixed(1) + "%";
 
-const pct = (v: number) => `${v.toFixed(1)}%`;
+// Tabela regressiva PGBL — tempo de acumulação a partir de hoje
+// Com 10+ anos: 10%. Usamos 10% pois tempo de acumulação já é longo.
+function irPGBL(anos: number): number {
+  if (anos >= 10) return 0.10;
+  if (anos >= 8)  return 0.15;
+  if (anos >= 6)  return 0.20;
+  if (anos >= 4)  return 0.25;
+  if (anos >= 2)  return 0.30;
+  return 0.35;
+}
 
-const motivoStyle: Record<string, { bg: string; text: string }> = {
-  emergencia: { bg: "bg-destructive/20", text: "text-destructive" },
-  planejado: { bg: "bg-yellow-400/20", text: "text-yellow-400" },
-  oportunidade: { bg: "bg-blue-400/20", text: "text-blue-400" },
-};
-
-const motivoLabel: Record<string, string> = {
-  emergencia: "Emergência",
-  planejado: "Planejado",
-  oportunidade: "Oportunidade",
-};
-
-const MascotHead = () => (
-  <svg width="32" height="32" viewBox="8 5 84 80" fill="none" className="shrink-0">
-    <ellipse cx="50" cy="42" rx="34" ry="36" fill="#2C1810"/>
-    <path d="M74 45 Q88 55 85 80 Q82 95 75 100 Q80 80 76 65 Q74 55 74 45Z" fill="#2C1810"/>
-    <path d="M26 45 Q12 58 15 82 Q18 96 24 100 Q20 80 24 65 Q26 55 26 45Z" fill="#2C1810"/>
-    <ellipse cx="50" cy="50" rx="28" ry="30" fill="#FDDBB4"/>
-    <ellipse cx="50" cy="18" rx="16" ry="10" fill="#2C1810"/>
-    <path d="M32 40 Q39 36 44 39" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none"/>
-    <path d="M56 39 Q61 36 68 40" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none"/>
-    <ellipse cx="38" cy="47" rx="5" ry="5.5" fill="white"/>
-    <ellipse cx="62" cy="47" rx="5" ry="5.5" fill="white"/>
-    <ellipse cx="38.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314"/>
-    <ellipse cx="62.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314"/>
-    <circle cx="40" cy="46" r="1.2" fill="white"/>
-    <circle cx="64" cy="46" r="1.2" fill="white"/>
-    <path d="M38 63 Q50 72 62 63" stroke="#C68642" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-    <ellipse cx="30" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
-    <ellipse cx="70" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5"/>
-    <circle cx="21" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2"/>
-    <text x="21" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
-    <circle cx="79" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2"/>
-    <text x="79" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
-  </svg>
-);
-
-const Patrimonio = () => {
-  const { data: patrimonios = [], isLoading } = usePatrimonioData();
-  const { data: movimentacoes = [] } = usePatrimonioMovimentacoes();
-
-  const getPatrimonio = (tipo: string) => patrimonios.find((p) => p.tipo === tipo);
-  const getMovs = (tipo: string) => movimentacoes.filter((m) => m.patrimonio_tipo === tipo);
-
-  const aplicacao = getPatrimonio("liquidez_diaria");
-  const previdencia = getPatrimonio("previdencia");
-  const longoPrazo = getPatrimonio("sem_liquidez");
-  const fgts = getPatrimonio("fgts");
-
-  const totalInvestido = patrimonios.reduce((s, p) => s + Number(p.saldo), 0);
-  const rendMes = patrimonios.reduce((s, p) => s + Number(p.rendimento_mensal || 0), 0);
-
-  const resgatesLiquidez = useMemo(() => getMovs("liquidez_diaria").filter((m) => m.tipo_movimentacao === "resgate"), [movimentacoes]);
-  const resgatesLP = useMemo(() => getMovs("sem_liquidez").filter((m) => m.tipo_movimentacao === "resgate"), [movimentacoes]);
-
-  const emergencias6m = resgatesLiquidez.filter((r) => r.motivo === "emergencia").length;
-  const temEmergenciaLP = resgatesLP.some((r) => r.motivo === "emergencia");
-
-  const hasData = patrimonios.length > 0;
-
-  if (!hasData && !isLoading) {
-    return (
-      <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
-        <div className="px-4 pt-16 w-full">
-          <h1 className="text-xl font-semibold text-foreground animate-fade-up">Patrimônio</h1>
-          <div className="mt-6"><EmptyState title="Cadastre seus investimentos! 📈" /></div>
-        </div>
-        <BottomNav />
-      </div>
-    );
+function projetar(saldo: number, aporteAnual: number, anos: number, rentReal: number, aumentoAnual: number): number {
+  let s = saldo;
+  let a = aporteAnual;
+  for (let i = 0; i < Math.round(anos); i++) {
+    s = s * (1 + rentReal) + a;
+    a *= (1 + aumentoAnual);
   }
+  return s;
+}
 
-  return (
-    <div className="min-h-screen gradient-bg overflow-x-hidden pb-[90px] md:pb-6">
-      <div className="px-4 pt-16 space-y-5 w-full">
-        <h1 className="text-xl font-semibold text-foreground animate-fade-up">Patrimônio</h1>
+const IPCA_DEFAULT = 4.5; // % — meta BCB longo prazo
 
-        {/* Hero: Total Investido */}
-        <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.05s" }}>
-          <div className="flex items-center gap-2 mb-3">
-            <Wallet size={16} className="text-primary" />
-            <span className="text-xs text-muted-foreground font-medium">Total Investido</span>
-          </div>
-          <p className="text-2xl font-bold text-foreground tabular-nums mb-4">{fmt(totalInvestido)}</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl bg-secondary/40 p-3">
-              <p className="text-[11px] text-muted-foreground mb-0.5">Rendimento do mês</p>
-              <p className="text-sm font-bold text-primary tabular-nums">+{fmt(rendMes)}</p>
-            </div>
-          </div>
-        </section>
+export default function Patrimonio() {
+  // Inputs
+  const [saldoPGBL, setSaldoPGBL]         = useState(1324846.88);
+  const [aporteMensalPGBL, setAporteMensalPGBL] = useState(6341.44);
+  const [saldoFGTS, setSaldoFGTS]         = useState(392261.93);
+  const [salarioBruto, setSalarioBruto]   = useState(52845.28);
 
-        {/* Banner */}
-        {rendMes > 0 && (
-          <div className="patrimonio-banner flex items-center gap-3 animate-fade-up" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 16, padding: "12px 16px", animationDelay: "0.07s" }}>
-            <MascotHead />
-            <div>
-              <p className="text-sm font-bold text-foreground">Seu patrimônio cresceu esse mês! 🎉</p>
-              <p className="text-xs font-semibold" style={{ color: "#10B981" }}>+ {fmt(rendMes)} de rendimento</p>
-            </div>
-          </div>
-        )}
+  const [idadeAposentadoria, setIdadeAposentadoria] = useState(55);
+  const [rentPGBLRealPct, setRentPGBLRealPct] = useState(4.0); // IPCA + X%
+  const [aumentoAportesPct, setAumentoAportesPct] = useState(4.5); // % aa aumento aportes
+  const [ipcaPct, setIpcaPct] = useState(IPCA_DEFAULT);
 
-        <style>{`
-          @keyframes patrimonioFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-          .patrimonio-banner { animation: patrimonioFadeIn 0.5s ease both; }
-        `}</style>
+  // Constantes
+  const IDADE_ATUAL = 43.4;
+  const ANOS_FGTS_REAL = -1.0; // FGTS rende abaixo da inflação (TR + 3% - IPCA)
+  const FGTS_NOMINAL = 3.0;    // TR + 3% aa
 
-        {/* Aplicação Liquidez Diária */}
-        {aplicacao && (
-          <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp size={16} className="text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">Aplicação · Liquidez Diária</h2>
-            </div>
-            <div className="flex items-baseline justify-between mb-1">
-              <p className="text-xl font-bold text-foreground tabular-nums">{fmt(Number(aplicacao.saldo))}</p>
-              {aplicacao.rendimento_mensal && <p className="text-xs text-primary font-semibold">+{fmt(Number(aplicacao.rendimento_mensal))}/mês</p>}
-            </div>
-            {emergencias6m >= 2 && (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-500/10 mt-3 mb-3">
-                <AlertTriangle size={16} className="text-orange-400 shrink-0" />
-                <p className="text-xs text-orange-300">{emergencias6m} resgates por emergência — atenção!</p>
-              </div>
-            )}
-            {resgatesLiquidez.length > 0 && (
-              <>
-                <p className="text-xs text-muted-foreground font-medium mt-3 mb-2">Últimos resgates</p>
-                <div className="space-y-1">
-                  {resgatesLiquidez.slice(0, 4).map((r) => (
-                    <div key={r.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/30 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                          <Wallet size={14} className="text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{new Date(r.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</p>
-                          {r.motivo && (
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${(motivoStyle[r.motivo] || motivoStyle.planejado).bg} ${(motivoStyle[r.motivo] || motivoStyle.planejado).text}`}>
-                              {motivoLabel[r.motivo] || r.motivo}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-sm font-semibold text-foreground tabular-nums">-{fmt(Number(r.valor))}</p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </section>
-        )}
+  const anosAteAposentadoria = useMemo(() =>
+    Math.max(0, idadeAposentadoria - IDADE_ATUAL),
+  [idadeAposentadoria]);
 
-        {/* Previdência Privada */}
-        {previdencia && (
-          <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.15s" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <ShieldCheck size={16} className="text-primary" />
-                <h2 className="text-sm font-semibold text-foreground">Previdência Privada</h2>
-              </div>
-              <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-primary/15 text-primary">
-                <Lock size={10} /> Intocável 🔒
-              </span>
-            </div>
-            <p className="text-xl font-bold text-foreground tabular-nums">{fmt(Number(previdencia.saldo))}</p>
-            {previdencia.rendimento_mensal && (
-              <p className="text-[11px] text-muted-foreground mt-1">Rendimento mensal: <span className="text-primary font-semibold">{fmt(Number(previdencia.rendimento_mensal))}</span></p>
-            )}
-          </section>
-        )}
+  const aporteAnualPGBL = aporteMensalPGBL * 12;
+  const fgtsAnual       = salarioBruto * 0.08 * 12;
 
-        {/* Longo Prazo */}
-        {longoPrazo && (
-          <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.2s" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Lock size={16} className="text-primary" />
-                <h2 className="text-sm font-semibold text-foreground">Aplicação Sem Liquidez — Longo Prazo</h2>
-              </div>
-              <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-yellow-400/15 text-yellow-400">
-                Evitar resgates ⚠️
-              </span>
-            </div>
-            <p className="text-xl font-bold text-foreground tabular-nums">{fmt(Number(longoPrazo.saldo))}</p>
-            {temEmergenciaLP && (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/15 mt-3 mb-3">
-                <AlertOctagon size={16} className="text-destructive shrink-0" />
-                <p className="text-xs text-destructive font-medium">⚠️ Resgate de emergência — reforce sua reserva de liquidez.</p>
-              </div>
-            )}
-            {resgatesLP.length > 0 && (
-              <>
-                <p className="text-xs text-muted-foreground font-medium mt-3 mb-2">Resgates</p>
-                <div className="space-y-1">
-                  {resgatesLP.map((r) => (
-                    <div key={r.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/30 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                          <Wallet size={14} className="text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{new Date(r.data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</p>
-                          {r.motivo && (
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${(motivoStyle[r.motivo] || motivoStyle.planejado).bg} ${(motivoStyle[r.motivo] || motivoStyle.planejado).text}`}>
-                              {motivoLabel[r.motivo] || r.motivo}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-sm font-semibold text-foreground tabular-nums">-{fmt(Number(r.valor))}</p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary/40 mt-3">
-              <Info size={14} className="text-muted-foreground shrink-0 mt-0.5" />
-              <p className="text-[11px] text-muted-foreground leading-relaxed">Aplicações de longo prazo — priorize não resgatar.</p>
-            </div>
-          </section>
-        )}
+  const rentPGBLReal = rentPGBLRealPct / 100;
+  const aumentoAportes = aumentoAportesPct / 100;
+  const fgtsReal = (FGTS_NOMINAL - ipcaPct) / 100;
 
-        {/* FGTS */}
-        {fgts && (
-          <section className="glass-card p-5 animate-fade-up" style={{ animationDelay: "0.25s" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Landmark size={16} className="text-primary" />
-                <h2 className="text-sm font-semibold text-foreground">FGTS</h2>
-              </div>
-              <span className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-primary/15 text-primary">
-                <Lock size={10} /> Resgate restrito 🔒
-              </span>
-            </div>
-            <p className="text-xl font-bold text-foreground tabular-nums">{fmt(Number(fgts.saldo))}</p>
-            <p className="text-[11px] text-muted-foreground mt-1 mb-3">Última atualização: {new Date(fgts.data_atualizacao + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</p>
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-secondary/40">
-              <Info size={14} className="text-muted-foreground shrink-0 mt-0.5" />
-              <p className="text-[11px] text-muted-foreground leading-relaxed">Disponível em demissão sem justa causa, aposentadoria ou situações especiais.</p>
-            </div>
-          </section>
-        )}
+  // Cenários PGBL
+  const cenarios = useMemo(() => {
+    return [
+      { label: `IPCA + ${(rentPGBLRealPct - 1).toFixed(0)}%`, rent: rentPGBLReal - 0.01 },
+      { label: `IPCA + ${rentPGBLRealPct.toFixed(0)}%`,       rent: rentPGBLReal },
+      { label: `IPCA + ${(rentPGBLRealPct + 1).toFixed(0)}%`, rent: rentPGBLReal + 0.01 },
+    ].map(c => {
+      const brutoCte    = projetar(saldoPGBL, aporteAnualPGBL, anosAteAposentadoria, c.rent, 0);
+      const brutoAument = projetar(saldoPGBL, aporteAnualPGBL, anosAteAposentadoria, c.rent, aumentoAportes);
+      const ir = irPGBL(anosAteAposentadoria);
+      return {
+        label: c.label,
+        brutoCte,
+        brutoAument,
+        liqCte:    brutoCte    * (1 - ir),
+        liqAument: brutoAument * (1 - ir),
+        ir,
+      };
+    });
+  }, [saldoPGBL, aporteAnualPGBL, anosAteAposentadoria, rentPGBLReal, aumentoAportes]);
+
+  // FGTS projeção
+  const fgtsProj = useMemo(() => ({
+    nominal: projetar(saldoFGTS, fgtsAnual, anosAteAposentadoria, FGTS_NOMINAL / 100, aumentoAportes),
+    real:    projetar(saldoFGTS, fgtsAnual, anosAteAposentadoria, fgtsReal, aumentoAportes),
+  }), [saldoFGTS, fgtsAnual, anosAteAposentadoria, fgtsReal, aumentoAportes]);
+
+  // Cenário central (moderado)
+  const central = cenarios[1];
+  const totalBruto  = central.brutoAument + fgtsProj.real;
+  const totalLiquido = central.liqAument  + fgtsProj.real; // FGTS isento na aposentadoria
+
+  const [abaAtiva, setAbaAtiva] = useState<"simulacao" | "inputs">("simulacao");
+
+  const NumInput = ({ label, value, onChange, prefix = "R$", step = 1000 }: any) => (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{prefix}</span>
+        <input type="number" value={value} step={step}
+          onChange={e => onChange(parseFloat(e.target.value) || 0)}
+          className="w-full bg-[#E8ECF5] border-0 rounded-xl pl-9 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+          inputMode="decimal" />
       </div>
-      <BottomNav />
     </div>
   );
-};
 
-export default Patrimonio;
+  const SliderRow = ({ label, value, onChange, min, max, step = 0.5, suffix = "%" }: any) => (
+    <div className="space-y-1">
+      <div className="flex justify-between items-center">
+        <span className="text-[12px] text-muted-foreground">{label}</span>
+        <span className="text-[12px] font-bold text-foreground">{value.toFixed(1)}{suffix}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+        className="w-full accent-primary" />
+    </div>
+  );
+
+  return (
+    <div className="gradient-bg min-h-screen pb-28">
+      <BottomNav />
+      <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold text-foreground">Projeção Patrimônio</h1>
+            <p className="text-[11px] text-muted-foreground">
+              Aposentadoria aos {idadeAposentadoria} anos · {anosAteAposentadoria.toFixed(1)} anos restantes
+            </p>
+          </div>
+          <TrendingUp size={22} className="text-primary" />
+        </div>
+
+        {/* Abas */}
+        <div className="flex gap-1 p-1 rounded-xl bg-[#E8ECF5]">
+          {(["simulacao", "inputs"] as const).map(a => (
+            <button key={a} onClick={() => setAbaAtiva(a)}
+              className={`flex-1 py-2 rounded-lg text-[11px] font-semibold transition-all ${abaAtiva === a ? "bg-white shadow-sm text-foreground" : "text-muted-foreground"}`}>
+              {a === "simulacao" ? "📊 Simulação" : "⚙️ Parâmetros"}
+            </button>
+          ))}
+        </div>
+
+        {abaAtiva === "inputs" && (
+          <div className="space-y-4">
+            {/* Saldos */}
+            <div className="glass-card p-4 space-y-3">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Saldos atuais</p>
+              <NumInput label="Saldo PGBL" value={saldoPGBL} onChange={setSaldoPGBL} step={10000} />
+              <NumInput label="Aporte mensal PGBL" value={aporteMensalPGBL} onChange={setAporteMensalPGBL} step={100} />
+              <NumInput label="Saldo FGTS" value={saldoFGTS} onChange={setSaldoFGTS} step={10000} />
+              <NumInput label="Salário bruto mensal" value={salarioBruto} onChange={setSalarioBruto} step={1000} />
+            </div>
+
+            {/* Parâmetros */}
+            <div className="glass-card p-4 space-y-4">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Parâmetros da simulação</p>
+
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-[12px] text-muted-foreground">Idade de aposentadoria</span>
+                  <span className="text-[12px] font-bold">{idadeAposentadoria} anos</span>
+                </div>
+                <input type="range" min={50} max={70} step={1} value={idadeAposentadoria}
+                  onChange={e => setIdadeAposentadoria(parseInt(e.target.value))}
+                  className="w-full accent-primary" />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>50</span><span>55</span><span>60</span><span>65</span><span>70</span>
+                </div>
+              </div>
+
+              <SliderRow label="Rentabilidade real PGBL (acima do IPCA)" value={rentPGBLRealPct}
+                onChange={setRentPGBLRealPct} min={1} max={8} step={0.5} />
+
+              <SliderRow label="Aumento anual dos aportes" value={aumentoAportesPct}
+                onChange={setAumentoAportesPct} min={0} max={10} step={0.5} />
+
+              <SliderRow label="IPCA assumido (meta longo prazo)" value={ipcaPct}
+                onChange={setIpcaPct} min={2} max={8} step={0.5} />
+
+              <div className="rounded-xl p-3" style={{ background: "rgba(99,102,241,0.06)" }}>
+                <p className="text-[11px] text-muted-foreground">
+                  FGTS: TR + 3% aa nominal (~{(FGTS_NOMINAL - ipcaPct).toFixed(1)}% real com IPCA de {ipcaPct}%). Isento de IR na aposentadoria.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {abaAtiva === "simulacao" && (
+          <div className="space-y-3">
+
+            {/* Aviso */}
+            <div className="glass-card p-3 flex gap-2 items-start">
+              <Info size={14} className="text-primary mt-0.5 shrink-0" />
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Valores em reais de hoje (já descontada inflação de {ipcaPct}% aa). PGBL: tabela regressiva {irPGBL(anosAteAposentadoria) * 100}% de IR na saída (acumulação &gt;10 anos). FGTS: isento de IR por aposentadoria.
+              </p>
+            </div>
+
+            {/* Destaque total */}
+            <div className="glass-card p-4">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                Cenário moderado · PGBL + FGTS · aportes +{aumentoAportesPct}%/ano
+              </p>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <p className="text-[11px] text-muted-foreground">Bruto total</p>
+                  <p className="text-xl font-bold text-foreground">{fmt(totalBruto)}</p>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[11px] text-muted-foreground">Líquido total</p>
+                  <p className="text-xl font-bold text-green-600">{fmt(totalLiquido)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* PGBL cenários */}
+            <div className="glass-card p-4 space-y-3">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                PGBL — 3 cenários de rentabilidade · IR saída {irPGBL(anosAteAposentadoria) * 100}%
+              </p>
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                {cenarios.map((c, i) => (
+                  <div key={i} className={`rounded-xl p-2.5 text-center ${i === 1 ? "bg-primary/10 ring-1 ring-primary/30" : "bg-[#E8ECF5]"}`}>
+                    <p className="text-[9px] font-semibold text-muted-foreground mb-1">{c.label}</p>
+                    <p className="text-[11px] font-bold text-foreground">{fmt(c.liqCte)}</p>
+                    <p className="text-[9px] text-muted-foreground mt-0.5">sem aumento</p>
+                    <div className="h-px bg-border/40 my-1.5" />
+                    <p className="text-[11px] font-bold text-green-600">{fmt(c.liqAument)}</p>
+                    <p className="text-[9px] text-muted-foreground">+{aumentoAportesPct}%/ano</p>
+                  </div>
+                ))}
+              </div>
+              <div className="text-[10px] text-muted-foreground space-y-0.5 pt-1 border-t border-[#E8ECF5]">
+                <div className="flex justify-between"><span>Saldo atual</span><span className="font-semibold">{fmt(saldoPGBL)}</span></div>
+                <div className="flex justify-between"><span>Aporte mensal atual</span><span className="font-semibold">{fmt(aporteMensalPGBL)}</span></div>
+                <div className="flex justify-between"><span>Aporte anual atual</span><span className="font-semibold">{fmt(aporteAnualPGBL)}</span></div>
+              </div>
+            </div>
+
+            {/* FGTS */}
+            <div className="glass-card p-4 space-y-2">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                FGTS — TR + 3% aa · Isento de IR
+              </p>
+              <div className="flex justify-between items-center py-1 border-b border-[#E8ECF5]">
+                <span className="text-[12px] text-muted-foreground">Saldo atual</span>
+                <span className="text-[12px] font-bold">{fmt(saldoFGTS)}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-[#E8ECF5]">
+                <span className="text-[12px] text-muted-foreground">Depósito anual atual (8% salário)</span>
+                <span className="text-[12px] font-bold">{fmt(fgtsAnual)}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-[#E8ECF5]">
+                <span className="text-[12px] text-muted-foreground">Projetado nominal</span>
+                <span className="text-[12px] font-bold">{fmt(fgtsProj.nominal)}</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-[12px] font-semibold text-foreground">Projetado em R$ de hoje</span>
+                <span className="text-[12px] font-bold text-blue-500">{fmt(fgtsProj.real)}</span>
+              </div>
+              <div className="rounded-xl p-2.5 mt-1" style={{ background: "rgba(239,68,68,0.06)" }}>
+                <p className="text-[10px]" style={{ color: "#EF4444" }}>
+                  ⚠️ FGTS rende {(FGTS_NOMINAL - ipcaPct).toFixed(1)}% real — abaixo da inflação. O saldo real pode encolher ao longo do tempo.
+                </p>
+              </div>
+            </div>
+
+            {/* Resgatar */}
+            <div className="glass-card p-4 space-y-2">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                Estratégia de resgate PGBL (cenário moderado)
+              </p>
+              {[
+                { label: "Resgate total de uma vez (bruto)", val: central.brutoAument },
+                { label: `IR 10% na saída`, val: -central.brutoAument * 0.10 },
+                { label: "Líquido após IR", val: central.liqAument, bold: true },
+                { label: "Renda mensal equivalente (20 anos)", val: central.liqAument / (20 * 12) },
+              ].map((row, i) => (
+                <div key={i} className="flex justify-between items-center py-1 border-b border-[#E8ECF5] last:border-0">
+                  <span className={`text-[12px] ${row.bold ? "font-semibold text-foreground" : "text-muted-foreground"}`}>{row.label}</span>
+                  <span className={`text-[12px] font-bold ${row.val < 0 ? "text-red-500" : row.bold ? "text-green-600" : "text-foreground"}`}>
+                    {fmt(Math.abs(row.val))}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

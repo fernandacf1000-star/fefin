@@ -32,15 +32,17 @@ export default function Patrimonio() {
   // Inputs
   const [saldoPGBL, setSaldoPGBL]         = useState(1324846.88);
   const [aporteMensalPGBL, setAporteMensalPGBL] = useState(6341.44);
+  const [aporteBonusAnual, setAporteBonusAnual] = useState(18954.35);
   const [saldoFGTS, setSaldoFGTS]         = useState(392261.93);
   const [salarioBruto, setSalarioBruto]   = useState(52845.28);
 
   // String states para formatação automática dos campos de valor
   const toFmt = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const [pgblStr, setPgblStr]     = useState(toFmt(1324846.88));
-  const [aporteStr, setAporteStr] = useState(toFmt(6341.44));
-  const [fgtsStr, setFgtsStr]     = useState(toFmt(392261.93));
-  const [salarioStr, setSalarioStr] = useState(toFmt(52845.28));
+  const [pgblStr, setPgblStr]         = useState(toFmt(1324846.88));
+  const [aporteStr, setAporteStr]     = useState(toFmt(6341.44));
+  const [bonusStr, setBonusStr]       = useState(toFmt(18954.35));
+  const [fgtsStr, setFgtsStr]         = useState(toFmt(392261.93));
+  const [salarioStr, setSalarioStr]   = useState(toFmt(52845.28));
 
   const [idadeAposentadoria, setIdadeAposentadoria] = useState(55);
   const [rentPGBLRealPct, setRentPGBLRealPct] = useState(4.0); // IPCA + X%
@@ -58,7 +60,7 @@ export default function Patrimonio() {
     Math.max(0, idadeAposentadoria - IDADE_ATUAL),
   [idadeAposentadoria]);
 
-  const aporteAnualPGBL = aporteMensalPGBL * 12;
+  const aporteAnualPGBL = aporteMensalPGBL * 12 + aporteBonusAnual;
   const fgtsAnual       = salarioBruto * 0.08 * 12;
 
   const rentPGBLReal = rentPGBLRealPct / 100;
@@ -147,6 +149,7 @@ export default function Patrimonio() {
               {([
                 { label: "Saldo PGBL", valStr: pgblStr, setStr: setPgblStr, setNum: setSaldoPGBL },
                 { label: "Aporte mensal PGBL", valStr: aporteStr, setStr: setAporteStr, setNum: setAporteMensalPGBL },
+                { label: "Aporte anual bônus no PGBL", valStr: bonusStr, setStr: setBonusStr, setNum: setAporteBonusAnual },
                 { label: "Saldo FGTS", valStr: fgtsStr, setStr: setFgtsStr, setNum: setSaldoFGTS },
                 { label: "Salário bruto mensal", valStr: salarioStr, setStr: setSalarioStr, setNum: setSalarioBruto },
               ] as const).map((row: any) => (

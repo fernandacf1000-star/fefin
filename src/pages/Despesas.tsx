@@ -306,7 +306,7 @@ export default function Despesas() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-foreground">Transa{"\u00E7\u00F5"}es</h1>
-            {!selectionMode && <p className="text-[11px] text-muted-foreground">{mesLabel}</p>}
+            {!selectionMode && <p className="text-xl font-bold text-muted-foreground">{mesLabel}</p>}
           </div>
           <div className="flex items-center gap-2">
             <button

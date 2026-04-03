@@ -317,29 +317,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Quinzenas */}
-        <div className="grid grid-cols-2 gap-3">
-          {quinzenas.map((q, i) => (
-            <div key={i} className="glass-card p-3 space-y-2">
-              <div>
-                <p className="text-[11px] font-semibold text-foreground">{q.label}</p>
-                <p className="text-[9px] text-muted-foreground">{q.sub}</p>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-1">
-                  <TrendingDown size={11} className="text-destructive shrink-0" />
-                  <span className="text-xs font-bold text-foreground">{fmt(q.despesas)}</span>
-                </div>
-                {q.receitas > 0 && (
-                  <div className="flex items-center gap-1">
-                    <TrendingUp size={11} style={{ color: "#0D9488" }} className="shrink-0" />
-                    <span className="text-[11px] text-muted-foreground">{fmt(q.receitas)}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
 
         {/* Faturas por cartão */}
         {porCartao.length > 0 && (

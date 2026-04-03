@@ -135,7 +135,7 @@ return (
     <div className="flex items-center justify-between">
       <div>
         <h1 className="text-lg font-bold text-foreground">Pais</h1>
-        <p className="text-[11px] text-muted-foreground">{mesLabel}</p>
+        <p className="text-xl font-bold text-muted-foreground">{mesLabel}</p>
       </div>
       <div className="flex items-center gap-1">
         <button

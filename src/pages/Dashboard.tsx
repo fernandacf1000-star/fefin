@@ -272,7 +272,7 @@ export default function Dashboard() {
             >
               <ChevronLeft size={15} />
             </button>
-            <span className="text-[11px] font-semibold text-foreground px-1 min-w-[96px] text-center">{mesLabel}</span>
+            <span className="text-xl font-bold text-foreground px-1 min-w-[96px] text-center">{mesLabel}</span>
             <button
               onClick={nextMes}
               className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"

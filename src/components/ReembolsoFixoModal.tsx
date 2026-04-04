@@ -80,7 +80,7 @@ const ReembolsoFixoModal = ({ open, onClose }: ReembolsoFixoModalProps) => {
             dia_recorrencia: diaNum,
             recorrencia_ate: recorrenciaAte ? format(recorrenciaAte, "yyyy-MM-dd") : null,
             recorrencia_pai_id: recorrenciaPaiId,
-          });
+            adriano: false,
         }
         await addMultiple.mutateAsync(lancamentos);
         toast.success(`Reembolso fixo criado! (${lancamentos.length} meses)`);

@@ -223,7 +223,7 @@ export default function Despesas() {
   }, [lancamentos, filterTipo]);
 
   const totalDespesas = useMemo(
-    () => lancamentos.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0),
+    () => lancamentos.filter((l) => l.tipo === "despesa" && !l.adriano).reduce((s, l) => s + Number(l.valor), 0),
     [lancamentos],
   );
   const totalReceitas = useMemo(

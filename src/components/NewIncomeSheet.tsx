@@ -87,7 +87,7 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
             dia_recorrencia: dia,
             recorrencia_ate: recorrenciaAte ? format(recorrenciaAte, "yyyy-MM-dd") : null,
             recorrencia_pai_id: recorrenciaPaiId,
-          });
+            adriano: false,
         }
         await addMultiple.mutateAsync(lancamentos);
       } else {

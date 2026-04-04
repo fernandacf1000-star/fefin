@@ -187,8 +187,9 @@ const Graficos = () => {
       if (!lanc) return;
       const isVicente = lanc.subcategoria_pais === "Vicente";
       const isLuisa = lanc.subcategoria_pais === "Luísa";
+      const isAdrianoFlag = lanc.adriano;
       const isPais = !!(lanc.subcategoria_pais && lanc.subcategoria_pais !== "") && !isVicente && !isLuisa;
-      const key = isVicente ? "Vicente" : isLuisa ? "Luísa" : isPais ? "Pais" : null;
+      const key = isAdrianoFlag ? "Adriano" : isVicente ? "Vicente" : isLuisa ? "Luísa" : isPais ? "Pais" : null;
       if (key && map[key] !== undefined) {
         map[key] = Math.max(0, map[key] - Number(r.valor_reembolsado));
       }

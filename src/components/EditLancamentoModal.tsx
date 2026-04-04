@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
+import { supabase } from "@/integrations/supabase/client";
 
 import type { Lancamento } from "@/hooks/useLancamentos";
 import {
@@ -16,6 +17,7 @@ import {
   useUpdateFutureRecorrencia,
   useUpdateAllRecorrencia,
 } from "@/hooks/useLancamentos";
+import { useAuth } from "@/hooks/useAuth";
 import type { Cartao } from "@/hooks/useCartoes";
 import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from "@/lib/subcategorias";
 

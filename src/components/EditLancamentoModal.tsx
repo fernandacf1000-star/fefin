@@ -130,7 +130,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   };
 
   const handleSave = async () => {
-    if (!lancamento) return;
+    if (!lancamento || !user) return;
     const numValor = getNumValor();
     if (numValor <= 0) return;
     setSaving(true);
@@ -146,9 +146,19 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
         ? getMesReferenciaFatura(data, cartaoObj)
         : novoMesRef;
 
+      const wasAdriano = lancamento.adriano || false;
+      const nowAdriano = !isReceitaEdit && isAdriano;
+      const adrianoToggleOn = !wasAdriano && nowAdriano;
+      const adrianoToggleOff = wasAdriano && !nowAdriano;
+
+      // Adjust valor for adriano toggle
+      let valorPrincipal = numValor;
+      if (adrianoToggleOn) valorPrincipal = numValor / 2;
+      if (adrianoToggleOff) valorPrincipal = numValor * 2;
+
       const baseUpdates: Record<string, any> = {
         descricao,
-        valor: numValor,
+        valor: valorPrincipal,
         subcategoria: subcategoria || null,
         categoria_macro: macro,
         forma_pagamento: isReceitaEdit ? null : forma,
@@ -156,7 +166,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
         subcategoria_pais: isReceitaEdit ? null : getSubPais(),
         data: novaData,
         mes_referencia: mesRefFatura,
-        adriano: isReceitaEdit ? false : isAdriano,
+        adriano: false, // main entry is always adriano=false
       };
       if (isReceitaEdit) {
         baseUpdates.categoria = receitaCatMapEdit[receitaCat];
@@ -165,6 +175,45 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       const wasParcelado = lancamento.is_parcelado;
       const wasRecorrente = lancamento.recorrente;
       const wasSimples = !wasParcelado && !wasRecorrente;
+
+      // Helper to create adriano mirror row
+      const makeAdrianRow = (overrides: Record<string, any> = {}) => ({
+        descricao,
+        valor: adrianoToggleOn ? numValor / 2 : valorPrincipal,
+        tipo: "despesa" as const,
+        categoria: "extra",
+        subcategoria: null,
+        categoria_macro: null,
+        subcategoria_pais: "Adriano",
+        forma_pagamento: forma,
+        cartao_id: cartao,
+        data: novaData,
+        mes_referencia: mesRefFatura,
+        adriano: true,
+        pago: false,
+        is_parcelado: false,
+        parcelamento_id: null,
+        parcela_atual: null,
+        parcela_total: null,
+        recorrente: false,
+        dia_recorrencia: null,
+        recorrencia_ate: null,
+        recorrencia_pai_id: null,
+        ...overrides,
+      });
+
+      // Helper to delete adriano mirrors for a set of lancamentos
+      const deleteAdrianoMirrors = async (matchDescricao: string, matchDates: string[]) => {
+        if (matchDates.length === 0) return;
+        const { error } = await supabase
+          .from("lancamentos")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("adriano", true)
+          .eq("descricao", matchDescricao)
+          .in("data", matchDates);
+        if (error) throw error;
+      };
 
       if (wasSimples && isParcelado && !recorrente) {
         const nParcelas = parseInt(parcelas, 10) || 2;
@@ -182,12 +231,14 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
         const rows: any[] = [];
         for (let i = 1; i < nParcelas; i++) {
           const d = addMonths(data, i);
+          const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`;
+          const mRef = getMesReferenciaFatura(d, cartaoObj);
           rows.push({
             ...baseUpdates,
             tipo: "despesa",
             categoria: lancamento.categoria || "extra",
-            data: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`,
-            mes_referencia: getMesReferenciaFatura(d, cartaoObj),
+            data: dStr,
+            mes_referencia: mRef,
             parcela_atual: i + 1,
             parcela_total: nParcelas,
             is_parcelado: true,
@@ -200,6 +251,17 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
           });
         }
         if (rows.length > 0) await addMultiple.mutateAsync(rows);
+        // Adriano mirrors for new parcelamento
+        if (adrianoToggleOn) {
+          const adrianoRows: any[] = [];
+          adrianoRows.push(makeAdrianRow({ data: format(data, "yyyy-MM-dd"), mes_referencia: mesRefFatura }));
+          for (let i = 1; i < nParcelas; i++) {
+            const d = addMonths(data, i);
+            const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`;
+            adrianoRows.push(makeAdrianRow({ data: dStr, mes_referencia: getMesReferenciaFatura(d, cartaoObj) }));
+          }
+          await addMultiple.mutateAsync(adrianoRows);
+        }
       } else if (wasSimples && recorrente && !isParcelado) {
         const dia = parseInt(diaRecorrencia, 10) || 1;
         const paiId = crypto.randomUUID?.() ?? `${Date.now()}`;
@@ -221,11 +283,12 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
           const m = addMonths(data, i);
           const daysInMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
           const dataRecorrente = new Date(m.getFullYear(), m.getMonth(), Math.min(dia, daysInMonth));
+          const dStr = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}-${String(Math.min(dia, daysInMonth)).padStart(2, "0")}`;
           rows.push({
             ...baseUpdates,
             tipo: "despesa",
             categoria: lancamento.categoria || "extra",
-            data: `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}-${String(Math.min(dia, daysInMonth)).padStart(2, "0")}`,
+            data: dStr,
             mes_referencia: getMesReferenciaFatura(dataRecorrente, cartaoObj),
             parcela_atual: null,
             parcela_total: null,
@@ -239,32 +302,138 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
           });
         }
         await addMultiple.mutateAsync(rows);
+        // Adriano mirrors for new recorrencia
+        if (adrianoToggleOn) {
+          const adrianoRows: any[] = [];
+          adrianoRows.push(makeAdrianRow({ data: format(data, "yyyy-MM-dd"), mes_referencia: mesRefFatura }));
+          for (let i = 1; i < 24; i++) {
+            const m = addMonths(data, i);
+            const daysInMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+            const dataRecorrente = new Date(m.getFullYear(), m.getMonth(), Math.min(dia, daysInMonth));
+            const dStr = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}-${String(Math.min(dia, daysInMonth)).padStart(2, "0")}`;
+            adrianoRows.push(makeAdrianRow({ data: dStr, mes_referencia: getMesReferenciaFatura(dataRecorrente, cartaoObj) }));
+          }
+          await addMultiple.mutateAsync(adrianoRows);
+        }
       } else if (wasParcelado) {
-        if (editScope === "este")
+        if (editScope === "este") {
           await updateLancamento.mutateAsync({ id: lancamento.id, ...baseUpdates, data: format(data, "yyyy-MM-dd") });
-        else if (editScope === "futuras")
+          if (adrianoToggleOn) {
+            await addMultiple.mutateAsync([makeAdrianRow({ data: format(data, "yyyy-MM-dd"), mes_referencia: mesRefFatura })]);
+          } else if (adrianoToggleOff) {
+            await deleteAdrianoMirrors(lancamento.descricao, [lancamento.data]);
+          }
+        } else if (editScope === "futuras") {
+          // Get affected parcelas before updating
+          if (adrianoToggleOff) {
+            const { data: affected } = await supabase
+              .from("lancamentos")
+              .select("data, descricao")
+              .eq("parcelamento_id", lancamento.parcelamento_id!)
+              .gte("data", lancamento.data);
+            if (affected?.length) await deleteAdrianoMirrors(lancamento.descricao, affected.map(a => a.data));
+          }
           await updateFuturas.mutateAsync({
             parcelamento_id: lancamento.parcelamento_id!,
             fromDate: lancamento.data,
             updates: baseUpdates,
           });
-        else await updateAll.mutateAsync({ parcelamento_id: lancamento.parcelamento_id!, updates: baseUpdates });
+          if (adrianoToggleOn) {
+            const { data: affected } = await supabase
+              .from("lancamentos")
+              .select("data, mes_referencia")
+              .eq("parcelamento_id", lancamento.parcelamento_id!)
+              .gte("data", lancamento.data);
+            if (affected?.length) {
+              const adrianoRows = affected.map(a => makeAdrianRow({ data: a.data, mes_referencia: a.mes_referencia }));
+              await addMultiple.mutateAsync(adrianoRows);
+            }
+          }
+        } else {
+          // todos
+          if (adrianoToggleOff) {
+            const { data: affected } = await supabase
+              .from("lancamentos")
+              .select("data, descricao")
+              .eq("parcelamento_id", lancamento.parcelamento_id!);
+            if (affected?.length) await deleteAdrianoMirrors(lancamento.descricao, affected.map(a => a.data));
+          }
+          await updateAll.mutateAsync({ parcelamento_id: lancamento.parcelamento_id!, updates: baseUpdates });
+          if (adrianoToggleOn) {
+            const { data: affected } = await supabase
+              .from("lancamentos")
+              .select("data, mes_referencia")
+              .eq("parcelamento_id", lancamento.parcelamento_id!);
+            if (affected?.length) {
+              const adrianoRows = affected.map(a => makeAdrianRow({ data: a.data, mes_referencia: a.mes_referencia }));
+              await addMultiple.mutateAsync(adrianoRows);
+            }
+          }
+        }
       } else if (wasRecorrente) {
-        if (editScope === "este")
+        if (editScope === "este") {
           await updateLancamento.mutateAsync({ id: lancamento.id, ...baseUpdates, data: format(data, "yyyy-MM-dd") });
-        else if (editScope === "futuras")
+          if (adrianoToggleOn) {
+            await addMultiple.mutateAsync([makeAdrianRow({ data: format(data, "yyyy-MM-dd"), mes_referencia: mesRefFatura })]);
+          } else if (adrianoToggleOff) {
+            await deleteAdrianoMirrors(lancamento.descricao, [lancamento.data]);
+          }
+        } else if (editScope === "futuras") {
+          if (adrianoToggleOff) {
+            const { data: affected } = await supabase
+              .from("lancamentos")
+              .select("data, descricao")
+              .eq("recorrencia_pai_id", lancamento.recorrencia_pai_id!)
+              .gte("data", lancamento.data);
+            if (affected?.length) await deleteAdrianoMirrors(lancamento.descricao, affected.map(a => a.data));
+          }
           await updateFuturasRecorrencia.mutateAsync({
             recorrencia_pai_id: lancamento.recorrencia_pai_id!,
             fromDate: lancamento.data,
             updates: baseUpdates,
           });
-        else
+          if (adrianoToggleOn) {
+            const { data: affected } = await supabase
+              .from("lancamentos")
+              .select("data, mes_referencia")
+              .eq("recorrencia_pai_id", lancamento.recorrencia_pai_id!)
+              .gte("data", lancamento.data);
+            if (affected?.length) {
+              const adrianoRows = affected.map(a => makeAdrianRow({ data: a.data, mes_referencia: a.mes_referencia }));
+              await addMultiple.mutateAsync(adrianoRows);
+            }
+          }
+        } else {
+          if (adrianoToggleOff) {
+            const { data: affected } = await supabase
+              .from("lancamentos")
+              .select("data, descricao")
+              .eq("recorrencia_pai_id", lancamento.recorrencia_pai_id!);
+            if (affected?.length) await deleteAdrianoMirrors(lancamento.descricao, affected.map(a => a.data));
+          }
           await updateAllRecorrencia.mutateAsync({
             recorrencia_pai_id: lancamento.recorrencia_pai_id!,
             updates: baseUpdates,
           });
+          if (adrianoToggleOn) {
+            const { data: affected } = await supabase
+              .from("lancamentos")
+              .select("data, mes_referencia")
+              .eq("recorrencia_pai_id", lancamento.recorrencia_pai_id!);
+            if (affected?.length) {
+              const adrianoRows = affected.map(a => makeAdrianRow({ data: a.data, mes_referencia: a.mes_referencia }));
+              await addMultiple.mutateAsync(adrianoRows);
+            }
+          }
+        }
       } else {
+        // Simple lancamento, stays simple
         await onSave(baseUpdates);
+        if (adrianoToggleOn) {
+          await addMultiple.mutateAsync([makeAdrianRow({ data: novaData, mes_referencia: mesRefFatura })]);
+        } else if (adrianoToggleOff) {
+          await deleteAdrianoMirrors(lancamento.descricao, [lancamento.data]);
+        }
       }
       onClose();
     } finally {

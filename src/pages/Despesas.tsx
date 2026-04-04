@@ -122,19 +122,24 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
               RESGATE
             </span>
           )}
-          {isPais && (
+          {isPais && !isVicente && !isLuisa && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-700 font-semibold shrink-0">
               PAIS
             </span>
           )}
           {isVicente && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-200 text-blue-700 font-semibold shrink-0">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-200 text-green-700 font-semibold shrink-0">
               VICENTE
             </span>
           )}
           {isLuisa && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-pink-200 text-pink-700 font-semibold shrink-0">
               LU{"\u00CD"}SA
+            </span>
+          )}
+          {isAdrianoFlag && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-200 text-blue-700 font-semibold shrink-0">
+              ADRIANO
             </span>
           )}
         </div>

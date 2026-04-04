@@ -120,7 +120,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     setValor((parseInt(digits, 10) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   };
 
-  const getNumValor = () => parseFloat(valor.replace(/./g, "").replace(",", ".")) || 0;
+  const getNumValor = () => parseFloat(valor.replace(/\./g, "").replace(",", ".")) || 0;
 
   const getSubPais = () => {
     if (!isPais) return null;

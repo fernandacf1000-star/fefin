@@ -212,11 +212,13 @@ export default function Despesas() {
 
   // ── filter ────────────────────────────────────────────────────────────────
   const lista = useMemo(() => {
-    let filtered: typeof lancamentos;
-    if (filterTipo === "todos") filtered = [...lancamentos];
-    else if (filterTipo === "resgate") filtered = lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento");
-    else if (filterTipo === "receita") filtered = lancamentos.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento");
-    else filtered = lancamentos.filter((l) => l.tipo === filterTipo);
+    // Excluir lançamentos do Adriano (aparecem apenas na aba Pais > Adriano)
+    const semAdriano = lancamentos.filter((l) => !l.adriano);
+    let filtered: typeof semAdriano;
+    if (filterTipo === "todos") filtered = [...semAdriano];
+    else if (filterTipo === "resgate") filtered = semAdriano.filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento");
+    else if (filterTipo === "receita") filtered = semAdriano.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento");
+    else filtered = semAdriano.filter((l) => l.tipo === filterTipo);
     return filtered.sort((a, b) => Number(a.valor) - Number(b.valor));
   }, [lancamentos, filterTipo]);
 

@@ -66,7 +66,8 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
   const isRecorrente = l.recorrente;
   const isPais = !!(l.subcategoria_pais && l.subcategoria_pais !== "");
   const isVicente = l.subcategoria_pais === "Vicente";
-  const isLuisa = l.subcategoria_pais === "Lu\u00EDsa";
+  const isLuisa = l.subcategoria_pais === "Luísa";
+  const isAdrianoFlag = l.adriano;
 
   return (
     <div
@@ -95,20 +96,22 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
       <div
         className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 text-xl"
         style={{
-          background: isVicente
+          background: isAdrianoFlag
             ? "#DBEAFE"
-            : isLuisa
-              ? "#FCE7F3"
-              : isPais
-              ? "#FDE68A"
-              : isResgate
-                ? "rgba(120,113,108,0.12)"
-                : isReceita
-                  ? "rgba(13,148,136,0.15)"
-                  : "rgba(99,102,241,0.12)",
+            : isVicente
+              ? "#DCFCE7"
+              : isLuisa
+                ? "#FCE7F3"
+                : isPais
+                ? "#FDE68A"
+                : isResgate
+                  ? "rgba(120,113,108,0.12)"
+                  : isReceita
+                    ? "rgba(13,148,136,0.15)"
+                    : "rgba(99,102,241,0.12)",
         }}
       >
-        {isVicente ? "\u{1F466}" : isLuisa ? "\u{1F467}" : isPais ? "\u{1F9D3}" : emoji}
+        {isAdrianoFlag ? "\u{1F468}" : isVicente ? "\u{1F466}" : isLuisa ? "\u{1F469}\u200D\u{1F9B3}" : isPais ? "\u{1F9D3}" : emoji}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -119,19 +122,24 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
               RESGATE
             </span>
           )}
-          {isPais && (
+          {isPais && !isVicente && !isLuisa && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-700 font-semibold shrink-0">
               PAIS
             </span>
           )}
           {isVicente && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-200 text-blue-700 font-semibold shrink-0">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-200 text-green-700 font-semibold shrink-0">
               VICENTE
             </span>
           )}
           {isLuisa && (
             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-pink-200 text-pink-700 font-semibold shrink-0">
               LU{"\u00CD"}SA
+            </span>
+          )}
+          {isAdrianoFlag && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-200 text-blue-700 font-semibold shrink-0">
+              ADRIANO
             </span>
           )}
         </div>
@@ -204,16 +212,18 @@ export default function Despesas() {
 
   // ── filter ────────────────────────────────────────────────────────────────
   const lista = useMemo(() => {
-    let filtered: typeof lancamentos;
-    if (filterTipo === "todos") filtered = [...lancamentos];
-    else if (filterTipo === "resgate") filtered = lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento");
-    else if (filterTipo === "receita") filtered = lancamentos.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento");
-    else filtered = lancamentos.filter((l) => l.tipo === filterTipo);
+    // Excluir lançamentos do Adriano (aparecem apenas na aba Pais > Adriano)
+    const semAdriano = lancamentos.filter((l) => !l.adriano);
+    let filtered: typeof semAdriano;
+    if (filterTipo === "todos") filtered = [...semAdriano];
+    else if (filterTipo === "resgate") filtered = semAdriano.filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento");
+    else if (filterTipo === "receita") filtered = semAdriano.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento");
+    else filtered = semAdriano.filter((l) => l.tipo === filterTipo);
     return filtered.sort((a, b) => Number(a.valor) - Number(b.valor));
   }, [lancamentos, filterTipo]);
 
   const totalDespesas = useMemo(
-    () => lancamentos.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0),
+    () => lancamentos.filter((l) => l.tipo === "despesa" && !l.adriano).reduce((s, l) => s + Number(l.valor), 0),
     [lancamentos],
   );
   const totalReceitas = useMemo(

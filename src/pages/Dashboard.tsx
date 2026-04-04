@@ -128,7 +128,7 @@ export default function Dashboard() {
     setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
 
   // ── Totals ────────────────────────────────────────────────────────────────
-  const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa"), [lancamentos]);
+  const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa" && !l.adriano), [lancamentos]);
   const receitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
 
   const totalReembolsadoMesTabela = useMemo(() => {

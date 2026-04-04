@@ -196,6 +196,7 @@ export type Database = {
       }
       lancamentos: {
         Row: {
+          adriano: boolean
           cartao_id: string | null
           categoria: string
           categoria_macro: string | null
@@ -222,6 +223,7 @@ export type Database = {
           valor: number
         }
         Insert: {
+          adriano?: boolean
           cartao_id?: string | null
           categoria?: string
           categoria_macro?: string | null
@@ -248,6 +250,7 @@ export type Database = {
           valor?: number
         }
         Update: {
+          adriano?: boolean
           cartao_id?: string | null
           categoria?: string
           categoria_macro?: string | null

@@ -157,14 +157,16 @@ const Graficos = () => {
     Investimentos: "📈",
     Pais: "🧓",
     Vicente: "👦",
-    Luísa: "👧",
+    Luísa: "👩‍🦳",
+    Adriano: "👨",
     "Sem categoria": "🔴",
   };
   const colorMapGraf: Record<string, string> = {
     ...CAT_COLORS,
     Pais: "#F59E0B",
-    Vicente: "#3B82F6",
+    Vicente: "#22C55E",
     Luísa: "#EC4899",
+    Adriano: "#3B82F6",
     "Sem categoria": "#94A3B8",
   };
 
@@ -174,8 +176,9 @@ const Graficos = () => {
     despesas.forEach((d) => {
       const isVicente = d.subcategoria_pais === "Vicente";
       const isLuisa = d.subcategoria_pais === "Luísa";
+      const isAdrianoFlag = d.adriano;
       const isPais = !!(d.subcategoria_pais && d.subcategoria_pais !== "") && !isVicente && !isLuisa;
-      const key = isVicente ? "Vicente" : isLuisa ? "Luísa" : isPais ? "Pais" : normalizeMacro(d.categoria_macro, d.subcategoria);
+      const key = isAdrianoFlag ? "Adriano" : isVicente ? "Vicente" : isLuisa ? "Luísa" : isPais ? "Pais" : normalizeMacro(d.categoria_macro, d.subcategoria);
       map[key] = (map[key] || 0) + Number(d.valor);
     });
     // Deduzir reembolsos (tabela) de Pais e Vicente
@@ -184,8 +187,9 @@ const Graficos = () => {
       if (!lanc) return;
       const isVicente = lanc.subcategoria_pais === "Vicente";
       const isLuisa = lanc.subcategoria_pais === "Luísa";
+      const isAdrianoFlag = lanc.adriano;
       const isPais = !!(lanc.subcategoria_pais && lanc.subcategoria_pais !== "") && !isVicente && !isLuisa;
-      const key = isVicente ? "Vicente" : isLuisa ? "Luísa" : isPais ? "Pais" : null;
+      const key = isAdrianoFlag ? "Adriano" : isVicente ? "Vicente" : isLuisa ? "Luísa" : isPais ? "Pais" : null;
       if (key && map[key] !== undefined) {
         map[key] = Math.max(0, map[key] - Number(r.valor_reembolsado));
       }

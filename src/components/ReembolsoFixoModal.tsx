@@ -80,6 +80,7 @@ const ReembolsoFixoModal = ({ open, onClose }: ReembolsoFixoModalProps) => {
             dia_recorrencia: diaNum,
             recorrencia_ate: recorrenciaAte ? format(recorrenciaAte, "yyyy-MM-dd") : null,
             recorrencia_pai_id: recorrenciaPaiId,
+            adriano: false,
           });
         }
         await addMultiple.mutateAsync(lancamentos);
@@ -110,6 +111,7 @@ const ReembolsoFixoModal = ({ open, onClose }: ReembolsoFixoModalProps) => {
           dia_recorrencia: null,
           recorrencia_ate: null,
           recorrencia_pai_id: null,
+          adriano: false,
         });
         toast.success("Reembolso salvo!");
       }

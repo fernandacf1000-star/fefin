@@ -125,7 +125,6 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   const getSubPais = () => {
     if (!isPais) return null;
     if (isVicente) return "Vicente";
-    if (isLuisa) return "Luísa";
     return subcategoria || detectCategoriaMacro(subcategoria || "") || "Geral";
   };
 

@@ -61,6 +61,12 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
 
   const isPending = addLancamento.isPending || addMultiple.isPending;
 
+  // Block split for dependents: only "voce" or "adriano" can split
+  const canSplit = !isPais;
+  React.useEffect(() => {
+    if (isPais) setIsAdriano(false);
+  }, [isPais]);
+
   const reset = () => {
     setTipo(initialTipo); setDescricao(""); setValor(""); setData(new Date());
     setSubcategoria(null); setSelectedGroup(null); setIsPais(false); setIsVicente(false); setIsLuisa(false);

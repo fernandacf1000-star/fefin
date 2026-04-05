@@ -431,7 +431,7 @@ export default function Pais() {
                 {renderLancamentos(
                   lancamentosComReembolsoAdriano,
                   "rgba(59,130,246,0.2)",
-                  () => "👨",
+                  (l) => l.subcategoria_pais === "Luísa" ? "👩‍🦳" : "👨",
                 )}
               </div>
             )}

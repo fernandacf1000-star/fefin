@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { X, CalendarIcon, Users } from 'lucide-react';
-import { format, addMonths, differenceInMonths } from 'date-fns';
+import { format, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';

@@ -442,7 +442,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
                 </div>
               </button>
 
-              {/* Toggle Vicente */}
+              {/* Toggle Vicente (sub-option under Pais) */}
               {isPais && (
                 <button
                   onClick={() => { setIsVicente(v => { if (!v) setIsLuisa(false); return !v; }); }}
@@ -461,10 +461,31 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
                 </button>
               )}
 
-              {/* Toggle Adriano (independente dos pais) */}
+              {/* Toggle Luísa (sub-option under Pais) */}
+              {isPais && (
+                <button
+                  onClick={() => { setIsLuisa(v => { if (!v) setIsVicente(false); return !v; }); }}
+                  className={cn("w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
+                    isLuisa ? "border-pink-400 bg-pink-50" : "border-[#E8ECF5] bg-[#E8ECF5]")}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">👩‍🦳</span>
+                    <span className={cn("text-sm font-medium", isLuisa ? "text-pink-700" : "text-muted-foreground")}>
+                      Despesa da Luísa
+                    </span>
+                  </div>
+                  <div className={cn("w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
+                    isLuisa ? "bg-pink-400 justify-end" : "bg-muted justify-start")}>
+                    <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                  </div>
+                </button>
+              )}
+
+              {/* Toggle Dividir com Adriano (independent, only when NOT Pais) */}
               <button
-                onClick={() => { setIsAdriano(v => { if (v) setIsLuisa(false); return !v; }); }}
+                onClick={() => { if (canSplit) setIsAdriano(v => !v); }}
+                disabled={!canSplit}
                 className={cn("w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
+                  !canSplit ? "opacity-40 cursor-not-allowed border-[#E8ECF5] bg-[#E8ECF5]" :
                   isAdriano ? "border-blue-400 bg-blue-50" : "border-[#E8ECF5] bg-[#E8ECF5]")}>
                 <div className="flex items-center gap-2">
                   <span className="text-base">👨</span>
@@ -478,27 +499,14 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
                 </div>
               </button>
               {isAdriano && (
-                <>
-                  <p className="text-[10px] text-blue-600 px-4 -mt-2">
-                    O valor será dividido por 2. Metade fica na sua despesa, metade vai para a aba Pais &gt; Adriano.
-                  </p>
-                  {/* Toggle Luísa (dentro de Adriano) */}
-                  <button
-                    onClick={() => setIsLuisa(v => !v)}
-                    className={cn("w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
-                      isLuisa ? "border-pink-400 bg-pink-50" : "border-[#E8ECF5] bg-[#E8ECF5]")}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-base">👩‍🦳</span>
-                      <span className={cn("text-sm font-medium", isLuisa ? "text-pink-700" : "text-muted-foreground")}>
-                        Despesa da Luísa
-                      </span>
-                    </div>
-                    <div className={cn("w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
-                      isLuisa ? "bg-pink-400 justify-end" : "bg-muted justify-start")}>
-                      <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
-                    </div>
-                  </button>
-                </>
+                <p className="text-[10px] text-blue-600 px-4 -mt-2">
+                  O valor será dividido por 2. Metade fica na sua despesa, metade vai para a aba Pais &gt; Adriano.
+                </p>
+              )}
+              {!canSplit && (
+                <p className="text-[10px] text-amber-600 px-4 -mt-2">
+                  Despesas de Pais/Vicente/Luísa não podem ser divididas.
+                </p>
               )}
             </>
           )}

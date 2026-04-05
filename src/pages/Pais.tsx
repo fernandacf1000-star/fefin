@@ -147,7 +147,7 @@ export default function Pais() {
     return Object.entries(map)
       .map(([cat, valor]) => {
         const group = getSubcategoriaGroup(cat) || cat;
-        return { cat, valor, emoji: cat === "Vicente" ? "👦" : cat === "Luísa" ? "👩‍🦳" : getGroupEmoji(group) };
+        return { cat, valor, emoji: cat === "Vicente" ? "👦" : getGroupEmoji(group) };
       })
       .sort((a, b) => b.valor - a.valor);
   }, [despesasPais]);

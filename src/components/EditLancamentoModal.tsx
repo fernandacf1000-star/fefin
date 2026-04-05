@@ -117,6 +117,12 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     setReceitaCat(receitaCatReverseMap[lancamento.categoria] || 'Salario');
   }, [lancamento]);
 
+  // Block split for dependents
+  const canSplit = !isPais;
+  useEffect(() => {
+    if (isPais) setIsAdriano(false);
+  }, [isPais]);
+
   const handleValorChange = (raw: string) => {
     const digits = raw.replace(/\D/g, '');
     if (!digits) { setValor(''); return; }

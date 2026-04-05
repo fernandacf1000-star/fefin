@@ -184,7 +184,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
         categoria: lancamento.categoria,
         subcategoria: subcategoria || null,
         categoria_macro: macro,
-        subcategoria_pais: "Adriano",
+        subcategoria_pais: isLuisa ? "Luísa" : "Adriano",
         forma_pagamento: forma,
         cartao_id: cartao,
         data: novaData,

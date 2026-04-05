@@ -9,18 +9,33 @@ interface Props {
 const SwipeableItem = ({ children, onEdit, onDelete }: Props) => {
   const [offsetX, setOffsetX] = useState(0);
   const startX = useRef(0);
+  const startY = useRef(0);
   const dragging = useRef(false);
+  const directionLocked = useRef<"horizontal" | "vertical" | null>(null);
 
   const onTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
     dragging.current = true;
+    directionLocked.current = null;
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
     if (!dragging.current) return;
-    const diff = e.touches[0].clientX - startX.current;
-    if (diff < 0) {
-      setOffsetX(Math.max(diff, -140));
+    const diffX = e.touches[0].clientX - startX.current;
+    const diffY = e.touches[0].clientY - startY.current;
+
+    if (!directionLocked.current) {
+      if (Math.abs(diffX) > 5 || Math.abs(diffY) > 5) {
+        directionLocked.current = Math.abs(diffX) > Math.abs(diffY) ? "horizontal" : "vertical";
+      }
+      return;
+    }
+
+    if (directionLocked.current === "vertical") return;
+
+    if (diffX < 0) {
+      setOffsetX(Math.max(diffX, -140));
     } else {
       setOffsetX(0);
     }
@@ -28,6 +43,7 @@ const SwipeableItem = ({ children, onEdit, onDelete }: Props) => {
 
   const onTouchEnd = () => {
     dragging.current = false;
+    directionLocked.current = null;
     if (offsetX < -70) {
       setOffsetX(-140);
     } else {

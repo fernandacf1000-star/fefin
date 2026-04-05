@@ -180,7 +180,7 @@ export default function Pais() {
     return Object.entries(map)
       .map(([cat, valor]) => {
         const group = getSubcategoriaGroup(cat) || cat;
-        return { cat, valor, emoji: getGroupEmoji(group) };
+        return { cat, valor, emoji: cat === "Luísa" ? "👩‍🦳" : getGroupEmoji(group) };
       })
       .sort((a, b) => b.valor - a.valor);
   }, [lancamentosAdriano]);

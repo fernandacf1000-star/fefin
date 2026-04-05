@@ -22,17 +22,21 @@ const SwipeableItem = ({ children, onEdit, onDelete }: Props) => {
 
   const onTouchMove = (e: React.TouchEvent) => {
     if (!dragging.current) return;
+
     const diffX = e.touches[0].clientX - startX.current;
     const diffY = e.touches[0].clientY - startY.current;
 
     if (!directionLocked.current) {
-      if (Math.abs(diffX) > 5 || Math.abs(diffY) > 5) {
+      if (Math.abs(diffX) > 8 || Math.abs(diffY) > 8) {
         directionLocked.current = Math.abs(diffX) > Math.abs(diffY) ? "horizontal" : "vertical";
       }
       return;
     }
 
-    if (directionLocked.current === "vertical") return;
+    if (directionLocked.current === "vertical") {
+      dragging.current = false;
+      return;
+    }
 
     if (diffX < 0) {
       setOffsetX(Math.max(diffX, -140));
@@ -44,6 +48,7 @@ const SwipeableItem = ({ children, onEdit, onDelete }: Props) => {
   const onTouchEnd = () => {
     dragging.current = false;
     directionLocked.current = null;
+
     if (offsetX < -70) {
       setOffsetX(-140);
     } else {
@@ -53,7 +58,6 @@ const SwipeableItem = ({ children, onEdit, onDelete }: Props) => {
 
   return (
     <div className="relative overflow-hidden rounded-xl">
-      {/* Action buttons behind */}
       <div className="absolute right-0 top-0 bottom-0 flex items-stretch z-0">
         <button
           onClick={onEdit}
@@ -70,7 +74,6 @@ const SwipeableItem = ({ children, onEdit, onDelete }: Props) => {
         </button>
       </div>
 
-      {/* Content */}
       <div
         className="relative z-10 bg-white transition-transform"
         style={{ transform: `translateX(${offsetX}px)`, transitionDuration: dragging.current ? "0ms" : "200ms" }}

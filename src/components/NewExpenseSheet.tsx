@@ -552,13 +552,13 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
             onClick={handleSave}
             disabled={isPending}
             className={cn("w-full h-12 font-semibold text-sm rounded-2xl text-white transition-all disabled:opacity-50",
-             isAdriano && isLuisa ? "bg-pink-500" :
+              isLuisa ? "bg-pink-500" :
               isAdriano ? "bg-blue-500" :
               isVicente ? "bg-green-500" :
               isPais ? "bg-amber-500" :
               "gradient-emerald")}>
             {isPending ? "Salvando..." :
-             isAdriano && isLuisa ? "👩‍🦳 Salvar dividido (Luísa)" :
+              isLuisa ? "👩‍🦳 Salvar despesa da Luísa" :
               isAdriano ? "👨 Salvar dividido com Adriano" :
               isVicente ? "👦 Salvar despesa do Vicente" :
               isPais ? "🧓 Salvar despesa dos pais" :

@@ -27,6 +27,7 @@ export interface Lancamento {
   dia_recorrencia: number | null;
   recorrencia_ate: string | null;
   recorrencia_pai_id: string | null;
+  lancamento_origem_id?: string | null;
   adriano: boolean;
   created_at: string;
 }

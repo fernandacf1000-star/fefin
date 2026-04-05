@@ -102,7 +102,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     const subP = lancamento.subcategoria_pais;
     setIsVicente(subP === "Vicente");
     setIsLuisa(subP === "Luísa");
-    setIsPais(!!(subP && subP !== "") ? true : false);
+    setIsPais(!!(subP && subP !== "" && subP !== "Luísa" && subP !== "Adriano") || lancamento.adriano ? true : false);
     setIsAdriano(lancamento.adriano || false);
     if (lancamento.cartao_id) {
       setFormaPagamento("credito");

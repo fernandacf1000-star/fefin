@@ -208,6 +208,7 @@ export type Database = {
           forma_pagamento: string | null
           id: string
           is_parcelado: boolean
+          lancamento_origem_id: string | null
           mes_referencia: string
           pago: boolean
           parcela_atual: number | null
@@ -235,6 +236,7 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           is_parcelado?: boolean
+          lancamento_origem_id?: string | null
           mes_referencia?: string
           pago?: boolean
           parcela_atual?: number | null
@@ -262,6 +264,7 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           is_parcelado?: boolean
+          lancamento_origem_id?: string | null
           mes_referencia?: string
           pago?: boolean
           parcela_atual?: number | null

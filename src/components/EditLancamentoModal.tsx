@@ -654,7 +654,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
                     <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
                   </div>
                 </button>
-              )
+              )}
             </>
           )}
 

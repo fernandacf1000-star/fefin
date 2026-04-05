@@ -729,9 +729,10 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
                 </div>
               </button>
 
+              {/* Vicente (sub-option under Pais) */}
               {isPais && (
                 <button
-                  onClick={() => setIsVicente(v => !v)}
+                  onClick={() => { setIsVicente(v => { if (!v) setIsLuisa(false); return !v; }); }}
                   className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
                     isVicente ? 'border-green-400 bg-green-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
                   <div className='flex items-center gap-2'>
@@ -747,26 +748,11 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
                 </button>
               )}
 
-              <button
-                onClick={() => setIsAdriano(v => !v)}
-                className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
-                  isAdriano ? 'border-blue-400 bg-blue-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
-                <div className='flex items-center gap-2'>
-                  <span className='text-base'>👨</span>
-                  <span className={cn('text-sm font-medium', isAdriano ? 'text-blue-700' : 'text-muted-foreground')}>
-                    Dividir com Adriano
-                  </span>
-                </div>
-                <div className={cn('w-9 h-5 rounded-full flex items-center px-0.5 transition-all',
-                  isAdriano ? 'bg-blue-400 justify-end' : 'bg-muted justify-start')}>
-                  <div className='w-4 h-4 rounded-full bg-white shadow-sm' />
-                </div>
-              </button>
-
-              {isAdriano && (
+              {/* Luísa (sub-option under Pais) */}
+              {isPais && (
                 <button
-                  onClick={() => setIsLuisa(v => !v)}
-                  className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all ml-4',
+                  onClick={() => { setIsLuisa(v => { if (!v) setIsVicente(false); return !v; }); }}
+                  className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
                     isLuisa ? 'border-pink-400 bg-pink-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
                   <div className='flex items-center gap-2'>
                     <span className='text-base'>{'\u{1F469}\u200D\u{1F9B3}'}</span>
@@ -779,6 +765,30 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
                     <div className='w-4 h-4 rounded-full bg-white shadow-sm' />
                   </div>
                 </button>
+              )}
+
+              {/* Dividir com Adriano (only when NOT Pais) */}
+              <button
+                onClick={() => { if (canSplit) setIsAdriano(v => !v); }}
+                disabled={!canSplit}
+                className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
+                  !canSplit ? 'opacity-40 cursor-not-allowed border-[#E8ECF5] bg-[#E8ECF5]' :
+                  isAdriano ? 'border-blue-400 bg-blue-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
+                <div className='flex items-center gap-2'>
+                  <span className='text-base'>👨</span>
+                  <span className={cn('text-sm font-medium', isAdriano ? 'text-blue-700' : 'text-muted-foreground')}>
+                    Dividir com Adriano
+                  </span>
+                </div>
+                <div className={cn('w-9 h-5 rounded-full flex items-center px-0.5 transition-all',
+                  isAdriano ? 'bg-blue-400 justify-end' : 'bg-muted justify-start')}>
+                  <div className='w-4 h-4 rounded-full bg-white shadow-sm' />
+                </div>
+              </button>
+              {!canSplit && (
+                <p className='text-[10px] text-amber-600 px-4 -mt-2'>
+                  Despesas de Pais/Vicente/Luísa não podem ser divididas.
+                </p>
               )}
             </>
           )}

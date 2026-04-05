@@ -146,7 +146,6 @@ const mesRefFatura = !isReceitaEdit && forma === "credito"
 ? getMesReferenciaFatura(data, cartaoObj)
 : novoMesRef;
 
-```
   // Detect if Adriano toggle changed
   const wasAdriano = lancamento.adriano || false;
   const nowAdriano = !isReceitaEdit && isAdriano;
@@ -441,7 +440,6 @@ const mesRefFatura = !isReceitaEdit && forma === "credito"
 } finally {
   setSaving(false);
 }
-```
 
 };
 
@@ -464,7 +462,6 @@ return (
 </button>
 </div>
 
-```
       {/* Descrição */}
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-muted-foreground">Descrição</label>
@@ -737,7 +734,6 @@ return (
     </div>
   </div>
 </>
-```
 
 );
 };

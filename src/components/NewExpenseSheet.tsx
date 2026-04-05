@@ -544,9 +544,9 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
               isPais ? "bg-amber-500" :
               "gradient-emerald")}>
             {isPending ? "Salvando..." :
+             isAdriano && isLuisa ? "👩‍🦳 Salvar dividido (Luísa)" :
               isAdriano ? "👨 Salvar dividido com Adriano" :
               isVicente ? "👦 Salvar despesa do Vicente" :
-              isLuisa ? "👩‍🦳 Salvar despesa da Luísa" :
               isPais ? "🧓 Salvar despesa dos pais" :
               tipo === "receita" ? "💰 Salvar receita" :
               isParcelado ? `💳 Salvar em ${parcelas}x` :

@@ -104,9 +104,11 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     setEditScope('este');
     const subP = lancamento.subcategoria_pais;
     setIsVicente(subP === 'Vicente');
-    setIsLuisa(subP === 'Luisa');
-    setIsPais(subP != null && subP !== '');
-    setIsAdriano(lancamento.adriano || false);
+    setIsLuisa(subP === 'Luisa' || subP === 'Luísa');
+    // Pais = has subcategoria_pais AND is not an Adriano mirror
+    const isAdrianoMirror = lancamento.adriano || false;
+    setIsPais((subP != null && subP !== '' && !isAdrianoMirror) || subP === 'Vicente' || subP === 'Luisa' || subP === 'Luísa');
+    setIsAdriano(isAdrianoMirror);
     if (lancamento.cartao_id) {
       setFormaPagamento('credito');
       setCartaoId(lancamento.cartao_id);

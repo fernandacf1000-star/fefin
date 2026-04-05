@@ -117,7 +117,7 @@ export default function Pais() {
 
   // ══ PAIS ═══════════════════════════════════════════════════════════════
   const lancamentosPais = useMemo(
-    () => todos.filter((l) => l.subcategoria_pais !== null && l.subcategoria_pais !== ""),
+    () => todos.filter((l) => l.subcategoria_pais !== null && l.subcategoria_pais !== "" && l.subcategoria_pais !== "Luísa" && l.subcategoria_pais !== "Adriano" && !l.adriano),
     [todos],
   );
   const despesasPais = useMemo(() => lancamentosPais.filter((l) => l.tipo === "despesa"), [lancamentosPais]);

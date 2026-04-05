@@ -184,7 +184,7 @@ const mesRefFatura = !isReceitaEdit && forma === "credito"
     const { data: parcelas_db } = await query;
     const affected = (parcelas_db || []) as Lancamento[];
 
-    const adrianoParcelamentoId = crypto.randomUUID?.() ?? `${Date.now()}-a`;
+    const adrianoParcelamentoId = (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-a");
     const mirrorRows: any[] = [];
 
     for (const p of affected) {
@@ -238,7 +238,7 @@ const mesRefFatura = !isReceitaEdit && forma === "credito"
     const { data: recorrencias_db } = await query;
     const affected = (recorrencias_db || []) as Lancamento[];
 
-    const adrianoPaiId = crypto.randomUUID?.() ?? `${Date.now()}-a`;
+    const adrianoPaiId = (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-a");
     const mirrorRows: any[] = [];
 
     for (const r of affected) {
@@ -336,7 +336,7 @@ const mesRefFatura = !isReceitaEdit && forma === "credito"
   } else if (wasSimples && isParcelado && !recorrente) {
     // Converting simple to parcelado (no Adriano change)
     const nParcelas = parseInt(parcelas, 10) || 2;
-    const parcelamentoId = crypto.randomUUID?.() ?? `${Date.now()}`;
+    const parcelamentoId = (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
     await updateLancamento.mutateAsync({
       id: lancamento.id,
       ...baseUpdates,
@@ -371,7 +371,7 @@ const mesRefFatura = !isReceitaEdit && forma === "credito"
   } else if (wasSimples && recorrente && !isParcelado) {
     // Converting simple to recorrente (no Adriano change)
     const dia = parseInt(diaRecorrencia, 10) || 1;
-    const paiId = crypto.randomUUID?.() ?? `${Date.now()}`;
+    const paiId = (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
     await updateLancamento.mutateAsync({
       id: lancamento.id,
       ...baseUpdates,

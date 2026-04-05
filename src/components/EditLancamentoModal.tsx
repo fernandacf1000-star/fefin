@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, CalendarIcon, Users } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -104,9 +104,11 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     setEditScope('este');
     const subP = lancamento.subcategoria_pais;
     setIsVicente(subP === 'Vicente');
-    setIsLuisa(subP === 'Luisa');
-    setIsPais(subP != null && subP !== '');
-    setIsAdriano(lancamento.adriano || false);
+    setIsLuisa(subP === 'Luisa' || subP === 'Luísa');
+    // Pais = has subcategoria_pais AND is not an Adriano mirror
+    const isAdrianoMirror = lancamento.adriano || false;
+    setIsPais((subP != null && subP !== '' && !isAdrianoMirror) || subP === 'Vicente' || subP === 'Luisa' || subP === 'Luísa');
+    setIsAdriano(isAdrianoMirror);
     if (lancamento.cartao_id) {
       setFormaPagamento('credito');
       setCartaoId(lancamento.cartao_id);
@@ -116,6 +118,12 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     }
     setReceitaCat(receitaCatReverseMap[lancamento.categoria] || 'Salario');
   }, [lancamento]);
+
+  // Block split for dependents
+  const canSplit = !isPais;
+  useEffect(() => {
+    if (isPais) setIsAdriano(false);
+  }, [isPais]);
 
   const handleValorChange = (raw: string) => {
     const digits = raw.replace(/\D/g, '');
@@ -130,7 +138,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   const getSubPais = () => {
     if (!isPais) return null;
     if (isVicente) return 'Vicente';
-    if (isLuisa) return 'Luisa';
+    if (isLuisa) return 'Luísa';
     return subcategoria || detectCategoriaMacro(subcategoria || '') || 'Geral';
   };
 
@@ -238,7 +246,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     forma_pagamento: forma,
     cartao_id: cartao,
     adriano: true,
-    subcategoria_pais: isLuisa ? 'Luisa' : 'Adriano',
+    subcategoria_pais: 'Adriano',
     // Mirror keeps the SAME date as its origin
     data: origin.data,
     mes_referencia: origin.mes_referencia,
@@ -723,9 +731,10 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
                 </div>
               </button>
 
+              {/* Vicente (sub-option under Pais) */}
               {isPais && (
                 <button
-                  onClick={() => setIsVicente(v => !v)}
+                  onClick={() => { setIsVicente(v => { if (!v) setIsLuisa(false); return !v; }); }}
                   className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
                     isVicente ? 'border-green-400 bg-green-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
                   <div className='flex items-center gap-2'>
@@ -741,26 +750,11 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
                 </button>
               )}
 
-              <button
-                onClick={() => setIsAdriano(v => !v)}
-                className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
-                  isAdriano ? 'border-blue-400 bg-blue-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
-                <div className='flex items-center gap-2'>
-                  <span className='text-base'>👨</span>
-                  <span className={cn('text-sm font-medium', isAdriano ? 'text-blue-700' : 'text-muted-foreground')}>
-                    Dividir com Adriano
-                  </span>
-                </div>
-                <div className={cn('w-9 h-5 rounded-full flex items-center px-0.5 transition-all',
-                  isAdriano ? 'bg-blue-400 justify-end' : 'bg-muted justify-start')}>
-                  <div className='w-4 h-4 rounded-full bg-white shadow-sm' />
-                </div>
-              </button>
-
-              {isAdriano && (
+              {/* Luísa (sub-option under Pais) */}
+              {isPais && (
                 <button
-                  onClick={() => setIsLuisa(v => !v)}
-                  className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all ml-4',
+                  onClick={() => { setIsLuisa(v => { if (!v) setIsVicente(false); return !v; }); }}
+                  className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
                     isLuisa ? 'border-pink-400 bg-pink-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
                   <div className='flex items-center gap-2'>
                     <span className='text-base'>{'\u{1F469}\u200D\u{1F9B3}'}</span>
@@ -773,6 +767,30 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
                     <div className='w-4 h-4 rounded-full bg-white shadow-sm' />
                   </div>
                 </button>
+              )}
+
+              {/* Dividir com Adriano (only when NOT Pais) */}
+              <button
+                onClick={() => { if (canSplit) setIsAdriano(v => !v); }}
+                disabled={!canSplit}
+                className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
+                  !canSplit ? 'opacity-40 cursor-not-allowed border-[#E8ECF5] bg-[#E8ECF5]' :
+                  isAdriano ? 'border-blue-400 bg-blue-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
+                <div className='flex items-center gap-2'>
+                  <span className='text-base'>👨</span>
+                  <span className={cn('text-sm font-medium', isAdriano ? 'text-blue-700' : 'text-muted-foreground')}>
+                    Dividir com Adriano
+                  </span>
+                </div>
+                <div className={cn('w-9 h-5 rounded-full flex items-center px-0.5 transition-all',
+                  isAdriano ? 'bg-blue-400 justify-end' : 'bg-muted justify-start')}>
+                  <div className='w-4 h-4 rounded-full bg-white shadow-sm' />
+                </div>
+              </button>
+              {!canSplit && (
+                <p className='text-[10px] text-amber-600 px-4 -mt-2'>
+                  Despesas de Pais/Vicente/Luísa não podem ser divididas.
+                </p>
               )}
             </>
           )}

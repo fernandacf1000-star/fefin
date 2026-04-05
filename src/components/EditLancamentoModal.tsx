@@ -1,13 +1,13 @@
-import { useEffect, useState } from ‘react’;
-import { X, CalendarIcon, Users } from ‘lucide-react’;
-import { format, addMonths } from ‘date-fns’;
-import { ptBR } from ‘date-fns/locale’;
-import { cn } from ‘@/lib/utils’;
-import { Button } from ‘@/components/ui/button’;
-import { Input } from ‘@/components/ui/input’;
-import { Calendar } from ‘@/components/ui/calendar’;
+import { useEffect, useState } from 'react';
+import { X, CalendarIcon, Users } from 'lucide-react';
+import { format, addMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
 
-import type { Lancamento } from ‘@/hooks/useLancamentos’;
+import type { Lancamento } from '@/hooks/useLancamentos';
 import {
 useUpdateLancamento,
 useUpdateAllParcelamento,
@@ -15,27 +15,27 @@ useUpdateParcelamentoFuturas,
 useAddMultipleLancamentos,
 useUpdateFutureRecorrencia,
 useUpdateAllRecorrencia,
-} from ‘@/hooks/useLancamentos’;
-import type { Cartao } from ‘@/hooks/useCartoes’;
-import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from ‘@/lib/subcategorias’;
-import { supabase } from ‘@/integrations/supabase/client’;
+} from '@/hooks/useLancamentos';
+import type { Cartao } from '@/hooks/useCartoes';
+import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from '@/lib/subcategorias';
+import { supabase } from '@/integrations/supabase/client';
 
 function getMesReferenciaFatura(dataCompra: Date, cartaoSelecionado: Cartao | null): string {
 if (!cartaoSelecionado) {
-return dataCompra.getFullYear() + ‘-’ + String(dataCompra.getMonth() + 1).padStart(2, ‘0’);
+return dataCompra.getFullYear() + '-' + String(dataCompra.getMonth() + 1).padStart(2, '0');
 }
 var diaCompra = dataCompra.getDate();
 var diaFecha = cartaoSelecionado.dia_fechamento;
 var diaVence = cartaoSelecionado.dia_vencimento ?? diaFecha + 5;
 var mesFechamento = diaCompra <= diaFecha ? dataCompra : addMonths(dataCompra, 1);
 var mesVencimento = diaVence > diaFecha ? mesFechamento : addMonths(mesFechamento, 1);
-return mesVencimento.getFullYear() + ‘-’ + String(mesVencimento.getMonth() + 1).padStart(2, ‘0’);
+return mesVencimento.getFullYear() + '-' + String(mesVencimento.getMonth() + 1).padStart(2, '0');
 }
 
-var RECEITA_CATS_EDIT = [‘Salario’, ‘Reembolso Pais’, ‘Resgate’] as const;
+var RECEITA_CATS_EDIT = ['Salario', 'Reembolso Pais', 'Resgate'] as const;
 type ReceitaCatEdit = (typeof RECEITA_CATS_EDIT)[number];
 var receitaCatMapEdit: Record<ReceitaCatEdit, string> = {
-‘Salario’: ‘salario’, ‘Reembolso Pais’: ‘reembolso_pais’, ‘Resgate’: ‘resgate_investimento’,
+'Salario': 'salario', 'Reembolso Pais': 'reembolso_pais', 'Resgate': 'resgate_investimento',
 };
 var receitaCatReverseMap: Record<string, ReceitaCatEdit> = Object.fromEntries(
 Object.entries(receitaCatMapEdit).map(function([k, v]) { return [v, k as ReceitaCatEdit]; }),
@@ -49,35 +49,35 @@ onSave: (updates: Partial<Lancamento>) => Promise<void>;
 cartoes: Cartao[];
 }
 
-type EditScope = ‘este’ | ‘futuras’ | ‘todos’;
+type EditScope = 'este' | 'futuras' | 'todos';
 
 function genUUID(): string {
-if (typeof crypto !== ‘undefined’ && typeof crypto.randomUUID === ‘function’) {
+if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
 return crypto.randomUUID();
 }
-return Date.now().toString(36) + ‘-’ + Math.random().toString(36).slice(2, 10);
+return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
 }
 
 var EditLancamentoModal = function({ open, lancamento, onClose, onSave, cartoes }: Props) {
-var [descricao, setDescricao] = useState(’’);
-var [valor, setValor] = useState(’’);
+var [descricao, setDescricao] = useState('');
+var [valor, setValor] = useState('');
 var [data, setData] = useState<Date>(new Date());
 var [subcategoria, setSubcategoria] = useState<string | null>(null);
 var [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-var [formaPagamento, setFormaPagamento] = useState<‘dinheiro’ | ‘credito’>(‘dinheiro’);
-var [cartaoId, setCartaoId] = useState(’’);
+var [formaPagamento, setFormaPagamento] = useState<'dinheiro' | 'credito'>('dinheiro');
+var [cartaoId, setCartaoId] = useState('');
 var [saving, setSaving] = useState(false);
 var [calendarOpen, setCalendarOpen] = useState(false);
 var [isParcelado, setIsParcelado] = useState(false);
-var [parcelas, setParcelas] = useState(‘2’);
+var [parcelas, setParcelas] = useState('2');
 var [recorrente, setRecorrente] = useState(false);
-var [diaRecorrencia, setDiaRecorrencia] = useState(‘1’);
-var [editScope, setEditScope] = useState<EditScope>(‘este’);
+var [diaRecorrencia, setDiaRecorrencia] = useState('1');
+var [editScope, setEditScope] = useState<EditScope>('este');
 var [isPais, setIsPais] = useState(false);
 var [isVicente, setIsVicente] = useState(false);
 var [isLuisa, setIsLuisa] = useState(false);
 var [isAdriano, setIsAdriano] = useState(false);
-var [receitaCat, setReceitaCat] = useState<ReceitaCatEdit>(‘Salario’);
+var [receitaCat, setReceitaCat] = useState<ReceitaCatEdit>('Salario');
 
 var updateLancamento = useUpdateLancamento();
 var updateAll = useUpdateAllParcelamento();
@@ -88,9 +88,9 @@ var updateAllRecorrencia = useUpdateAllRecorrencia();
 
 useEffect(function() {
 if (!lancamento) return;
-setDescricao(lancamento.descricao || ‘’);
-setValor(Number(lancamento.valor).toLocaleString(‘pt-BR’, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-setData(lancamento.data ? new Date(lancamento.data + ‘T12:00:00’) : new Date());
+setDescricao(lancamento.descricao || '');
+setValor(Number(lancamento.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+setData(lancamento.data ? new Date(lancamento.data + 'T12:00:00') : new Date());
 setSubcategoria(lancamento.subcategoria || null);
 var sub = lancamento.subcategoria || null;
 if (sub) {
@@ -103,37 +103,37 @@ setIsParcelado(lancamento.is_parcelado || false);
 setParcelas(String(lancamento.parcela_total || 2));
 setRecorrente(lancamento.recorrente || false);
 setDiaRecorrencia(String(lancamento.dia_recorrencia || 1));
-setEditScope(‘este’);
+setEditScope('este');
 var subP = lancamento.subcategoria_pais;
-setIsVicente(subP === ‘Vicente’);
-setIsLuisa(subP === ‘Luisa’);
-setIsPais(subP != null && subP !== ‘’);
+setIsVicente(subP === 'Vicente');
+setIsLuisa(subP === 'Luisa');
+setIsPais(subP != null && subP !== '');
 setIsAdriano(lancamento.adriano || false);
 if (lancamento.cartao_id) {
-setFormaPagamento(‘credito’);
+setFormaPagamento('credito');
 setCartaoId(lancamento.cartao_id);
 } else {
-setFormaPagamento(‘dinheiro’);
-setCartaoId(’’);
+setFormaPagamento('dinheiro');
+setCartaoId('');
 }
-setReceitaCat(receitaCatReverseMap[lancamento.categoria] || ‘Salario’);
+setReceitaCat(receitaCatReverseMap[lancamento.categoria] || 'Salario');
 }, [lancamento]);
 
 var handleValorChange = function(raw: string) {
-var digits = raw.replace(/\D/g, ‘’);
-if (!digits) { setValor(’’); return; }
-setValor((parseInt(digits, 10) / 100).toLocaleString(‘pt-BR’, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+var digits = raw.replace(/\D/g, '');
+if (!digits) { setValor(''); return; }
+setValor((parseInt(digits, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 };
 
 var getNumValor = function() {
-return parseFloat(valor.replace(/./g, ‘’).replace(’,’, ‘.’)) || 0;
+return parseFloat(valor.replace(/./g, '').replace(',', '.')) || 0;
 };
 
 var getSubPais = function() {
 if (!isPais) return null;
-if (isVicente) return ‘Vicente’;
-if (isLuisa) return ‘Luisa’;
-return subcategoria || detectCategoriaMacro(subcategoria || ‘’) || ‘Geral’;
+if (isVicente) return 'Vicente';
+if (isLuisa) return 'Luisa';
+return subcategoria || detectCategoriaMacro(subcategoria || '') || 'Geral';
 };
 
 var handleSave = async function() {
@@ -142,18 +142,17 @@ var numValor = getNumValor();
 if (numValor <= 0) return;
 setSaving(true);
 try {
-var macro = detectCategoriaMacro(subcategoria || ‘’) || null;
-var forma = formaPagamento === ‘dinheiro’ ? ‘dinheiro’ : ‘credito’;
-var cartao = formaPagamento === ‘credito’ ? cartaoId || null : null;
-var novaData = format(data, ‘yyyy-MM-dd’);
-var novoMesRef = data.getFullYear() + ‘-’ + String(data.getMonth() + 1).padStart(2, ‘0’);
-var isReceitaEdit = lancamento.tipo === ‘receita’;
+var macro = detectCategoriaMacro(subcategoria || '') || null;
+var forma = formaPagamento === 'dinheiro' ? 'dinheiro' : 'credito';
+var cartao = formaPagamento === 'credito' ? cartaoId || null : null;
+var novaData = format(data, 'yyyy-MM-dd');
+var novoMesRef = data.getFullYear() + '-' + String(data.getMonth() + 1).padStart(2, '0');
+var isReceitaEdit = lancamento.tipo === 'receita';
 var cartaoObj = cartao ? cartoes.find(function(c) { return c.id === cartao; }) || null : null;
-var mesRefFatura = !isReceitaEdit && forma === ‘credito’
+var mesRefFatura = !isReceitaEdit && forma === 'credito'
 ? getMesReferenciaFatura(data, cartaoObj)
 : novoMesRef;
 
-```
   var wasAdriano = lancamento.adriano || false;
   var nowAdriano = !isReceitaEdit && isAdriano;
   var adrianoChanged = wasAdriano !== nowAdriano;
@@ -502,12 +501,11 @@ var mesRefFatura = !isReceitaEdit && forma === ‘credito’
 } finally {
   setSaving(false);
 }
-```
 
 };
 
 if (!open || !lancamento) return null;
-var isReceita = lancamento.tipo === ‘receita’;
+var isReceita = lancamento.tipo === 'receita';
 var wasParcelado = lancamento.is_parcelado;
 var wasRecorrente = lancamento.recorrente;
 var wasSimples = !wasParcelado && !wasRecorrente;
@@ -524,7 +522,6 @@ return (
 </button>
 </div>
 
-```
       <div className='space-y-1.5'>
         <label className='text-xs font-medium text-muted-foreground'>Descricao</label>
         <Input value={descricao} onChange={function(e) { setDescricao(e.target.value); }} className='bg-[#E8ECF5] border-0 rounded-xl' />
@@ -795,7 +792,6 @@ return (
     </div>
   </div>
 </>
-```
 
 );
 };

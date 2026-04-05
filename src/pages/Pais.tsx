@@ -3,7 +3,18 @@ import { ChevronLeft, ChevronRight, TrendingDown, RotateCcw, Wallet } from "luci
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import ReembolsoModal from "@/components/ReembolsoModal";
-import { useLancamentos } from "@/hooks/useLancamentos";
+import SwipeableItem from "@/components/SwipeableItem";
+import LancamentoActions from "@/components/LancamentoActions";
+import DeleteConfirmSheet from "@/components/DeleteConfirmSheet";
+import {
+  useLancamentos,
+  useDeleteLancamento,
+  useDeleteFutureParcelamento,
+  useDeleteAllParcelamento,
+  useDeleteFutureRecorrencia,
+  useDeleteAllRecorrencia,
+} from "@/hooks/useLancamentos";
+import type { Lancamento } from "@/hooks/useLancamentos";
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
 import { toast } from "sonner";
@@ -26,7 +37,14 @@ function formatDate(dateStr: string) {
   return `${d}/${m}`;
 }
 
-// ── Resumo Card reutilizável ──────────────────────────────────────────────
+function getTipo(l: Lancamento | null): "parcelado" | "recorrente" | "simples" {
+  if (!l) return "simples";
+  if (l.is_parcelado && l.parcelamento_id) return "parcelado";
+  if (l.recorrente && l.recorrencia_pai_id) return "recorrente";
+  return "simples";
+}
+
+// -- Resumo Card reutilizavel --
 function ResumoCard({
   totalPago,
   totalReembolsado,
@@ -40,7 +58,7 @@ function ResumoCard({
 }) {
   return (
     <div className="glass-card p-4 space-y-3">
-      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Resumo do mês</p>
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Resumo do mes</p>
 
       <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
         <div className="flex items-center gap-2">
@@ -60,7 +78,7 @@ function ResumoCard({
           <span className="text-sm text-muted-foreground">Reembolsado</span>
         </div>
         <span className="text-sm font-bold" style={{ color: "#0D9488" }}>
-          {totalReembolsado > 0 ? `− ${fmt(totalReembolsado)}` : fmt(0)}
+          {totalReembolsado > 0 ? `- ${fmt(totalReembolsado)}` : fmt(0)}
         </span>
       </div>
 
@@ -69,7 +87,7 @@ function ResumoCard({
           <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(217,112,82,0.12)" }}>
             <Wallet size={14} style={{ color: "#D97052" }} />
           </div>
-          <span className="text-sm font-semibold text-foreground">Líquido (meu custo)</span>
+          <span className="text-sm font-semibold text-foreground">Liquido (meu custo)</span>
         </div>
         <span className="text-lg font-bold" style={{ color: totalLiquido > 0 ? "#D97052" : "#0D9488" }}>
           {fmt(totalLiquido)}
@@ -115,9 +133,9 @@ export default function Pais() {
   const nextMes = () =>
     setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
 
-  // ══ PAIS ═══════════════════════════════════════════════════════════════
+  // == PAIS ==
   const lancamentosPais = useMemo(
-    () => todos.filter((l) => l.subcategoria_pais !== null && l.subcategoria_pais !== "" && l.subcategoria_pais !== "Luísa" && l.subcategoria_pais !== "Adriano" && !l.adriano),
+    () => todos.filter((l) => l.subcategoria_pais !== null && l.subcategoria_pais !== "" && l.subcategoria_pais !== "Luisa" && l.subcategoria_pais !== "Adriano" && !l.adriano),
     [todos],
   );
   const despesasPais = useMemo(() => lancamentosPais.filter((l) => l.tipo === "despesa"), [lancamentosPais]);
@@ -147,7 +165,7 @@ export default function Pais() {
     return Object.entries(map)
       .map(([cat, valor]) => {
         const group = getSubcategoriaGroup(cat) || cat;
-        return { cat, valor, emoji: cat === "Vicente" ? "👦" : getGroupEmoji(group) };
+        return { cat, valor, emoji: cat === "Vicente" ? "\u{1F466}" : getGroupEmoji(group) };
       })
       .sort((a, b) => b.valor - a.valor);
   }, [despesasPais]);
@@ -159,7 +177,7 @@ export default function Pais() {
     }).sort((a, b) => Number(a.valor) - Number(b.valor));
   }, [despesasPais, todosReembolsos]);
 
-  // ══ ADRIANO ════════════════════════════════════════════════════════════
+  // == ADRIANO ==
   const lancamentosAdriano = useMemo(
     () => todos.filter((l) => l.adriano === true && l.tipo === "despesa"),
     [todos],
@@ -180,7 +198,7 @@ export default function Pais() {
     return Object.entries(map)
       .map(([cat, valor]) => {
         const group = getSubcategoriaGroup(cat) || cat;
-        return { cat, valor, emoji: cat === "Luísa" ? "👩‍🦳" : getGroupEmoji(group) };
+        return { cat, valor, emoji: cat === "Luisa" ? "\u{1F469}\u200D\u{1F9B3}" : getGroupEmoji(group) };
       })
       .sort((a, b) => b.valor - a.valor);
   }, [lancamentosAdriano]);
@@ -192,7 +210,7 @@ export default function Pais() {
     }).sort((a, b) => Number(a.valor) - Number(b.valor));
   }, [lancamentosAdriano, todosReembolsos]);
 
-  // ══ Reembolso modal ════════════════════════════════════════════════════
+  // == Reembolso modal ==
   const [reembolsoTarget, setReembolsoTarget] = useState<any>(null);
   const addReembolso = useAddReembolso();
 
@@ -218,46 +236,118 @@ export default function Pais() {
     }
   };
 
-  // Helper para renderizar lista de lançamentos
+  // == Delete state & hooks (Adriano tab) ==
+  const [actionsLanc, setActionsLanc] = useState<Lancamento | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Lancamento | null>(null);
+
+  const deleteLancamento = useDeleteLancamento();
+  const deleteFutureParcelamento = useDeleteFutureParcelamento();
+  const deleteAllParcelamento = useDeleteAllParcelamento();
+  const deleteFutureRecorrencia = useDeleteFutureRecorrencia();
+  const deleteAllRecorrencia = useDeleteAllRecorrencia();
+
+  const handleDeleteSingle = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteLancamento.mutateAsync(deleteTarget.id);
+      toast.success("Lancamento excluido!");
+    } catch (e: any) {
+      toast.error("Erro ao excluir: " + (e?.message || ""));
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleDeleteFuture = async () => {
+    if (!deleteTarget) return;
+    try {
+      const tipo = getTipo(deleteTarget);
+      if (tipo === "parcelado" && deleteTarget.parcelamento_id) {
+        await deleteFutureParcelamento.mutateAsync({ parcelamento_id: deleteTarget.parcelamento_id, fromDate: deleteTarget.data });
+      } else if (tipo === "recorrente" && deleteTarget.recorrencia_pai_id) {
+        await deleteFutureRecorrencia.mutateAsync({ recorrencia_pai_id: deleteTarget.recorrencia_pai_id, fromDate: deleteTarget.data });
+      }
+      toast.success("Lancamentos futuros excluidos!");
+    } catch (e: any) {
+      toast.error("Erro ao excluir: " + (e?.message || ""));
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!deleteTarget) return;
+    try {
+      const tipo = getTipo(deleteTarget);
+      if (tipo === "parcelado" && deleteTarget.parcelamento_id) {
+        await deleteAllParcelamento.mutateAsync(deleteTarget.parcelamento_id);
+      } else if (tipo === "recorrente" && deleteTarget.recorrencia_pai_id) {
+        await deleteAllRecorrencia.mutateAsync(deleteTarget.recorrencia_pai_id);
+      }
+      toast.success("Todos os lancamentos excluidos!");
+    } catch (e: any) {
+      toast.error("Erro ao excluir: " + (e?.message || ""));
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
+  // Helper para renderizar lista de lancamentos
   const renderLancamentos = (
-    items: Array<{ id: string; descricao: string; data: string; subcategoria_pais: string | null; categoria_macro: string | null; valor: number; reembolsado: number; liquido: number; adriano: boolean }>,
+    items: Array<{ id: string; descricao: string; data: string; subcategoria_pais: string | null; categoria_macro: string | null; valor: number; reembolsado: number; liquido: number; adriano: boolean; is_parcelado: boolean; parcelamento_id: string | null; recorrente: boolean; recorrencia_pai_id: string | null }>,
     borderColor: string,
     getEmoji: (l: any) => string,
   ) => (
     <div className="space-y-1">
-      {items.map((l) => (
-        <div
-          key={l.id}
-          onClick={() => setReembolsoTarget(l)}
-          className="flex items-center gap-3 py-2.5 last:border-0 cursor-pointer active:opacity-70"
-          style={{ borderBottom: `0.5px solid ${borderColor}` }}
-        >
+      {items.map((l) => {
+        const row = (
           <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
-            style={{ background: aba === "adriano" ? (l.subcategoria_pais === "Luísa" ? "rgba(236,72,153,0.15)" : "rgba(59,130,246,0.15)") : "rgba(251,191,36,0.2)" }}
+            key={l.id}
+            onClick={() => setReembolsoTarget(l)}
+            className="flex items-center gap-3 py-2.5 last:border-0 cursor-pointer active:opacity-70"
+            style={{ borderBottom: `0.5px solid ${borderColor}` }}
           >
-            {getEmoji(l)}
-          </div>
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
+              style={{ background: aba === "adriano" ? (l.subcategoria_pais === "Luisa" ? "rgba(236,72,153,0.15)" : "rgba(59,130,246,0.15)") : "rgba(251,191,36,0.2)" }}
+            >
+              {getEmoji(l)}
+            </div>
 
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-foreground truncate">{l.descricao}</p>
-            <p className="text-[10px] text-muted-foreground">
-              {formatDate(l.data)}
-              {l.subcategoria_pais && l.subcategoria_pais !== "Geral" ? ` · ${l.subcategoria_pais}` : ""}
-            </p>
-          </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-foreground truncate">{l.descricao}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {formatDate(l.data)}
+                {l.subcategoria_pais && l.subcategoria_pais !== "Geral" ? ` \u00B7 ${l.subcategoria_pais}` : ""}
+              </p>
+            </div>
 
-          <div className="text-right shrink-0">
-            <p className="text-[13px] font-bold text-foreground">{fmt(Number(l.valor))}</p>
-            {l.reembolsado > 0 && (
-              <p className="text-[10px]" style={{ color: "#0D9488" }}>reimb. {fmt(l.reembolsado)}</p>
-            )}
-            {l.reembolsado > 0 && (
-              <p className="text-[10px] text-muted-foreground font-semibold">líq. {fmt(l.liquido)}</p>
-            )}
+            <div className="text-right shrink-0">
+              <p className="text-[13px] font-bold text-foreground">{fmt(Number(l.valor))}</p>
+              {l.reembolsado > 0 && (
+                <p className="text-[10px]" style={{ color: "#0D9488" }}>reimb. {fmt(l.reembolsado)}</p>
+              )}
+              {l.reembolsado > 0 && (
+                <p className="text-[10px] text-muted-foreground font-semibold">liq. {fmt(l.liquido)}</p>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+
+        if (aba === "adriano") {
+          return (
+            <SwipeableItem
+              key={l.id}
+              onEdit={() => setActionsLanc(l as any)}
+              onDelete={() => setDeleteTarget(l as any)}
+            >
+              {row}
+            </SwipeableItem>
+          );
+        }
+
+        return row;
+      })}
     </div>
   );
 
@@ -287,16 +377,16 @@ export default function Pais() {
           <button onClick={() => setAba("pais")}
             className={cn("flex-1 py-2 rounded-xl text-sm font-semibold transition-all",
               aba === "pais" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
-            🧓 Pais
+            {"\u{1F9D3}"} Pais
           </button>
           <button onClick={() => setAba("adriano")}
             className={cn("flex-1 py-2 rounded-xl text-sm font-semibold transition-all",
               aba === "adriano" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
-            👨 Adriano
+            {"\u{1F468}"} Adriano
           </button>
         </div>
 
-        {/* ══ ABA PAIS ═══════════════════════════════════════════════════ */}
+        {/* == ABA PAIS == */}
         {aba === "pais" && (
           <>
             {despesasPais.length > 0 && (
@@ -338,8 +428,8 @@ export default function Pais() {
                         </div>
                         {reembolsadoCat > 0 && (
                           <div className="flex justify-end gap-3 text-[10px]">
-                            <span style={{ color: "#0D9488" }}>− {fmt(reembolsadoCat)} reimb.</span>
-                            <span className="text-muted-foreground font-semibold">líq. {fmt(liquidoCat)}</span>
+                            <span style={{ color: "#0D9488" }}>- {fmt(reembolsadoCat)} reimb.</span>
+                            <span className="text-muted-foreground font-semibold">liq. {fmt(liquidoCat)}</span>
                           </div>
                         )}
                       </div>
@@ -352,24 +442,24 @@ export default function Pais() {
             {isLoading ? (
               <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>
             ) : lancamentosPais.length === 0 && receitasReembolsoPais.length === 0 ? (
-              <EmptyState title="Sem lançamentos dos pais" subtitle="Nenhuma despesa dos pais registrada neste mês" />
+              <EmptyState title="Sem lancamentos dos pais" subtitle="Nenhuma despesa dos pais registrada neste mes" />
             ) : (
               <div className="glass-card p-4 space-y-3">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lançamentos</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lancamentos</p>
                 {renderLancamentos(
                   lancamentosComReembolsoPais,
                   "rgba(251,191,36,0.3)",
-                  (l) => l.subcategoria_pais === "Vicente" ? "👦" : l.subcategoria_pais === "Luísa" ? "👩‍🦳" : getGroupEmoji(getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros"),
+                  (l) => l.subcategoria_pais === "Vicente" ? "\u{1F466}" : l.subcategoria_pais === "Luisa" ? "\u{1F469}\u200D\u{1F9B3}" : getGroupEmoji(getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros"),
                 )}
 
                 {/* Receitas "Reembolso pais" */}
                 {receitasReembolsoPais.map((l) => (
                   <div key={l.id} className="flex items-center gap-3 py-2.5 border-b border-amber-100 last:border-0">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
-                      style={{ background: "rgba(13,148,136,0.15)" }}>💸</div>
+                      style={{ background: "rgba(13,148,136,0.15)" }}>{"\u{1F4B8}"}</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-foreground truncate">{l.descricao}</p>
-                      <p className="text-[10px] text-muted-foreground">{formatDate(l.data)} · Reembolso recebido</p>
+                      <p className="text-[10px] text-muted-foreground">{formatDate(l.data)} \u00B7 Reembolso recebido</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-[13px] font-bold" style={{ color: "#0D9488" }}>+ {fmt(Number(l.valor))}</p>
@@ -381,7 +471,7 @@ export default function Pais() {
           </>
         )}
 
-        {/* ══ ABA ADRIANO ════════════════════════════════════════════════ */}
+        {/* == ABA ADRIANO == */}
         {aba === "adriano" && (
           <>
             {lancamentosAdriano.length > 0 && (
@@ -424,14 +514,14 @@ export default function Pais() {
             {isLoading ? (
               <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>
             ) : lancamentosAdriano.length === 0 ? (
-              <EmptyState title="Sem lançamentos do Adriano" subtitle="Marque 'Dividir com Adriano' ao criar uma despesa" />
+              <EmptyState title="Sem lancamentos do Adriano" subtitle="Marque 'Dividir com Adriano' ao criar uma despesa" />
             ) : (
               <div className="glass-card p-4 space-y-3">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lançamentos</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lancamentos</p>
                 {renderLancamentos(
                   lancamentosComReembolsoAdriano,
                   "rgba(59,130,246,0.2)",
-                  (l) => l.subcategoria_pais === "Luísa" ? "👩‍🦳" : "👨",
+                  (l) => l.subcategoria_pais === "Luisa" ? "\u{1F469}\u200D\u{1F9B3}" : "\u{1F468}",
                 )}
               </div>
             )}
@@ -449,6 +539,29 @@ export default function Pais() {
           isPending={addReembolso.isPending}
         />
       )}
+
+      <LancamentoActions
+        open={!!actionsLanc}
+        onClose={() => setActionsLanc(null)}
+        descricao={actionsLanc?.descricao}
+        onEdit={() => {
+          setActionsLanc(null);
+        }}
+        onDelete={() => {
+          setDeleteTarget(actionsLanc);
+          setActionsLanc(null);
+        }}
+      />
+
+      <DeleteConfirmSheet
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        tipo={getTipo(deleteTarget)}
+        descricao={deleteTarget?.descricao}
+        onDeleteSingle={handleDeleteSingle}
+        onDeleteFuture={handleDeleteFuture}
+        onDeleteAll={handleDeleteAll}
+      />
     </div>
   );
 }

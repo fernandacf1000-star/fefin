@@ -130,7 +130,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   };
 
   const handleSave = async () => {
-    if (!lancamento || !user) return;
+    if (!lancamento || !user || saving) return;
     const numValor = getNumValor();
     if (numValor <= 0) return;
     setSaving(true);

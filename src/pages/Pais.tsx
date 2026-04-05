@@ -234,7 +234,7 @@ export default function Pais() {
         >
           <div
             className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
-            style={{ background: aba === "adriano" ? "rgba(59,130,246,0.15)" : "rgba(251,191,36,0.2)" }}
+            style={{ background: aba === "adriano" ? (l.subcategoria_pais === "Luísa" ? "rgba(236,72,153,0.15)" : "rgba(59,130,246,0.15)") : "rgba(251,191,36,0.2)" }}
           >
             {getEmoji(l)}
           </div>

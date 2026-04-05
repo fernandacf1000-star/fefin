@@ -117,7 +117,7 @@ export default function Pais() {
 
   // ══ PAIS ═══════════════════════════════════════════════════════════════
   const lancamentosPais = useMemo(
-    () => todos.filter((l) => l.subcategoria_pais !== null && l.subcategoria_pais !== ""),
+    () => todos.filter((l) => l.subcategoria_pais !== null && l.subcategoria_pais !== "" && l.subcategoria_pais !== "Luísa" && l.subcategoria_pais !== "Adriano" && !l.adriano),
     [todos],
   );
   const despesasPais = useMemo(() => lancamentosPais.filter((l) => l.tipo === "despesa"), [lancamentosPais]);
@@ -147,7 +147,7 @@ export default function Pais() {
     return Object.entries(map)
       .map(([cat, valor]) => {
         const group = getSubcategoriaGroup(cat) || cat;
-        return { cat, valor, emoji: cat === "Vicente" ? "👦" : cat === "Luísa" ? "👩‍🦳" : getGroupEmoji(group) };
+        return { cat, valor, emoji: cat === "Vicente" ? "👦" : getGroupEmoji(group) };
       })
       .sort((a, b) => b.valor - a.valor);
   }, [despesasPais]);
@@ -180,7 +180,7 @@ export default function Pais() {
     return Object.entries(map)
       .map(([cat, valor]) => {
         const group = getSubcategoriaGroup(cat) || cat;
-        return { cat, valor, emoji: getGroupEmoji(group) };
+        return { cat, valor, emoji: cat === "Luísa" ? "👩‍🦳" : getGroupEmoji(group) };
       })
       .sort((a, b) => b.valor - a.valor);
   }, [lancamentosAdriano]);
@@ -234,7 +234,7 @@ export default function Pais() {
         >
           <div
             className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
-            style={{ background: aba === "adriano" ? "rgba(59,130,246,0.15)" : "rgba(251,191,36,0.2)" }}
+            style={{ background: aba === "adriano" ? (l.subcategoria_pais === "Luísa" ? "rgba(236,72,153,0.15)" : "rgba(59,130,246,0.15)") : "rgba(251,191,36,0.2)" }}
           >
             {getEmoji(l)}
           </div>
@@ -431,7 +431,7 @@ export default function Pais() {
                 {renderLancamentos(
                   lancamentosComReembolsoAdriano,
                   "rgba(59,130,246,0.2)",
-                  () => "👨",
+                  (l) => l.subcategoria_pais === "Luísa" ? "👩‍🦳" : "👨",
                 )}
               </div>
             )}

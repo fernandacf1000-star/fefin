@@ -129,7 +129,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
       const macro = detectCategoriaMacro(subcategoria || "") || null;
       const forma = formaPagamento === "Dinheiro" ? "dinheiro" : "credito";
       const cartao = formaPagamento === "Crédito" ? (cartaoId || cartoes[0]?.id || null) : null;
-      const subPais = isPais ? (isVicente ? "Vicente" : isLuisa ? "Luísa" : (subcategoria || macro || "Geral")) : null;
+      const subPais = isPais ? (isVicente ? "Vicente" : (subcategoria || macro || "Geral")) : null;
       const cartaoObj = cartao ? cartoes.find((c) => c.id === cartao) || null : null;
 
       // Se marcou Adriano, o valor principal é metade
@@ -145,7 +145,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
       // Linha do Adriano (segunda metade)
       const adrianoRow = isAdriano ? {
         descricao, valor: numValor / 2, tipo: "despesa" as const, categoria: baseRow.categoria,
-        subcategoria_pais: null, subcategoria: subcategoria || null, categoria_macro: macro,
+        subcategoria_pais: isLuisa ? "Luísa" : "Adriano", subcategoria: subcategoria || null, categoria_macro: macro,
         pago: false, forma_pagamento: forma, cartao_id: cartao,
         adriano: true,
       } : null;
@@ -455,28 +455,9 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
                 </button>
               )}
 
-              {/* Toggle Luísa */}
-              {isPais && (
-                <button
-                  onClick={() => { setIsLuisa(v => { if (!v) setIsVicente(false); return !v; }); }}
-                  className={cn("w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
-                    isLuisa ? "border-pink-400 bg-pink-50" : "border-[#E8ECF5] bg-[#E8ECF5]")}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">👩‍🦳</span>
-                    <span className={cn("text-sm font-medium", isLuisa ? "text-pink-700" : "text-muted-foreground")}>
-                      Despesa da Luísa
-                    </span>
-                  </div>
-                  <div className={cn("w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
-                    isLuisa ? "bg-pink-400 justify-end" : "bg-muted justify-start")}>
-                    <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
-                  </div>
-                </button>
-              )}
-
               {/* Toggle Adriano (independente dos pais) */}
               <button
-                onClick={() => setIsAdriano(v => !v)}
+                onClick={() => { setIsAdriano(v => { if (v) setIsLuisa(false); return !v; }); }}
                 className={cn("w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
                   isAdriano ? "border-blue-400 bg-blue-50" : "border-[#E8ECF5] bg-[#E8ECF5]")}>
                 <div className="flex items-center gap-2">
@@ -491,9 +472,27 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
                 </div>
               </button>
               {isAdriano && (
-                <p className="text-[10px] text-blue-600 px-4 -mt-2">
-                  O valor será dividido por 2. Metade fica na sua despesa, metade vai para a aba Pais &gt; Adriano.
-                </p>
+                <>
+                  <p className="text-[10px] text-blue-600 px-4 -mt-2">
+                    O valor será dividido por 2. Metade fica na sua despesa, metade vai para a aba Pais &gt; Adriano.
+                  </p>
+                  {/* Toggle Luísa (dentro de Adriano) */}
+                  <button
+                    onClick={() => setIsLuisa(v => !v)}
+                    className={cn("w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
+                      isLuisa ? "border-pink-400 bg-pink-50" : "border-[#E8ECF5] bg-[#E8ECF5]")}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">👩‍🦳</span>
+                      <span className={cn("text-sm font-medium", isLuisa ? "text-pink-700" : "text-muted-foreground")}>
+                        Despesa da Luísa
+                      </span>
+                    </div>
+                    <div className={cn("w-9 h-5 rounded-full flex items-center px-0.5 transition-all",
+                      isLuisa ? "bg-pink-400 justify-end" : "bg-muted justify-start")}>
+                      <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                    </div>
+                  </button>
+                </>
               )}
             </>
           )}
@@ -539,15 +538,15 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
             onClick={handleSave}
             disabled={isPending}
             className={cn("w-full h-12 font-semibold text-sm rounded-2xl text-white transition-all disabled:opacity-50",
+             isAdriano && isLuisa ? "bg-pink-500" :
               isAdriano ? "bg-blue-500" :
               isVicente ? "bg-green-500" :
-              isLuisa ? "bg-pink-500" :
               isPais ? "bg-amber-500" :
               "gradient-emerald")}>
             {isPending ? "Salvando..." :
+             isAdriano && isLuisa ? "👩‍🦳 Salvar dividido (Luísa)" :
               isAdriano ? "👨 Salvar dividido com Adriano" :
               isVicente ? "👦 Salvar despesa do Vicente" :
-              isLuisa ? "👩‍🦳 Salvar despesa da Luísa" :
               isPais ? "🧓 Salvar despesa dos pais" :
               tipo === "receita" ? "💰 Salvar receita" :
               isParcelado ? `💳 Salvar em ${parcelas}x` :

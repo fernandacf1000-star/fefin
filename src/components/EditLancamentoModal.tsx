@@ -168,6 +168,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       cartao_id: opts.isReceitaEdit ? null : opts.cartao,
       subcategoria_pais: opts.isReceitaEdit ? null : getSubPais(),
       adriano: false,
+      pago_por: pagoPor,
     };
     if (opts.isReceitaEdit) {
       updates.categoria = receitaCatMapEdit[receitaCat];

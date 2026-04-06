@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
 import { useLancamentos, calcularSaldoAdriano } from "@/hooks/useLancamentos";
 import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";

@@ -78,6 +78,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   const [isVicente, setIsVicente] = useState(false);
   const [isLuisa, setIsLuisa] = useState(false);
   const [isAdriano, setIsAdriano] = useState(false);
+  const [pagoPor, setPagoPor] = useState<'voce' | 'adriano'>('voce');
   const [receitaCat, setReceitaCat] = useState<ReceitaCatEdit>('Salario');
 
   const updateLancamento = useUpdateLancamento();

@@ -127,7 +127,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
             parcela_atual: null, parcela_total: null, is_parcelado: false,
             parcelamento_id: null, pago: false, forma_pagamento: null, cartao_id: null,
             recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
-            adriano: false,
+            adriano: false, pago_por: 'voce',
           });
         }
         handleClose(); return;

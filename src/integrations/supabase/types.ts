@@ -211,6 +211,7 @@ export type Database = {
           lancamento_origem_id: string | null
           mes_referencia: string
           pago: boolean
+          pago_por: string
           parcela_atual: number | null
           parcela_total: number | null
           parcelamento_id: string | null
@@ -239,6 +240,7 @@ export type Database = {
           lancamento_origem_id?: string | null
           mes_referencia?: string
           pago?: boolean
+          pago_por?: string
           parcela_atual?: number | null
           parcela_total?: number | null
           parcelamento_id?: string | null
@@ -267,6 +269,7 @@ export type Database = {
           lancamento_origem_id?: string | null
           mes_referencia?: string
           pago?: boolean
+          pago_por?: string
           parcela_atual?: number | null
           parcela_total?: number | null
           parcelamento_id?: string | null

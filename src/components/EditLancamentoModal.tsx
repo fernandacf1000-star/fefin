@@ -249,6 +249,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     forma_pagamento: forma,
     cartao_id: cartao,
     adriano: true,
+    pago_por: pagoPor,
     subcategoria_pais: 'Adriano',
     // Mirror keeps the SAME date as its origin
     data: origin.data,

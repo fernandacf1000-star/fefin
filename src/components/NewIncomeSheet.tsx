@@ -88,6 +88,7 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
             recorrencia_ate: recorrenciaAte ? format(recorrenciaAte, "yyyy-MM-dd") : null,
             recorrencia_pai_id: recorrenciaPaiId,
             adriano: false,
+            pago_por: 'voce',
           });
         }
         await addMultiple.mutateAsync(lancamentos);
@@ -114,6 +115,7 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
           recorrencia_ate: null,
           recorrencia_pai_id: null,
           adriano: false,
+          pago_por: 'voce',
         });
       }
       onClose();

@@ -51,6 +51,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
   const [isVicente, setIsVicente] = useState(false);
   const [isLuisa, setIsLuisa] = useState(false);
   const [isAdriano, setIsAdriano] = useState(false);
+  const [pagoPor, setPagoPor] = useState<'voce' | 'adriano'>('voce');
   const [formaPagamento, setFormaPagamento] = useState<"Dinheiro" | "Crédito">("Dinheiro");
   const [cartaoId, setCartaoId] = useState<string>("");
   const [isParcelado, setIsParcelado] = useState(false);
@@ -64,13 +65,13 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
   // Block split for dependents: only "voce" or "adriano" can split
   const canSplit = !isPais;
   React.useEffect(() => {
-    if (isPais) setIsAdriano(false);
+    if (isPais) { setIsAdriano(false); setPagoPor('voce'); }
   }, [isPais]);
 
   const reset = () => {
     setTipo(initialTipo); setDescricao(""); setValor(""); setData(new Date());
     setSubcategoria(null); setSelectedGroup(null); setIsPais(false); setIsVicente(false); setIsLuisa(false);
-    setIsAdriano(false);
+    setIsAdriano(false); setPagoPor('voce');
     setFormaPagamento("Dinheiro"); setCartaoId("");
     setIsParcelado(false); setParcelas("2");
     setRecorrente(false); setDiaRecorrencia("1");
@@ -113,7 +114,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
               parcela_atual: null, parcela_total: null, is_parcelado: false, parcelamento_id: null,
               pago: false, forma_pagamento: null, cartao_id: null,
               recorrente: true, dia_recorrencia: dia, recorrencia_ate: null, recorrencia_pai_id: paiId,
-              adriano: false,
+              adriano: false, pago_por: 'voce',
             });
           }
           await addMultiple.mutateAsync(rows);
@@ -126,7 +127,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
             parcela_atual: null, parcela_total: null, is_parcelado: false,
             parcelamento_id: null, pago: false, forma_pagamento: null, cartao_id: null,
             recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
-            adriano: false,
+            adriano: false, pago_por: 'voce',
           });
         }
         handleClose(); return;
@@ -145,7 +146,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
         descricao, valor: valorPrincipal, tipo: "despesa" as const, categoria: "extra",
         subcategoria_pais: subPais, subcategoria: subcategoria || null, categoria_macro: macro,
         pago: false, forma_pagamento: forma, cartao_id: cartao,
-        adriano: false,
+        adriano: false, pago_por: pagoPor,
       };
 
       // Linha do Adriano (segunda metade)
@@ -153,7 +154,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
         descricao, valor: numValor / 2, tipo: "despesa" as const, categoria: baseRow.categoria,
         subcategoria_pais: "Adriano", subcategoria: subcategoria || null, categoria_macro: macro,
         pago: false, forma_pagamento: forma, cartao_id: cartao,
-        adriano: true,
+        adriano: true, pago_por: pagoPor,
       } : null;
 
       if (isParcelado) {
@@ -499,9 +500,23 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
                 </div>
               </button>
               {isAdriano && (
-                <p className="text-[10px] text-blue-600 px-4 -mt-2">
-                  O valor será dividido por 2. Metade fica na sua despesa, metade vai para a aba Pais &gt; Adriano.
-                </p>
+                <div className="space-y-2 px-1 -mt-1">
+                  <p className="text-[10px] text-blue-600">
+                    O valor será dividido por 2. Metade fica na sua despesa, metade vai para a aba Pais &gt; Adriano.
+                  </p>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5">Quem pagou?</p>
+                    <div className="flex gap-1 p-1 rounded-xl bg-[#E8ECF5]">
+                      {([{ key: 'voce', label: '🙋‍♀️ Eu' }, { key: 'adriano', label: '👨 Adriano' }] as const).map(opt => (
+                        <button key={opt.key} onClick={() => setPagoPor(opt.key as 'voce' | 'adriano')}
+                          className={cn("flex-1 py-2 rounded-lg text-xs font-semibold transition-all",
+                            pagoPor === opt.key ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
               {!canSplit && (
                 <p className="text-[10px] text-amber-600 px-4 -mt-2">

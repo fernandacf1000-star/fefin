@@ -78,6 +78,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   const [isVicente, setIsVicente] = useState(false);
   const [isLuisa, setIsLuisa] = useState(false);
   const [isAdriano, setIsAdriano] = useState(false);
+  const [pagoPor, setPagoPor] = useState<'voce' | 'adriano'>('voce');
   const [receitaCat, setReceitaCat] = useState<ReceitaCatEdit>('Salario');
 
   const updateLancamento = useUpdateLancamento();
@@ -109,6 +110,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     const isAdrianoMirror = lancamento.adriano || false;
     setIsPais((subP != null && subP !== '' && !isAdrianoMirror) || subP === 'Vicente' || subP === 'Luisa' || subP === 'Luísa');
     setIsAdriano(isAdrianoMirror);
+    setPagoPor((lancamento.pago_por as 'voce' | 'adriano') || 'voce');
     if (lancamento.cartao_id) {
       setFormaPagamento('credito');
       setCartaoId(lancamento.cartao_id);
@@ -122,7 +124,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   // Block split for dependents
   const canSplit = !isPais;
   useEffect(() => {
-    if (isPais) setIsAdriano(false);
+    if (isPais) { setIsAdriano(false); setPagoPor('voce'); }
   }, [isPais]);
 
   const handleValorChange = (raw: string) => {
@@ -166,6 +168,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       cartao_id: opts.isReceitaEdit ? null : opts.cartao,
       subcategoria_pais: opts.isReceitaEdit ? null : getSubPais(),
       adriano: false,
+      pago_por: pagoPor,
     };
     if (opts.isReceitaEdit) {
       updates.categoria = receitaCatMapEdit[receitaCat];
@@ -212,6 +215,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       categoria_macro: fieldUpdates.categoria_macro,
       forma_pagamento: fieldUpdates.forma_pagamento,
       cartao_id: fieldUpdates.cartao_id,
+      pago_por: fieldUpdates.pago_por,
     };
     for (const originId of originIds) {
       await supabase.from('lancamentos').update(mirrorFields as any).eq('lancamento_origem_id', originId);
@@ -246,6 +250,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     forma_pagamento: forma,
     cartao_id: cartao,
     adriano: true,
+    pago_por: pagoPor,
     subcategoria_pais: 'Adriano',
     // Mirror keeps the SAME date as its origin
     data: origin.data,
@@ -791,6 +796,20 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
                 <p className='text-[10px] text-amber-600 px-4 -mt-2'>
                   Despesas de Pais/Vicente/Luísa não podem ser divididas.
                 </p>
+              )}
+              {isAdriano && (
+                <div className='space-y-1.5 px-1 -mt-1'>
+                  <p className='text-xs font-medium text-muted-foreground'>Quem pagou?</p>
+                  <div className='flex gap-1 p-1 rounded-xl bg-[#E8ECF5]'>
+                    {([{ key: 'voce', label: '🙋‍♀️ Eu' }, { key: 'adriano', label: '👨 Adriano' }] as const).map(opt => (
+                      <button key={opt.key} onClick={() => setPagoPor(opt.key as 'voce' | 'adriano')}
+                        className={cn('flex-1 py-2 rounded-lg text-xs font-semibold transition-all',
+                          pagoPor === opt.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground')}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </>
           )}

@@ -215,6 +215,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       categoria_macro: fieldUpdates.categoria_macro,
       forma_pagamento: fieldUpdates.forma_pagamento,
       cartao_id: fieldUpdates.cartao_id,
+      pago_por: fieldUpdates.pago_por,
     };
     for (const originId of originIds) {
       await supabase.from('lancamentos').update(mirrorFields as any).eq('lancamento_origem_id', originId);

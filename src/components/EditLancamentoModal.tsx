@@ -124,7 +124,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   // Block split for dependents
   const canSplit = !isPais;
   useEffect(() => {
-    if (isPais) setIsAdriano(false);
+    if (isPais) { setIsAdriano(false); setPagoPor('voce'); }
   }, [isPais]);
 
   const handleValorChange = (raw: string) => {

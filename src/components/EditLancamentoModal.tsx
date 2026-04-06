@@ -797,6 +797,20 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
                   Despesas de Pais/Vicente/Luísa não podem ser divididas.
                 </p>
               )}
+              {isAdriano && (
+                <div className='space-y-1.5 px-1 -mt-1'>
+                  <p className='text-xs font-medium text-muted-foreground'>Quem pagou?</p>
+                  <div className='flex gap-1 p-1 rounded-xl bg-[#E8ECF5]'>
+                    {([{ key: 'voce', label: '🙋‍♀️ Eu' }, { key: 'adriano', label: '👨 Adriano' }] as const).map(opt => (
+                      <button key={opt.key} onClick={() => setPagoPor(opt.key as 'voce' | 'adriano')}
+                        className={cn('flex-1 py-2 rounded-lg text-xs font-semibold transition-all',
+                          pagoPor === opt.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground')}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
 

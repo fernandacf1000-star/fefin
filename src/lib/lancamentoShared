@@ -1,5 +1,12 @@
 import type { Lancamento } from "@/hooks/useLancamentos";
 
+export function genUUIDSafe(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function normalizeCategoria(categoria?: string | null) {
   const value = (categoria ?? "").trim().toLowerCase();
   if (!value || value === "extra") return "despesa";
@@ -7,13 +14,12 @@ export function normalizeCategoria(categoria?: string | null) {
 }
 
 export function splitValor(total: number) {
-  const metade1 = Math.round((total / 2) * 100) / 100;
-  const metade2 = Math.round((total - metade1) * 100) / 100;
-  return [metade1, metade2] as const;
+  const principal = Math.round((total / 2) * 100) / 100;
+  const espelho = Math.round((total - principal) * 100) / 100;
+  return [principal, espelho] as const;
 }
 
-export function buildPrincipalAndMirror(params: {
-  original?: Partial<Lancamento>;
+type SharedBaseParams = {
   descricao: string;
   valorTotal: number;
   categoria?: string | null;
@@ -31,19 +37,17 @@ export function buildPrincipalAndMirror(params: {
   dia_recorrencia?: number | null;
   recorrencia_pai_id?: string | null;
   shared_group_id?: string | null;
-}) {
-  const [valorPrincipal, valorAdriano] = splitValor(params.valorTotal);
-  const sharedGroupId =
-    params.shared_group_id ??
-    (typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+};
 
+export function buildPrincipalAndMirror(params: SharedBaseParams) {
+  const [valorPrincipal, valorEspelho] = splitValor(params.valorTotal);
   const categoria = normalizeCategoria(params.categoria);
+  const sharedGroupId = params.shared_group_id ?? genUUIDSafe();
 
   const principal = {
     descricao: params.descricao,
     valor: valorPrincipal,
+    tipo: "despesa" as const,
     categoria,
     subcategoria: params.subcategoria ?? null,
     categoria_macro: params.categoria_macro ?? null,
@@ -52,21 +56,24 @@ export function buildPrincipalAndMirror(params: {
     subcategoria_pais: params.subcategoria_pais ?? null,
     data: params.data,
     mes_referencia: params.mes_referencia,
+    parcela_atual: params.parcela_atual ?? null,
+    parcela_total: params.parcela_total ?? null,
+    is_parcelado: !!params.parcelamento_id,
+    parcelamento_id: params.parcelamento_id ?? null,
+    pago: false,
+    recorrente: !!params.recorrente,
+    dia_recorrencia: params.dia_recorrencia ?? null,
+    recorrencia_ate: null,
+    recorrencia_pai_id: params.recorrencia_pai_id ?? null,
     adriano: false,
     shared_group_id: sharedGroupId,
     shared_role: "principal" as const,
-    is_parcelado: !!params.parcelamento_id,
-    parcelamento_id: params.parcelamento_id ?? null,
-    parcela_atual: params.parcela_atual ?? null,
-    parcela_total: params.parcela_total ?? null,
-    recorrente: !!params.recorrente,
-    dia_recorrencia: params.dia_recorrencia ?? null,
-    recorrencia_pai_id: params.recorrencia_pai_id ?? null,
   };
 
   const mirror = {
     descricao: params.descricao,
-    valor: valorAdriano,
+    valor: valorEspelho,
+    tipo: "despesa" as const,
     categoria,
     subcategoria: params.subcategoria ?? null,
     categoria_macro: params.categoria_macro ?? null,
@@ -75,17 +82,24 @@ export function buildPrincipalAndMirror(params: {
     subcategoria_pais: "Adriano",
     data: params.data,
     mes_referencia: params.mes_referencia,
+    parcela_atual: params.parcela_atual ?? null,
+    parcela_total: params.parcela_total ?? null,
+    is_parcelado: !!params.parcelamento_id,
+    parcelamento_id: params.parcelamento_id ?? null,
+    pago: false,
+    recorrente: !!params.recorrente,
+    dia_recorrencia: params.dia_recorrencia ?? null,
+    recorrencia_ate: null,
+    recorrencia_pai_id: params.recorrencia_pai_id ?? null,
     adriano: true,
     shared_group_id: sharedGroupId,
     shared_role: "adriano" as const,
-    is_parcelado: !!params.parcelamento_id,
-    parcelamento_id: params.parcelamento_id ?? null,
-    parcela_atual: params.parcela_atual ?? null,
-    parcela_total: params.parcela_total ?? null,
-    recorrente: !!params.recorrente,
-    dia_recorrencia: params.dia_recorrencia ?? null,
-    recorrencia_pai_id: params.recorrencia_pai_id ?? null,
   };
 
   return { principal, mirror, sharedGroupId };
+}
+
+export function getLancamentoSharedState(lancamento?: Partial<Lancamento> | null) {
+  if (!lancamento) return false;
+  return !!lancamento.shared_group_id || !!lancamento.adriano;
 }

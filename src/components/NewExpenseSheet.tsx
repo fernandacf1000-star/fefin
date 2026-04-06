@@ -146,7 +146,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
         descricao, valor: valorPrincipal, tipo: "despesa" as const, categoria: "extra",
         subcategoria_pais: subPais, subcategoria: subcategoria || null, categoria_macro: macro,
         pago: false, forma_pagamento: forma, cartao_id: cartao,
-        adriano: false,
+        adriano: false, pago_por: pagoPor,
       };
 
       // Linha do Adriano (segunda metade)

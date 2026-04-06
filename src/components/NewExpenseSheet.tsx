@@ -500,9 +500,23 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
                 </div>
               </button>
               {isAdriano && (
-                <p className="text-[10px] text-blue-600 px-4 -mt-2">
-                  O valor será dividido por 2. Metade fica na sua despesa, metade vai para a aba Pais &gt; Adriano.
-                </p>
+                <div className="space-y-2 px-1 -mt-1">
+                  <p className="text-[10px] text-blue-600">
+                    O valor será dividido por 2. Metade fica na sua despesa, metade vai para a aba Pais &gt; Adriano.
+                  </p>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5">Quem pagou?</p>
+                    <div className="flex gap-1 p-1 rounded-xl bg-[#E8ECF5]">
+                      {([{ key: 'voce', label: '🙋‍♀️ Eu' }, { key: 'adriano', label: '👨 Adriano' }] as const).map(opt => (
+                        <button key={opt.key} onClick={() => setPagoPor(opt.key as 'voce' | 'adriano')}
+                          className={cn("flex-1 py-2 rounded-lg text-xs font-semibold transition-all",
+                            pagoPor === opt.key ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               )}
               {!canSplit && (
                 <p className="text-[10px] text-amber-600 px-4 -mt-2">

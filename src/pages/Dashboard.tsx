@@ -166,6 +166,9 @@ export default function Dashboard() {
     [receitas],
   );
 
+  // ── Saldo Adriano ─────────────────────────────────────────────────────────
+  const saldoAdriano = useMemo(() => calcularSaldoAdriano(lancamentos), [lancamentos]);
+
   // ── Quinzenas ─────────────────────────────────────────────────────────────
   const quinzenas = useMemo(() => {
     const lastDay = getLastDay(mesAtual.year, mesAtual.month);

@@ -1,1 +1,91 @@
+import type { Lancamento } from "@/hooks/useLancamentos";
 
+export function normalizeCategoria(categoria?: string | null) {
+  const value = (categoria ?? "").trim().toLowerCase();
+  if (!value || value === "extra") return "despesa";
+  return value;
+}
+
+export function splitValor(total: number) {
+  const metade1 = Math.round((total / 2) * 100) / 100;
+  const metade2 = Math.round((total - metade1) * 100) / 100;
+  return [metade1, metade2] as const;
+}
+
+export function buildPrincipalAndMirror(params: {
+  original?: Partial<Lancamento>;
+  descricao: string;
+  valorTotal: number;
+  categoria?: string | null;
+  subcategoria?: string | null;
+  categoria_macro?: string | null;
+  forma_pagamento?: string | null;
+  cartao_id?: string | null;
+  data: string;
+  mes_referencia: string;
+  subcategoria_pais?: string | null;
+  parcelamento_id?: string | null;
+  parcela_atual?: number | null;
+  parcela_total?: number | null;
+  recorrente?: boolean;
+  dia_recorrencia?: number | null;
+  recorrencia_pai_id?: string | null;
+  shared_group_id?: string | null;
+}) {
+  const [valorPrincipal, valorAdriano] = splitValor(params.valorTotal);
+  const sharedGroupId =
+    params.shared_group_id ??
+    (typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
+  const categoria = normalizeCategoria(params.categoria);
+
+  const principal = {
+    descricao: params.descricao,
+    valor: valorPrincipal,
+    categoria,
+    subcategoria: params.subcategoria ?? null,
+    categoria_macro: params.categoria_macro ?? null,
+    forma_pagamento: params.forma_pagamento ?? null,
+    cartao_id: params.cartao_id ?? null,
+    subcategoria_pais: params.subcategoria_pais ?? null,
+    data: params.data,
+    mes_referencia: params.mes_referencia,
+    adriano: false,
+    shared_group_id: sharedGroupId,
+    shared_role: "principal" as const,
+    is_parcelado: !!params.parcelamento_id,
+    parcelamento_id: params.parcelamento_id ?? null,
+    parcela_atual: params.parcela_atual ?? null,
+    parcela_total: params.parcela_total ?? null,
+    recorrente: !!params.recorrente,
+    dia_recorrencia: params.dia_recorrencia ?? null,
+    recorrencia_pai_id: params.recorrencia_pai_id ?? null,
+  };
+
+  const mirror = {
+    descricao: params.descricao,
+    valor: valorAdriano,
+    categoria,
+    subcategoria: params.subcategoria ?? null,
+    categoria_macro: params.categoria_macro ?? null,
+    forma_pagamento: params.forma_pagamento ?? null,
+    cartao_id: params.cartao_id ?? null,
+    subcategoria_pais: "Adriano",
+    data: params.data,
+    mes_referencia: params.mes_referencia,
+    adriano: true,
+    shared_group_id: sharedGroupId,
+    shared_role: "adriano" as const,
+    is_parcelado: !!params.parcelamento_id,
+    parcelamento_id: params.parcelamento_id ?? null,
+    parcela_atual: params.parcela_atual ?? null,
+    parcela_total: params.parcela_total ?? null,
+    recorrente: !!params.recorrente,
+    dia_recorrencia: params.dia_recorrencia ?? null,
+    recorrencia_pai_id: params.recorrencia_pai_id ?? null,
+  };
+
+  return { principal, mirror, sharedGroupId };
+}

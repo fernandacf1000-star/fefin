@@ -320,8 +320,35 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Saldo Adriano */}
+        {saldoAdriano !== 0 && (
+          <div className={cn(
+            "glass-card px-4 py-3 flex items-center justify-between border-l-4",
+            saldoAdriano > 0 ? "border-l-emerald-500" : "border-l-red-400"
+          )}>
+            <div className="flex items-center gap-2">
+              <Users size={14} className="text-muted-foreground" />
+              <span className="text-[11px] text-muted-foreground font-medium">
+                {saldoAdriano > 0
+                  ? "Adriano te deve"
+                  : "Você deve para Adriano"}
+              </span>
+            </div>
+            <span className={cn("text-sm font-bold", saldoAdriano > 0 ? "text-emerald-600" : "text-red-500")}>
+              {fmt(Math.abs(saldoAdriano))}
+            </span>
+          </div>
+        )}
+        {saldoAdriano === 0 && lancamentos.some(l => l.adriano) && (
+          <div className="glass-card px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users size={14} className="text-muted-foreground" />
+              <span className="text-[11px] text-muted-foreground font-medium">Contas com Adriano</span>
+            </div>
+            <span className="text-sm font-medium text-emerald-600">✓ Em dia</span>
+          </div>
+        )}
 
-        {/* Faturas por cartão */}
         {porCartao.length > 0 && (
           <div className="glass-card p-4 space-y-3">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Faturas do mês</p>

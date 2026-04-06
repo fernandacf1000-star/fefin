@@ -65,7 +65,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
   // Block split for dependents: only "voce" or "adriano" can split
   const canSplit = !isPais;
   React.useEffect(() => {
-    if (isPais) setIsAdriano(false);
+    if (isPais) { setIsAdriano(false); setPagoPor('voce'); }
   }, [isPais]);
 
   const reset = () => {

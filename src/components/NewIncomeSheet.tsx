@@ -115,6 +115,7 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
           recorrencia_ate: null,
           recorrencia_pai_id: null,
           adriano: false,
+          pago_por: 'voce',
         });
       }
       onClose();

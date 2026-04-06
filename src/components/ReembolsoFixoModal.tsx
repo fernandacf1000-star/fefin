@@ -113,6 +113,7 @@ const ReembolsoFixoModal = ({ open, onClose }: ReembolsoFixoModalProps) => {
           recorrencia_ate: null,
           recorrencia_pai_id: null,
           adriano: false,
+          pago_por: 'voce',
         });
         toast.success("Reembolso salvo!");
       }

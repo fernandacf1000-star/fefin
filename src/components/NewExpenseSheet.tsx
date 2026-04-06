@@ -71,7 +71,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
   const reset = () => {
     setTipo(initialTipo); setDescricao(""); setValor(""); setData(new Date());
     setSubcategoria(null); setSelectedGroup(null); setIsPais(false); setIsVicente(false); setIsLuisa(false);
-    setIsAdriano(false);
+    setIsAdriano(false); setPagoPor('voce');
     setFormaPagamento("Dinheiro"); setCartaoId("");
     setIsParcelado(false); setParcelas("2");
     setRecorrente(false); setDiaRecorrencia("1");

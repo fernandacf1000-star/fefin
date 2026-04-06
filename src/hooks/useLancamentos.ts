@@ -29,7 +29,40 @@ export interface Lancamento {
   recorrencia_pai_id: string | null;
   lancamento_origem_id?: string | null;
   adriano: boolean;
+  pago_por: string;
   created_at: string;
+}
+
+/**
+ * Calcula o saldo líquido entre o usuário e Adriano.
+ * saldo > 0 → Adriano deve para o usuário
+ * saldo < 0 → usuário deve para Adriano
+ */
+export function calcularSaldoAdriano(lancamentos: Lancamento[]): number {
+  let saldo = 0;
+  for (const l of lancamentos) {
+    // Only shared expenses (adriano mirrors or originals with adriano split) count
+    // We identify shared expenses by checking if the item has a linked mirror (adriano=true)
+    // or if the item itself is a mirror. We use pago_por to determine direction.
+    if (l.adriano) {
+      // This is the Adriano mirror half — check who paid on the origin
+      // Mirror always represents Adriano's share
+      if (l.pago_por === 'voce') {
+        // User paid → Adriano owes this amount
+        saldo += Number(l.valor);
+      } else if (l.pago_por === 'adriano') {
+        // Adriano paid → user owes nothing extra (Adriano paid his own share)
+      }
+    } else if (l.lancamento_origem_id === null && l.tipo === 'despesa') {
+      // Check if this item HAS a mirror (i.e., it's a split expense)
+      // We can't check mirrors here without the full list, so we use pago_por
+      // If pago_por === 'adriano' and it's NOT a mirror, user owes this amount
+      if (l.pago_por === 'adriano') {
+        saldo -= Number(l.valor); // user owes their own half to Adriano
+      }
+    }
+  }
+  return saldo;
 }
 
 export const useLancamentos = (mesReferencia?: string) => {

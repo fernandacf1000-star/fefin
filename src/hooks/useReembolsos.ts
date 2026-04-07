@@ -23,6 +23,7 @@ export const useReembolsos = (mesReferencia?: string) => {
       let query = supabase
         .from("reembolsos")
         .select("*")
+        .eq("user_id", user!.id)
         .order("data_reembolso", { ascending: false });
 
       const { data, error } = await query;
@@ -100,6 +101,28 @@ export const useAddReembolso = () => {
         .single();
       if (error) throw error;
       return data;
+    },
+    onSuccess: () => {
+      queryClient.refetchQueries({ queryKey: ["reembolsos"], exact: false });
+      queryClient.refetchQueries({ queryKey: ["lancamentos"], exact: false });
+    },
+  });
+};
+
+
+export const useUpdateReembolso = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      updates,
+    }: {
+      id: string;
+      updates: Partial<Pick<Reembolso, "valor_reembolsado" | "quem_reembolsou" | "data_reembolso" | "observacao">>;
+    }) => {
+      const { error } = await supabase.from("reembolsos").update(updates).eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.refetchQueries({ queryKey: ["reembolsos"], exact: false });

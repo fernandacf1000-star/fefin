@@ -168,6 +168,7 @@ export default function Dashboard() {
     const map: Record<string, number> = {};
     despesas.forEach((l) => {
       const cat = getCategoriaDashboard(l);
+      if (!cat || cat === "Sem categoria" || cat.toLowerCase() === "despesa" || cat.toLowerCase() === "extra") return;
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });
     return Object.entries(map)

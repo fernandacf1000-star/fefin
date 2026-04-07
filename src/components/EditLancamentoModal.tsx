@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
 
-import type { Lancamento } from '@/hooks/useLancamentos';
 import {
   useUpdateLancamento,
   useAddMultipleLancamentos,
+  type Lancamento,
 } from '@/hooks/useLancamentos';
 import type { Cartao } from '@/hooks/useCartoes';
 import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from '@/lib/subcategorias';

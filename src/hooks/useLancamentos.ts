@@ -48,7 +48,7 @@ export function getCategoriaDashboard(l: Lancamento): string {
   if (l.categoria_macro && l.categoria_macro.trim() !== "") return l.categoria_macro;
   // fallback seguro — nunca retornar "extra" ou "despesa" como label visual
   const cat = (l.categoria || "").trim().toLowerCase();
-  if (!cat || cat === "extra" || cat === "despesa" || cat === "outros") return "Sem categoria";
+  if (!cat || cat === "extra" || cat === "despesa" || cat === "outros" || cat === "sem categoria") return "";
   return l.categoria;
 }
 

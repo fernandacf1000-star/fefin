@@ -218,6 +218,8 @@ export type Database = {
           recorrencia_ate: string | null
           recorrencia_pai_id: string | null
           recorrente: boolean
+          shared_group_id: string | null
+          shared_role: string | null
           subcategoria: string | null
           subcategoria_pais: string | null
           tipo: string
@@ -247,6 +249,8 @@ export type Database = {
           recorrencia_ate?: string | null
           recorrencia_pai_id?: string | null
           recorrente?: boolean
+          shared_group_id?: string | null
+          shared_role?: string | null
           subcategoria?: string | null
           subcategoria_pais?: string | null
           tipo?: string
@@ -276,6 +280,8 @@ export type Database = {
           recorrencia_ate?: string | null
           recorrencia_pai_id?: string | null
           recorrente?: boolean
+          shared_group_id?: string | null
+          shared_role?: string | null
           subcategoria?: string | null
           subcategoria_pais?: string | null
           tipo?: string

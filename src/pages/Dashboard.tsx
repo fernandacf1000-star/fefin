@@ -74,9 +74,17 @@ function getMesLabel(year: number, month: number) {
 }
 
 const emojiMapDash: Record<string, string> = {
-  Moradia: "🏘️", Alimentação: "🥗", Transporte: "🚗", Saúde: "💊",
-  Pessoal: "💅", Lazer: "🎮", Investimentos: "📈", Pais: "🧓",
-  Vicente: "👦", "Luísa": "👩‍🦳", Adriano: "👨", "Sem categoria": "📦",
+  Moradia: "🏘️",
+  Alimentação: "🥗",
+  Transporte: "🚗",
+  Saúde: "💊",
+  Pessoal: "💅",
+  Lazer: "🎮",
+  Investimentos: "📈",
+  Pais: "🧓",
+  Vicente: "👦",
+  "Luísa": "💗",
+  Adriano: "👨",
 };
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -103,8 +111,15 @@ export default function Dashboard() {
     setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
 
   // ── Totals ────────────────────────────────────────────────────────────────
-  const despesas = useMemo(() => lancamentos.filter((l) => l.tipo === "despesa" && !l.adriano), [lancamentos]);
-  const receitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
+  const despesas = useMemo(
+    () => lancamentos.filter((l) => l.tipo === "despesa" && !l.adriano),
+    [lancamentos]
+  );
+
+  const receitas = useMemo(
+    () => lancamentos.filter((l) => l.tipo === "receita"),
+    [lancamentos]
+  );
 
   const totalReembolsadoMesTabela = useMemo(() => {
     const ids = new Set(despesas.map((l) => l.id));
@@ -114,26 +129,39 @@ export default function Dashboard() {
   }, [despesas, todosReembolsos, mesRef]);
 
   const totalReembolsadoMesReceitas = useMemo(
-    () => lancamentos
-      .filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais")
-      .reduce((s, l) => s + Number(l.valor), 0),
-    [lancamentos],
+    () =>
+      lancamentos
+        .filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais")
+        .reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentos]
   );
 
   const totalReembolsadoMes = totalReembolsadoMesTabela + totalReembolsadoMesReceitas;
 
   const totalResgates = useMemo(
-    () => receitas.filter((l) => l.categoria === "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
-    [receitas],
+    () =>
+      receitas
+        .filter((l) => l.categoria === "resgate_investimento")
+        .reduce((s, l) => s + Number(l.valor), 0),
+    [receitas]
+  );
+
+  const totalDespesasBrutas = useMemo(
+    () => despesas.reduce((s, l) => s + Number(l.valor), 0),
+    [despesas]
   );
 
   const totalDespesas = useMemo(
-    () => despesas.reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,
-    [despesas, totalReembolsadoMes],
+    () => totalDespesasBrutas - totalReembolsadoMes,
+    [totalDespesasBrutas, totalReembolsadoMes]
   );
+
   const totalReceitas = useMemo(
-    () => receitas.filter((l) => l.categoria !== "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
-    [receitas],
+    () =>
+      receitas
+        .filter((l) => l.categoria !== "resgate_investimento")
+        .reduce((s, l) => s + Number(l.valor), 0),
+    [receitas]
   );
 
   // ── Saldo Adriano ─────────────────────────────────────────────────────────
@@ -157,22 +185,34 @@ export default function Dashboard() {
       cartoes
         .map((c) => ({
           cartao: c,
-          total: lancamentos.filter((l) => l.cartao_id === c.id).reduce((s, l) => s + Number(l.valor), 0),
+          total: lancamentos
+            .filter((l) => l.cartao_id === c.id && l.tipo === "despesa" && !l.adriano)
+            .reduce((s, l) => s + Number(l.valor), 0),
         }))
         .filter((x) => x.total > 0),
-    [lancamentos, cartoes],
+    [lancamentos, cartoes]
   );
 
-  // ── Categorias (usando getCategoriaDashboard) ─────────────────────────────
+  // ── Categorias ────────────────────────────────────────────────────────────
   const categorias = useMemo(() => {
     const map: Record<string, number> = {};
+
     despesas.forEach((l) => {
-      const cat = getCategoriaDashboard(l);
-      if (!cat || cat === "Sem categoria" || cat.toLowerCase() === "despesa" || cat.toLowerCase() === "extra") return;
+      const cat = (getCategoriaDashboard(l) || "").trim();
+      const catNorm = cat.toLowerCase();
+
+      if (!cat) return;
+      if (["sem categoria", "despesa", "extra", "outros"].includes(catNorm)) return;
+
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });
+
     return Object.entries(map)
-      .map(([cat, valor]) => ({ cat, valor, emoji: emojiMapDash[cat] || getGroupEmoji(cat) || "📦" }))
+      .map(([cat, valor]) => ({
+        cat,
+        valor,
+        emoji: emojiMapDash[cat] || getGroupEmoji(cat) || "📦",
+      }))
       .sort((a, b) => b.valor - a.valor);
   }, [despesas]);
 
@@ -182,7 +222,6 @@ export default function Dashboard() {
       <BottomNav />
 
       <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <MascotHead size={48} />
@@ -192,17 +231,24 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={prevMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              onClick={prevMes}
+              className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            >
               <ChevronLeft size={15} />
             </button>
-            <span className="text-xl font-bold text-foreground px-1 min-w-[96px] text-center">{mesLabel}</span>
-            <button onClick={nextMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+            <span className="text-xl font-bold text-foreground px-1 min-w-[96px] text-center">
+              {mesLabel}
+            </span>
+            <button
+              onClick={nextMes}
+              className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            >
               <ChevronRight size={15} />
             </button>
           </div>
         </div>
 
-        {/* Melhor cartão chip */}
         {melhorCartao && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-border w-fit shadow-sm">
             <BandeiraLogo bandeira={melhorCartao.bandeira} size={22} />
@@ -211,38 +257,43 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Despesas / Receitas */}
         <div className="grid grid-cols-2 gap-3">
           <div className="glass-card p-4 space-y-1">
             <div className="flex items-center gap-1.5">
               <TrendingDown size={13} className="text-destructive" />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Despesas</span>
+              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                Despesas
+              </span>
             </div>
             <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalDespesas)}</p>
           </div>
           <div className="glass-card p-4 space-y-1">
             <div className="flex items-center gap-1.5">
               <TrendingUp size={13} style={{ color: "#0D9488" }} />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Receitas</span>
+              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                Receitas
+              </span>
             </div>
             <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalReceitas)}</p>
           </div>
         </div>
 
-        {/* Resgates */}
         {totalResgates > 0 && (
           <div className="glass-card px-4 py-3 flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Resgates</span>
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+              Resgates
+            </span>
             <span className="text-sm font-bold text-muted-foreground">{fmt(totalResgates)}</span>
           </div>
         )}
 
-        {/* Saldo Adriano */}
         {saldoAdriano !== 0 && (
-          <div className={cn(
-            "glass-card px-4 py-3 flex items-center justify-between border-l-4",
-            saldoAdriano > 0 ? "border-l-emerald-500" : "border-l-red-400"
-          )}>
+          <div
+            className={cn(
+              "glass-card px-4 py-3 flex items-center justify-between border-l-4",
+              saldoAdriano > 0 ? "border-l-emerald-500" : "border-l-red-400"
+            )}
+          >
             <div className="flex items-center gap-2">
               <Users size={14} className="text-muted-foreground" />
               <span className="text-[11px] text-muted-foreground font-medium">
@@ -254,7 +305,8 @@ export default function Dashboard() {
             </span>
           </div>
         )}
-        {saldoAdriano === 0 && lancamentos.some(l => l.adriano) && (
+
+        {saldoAdriano === 0 && lancamentos.some((l) => l.adriano) && (
           <div className="glass-card px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users size={14} className="text-muted-foreground" />
@@ -266,7 +318,9 @@ export default function Dashboard() {
 
         {porCartao.length > 0 && (
           <div className="glass-card p-4 space-y-3">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Faturas do mês</p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+              Faturas do mês
+            </p>
             <div className="space-y-2.5">
               {porCartao.map(({ cartao, total }) => (
                 <div key={cartao.id} className="flex items-center justify-between">
@@ -281,7 +335,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Categorias */}
         {categorias.length > 0 && (
           <div className="glass-card p-4 space-y-3">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
@@ -289,7 +342,7 @@ export default function Dashboard() {
             </p>
             <div className="space-y-2.5">
               {categorias.map(({ cat, valor, emoji }) => {
-                const pct = totalDespesas > 0 ? (valor / totalDespesas) * 100 : 0;
+                const pct = totalDespesasBrutas > 0 ? (valor / totalDespesasBrutas) * 100 : 0;
                 return (
                   <div key={cat} className="space-y-1">
                     <div className="flex items-center justify-between">
@@ -315,7 +368,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Empty */}
         {!isLoading && lancamentos.length === 0 && (
           <div className="flex flex-col items-center py-16 space-y-3">
             <MascotHead size={48} />

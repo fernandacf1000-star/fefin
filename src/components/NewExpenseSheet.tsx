@@ -143,7 +143,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
       const valorPrincipal = isAdriano ? numValor / 2 : numValor;
 
       const baseRow = {
-        descricao, valor: valorPrincipal, tipo: "despesa" as const, categoria: "extra",
+        descricao, valor: valorPrincipal, tipo: "despesa" as const, categoria: "despesa",
         subcategoria_pais: subPais, subcategoria: subcategoria || null, categoria_macro: macro,
         pago: false, forma_pagamento: forma, cartao_id: cartao,
         adriano: false, pago_por: pagoPor,

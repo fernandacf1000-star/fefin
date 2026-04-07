@@ -190,7 +190,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     if (scope === 'futuras') q = q.gte('data', currentData);
     else if (scope === 'este') q = q.eq('id', lancamento!.id);
     const { data: rows } = await q;
-    return ((rows || []) as Lancamento[]).sort((a, b) => a.data.localeCompare(b.data));
+    return ((rows || []) as unknown as Lancamento[]).sort((a, b) => a.data.localeCompare(b.data));
   };
 
   /**

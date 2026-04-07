@@ -15,13 +15,22 @@ interface Props {
     quem_reembolsou: string;
     data_reembolso: string;
     observacao?: string;
-  }) => void;
+  }) => void | Promise<void>;
+  onDelete?: () => void | Promise<void>;
   descricao: string;
   valorOriginal: number;
+  existingReembolso?: {
+    id: string;
+    valor_reembolsado: number;
+    quem_reembolsou: string;
+    data_reembolso: string;
+    observacao?: string | null;
+  } | null;
   isPending?: boolean;
+  isDeletePending?: boolean;
 }
 
-const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPending }: Props) => {
+const ReembolsoModal = ({ open, onClose, onSave, onDelete, descricao, valorOriginal, existingReembolso, isPending, isDeletePending }: Props) => {
   const today = new Date().toISOString().split("T")[0];
   const [valor, setValor] = useState(valorOriginal);
   const [quem, setQuem] = useState("");
@@ -31,12 +40,12 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
   // Resetar estado sempre que o modal abrir com novo lançamento
   useEffect(() => {
     if (open) {
-      setValor(valorOriginal);
-      setQuem("");
-      setData(today);
-      setObs("");
+      setValor(existingReembolso?.valor_reembolsado ?? valorOriginal);
+      setQuem(existingReembolso?.quem_reembolsou ?? "");
+      setData(existingReembolso?.data_reembolso ?? today);
+      setObs(existingReembolso?.observacao ?? "");
     }
-  }, [open, valorOriginal]);
+  }, [open, valorOriginal, existingReembolso, today]);
 
   if (!open) return null;
 
@@ -57,7 +66,7 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/25 backdrop-blur-sm p-4">
       <div className="glass-card w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-foreground">Registrar reembolso</h3>
+          <h3 className="text-base font-semibold text-foreground">{existingReembolso ? "Editar reembolso" : "Registrar reembolso"}</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X size={18} />
           </button>
@@ -113,12 +122,23 @@ const ReembolsoModal = ({ open, onClose, onSave, descricao, valorOriginal, isPen
           <Button variant="outline" onClick={onClose} className="flex-1">
             Cancelar
           </Button>
+          {existingReembolso && onDelete && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onDelete}
+              disabled={!!isDeletePending}
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              {isDeletePending ? "Excluindo..." : "Excluir"}
+            </Button>
+          )}
           <Button
             onClick={handleSave}
             disabled={isPending || valor <= 0}
             className="flex-1 gradient-emerald text-white border-0"
           >
-            {isPending ? "Salvando..." : "Salvar reembolso"}
+            {isPending ? "Salvando..." : existingReembolso ? "Salvar alterações" : "Salvar reembolso"}
           </Button>
         </div>
       </div>

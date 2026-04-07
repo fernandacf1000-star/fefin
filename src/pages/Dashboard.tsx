@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
-import { useLancamentos, calcularSaldoAdriano } from "@/hooks/useLancamentos";
+import { useLancamentos, calcularSaldoAdriano, getCategoriaDashboard } from "@/hooks/useLancamentos";
 import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";
 import { useProfile } from "@/hooks/useProfile";
 import { useAllReembolsos } from "@/hooks/useReembolsos";
@@ -34,59 +34,34 @@ const BandeiraLogo = ({ bandeira, size = 28 }: { bandeira: string; size?: number
   return null;
 };
 
-// ── Mascot — identical to Splash.tsx canonical SVG ─────────────────────────
-const MascotHead = ({ size = 64 }: { size?: number }) => {
-  return (
-    <svg
-      width={size}
-      height={Math.round(size * 1.2)}
-      viewBox="0 0 100 120"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      {/* Hair / head back */}
-      <ellipse cx="50" cy="42" rx="34" ry="36" fill="#2C1810" />
-      {/* Pigtails */}
-      <path d="M74 45 Q88 55 85 80 Q82 95 75 100 Q80 80 76 65 Q74 55 74 45Z" fill="#2C1810" />
-      <path d="M26 45 Q12 58 15 82 Q18 96 24 100 Q20 80 24 65 Q26 55 26 45Z" fill="#2C1810" />
-      {/* Face */}
-      <ellipse cx="50" cy="50" rx="28" ry="30" fill="#FDDBB4" />
-      {/* Hair fringe */}
-      <ellipse cx="50" cy="18" rx="16" ry="10" fill="#2C1810" />
-      {/* Eyebrows */}
-      <path d="M32 40 Q39 36 44 39" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none" />
-      <path d="M56 39 Q61 36 68 40" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none" />
-      {/* Eyes white */}
-      <ellipse cx="38" cy="47" rx="5" ry="5.5" fill="white" />
-      <ellipse cx="62" cy="47" rx="5" ry="5.5" fill="white" />
-      {/* Pupils */}
-      <ellipse cx="38.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314" />
-      <ellipse cx="62.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314" />
-      {/* Eye shine */}
-      <circle cx="40" cy="46" r="1.2" fill="white" />
-      <circle cx="64" cy="46" r="1.2" fill="white" />
-      {/* Smile */}
-      <path d="M38 63 Q50 72 62 63" stroke="#C68642" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-      {/* Blush */}
-      <ellipse cx="30" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5" />
-      <ellipse cx="70" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5" />
-      {/* Earrings — gold coins with $ */}
-      <circle cx="21" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2" />
-      <text x="21" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">
-        $
-      </text>
-      <circle cx="79" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2" />
-      <text x="79" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">
-        $
-      </text>
-      {/* Body/outfit */}
-      <path d="M22 92 Q20 112 22 118 L78 118 Q80 112 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#6366F1" />
-      {/* Hands — two simple dots */}
-      <ellipse cx="16" cy="104" rx="7" ry="5" fill="#FDDBB4" />
-      <ellipse cx="84" cy="104" rx="7" ry="5" fill="#FDDBB4" />
-    </svg>
-  );
-};
+// ── Mascot ─────────────────────────────────────────────────
+const MascotHead = ({ size = 64 }: { size?: number }) => (
+  <svg width={size} height={Math.round(size * 1.2)} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="42" rx="34" ry="36" fill="#2C1810" />
+    <path d="M74 45 Q88 55 85 80 Q82 95 75 100 Q80 80 76 65 Q74 55 74 45Z" fill="#2C1810" />
+    <path d="M26 45 Q12 58 15 82 Q18 96 24 100 Q20 80 24 65 Q26 55 26 45Z" fill="#2C1810" />
+    <ellipse cx="50" cy="50" rx="28" ry="30" fill="#FDDBB4" />
+    <ellipse cx="50" cy="18" rx="16" ry="10" fill="#2C1810" />
+    <path d="M32 40 Q39 36 44 39" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none" />
+    <path d="M56 39 Q61 36 68 40" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none" />
+    <ellipse cx="38" cy="47" rx="5" ry="5.5" fill="white" />
+    <ellipse cx="62" cy="47" rx="5" ry="5.5" fill="white" />
+    <ellipse cx="38.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314" />
+    <ellipse cx="62.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314" />
+    <circle cx="40" cy="46" r="1.2" fill="white" />
+    <circle cx="64" cy="46" r="1.2" fill="white" />
+    <path d="M38 63 Q50 72 62 63" stroke="#C68642" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+    <ellipse cx="30" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5" />
+    <ellipse cx="70" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5" />
+    <circle cx="21" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2" />
+    <text x="21" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
+    <circle cx="79" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2" />
+    <text x="79" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
+    <path d="M22 92 Q20 112 22 118 L78 118 Q80 112 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#6366F1" />
+    <ellipse cx="16" cy="104" rx="7" ry="5" fill="#FDDBB4" />
+    <ellipse cx="84" cy="104" rx="7" ry="5" fill="#FDDBB4" />
+  </svg>
+);
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function getMesRef(year: number, month: number) {
@@ -94,16 +69,15 @@ function getMesRef(year: number, month: number) {
 }
 
 function getMesLabel(year: number, month: number) {
-  const label = new Date(year, month, 1).toLocaleDateString("pt-BR", {
-    month: "long",
-    year: "numeric",
-  });
+  const label = new Date(year, month, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-function getLastDay(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
+const emojiMapDash: Record<string, string> = {
+  Moradia: "🏘️", Alimentação: "🥗", Transporte: "🚗", Saúde: "💊",
+  Pessoal: "💅", Lazer: "🎮", Investimentos: "📈", Pais: "🧓",
+  Vicente: "👦", "Luísa": "👩‍🦳", Adriano: "👨", "Sem categoria": "📦",
+};
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
 export default function Dashboard() {
@@ -139,7 +113,6 @@ export default function Dashboard() {
       .reduce((s, r) => s + Number(r.valor_reembolsado), 0);
   }, [despesas, todosReembolsos, mesRef]);
 
-  // Receitas "Reembolso pais" também contam como reembolso para deduzir das despesas dos pais
   const totalReembolsadoMesReceitas = useMemo(
     () => lancamentos
       .filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais")
@@ -149,11 +122,8 @@ export default function Dashboard() {
 
   const totalReembolsadoMes = totalReembolsadoMesTabela + totalReembolsadoMesReceitas;
 
-  // Resgates de investimento — não contam como receita/renda
   const totalResgates = useMemo(
-    () => receitas
-      .filter((l) => l.categoria === "resgate_investimento")
-      .reduce((s, l) => s + Number(l.valor), 0),
+    () => receitas.filter((l) => l.categoria === "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
     [receitas],
   );
 
@@ -161,7 +131,6 @@ export default function Dashboard() {
     () => despesas.reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,
     [despesas, totalReembolsadoMes],
   );
-  // Receitas excluem resgate_investimento
   const totalReceitas = useMemo(
     () => receitas.filter((l) => l.categoria !== "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
     [receitas],
@@ -169,42 +138,6 @@ export default function Dashboard() {
 
   // ── Saldo Adriano ─────────────────────────────────────────────────────────
   const saldoAdriano = useMemo(() => calcularSaldoAdriano(lancamentos), [lancamentos]);
-
-  // ── Quinzenas ─────────────────────────────────────────────────────────────
-  const quinzenas = useMemo(() => {
-    const lastDay = getLastDay(mesAtual.year, mesAtual.month);
-
-    const somaDesp = (start: number, end: number) =>
-      despesas
-        .filter((l) => {
-          const d = parseInt(l.data.slice(8, 10), 10);
-          return d >= start && d <= end;
-        })
-        .reduce((s, l) => s + Number(l.valor), 0);
-
-    const somaRec = (start: number, end: number) =>
-      receitas
-        .filter((l) => {
-          const d = parseInt(l.data.slice(8, 10), 10);
-          return d >= start && d <= end;
-        })
-        .reduce((s, l) => s + Number(l.valor), 0);
-
-    return [
-      {
-        label: "1ª quinzena",
-        sub: "dias 1–15",
-        despesas: somaDesp(1, 15),
-        receitas: somaRec(1, 15),
-      },
-      {
-        label: "2ª quinzena",
-        sub: `dias 16–${lastDay}`,
-        despesas: somaDesp(16, lastDay),
-        receitas: somaRec(16, lastDay),
-      },
-    ];
-  }, [despesas, receitas, mesAtual]);
 
   // ── Melhor cartão ─────────────────────────────────────────────────────────
   const melhorCartao = useMemo(() => {
@@ -227,30 +160,18 @@ export default function Dashboard() {
           total: lancamentos.filter((l) => l.cartao_id === c.id).reduce((s, l) => s + Number(l.valor), 0),
         }))
         .filter((x) => x.total > 0),
-    [despesas, cartoes],
+    [lancamentos, cartoes],
   );
 
-  const emojiMapDash: Record<string, string> = {
-    Moradia: "🏘️",
-    Alimentação: "🥗",
-    Transporte: "🚗",
-    Saúde: "💊",
-    Pessoal: "💅",
-    Lazer: "🎮",
-    Investimentos: "📈",
-    Pais: "🧓",
-  };
-
-  // ── Categorias ────────────────────────────────────────────────────────────
+  // ── Categorias (usando getCategoriaDashboard) ─────────────────────────────
   const categorias = useMemo(() => {
     const map: Record<string, number> = {};
     despesas.forEach((l) => {
-      const cat =
-        l.subcategoria_pais && l.subcategoria_pais !== "" ? "Pais" : l.categoria_macro || l.categoria || "Outros";
+      const cat = getCategoriaDashboard(l);
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });
     return Object.entries(map)
-      .map(([cat, valor]) => ({ cat, valor, emoji: emojiMapDash[cat] || getGroupEmoji(cat) }))
+      .map(([cat, valor]) => ({ cat, valor, emoji: emojiMapDash[cat] || getGroupEmoji(cat) || "📦" }))
       .sort((a, b) => b.valor - a.valor);
   }, [despesas]);
 
@@ -270,17 +191,11 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <button
-              onClick={prevMes}
-              className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <button onClick={prevMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
               <ChevronLeft size={15} />
             </button>
             <span className="text-xl font-bold text-foreground px-1 min-w-[96px] text-center">{mesLabel}</span>
-            <button
-              onClick={nextMes}
-              className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <button onClick={nextMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
               <ChevronRight size={15} />
             </button>
           </div>
@@ -330,9 +245,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <Users size={14} className="text-muted-foreground" />
               <span className="text-[11px] text-muted-foreground font-medium">
-                {saldoAdriano > 0
-                  ? "Adriano te deve"
-                  : "Você deve para Adriano"}
+                {saldoAdriano > 0 ? "Adriano te deve" : "Você deve para Adriano"}
               </span>
             </div>
             <span className={cn("text-sm font-bold", saldoAdriano > 0 ? "text-emerald-600" : "text-red-500")}>

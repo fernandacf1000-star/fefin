@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, TrendingDown, RotateCcw, Wallet } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingDown, RotateCcw, Wallet, Heart } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import ReembolsoModal from "@/components/ReembolsoModal";
@@ -13,6 +13,7 @@ import {
   useDeleteAllParcelamento,
   useDeleteFutureRecorrencia,
   useDeleteAllRecorrencia,
+  isLuisaLancamento,
 } from "@/hooks/useLancamentos";
 import type { Lancamento } from "@/hooks/useLancamentos";
 import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
@@ -26,14 +27,11 @@ function getMesRef(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 function getMesLabel(year: number, month: number) {
-  const label = new Date(year, month, 1).toLocaleDateString("pt-BR", {
-    month: "long",
-    year: "numeric",
-  });
+  const label = new Date(year, month, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 function formatDate(dateStr: string) {
-  const [y, m, d] = dateStr.split("-");
+  const [, m, d] = dateStr.split("-");
   return `${d}/${m}`;
 }
 
@@ -49,16 +47,18 @@ function ResumoCard({
   totalPago,
   totalReembolsado,
   totalLiquido,
+  totalLuisa,
   accentColor = "#F59E0B",
 }: {
   totalPago: number;
   totalReembolsado: number;
   totalLiquido: number;
+  totalLuisa?: number;
   accentColor?: string;
 }) {
   return (
     <div className="glass-card p-4 space-y-3">
-      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Resumo do mes</p>
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Resumo do mês</p>
 
       <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
         <div className="flex items-center gap-2">
@@ -82,12 +82,25 @@ function ResumoCard({
         </span>
       </div>
 
+      {/* Bloco separado Luísa */}
+      {totalLuisa != null && totalLuisa > 0 && (
+        <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(236,72,153,0.12)" }}>
+              <Heart size={14} style={{ color: "#EC4899" }} />
+            </div>
+            <span className="text-sm text-muted-foreground">Luísa</span>
+          </div>
+          <span className="text-sm font-bold" style={{ color: "#EC4899" }}>{fmt(totalLuisa)}</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between pt-1">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(217,112,82,0.12)" }}>
             <Wallet size={14} style={{ color: "#D97052" }} />
           </div>
-          <span className="text-sm font-semibold text-foreground">Liquido (meu custo)</span>
+          <span className="text-sm font-semibold text-foreground">Líquido (meu custo)</span>
         </div>
         <span className="text-lg font-bold" style={{ color: totalLiquido > 0 ? "#D97052" : "#0D9488" }}>
           {fmt(totalLiquido)}
@@ -133,9 +146,16 @@ export default function Pais() {
   const nextMes = () =>
     setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
 
-  // == PAIS ==
+  // == PAIS (exclui Adriano e Luísa) ==
   const lancamentosPais = useMemo(
-    () => todos.filter((l) => l.subcategoria_pais !== null && l.subcategoria_pais !== "" && l.subcategoria_pais !== "Luisa" && l.subcategoria_pais !== "Adriano" && !l.adriano),
+    () => todos.filter((l) => {
+      const sub = l.subcategoria_pais;
+      if (!sub || sub === "") return false;
+      if (l.adriano) return false;
+      if (sub === "Adriano") return false;
+      if (isLuisaLancamento(l)) return false;
+      return true;
+    }),
     [todos],
   );
   const despesasPais = useMemo(() => lancamentosPais.filter((l) => l.tipo === "despesa"), [lancamentosPais]);
@@ -165,7 +185,7 @@ export default function Pais() {
     return Object.entries(map)
       .map(([cat, valor]) => {
         const group = getSubcategoriaGroup(cat) || cat;
-        return { cat, valor, emoji: cat === "Vicente" ? "\u{1F466}" : getGroupEmoji(group) };
+        return { cat, valor, emoji: cat === "Vicente" ? "👦" : getGroupEmoji(group) };
       })
       .sort((a, b) => b.valor - a.valor);
   }, [despesasPais]);
@@ -177,12 +197,18 @@ export default function Pais() {
     }).sort((a, b) => Number(a.valor) - Number(b.valor));
   }, [despesasPais, todosReembolsos]);
 
-  // == ADRIANO ==
+  // == ADRIANO (inclui Luísa) ==
   const lancamentosAdriano = useMemo(
-    () => todos.filter((l) => l.adriano === true && l.tipo === "despesa"),
+    () => todos.filter((l) => (l.adriano === true || isLuisaLancamento(l)) && l.tipo === "despesa"),
     [todos],
   );
+
+  // Separar Luísa
+  const lancamentosLuisa = useMemo(() => lancamentosAdriano.filter(isLuisaLancamento), [lancamentosAdriano]);
+  const lancamentosAdrianoSomente = useMemo(() => lancamentosAdriano.filter(l => !isLuisaLancamento(l)), [lancamentosAdriano]);
+
   const totalPagoAdriano = useMemo(() => lancamentosAdriano.reduce((s, l) => s + Number(l.valor), 0), [lancamentosAdriano]);
+  const totalLuisa = useMemo(() => lancamentosLuisa.reduce((s, l) => s + Number(l.valor), 0), [lancamentosLuisa]);
   const totalReembolsadoAdrianoTabela = useMemo(() => {
     const ids = new Set(lancamentosAdriano.map((l) => l.id));
     return todosReembolsos.filter((r) => ids.has(r.lancamento_id)).reduce((s, r) => s + Number(r.valor_reembolsado), 0);
@@ -192,13 +218,17 @@ export default function Pais() {
   const porCategoriaAdriano = useMemo(() => {
     const map: Record<string, number> = {};
     lancamentosAdriano.forEach((l) => {
-      const cat = l.categoria_macro || l.subcategoria || "Outros";
-      map[cat] = (map[cat] || 0) + Number(l.valor);
+      if (isLuisaLancamento(l)) {
+        map["Luísa"] = (map["Luísa"] || 0) + Number(l.valor);
+      } else {
+        const cat = l.categoria_macro || l.subcategoria || "Outros";
+        map[cat] = (map[cat] || 0) + Number(l.valor);
+      }
     });
     return Object.entries(map)
       .map(([cat, valor]) => {
         const group = getSubcategoriaGroup(cat) || cat;
-        return { cat, valor, emoji: cat === "Luisa" ? "\u{1F469}\u200D\u{1F9B3}" : getGroupEmoji(group) };
+        return { cat, valor, emoji: cat === "Luísa" ? "👩‍🦳" : getGroupEmoji(group) };
       })
       .sort((a, b) => b.valor - a.valor);
   }, [lancamentosAdriano]);
@@ -250,7 +280,7 @@ export default function Pais() {
     if (!deleteTarget) return;
     try {
       await deleteLancamento.mutateAsync(deleteTarget.id);
-      toast.success("Lancamento excluido!");
+      toast.success("Lançamento excluído!");
     } catch (e: any) {
       toast.error("Erro ao excluir: " + (e?.message || ""));
     } finally {
@@ -267,7 +297,7 @@ export default function Pais() {
       } else if (tipo === "recorrente" && deleteTarget.recorrencia_pai_id) {
         await deleteFutureRecorrencia.mutateAsync({ recorrencia_pai_id: deleteTarget.recorrencia_pai_id, fromDate: deleteTarget.data });
       }
-      toast.success("Lancamentos futuros excluidos!");
+      toast.success("Lançamentos futuros excluídos!");
     } catch (e: any) {
       toast.error("Erro ao excluir: " + (e?.message || ""));
     } finally {
@@ -284,7 +314,7 @@ export default function Pais() {
       } else if (tipo === "recorrente" && deleteTarget.recorrencia_pai_id) {
         await deleteAllRecorrencia.mutateAsync(deleteTarget.recorrencia_pai_id);
       }
-      toast.success("Todos os lancamentos excluidos!");
+      toast.success("Todos os lançamentos excluídos!");
     } catch (e: any) {
       toast.error("Erro ao excluir: " + (e?.message || ""));
     } finally {
@@ -300,25 +330,44 @@ export default function Pais() {
   ) => (
     <div className="space-y-1">
       {items.map((l) => {
+        const isLuisa = (l.subcategoria_pais || "").trim() === "Luísa" || (l.subcategoria_pais || "").trim() === "Luisa";
+
         const row = (
           <div
             key={l.id}
             onClick={() => setReembolsoTarget(l)}
-            className="flex items-center gap-3 py-2.5 last:border-0 cursor-pointer active:opacity-70"
+            className={cn(
+              "flex items-center gap-3 py-2.5 last:border-0 cursor-pointer active:opacity-70",
+              isLuisa && "rounded-xl bg-pink-50/60 px-2 -mx-2"
+            )}
             style={{ borderBottom: `0.5px solid ${borderColor}` }}
           >
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
-              style={{ background: aba === "adriano" ? (l.subcategoria_pais === "Luisa" ? "rgba(236,72,153,0.15)" : "rgba(59,130,246,0.15)") : "rgba(251,191,36,0.2)" }}
+              style={{
+                background: isLuisa
+                  ? "rgba(236,72,153,0.15)"
+                  : aba === "adriano"
+                    ? "rgba(59,130,246,0.15)"
+                    : "rgba(251,191,36,0.2)"
+              }}
             >
               {getEmoji(l)}
             </div>
 
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-foreground truncate">{l.descricao}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-[13px] font-semibold text-foreground truncate">{l.descricao}</p>
+                {isLuisa && (
+                  <span className="shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider"
+                    style={{ background: "rgba(236,72,153,0.15)", color: "#DB2777" }}>
+                    LUÍSA
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-muted-foreground">
                 {formatDate(l.data)}
-                {l.subcategoria_pais && l.subcategoria_pais !== "Geral" ? ` \u00B7 ${l.subcategoria_pais}` : ""}
+                {l.subcategoria_pais && l.subcategoria_pais !== "Geral" && !isLuisa ? ` · ${l.subcategoria_pais}` : ""}
               </p>
             </div>
 
@@ -377,12 +426,12 @@ export default function Pais() {
           <button onClick={() => setAba("pais")}
             className={cn("flex-1 py-2 rounded-xl text-sm font-semibold transition-all",
               aba === "pais" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
-            {"\u{1F9D3}"} Pais
+            🧓 Pais
           </button>
           <button onClick={() => setAba("adriano")}
             className={cn("flex-1 py-2 rounded-xl text-sm font-semibold transition-all",
               aba === "adriano" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
-            {"\u{1F468}"} Adriano
+            👨 Adriano
           </button>
         </div>
 
@@ -442,24 +491,24 @@ export default function Pais() {
             {isLoading ? (
               <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>
             ) : lancamentosPais.length === 0 && receitasReembolsoPais.length === 0 ? (
-              <EmptyState title="Sem lancamentos dos pais" subtitle="Nenhuma despesa dos pais registrada neste mes" />
+              <EmptyState title="Sem lançamentos dos pais" subtitle="Nenhuma despesa dos pais registrada neste mês" />
             ) : (
               <div className="glass-card p-4 space-y-3">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lancamentos</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lançamentos</p>
                 {renderLancamentos(
                   lancamentosComReembolsoPais,
                   "rgba(251,191,36,0.3)",
-                  (l) => l.subcategoria_pais === "Vicente" ? "\u{1F466}" : l.subcategoria_pais === "Luisa" ? "\u{1F469}\u200D\u{1F9B3}" : getGroupEmoji(getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros"),
+                  (l) => l.subcategoria_pais === "Vicente" ? "👦" : getGroupEmoji(getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros"),
                 )}
 
                 {/* Receitas "Reembolso pais" */}
                 {receitasReembolsoPais.map((l) => (
                   <div key={l.id} className="flex items-center gap-3 py-2.5 border-b border-amber-100 last:border-0">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
-                      style={{ background: "rgba(13,148,136,0.15)" }}>{"\u{1F4B8}"}</div>
+                      style={{ background: "rgba(13,148,136,0.15)" }}>💸</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-foreground truncate">{l.descricao}</p>
-                      <p className="text-[10px] text-muted-foreground">{formatDate(l.data)} \u00B7 Reembolso recebido</p>
+                      <p className="text-[10px] text-muted-foreground">{formatDate(l.data)} · Reembolso recebido</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-[13px] font-bold" style={{ color: "#0D9488" }}>+ {fmt(Number(l.valor))}</p>
@@ -479,6 +528,7 @@ export default function Pais() {
                 totalPago={totalPagoAdriano}
                 totalReembolsado={totalReembolsadoAdrianoTabela}
                 totalLiquido={totalLiquidoAdriano}
+                totalLuisa={totalLuisa}
                 accentColor="#3B82F6"
               />
             )}
@@ -489,20 +539,25 @@ export default function Pais() {
                 <div className="space-y-2.5">
                   {porCategoriaAdriano.map(({ cat, valor, emoji }) => {
                     const pct = totalPagoAdriano > 0 ? (valor / totalPagoAdriano) * 100 : 0;
+                    const isLuisaCat = cat === "Luísa";
                     return (
                       <div key={cat} className="space-y-1">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-sm shrink-0">{emoji}</span>
-                            <span className="text-[12px] font-medium text-foreground truncate">{cat}</span>
+                            <span className={cn("text-[12px] font-medium truncate",
+                              isLuisaCat ? "text-pink-700" : "text-foreground")}>{cat}</span>
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">
                             <span className="text-[10px] text-muted-foreground">{pct.toFixed(0)}%</span>
-                            <span className="text-[12px] font-bold text-foreground">{fmt(valor)}</span>
+                            <span className={cn("text-[12px] font-bold",
+                              isLuisaCat ? "text-pink-700" : "text-foreground")}>{fmt(valor)}</span>
                           </div>
                         </div>
-                        <div className="h-1 rounded-full bg-blue-100 overflow-hidden">
-                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: "#3B82F6" }} />
+                        <div className={cn("h-1 rounded-full overflow-hidden",
+                          isLuisaCat ? "bg-pink-100" : "bg-blue-100")}>
+                          <div className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%`, background: isLuisaCat ? "#EC4899" : "#3B82F6" }} />
                         </div>
                       </div>
                     );
@@ -514,14 +569,14 @@ export default function Pais() {
             {isLoading ? (
               <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>
             ) : lancamentosAdriano.length === 0 ? (
-              <EmptyState title="Sem lancamentos do Adriano" subtitle="Marque 'Dividir com Adriano' ao criar uma despesa" />
+              <EmptyState title="Sem lançamentos do Adriano" subtitle="Marque 'Dividir com Adriano' ao criar uma despesa" />
             ) : (
               <div className="glass-card p-4 space-y-3">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lancamentos</p>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lançamentos</p>
                 {renderLancamentos(
                   lancamentosComReembolsoAdriano,
                   "rgba(59,130,246,0.2)",
-                  (l) => l.subcategoria_pais === "Luisa" ? "\u{1F469}\u200D\u{1F9B3}" : "\u{1F468}",
+                  (l) => isLuisaLancamento(l as any) ? "👩‍🦳" : "👨",
                 )}
               </div>
             )}

@@ -16,7 +16,7 @@ import {
   isLuisaLancamento,
 } from "@/hooks/useLancamentos";
 import type { Lancamento } from "@/hooks/useLancamentos";
-import { useAllReembolsos, useAddReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
+import { useAllReembolsos, useAddReembolso, useUpdateReembolso, useDeleteReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -48,12 +48,16 @@ function ResumoCard({
   totalReembolsado,
   totalLiquido,
   totalLuisa,
+  totalReembolsadoAdriano,
+  totalReembolsadoLuisa,
   accentColor = "#F59E0B",
 }: {
   totalPago: number;
   totalReembolsado: number;
   totalLiquido: number;
   totalLuisa?: number;
+  totalReembolsadoAdriano?: number;
+  totalReembolsadoLuisa?: number;
   accentColor?: string;
 }) {
   return (
@@ -70,17 +74,45 @@ function ResumoCard({
         <span className="text-sm font-bold text-foreground">{fmt(totalPago)}</span>
       </div>
 
-      <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(13,148,136,0.12)" }}>
-            <RotateCcw size={14} style={{ color: "#0D9488" }} />
+      {totalReembolsadoLuisa != null ? (
+        <>
+          <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(13,148,136,0.12)" }}>
+                <RotateCcw size={14} style={{ color: "#0D9488" }} />
+              </div>
+              <span className="text-sm text-muted-foreground">Reemb. Adriano</span>
+            </div>
+            <span className="text-sm font-bold" style={{ color: "#0D9488" }}>
+              {totalReembolsadoAdriano && totalReembolsadoAdriano > 0 ? `- ${fmt(totalReembolsadoAdriano)}` : fmt(0)}
+            </span>
           </div>
-          <span className="text-sm text-muted-foreground">Reembolsado</span>
+
+          <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(236,72,153,0.12)" }}>
+                <RotateCcw size={14} style={{ color: "#EC4899" }} />
+              </div>
+              <span className="text-sm text-muted-foreground">Reemb. Luísa</span>
+            </div>
+            <span className="text-sm font-bold" style={{ color: "#EC4899" }}>
+              {totalReembolsadoLuisa > 0 ? `- ${fmt(totalReembolsadoLuisa)}` : fmt(0)}
+            </span>
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(13,148,136,0.12)" }}>
+              <RotateCcw size={14} style={{ color: "#0D9488" }} />
+            </div>
+            <span className="text-sm text-muted-foreground">Reembolsado</span>
+          </div>
+          <span className="text-sm font-bold" style={{ color: "#0D9488" }}>
+            {totalReembolsado > 0 ? `- ${fmt(totalReembolsado)}` : fmt(0)}
+          </span>
         </div>
-        <span className="text-sm font-bold" style={{ color: "#0D9488" }}>
-          {totalReembolsado > 0 ? `- ${fmt(totalReembolsado)}` : fmt(0)}
-        </span>
-      </div>
+      )}
 
       {/* Bloco separado Luísa */}
       {totalLuisa != null && totalLuisa > 0 && (
@@ -240,9 +272,29 @@ export default function Pais() {
     }).sort((a, b) => Number(a.valor) - Number(b.valor));
   }, [lancamentosAdriano, todosReembolsos]);
 
+  const reembolsoByLancamento = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const r of [...todosReembolsos].sort((a, b) => b.data_reembolso.localeCompare(a.data_reembolso))) {
+      if (!map.has(r.lancamento_id)) map.set(r.lancamento_id, r);
+    }
+    return map;
+  }, [todosReembolsos]);
+
+  const totalReembolsadoAdrianoSeparado = useMemo(() => {
+    const ids = new Set(lancamentosAdrianoSomente.map((l) => l.id));
+    return todosReembolsos.filter((r) => ids.has(r.lancamento_id)).reduce((s, r) => s + Number(r.valor_reembolsado), 0);
+  }, [lancamentosAdrianoSomente, todosReembolsos]);
+
+  const totalReembolsadoLuisaSeparado = useMemo(() => {
+    const ids = new Set(lancamentosLuisa.map((l) => l.id));
+    return todosReembolsos.filter((r) => ids.has(r.lancamento_id)).reduce((s, r) => s + Number(r.valor_reembolsado), 0);
+  }, [lancamentosLuisa, todosReembolsos]);
+
   // == Reembolso modal ==
   const [reembolsoTarget, setReembolsoTarget] = useState<any>(null);
   const addReembolso = useAddReembolso();
+  const updateReembolso = useUpdateReembolso();
+  const deleteReembolso = useDeleteReembolso();
 
   const handleSaveReembolso = async (data: {
     valor_reembolsado: number;
@@ -252,17 +304,41 @@ export default function Pais() {
   }) => {
     if (!reembolsoTarget) return;
     try {
-      await addReembolso.mutateAsync({
-        lancamento_id: reembolsoTarget.id,
-        valor_reembolsado: data.valor_reembolsado,
-        quem_reembolsou: data.quem_reembolsou || (aba === "adriano" ? "Adriano" : "Pais"),
-        data_reembolso: data.data_reembolso,
-        observacao: data.observacao ?? null,
-      });
+      if (reembolsoTarget.reembolsoExistente?.id) {
+        await updateReembolso.mutateAsync({
+          id: reembolsoTarget.reembolsoExistente.id,
+          updates: {
+            valor_reembolsado: data.valor_reembolsado,
+            quem_reembolsou: data.quem_reembolsou || (aba === "adriano" ? "Adriano" : "Pais"),
+            data_reembolso: data.data_reembolso,
+            observacao: data.observacao ?? null,
+          },
+        });
+        toast.success("Reembolso atualizado!");
+      } else {
+        await addReembolso.mutateAsync({
+          lancamento_id: reembolsoTarget.id,
+          valor_reembolsado: data.valor_reembolsado,
+          quem_reembolsou: data.quem_reembolsou || (aba === "adriano" ? "Adriano" : "Pais"),
+          data_reembolso: data.data_reembolso,
+          observacao: data.observacao ?? null,
+        });
+        toast.success("Reembolso registrado!");
+      }
       setReembolsoTarget(null);
-      toast.success("Reembolso registrado!");
     } catch (e: any) {
       toast.error("Erro ao salvar: " + (e?.message || JSON.stringify(e)));
+    }
+  };
+
+  const handleDeleteReembolso = async () => {
+    if (!reembolsoTarget?.reembolsoExistente?.id) return;
+    try {
+      await deleteReembolso.mutateAsync(reembolsoTarget.reembolsoExistente.id);
+      setReembolsoTarget(null);
+      toast.success("Reembolso excluído!");
+    } catch (e: any) {
+      toast.error("Erro ao excluir: " + (e?.message || JSON.stringify(e)));
     }
   };
 
@@ -335,7 +411,7 @@ export default function Pais() {
         const row = (
           <div
             key={l.id}
-            onClick={() => setReembolsoTarget(l)}
+            onClick={() => setReembolsoTarget({ ...l, reembolsoExistente: reembolsoByLancamento.get(l.id) || null })}
             className={cn(
               "flex items-center gap-3 py-2.5 last:border-0 cursor-pointer active:opacity-70",
               isLuisa && "rounded-xl bg-pink-50/60 px-2 -mx-2"
@@ -527,6 +603,8 @@ export default function Pais() {
               <ResumoCard
                 totalPago={totalPagoAdriano}
                 totalReembolsado={totalReembolsadoAdrianoTabela}
+                totalReembolsadoAdriano={totalReembolsadoAdrianoSeparado}
+                totalReembolsadoLuisa={totalReembolsadoLuisaSeparado}
                 totalLiquido={totalLiquidoAdriano}
                 totalLuisa={totalLuisa}
                 accentColor="#3B82F6"
@@ -590,8 +668,11 @@ export default function Pais() {
           onClose={() => setReembolsoTarget(null)}
           descricao={reembolsoTarget.descricao}
           valorOriginal={Number(reembolsoTarget.valor)}
+          existingReembolso={reembolsoTarget.reembolsoExistente || null}
           onSave={handleSaveReembolso}
-          isPending={addReembolso.isPending}
+          onDelete={reembolsoTarget.reembolsoExistente ? handleDeleteReembolso : undefined}
+          isPending={addReembolso.isPending || updateReembolso.isPending}
+          isDeletePending={deleteReembolso.isPending}
         />
       )}
 

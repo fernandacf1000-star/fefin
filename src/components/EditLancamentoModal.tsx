@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
 
-import type { Lancamento } from '@/hooks/useLancamentos';
 import {
   useUpdateLancamento,
   useAddMultipleLancamentos,
+  type Lancamento,
 } from '@/hooks/useLancamentos';
 import type { Cartao } from '@/hooks/useCartoes';
 import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from '@/lib/subcategorias';
@@ -110,7 +110,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     const isAdrianoMirror = lancamento.adriano || false;
     setIsPais((subP != null && subP !== '' && !isAdrianoMirror) || subP === 'Vicente' || subP === 'Luisa' || subP === 'Luísa');
     setIsAdriano(isAdrianoMirror);
-    setPagoPor((lancamento.pago_por as 'voce' | 'adriano') || 'voce');
+    setPagoPor(((lancamento as any).pago_por as 'voce' | 'adriano') || 'voce');
     if (lancamento.cartao_id) {
       setFormaPagamento('credito');
       setCartaoId(lancamento.cartao_id);
@@ -190,7 +190,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     if (scope === 'futuras') q = q.gte('data', currentData);
     else if (scope === 'este') q = q.eq('id', lancamento!.id);
     const { data: rows } = await q;
-    return ((rows || []) as Lancamento[]).sort((a, b) => a.data.localeCompare(b.data));
+    return ((rows || []) as unknown as Lancamento[]).sort((a, b) => a.data.localeCompare(b.data));
   };
 
   /**

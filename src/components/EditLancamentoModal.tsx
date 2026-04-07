@@ -110,7 +110,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     const isAdrianoMirror = lancamento.adriano || false;
     setIsPais((subP != null && subP !== '' && !isAdrianoMirror) || subP === 'Vicente' || subP === 'Luisa' || subP === 'Luísa');
     setIsAdriano(isAdrianoMirror);
-    setPagoPor((lancamento.pago_por as 'voce' | 'adriano') || 'voce');
+    setPagoPor(((lancamento as any).pago_por as 'voce' | 'adriano') || 'voce');
     if (lancamento.cartao_id) {
       setFormaPagamento('credito');
       setCartaoId(lancamento.cartao_id);

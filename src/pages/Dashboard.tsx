@@ -8,7 +8,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAllReembolsos } from "@/hooks/useReembolsos";
 import { getGroupEmoji } from "@/lib/subcategorias";
 
-const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 // ── SVG logos ──────────────────────────────────────────────────────────────
 const MastercardLogo = ({ size = 28 }: { size?: number }) => (
@@ -34,7 +35,7 @@ const BandeiraLogo = ({ bandeira, size = 28 }: { bandeira: string; size?: number
   return null;
 };
 
-// ── Mascot ─────────────────────────────────────────────────
+// ── Mascot ────────────────────────────────────────────────────────────────
 const MascotHead = ({ size = 64 }: { size?: number }) => (
   <svg width={size} height={Math.round(size * 1.2)} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
     <ellipse cx="50" cy="42" rx="34" ry="36" fill="#2C1810" />
@@ -63,13 +64,16 @@ const MascotHead = ({ size = 64 }: { size?: number }) => (
   </svg>
 );
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────
 function getMesRef(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 
 function getMesLabel(year: number, month: number) {
-  const label = new Date(year, month, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const label = new Date(year, month, 1).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
@@ -85,9 +89,27 @@ const emojiMapDash: Record<string, string> = {
   Vicente: "👦",
   "Luísa": "💗",
   Adriano: "👨",
+  Casa: "🏠",
+  Roupas: "👗",
+  Farmácia: "💊",
+  "Compras Online": "🛒",
+  Beleza: "💄",
+  Supermercado: "🛍️",
+  Academia: "🏋️",
+  Contas: "💡",
+  "Internet/Celular": "📱",
+  "Plano de saúde": "🩺",
+  Consultas: "🩺",
+  Combustível: "⛽",
+  Estacionamento: "🅿️",
+  Restaurantes: "🍽️",
+  Presentes: "🎁",
+  Viagens: "✈️",
+  "Condomínio/IPTU": "🏢",
+  Seguro: "🛡️",
 };
 
-// ── Dashboard ──────────────────────────────────────────────────────────────
+// ── Dashboard ─────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [mesAtual, setMesAtual] = useState(() => {
     const now = new Date();
@@ -106,11 +128,16 @@ export default function Dashboard() {
   const firstName = nome.split(" ")[0] || "você";
 
   const prevMes = () =>
-    setMesAtual(({ year, month }) => (month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }));
-  const nextMes = () =>
-    setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
+    setMesAtual(({ year, month }) =>
+      month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }
+    );
 
-  // ── Totals ────────────────────────────────────────────────────────────────
+  const nextMes = () =>
+    setMesAtual(({ year, month }) =>
+      month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }
+    );
+
+  // ── Totals ─────────────────────────────────────────────────────────────
   const despesas = useMemo(
     () => lancamentos.filter((l) => l.tipo === "despesa" && !l.adriano),
     [lancamentos]
@@ -164,10 +191,10 @@ export default function Dashboard() {
     [receitas]
   );
 
-  // ── Saldo Adriano ─────────────────────────────────────────────────────────
+  // ── Saldo Adriano ──────────────────────────────────────────────────────
   const saldoAdriano = useMemo(() => calcularSaldoAdriano(lancamentos), [lancamentos]);
 
-  // ── Melhor cartão ─────────────────────────────────────────────────────────
+  // ── Melhor cartão ──────────────────────────────────────────────────────
   const melhorCartao = useMemo(() => {
     if (!cartoes.length) return null;
     return cartoes.reduce((best, c) => {
@@ -177,9 +204,11 @@ export default function Dashboard() {
     });
   }, [cartoes]);
 
-  const melhorDays = melhorCartao ? getCartaoCycle(melhorCartao.dia_fechamento).daysUntilClose : 0;
+  const melhorDays = melhorCartao
+    ? getCartaoCycle(melhorCartao.dia_fechamento).daysUntilClose
+    : 0;
 
-  // ── Por cartão ────────────────────────────────────────────────────────────
+  // ── Por cartão ─────────────────────────────────────────────────────────
   const porCartao = useMemo(
     () =>
       cartoes
@@ -193,16 +222,23 @@ export default function Dashboard() {
     [lancamentos, cartoes]
   );
 
-  // ── Categorias ────────────────────────────────────────────────────────────
+  // ── Categorias ─────────────────────────────────────────────────────────
   const categorias = useMemo(() => {
     const map: Record<string, number> = {};
 
     despesas.forEach((l) => {
-      const cat = (getCategoriaDashboard(l) || "").trim();
-      const catNorm = cat.toLowerCase();
+      let cat = (getCategoriaDashboard(l) || "").trim();
+
+      if (!cat) {
+        if (l.subcategoria && l.subcategoria.trim()) cat = l.subcategoria.trim();
+        else if (l.categoria_macro && l.categoria_macro.trim()) cat = l.categoria_macro.trim();
+      }
 
       if (!cat) return;
-      if (["sem categoria", "despesa", "extra", "outros"].includes(catNorm)) return;
+
+      const catNorm = cat.toLowerCase();
+
+      if (["despesa", "extra"].includes(catNorm)) return;
 
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });
@@ -216,7 +252,6 @@ export default function Dashboard() {
       .sort((a, b) => b.valor - a.valor);
   }, [despesas]);
 
-  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="gradient-bg min-h-screen pb-28">
       <BottomNav />
@@ -267,6 +302,7 @@ export default function Dashboard() {
             </div>
             <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalDespesas)}</p>
           </div>
+
           <div className="glass-card p-4 space-y-1">
             <div className="flex items-center gap-1.5">
               <TrendingUp size={13} style={{ color: "#0D9488" }} />
@@ -375,7 +411,11 @@ export default function Dashboard() {
           </div>
         )}
 
-        {isLoading && <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>}
+        {isLoading && (
+          <div className="text-center py-12 text-sm text-muted-foreground">
+            Carregando...
+          </div>
+        )}
       </div>
     </div>
   );

@@ -353,7 +353,7 @@ export default function Despesas() {
         )}
 
         {/* Filtros / Sele\u00E7\u00E3o */}
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap overflow-x-hidden">
           {selectionMode ? (
             <>
               <span className="text-xs text-muted-foreground font-medium">

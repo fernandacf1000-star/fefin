@@ -247,26 +247,7 @@ export default function Pais() {
   }, [lancamentosAdriano, todosReembolsos]);
   const totalLiquidoAdriano = totalPagoAdriano - totalReembolsadoAdrianoTabela;
 
-  // Saldo líquido Adriano: positivo = Adriano te deve, negativo = você deve ao Adriano
-  const saldoLiquidoAdriano = useMemo(() => {
-    let saldo = 0;
-    for (const l of lancamentosAdrianoSomente) {
-      const valor = Number(l.valor) || 0;
-      if (!valor) continue;
-      const pagoPor = (l.pago_por || "voce").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      if (pagoPor === "voce") {
-        saldo += valor; // eu paguei → Adriano me deve
-      } else {
-        saldo -= valor; // Adriano pagou → eu devo ao Adriano
-      }
-    }
-    // Descontar reembolsos do Adriano
-    saldo -= totalReembolsadoAdrianoSeparado;
-    return saldo;
-  }, [lancamentosAdrianoSomente, totalReembolsadoAdrianoSeparado]);
 
-  // Saldo líquido Luísa: total despesas Luísa - reembolsos Luísa
-  const saldoLiquidoLuisa = totalLuisa - totalReembolsadoLuisaSeparado;
 
   const porCategoriaAdriano = useMemo(() => {
     const map: Record<string, number> = {};

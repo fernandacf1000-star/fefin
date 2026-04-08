@@ -292,7 +292,27 @@ export default function Pais() {
     return todosReembolsos.filter((r) => ids.has(r.lancamento_id)).reduce((s, r) => s + Number(r.valor_reembolsado), 0);
   }, [lancamentosLuisa, todosReembolsos]);
 
-  // == Reembolso modal ==
+  // Saldo líquido Adriano: positivo = Adriano te deve, negativo = você deve ao Adriano
+  const saldoLiquidoAdriano = useMemo(() => {
+    let saldo = 0;
+    for (const l of lancamentosAdrianoSomente) {
+      const valor = Number(l.valor) || 0;
+      if (!valor) continue;
+      const pagoPor = (l.pago_por || "voce").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if (pagoPor === "voce") {
+        saldo += valor;
+      } else {
+        saldo -= valor;
+      }
+    }
+    saldo -= totalReembolsadoAdrianoSeparado;
+    return saldo;
+  }, [lancamentosAdrianoSomente, totalReembolsadoAdrianoSeparado]);
+
+  // Saldo líquido Luísa: total despesas - reembolsos
+  const saldoLiquidoLuisa = totalLuisa - totalReembolsadoLuisaSeparado;
+
+
   const [reembolsoTarget, setReembolsoTarget] = useState<any>(null);
   const addReembolso = useAddReembolso();
   const updateReembolso = useUpdateReembolso();

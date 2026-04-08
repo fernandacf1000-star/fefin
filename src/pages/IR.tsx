@@ -185,7 +185,7 @@ export default function IR() {
   };
 
   return (
-    <div className="gradient-bg min-h-screen pb-28">
+    <div className="gradient-bg min-h-screen pb-28 overflow-x-hidden">
       <BottomNav />
       <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
 

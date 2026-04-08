@@ -308,7 +308,7 @@ export default function Despesas() {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="gradient-bg min-h-screen pb-28">
+    <div className="gradient-bg min-h-screen pb-28 overflow-x-hidden">
       <BottomNav />
 
       <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
@@ -353,7 +353,7 @@ export default function Despesas() {
         )}
 
         {/* Filtros / Sele\u00E7\u00E3o */}
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap overflow-x-hidden">
           {selectionMode ? (
             <>
               <span className="text-xs text-muted-foreground font-medium">

@@ -281,10 +281,14 @@ export function useAddMultipleLancamentos() {
       );
 
       const { error } = await supabase.from("lancamentos").insert(
-        payload.map((r) => ({
-          ...r,
-          user_id: user!.id,
-        })) as any
+        payload.map((r) => {
+          const { id: _id, created_at: _ca, ...rest } = r;
+          return {
+            ...rest,
+            user_id: user!.id,
+            recorrencia_ate: rest.recorrencia_ate || null,
+          };
+        }) as any
       );
 
       if (error) throw error;

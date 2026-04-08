@@ -81,6 +81,8 @@ const ReembolsoFixoModal = ({ open, onClose }: ReembolsoFixoModalProps) => {
             recorrencia_ate: recorrenciaAte ? format(recorrenciaAte, "yyyy-MM-dd") : null,
             recorrencia_pai_id: recorrenciaPaiId,
             adriano: false,
+            shared_group_id: null,
+            shared_role: null,
             pago_por: 'voce',
           });
         }

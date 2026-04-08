@@ -88,6 +88,8 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
             recorrencia_ate: recorrenciaAte ? format(recorrenciaAte, "yyyy-MM-dd") : null,
             recorrencia_pai_id: recorrenciaPaiId,
             adriano: false,
+            shared_group_id: null,
+            shared_role: null,
             pago_por: 'voce',
           });
         }
@@ -114,8 +116,10 @@ const NewIncomeSheet = ({ open, onClose }: NewIncomeSheetProps) => {
           dia_recorrencia: null,
           recorrencia_ate: null,
           recorrencia_pai_id: null,
-          adriano: false,
-          pago_por: 'voce',
+           adriano: false,
+           shared_group_id: null,
+           shared_role: null,
+           pago_por: 'voce',
         });
       }
       onClose();

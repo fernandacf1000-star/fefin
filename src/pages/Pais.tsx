@@ -171,7 +171,11 @@ export default function Pais() {
   const mesLabel = getMesLabel(mesAtual.year, mesAtual.month);
 
   const { data: todos = [], isLoading } = useLancamentos(mesRef);
-  const { data: todosReembolsos = [] } = useAllReembolsos();
+  const idsLancamentos = new Set(lancamentos.map((l) => l.id));
+
+const reembolsosValidos = reembolsos.filter((r) =>
+  idsLancamentos.has(r.lancamento_id)
+);
 
   const prevMes = () =>
     setMesAtual(({ year, month }) => (month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }));

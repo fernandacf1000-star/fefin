@@ -247,6 +247,8 @@ export default function Pais() {
   }, [lancamentosAdriano, todosReembolsos]);
   const totalLiquidoAdriano = totalPagoAdriano - totalReembolsadoAdrianoTabela;
 
+
+
   const porCategoriaAdriano = useMemo(() => {
     const map: Record<string, number> = {};
     lancamentosAdriano.forEach((l) => {
@@ -290,7 +292,27 @@ export default function Pais() {
     return todosReembolsos.filter((r) => ids.has(r.lancamento_id)).reduce((s, r) => s + Number(r.valor_reembolsado), 0);
   }, [lancamentosLuisa, todosReembolsos]);
 
-  // == Reembolso modal ==
+  // Saldo líquido Adriano: positivo = Adriano te deve, negativo = você deve ao Adriano
+  const saldoLiquidoAdriano = useMemo(() => {
+    let saldo = 0;
+    for (const l of lancamentosAdrianoSomente) {
+      const valor = Number(l.valor) || 0;
+      if (!valor) continue;
+      const pagoPor = (l.pago_por || "voce").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if (pagoPor === "voce") {
+        saldo += valor;
+      } else {
+        saldo -= valor;
+      }
+    }
+    saldo -= totalReembolsadoAdrianoSeparado;
+    return saldo;
+  }, [lancamentosAdrianoSomente, totalReembolsadoAdrianoSeparado]);
+
+  // Saldo líquido Luísa: total despesas - reembolsos
+  const saldoLiquidoLuisa = totalLuisa - totalReembolsadoLuisaSeparado;
+
+
   const [reembolsoTarget, setReembolsoTarget] = useState<any>(null);
   const addReembolso = useAddReembolso();
   const updateReembolso = useUpdateReembolso();
@@ -600,15 +622,65 @@ export default function Pais() {
         {aba === "adriano" && (
           <>
             {lancamentosAdriano.length > 0 && (
-              <ResumoCard
-                totalPago={totalPagoAdriano}
-                totalReembolsado={totalReembolsadoAdrianoTabela}
-                totalReembolsadoAdriano={totalReembolsadoAdrianoSeparado}
-                totalReembolsadoLuisa={totalReembolsadoLuisaSeparado}
-                totalLiquido={totalLiquidoAdriano}
-                totalLuisa={totalLuisa}
-                accentColor="#3B82F6"
-              />
+              <div className="glass-card p-4 space-y-3">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Resumo do mês</p>
+
+                {/* Total pago */}
+                <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(99,102,241,0.12)" }}>
+                      <TrendingDown size={14} className="text-primary" />
+                    </div>
+                    <span className="text-sm text-muted-foreground">Total pago</span>
+                  </div>
+                  <span className="text-sm font-bold text-foreground">{fmt(totalPagoAdriano)}</span>
+                </div>
+
+                {/* Saldo Adriano */}
+                <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(59,130,246,0.12)" }}>
+                      <Wallet size={14} style={{ color: "#3B82F6" }} />
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {saldoLiquidoAdriano >= 0 ? "Adriano te deve" : "Você deve ao Adriano"}
+                    </span>
+                  </div>
+                  <span className="text-sm font-bold" style={{ color: saldoLiquidoAdriano >= 0 ? "#3B82F6" : "#D97052" }}>
+                    {fmt(Math.abs(saldoLiquidoAdriano))}
+                  </span>
+                </div>
+
+                {/* Saldo Luísa */}
+                {(totalLuisa > 0 || saldoLiquidoLuisa !== 0) && (
+                  <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(236,72,153,0.12)" }}>
+                        <Heart size={14} style={{ color: "#EC4899" }} />
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {saldoLiquidoLuisa >= 0 ? "Luísa te deve" : "Você deve à Luísa"}
+                      </span>
+                    </div>
+                    <span className="text-sm font-bold" style={{ color: saldoLiquidoLuisa >= 0 ? "#EC4899" : "#D97052" }}>
+                      {fmt(Math.abs(saldoLiquidoLuisa))}
+                    </span>
+                  </div>
+                )}
+
+                {/* Total líquido a receber */}
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(217,112,82,0.12)" }}>
+                      <Wallet size={14} style={{ color: "#D97052" }} />
+                    </div>
+                    <span className="text-sm font-semibold text-foreground">Total líquido</span>
+                  </div>
+                  <span className="text-lg font-bold" style={{ color: (saldoLiquidoAdriano + saldoLiquidoLuisa) >= 0 ? "#3B82F6" : "#D97052" }}>
+                    {fmt(Math.abs(saldoLiquidoAdriano + saldoLiquidoLuisa))}
+                  </span>
+                </div>
+              </div>
             )}
 
             {porCategoriaAdriano.length > 0 && (

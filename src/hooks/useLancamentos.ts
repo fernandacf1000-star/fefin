@@ -368,9 +368,12 @@ export function useDeleteLancamento() {
       const { error } = await supabase.from("lancamentos").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
-  });
-}
+    onSuccess: async () => {
+  await Promise.all([
+    qc.invalidateQueries({ queryKey: ["lancamentos"] }),
+    qc.invalidateQueries({ queryKey: ["reembolsos"] }),
+  ]);
+},
 
 export function useDeleteFutureParcelamento() {
   const { user } = useAuth();

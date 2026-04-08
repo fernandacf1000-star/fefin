@@ -215,7 +215,7 @@ export function useAddLancamento() {
         | "lancamento_origem_id"
       >
     ) => {
-      const payload = normalizeLancamento({
+      const normalized = normalizeLancamento({
         ...(row as Lancamento),
         id: "",
         user_id: user!.id,
@@ -224,10 +224,15 @@ export function useAddLancamento() {
         lancamento_origem_id: null,
       });
 
-      const { error } = await supabase.from("lancamentos").insert({
-        ...payload,
+      // Remove fields the DB auto-populates or that are empty strings for timestamps
+      const { id: _id, created_at: _ca, ...rest } = normalized;
+      const payload = {
+        ...rest,
         user_id: user!.id,
-      } as any);
+        recorrencia_ate: rest.recorrencia_ate || null,
+      };
+
+      const { error } = await supabase.from("lancamentos").insert(payload as any);
 
       if (error) throw error;
     },

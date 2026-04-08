@@ -123,6 +123,11 @@ export default function Dashboard() {
   const { data: cartoes = [] } = useCartoes();
   const { data: profile } = useProfile();
   const { data: todosReembolsos = [] } = useAllReembolsos();
+  const idsLancamentos = new Set(lancamentos.map((l) => l.id));
+
+const reembolsosValidos = reembolsos.filter((r) =>
+  idsLancamentos.has(r.lancamento_id)
+);
 
   const nome = profile?.nome || profile?.full_name || "";
   const firstName = nome.split(" ")[0] || "você";

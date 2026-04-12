@@ -6,6 +6,7 @@ import ReembolsoModal from "@/components/ReembolsoModal";
 import SwipeableItem from "@/components/SwipeableItem";
 import LancamentoActions from "@/components/LancamentoActions";
 import DeleteConfirmSheet from "@/components/DeleteConfirmSheet";
+import EditLancamentoModal from "@/components/EditLancamentoModal";
 import {
   useLancamentos,
   useDeleteLancamento,
@@ -13,9 +14,11 @@ import {
   useDeleteAllParcelamento,
   useDeleteFutureRecorrencia,
   useDeleteAllRecorrencia,
+  useUpdateLancamento,
   isLuisaLancamento,
 } from "@/hooks/useLancamentos";
 import type { Lancamento } from "@/hooks/useLancamentos";
+import { useCartoes } from "@/hooks/useCartoes";
 import { useAllReembolsos, useAddReembolso, useUpdateReembolso, useDeleteReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
 import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
 import { toast } from "sonner";
@@ -371,6 +374,16 @@ const reembolsosValidos = reembolsos.filter((r) =>
   // == Delete state & hooks (Adriano tab) ==
   const [actionsLanc, setActionsLanc] = useState<Lancamento | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Lancamento | null>(null);
+  const [editTarget, setEditTarget] = useState<Lancamento | null>(null);
+
+  const { data: cartoes = [] } = useCartoes();
+  const updateLancamento = useUpdateLancamento();
+
+  const handleSaveEdit = async (updates: Partial<Lancamento>) => {
+    if (!editTarget) return;
+    await updateLancamento.mutateAsync({ id: editTarget.id, ...updates });
+    setEditTarget(null);
+  };
 
   const deleteLancamento = useDeleteLancamento();
   const deleteFutureParcelamento = useDeleteFutureParcelamento();
@@ -497,7 +510,16 @@ const reembolsosValidos = reembolsos.filter((r) =>
           );
         }
 
-        return row;
+        // Aba pais também tem swipe para editar/excluir
+        return (
+          <SwipeableItem
+            key={l.id}
+            onEdit={() => setActionsLanc(l as any)}
+            onDelete={() => setDeleteTarget(l as any)}
+          >
+            {row}
+          </SwipeableItem>
+        );
       })}
     </div>
   );
@@ -757,6 +779,7 @@ const reembolsosValidos = reembolsos.filter((r) =>
         onClose={() => setActionsLanc(null)}
         descricao={actionsLanc?.descricao}
         onEdit={() => {
+          setEditTarget(actionsLanc);
           setActionsLanc(null);
         }}
         onDelete={() => {
@@ -774,6 +797,16 @@ const reembolsosValidos = reembolsos.filter((r) =>
         onDeleteFuture={handleDeleteFuture}
         onDeleteAll={handleDeleteAll}
       />
+
+      {editTarget && (
+        <EditLancamentoModal
+          open={!!editTarget}
+          lancamento={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSave={handleSaveEdit}
+          cartoes={cartoes}
+        />
+      )}
     </div>
   );
 }

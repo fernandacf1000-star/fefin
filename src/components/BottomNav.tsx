@@ -103,15 +103,24 @@ const BottomNav = () => {
       <button
         key={item.label}
         onClick={() => navigate(item.path)}
-        className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 overflow-hidden transition-all ${
+        className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 overflow-hidden transition-all ${
           isActive ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"
         }`}
         style={{ textAlign: "center" }}
       >
         <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} className="shrink-0" />
-        {isActive && (
-          <span className="leading-tight text-center w-full" style={{ fontSize: "9px", fontWeight: 500 }}>{item.label}</span>
-        )}
+        <span
+          className="leading-tight text-center w-full transition-all"
+          style={{
+            fontSize: "9px",
+            fontWeight: 500,
+            opacity: isActive ? 1 : 0,
+            height: isActive ? "auto" : 0,
+            overflow: "hidden",
+          }}
+        >
+          {item.label}
+        </span>
       </button>
     );
   };

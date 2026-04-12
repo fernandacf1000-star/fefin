@@ -88,7 +88,9 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   useEffect(() => {
     if (!lancamento) return;
     setDescricao(lancamento.descricao || '');
-    setValor(Number(lancamento.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    // Se é espelho Adriano (adriano: true), o valor armazenado é metade — exibimos o dobro (valor total real)
+    const displayValor = (lancamento.adriano ? Number(lancamento.valor) * 2 : Number(lancamento.valor));
+    setValor(displayValor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     setData(lancamento.data ? new Date(lancamento.data + 'T12:00:00') : new Date());
     setSubcategoria(lancamento.subcategoria || null);
     const sub = lancamento.subcategoria || null;
@@ -167,7 +169,9 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       forma_pagamento: opts.isReceitaEdit ? null : opts.forma,
       cartao_id: opts.isReceitaEdit ? null : opts.cartao,
       subcategoria_pais: opts.isReceitaEdit ? null : getSubPais(),
-      adriano: false,
+      // adriano é gerenciado explicitamente nos caminhos de adrianoChanged;
+      // nos demais caminhos (sem mudança de flag), preservamos o estado atual
+      adriano: isAdriano,
       pago_por: pagoPor,
     };
     if (opts.isReceitaEdit) {
@@ -288,7 +292,11 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       const nowAdriano = !isReceitaEdit && isAdriano;
       const adrianoChanged = wasAdriano !== nowAdriano;
 
-      const fieldUpdates = buildFieldUpdates({ isReceitaEdit, numValor, macro, forma, cartao });
+      // Se a despesa JÁ era (e continua sendo) dividida com Adriano,
+      // numValor é o valor total (dobrado na exibição). O banco guarda metade.
+      const valorParaBanco = (!adrianoChanged && nowAdriano) ? numValor / 2 : numValor;
+
+      const fieldUpdates = buildFieldUpdates({ isReceitaEdit, numValor: valorParaBanco, macro, forma, cartao });
 
       const wasParcelado = lancamento.is_parcelado;
       const wasRecorrente = lancamento.recorrente;
@@ -374,7 +382,8 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       // ADRIANO OFF: remove split, restore full value
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       } else if (adrianoChanged && !nowAdriano) {
-        const fullFieldUpdates = { ...fieldUpdates, valor: numValor * 2, adriano: false };
+        // numValor já é o valor total (foi exibido dobrado ao usuário); basta usar direto
+        const fullFieldUpdates = { ...fieldUpdates, valor: numValor, adriano: false };
 
         if (wasParcelado && lancamento.parcelamento_id) {
           const items = await fetchSeriesItems('parcelamento_id', lancamento.parcelamento_id, editScope, lancamento.data);

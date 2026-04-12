@@ -369,11 +369,13 @@ export function useDeleteLancamento() {
       if (error) throw error;
     },
     onSuccess: async () => {
-  await Promise.all([
-    qc.invalidateQueries({ queryKey: ["lancamentos"] }),
-    qc.invalidateQueries({ queryKey: ["reembolsos"] }),
-  ]);
-},
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["lancamentos"] }),
+        qc.invalidateQueries({ queryKey: ["reembolsos"] }),
+      ]);
+    },
+  });
+}
 
 export function useDeleteFutureParcelamento() {
   const { user } = useAuth();

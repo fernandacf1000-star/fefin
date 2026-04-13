@@ -1,12 +1,12 @@
-import { useState, useMemo } from “react”;
-import { ChevronLeft, ChevronRight, TrendingDown, RotateCcw, Wallet, Heart } from “lucide-react”;
-import BottomNav from “@/components/BottomNav”;
-import EmptyState from “@/components/EmptyState”;
-import ReembolsoModal from “@/components/ReembolsoModal”;
-import SwipeableItem from “@/components/SwipeableItem”;
-import LancamentoActions from “@/components/LancamentoActions”;
-import DeleteConfirmSheet from “@/components/DeleteConfirmSheet”;
-import EditLancamentoModal from “@/components/EditLancamentoModal”;
+import { useState, useMemo } from "react";
+import { ChevronLeft, ChevronRight, TrendingDown, RotateCcw, Wallet, Heart } from "lucide-react";
+import BottomNav from "@/components/BottomNav";
+import EmptyState from "@/components/EmptyState";
+import ReembolsoModal from "@/components/ReembolsoModal";
+import SwipeableItem from "@/components/SwipeableItem";
+import LancamentoActions from "@/components/LancamentoActions";
+import DeleteConfirmSheet from "@/components/DeleteConfirmSheet";
+import EditLancamentoModal from "@/components/EditLancamentoModal";
 import {
 useLancamentos,
 useDeleteLancamento,
@@ -16,33 +16,33 @@ useDeleteFutureRecorrencia,
 useDeleteAllRecorrencia,
 useUpdateLancamento,
 isLuisaLancamento,
-} from “@/hooks/useLancamentos”;
-import type { Lancamento } from “@/hooks/useLancamentos”;
-import { useCartoes } from “@/hooks/useCartoes”;
-import { useAllReembolsos, useAddReembolso, useUpdateReembolso, useDeleteReembolso, getTotalReembolsado } from “@/hooks/useReembolsos”;
-import { getGroupEmoji, getSubcategoriaGroup } from “@/lib/subcategorias”;
-import { toast } from “sonner”;
-import { cn } from “@/lib/utils”;
+} from "@/hooks/useLancamentos";
+import type { Lancamento } from "@/hooks/useLancamentos";
+import { useCartoes } from "@/hooks/useCartoes";
+import { useAllReembolsos, useAddReembolso, useUpdateReembolso, useDeleteReembolso, getTotalReembolsado } from "@/hooks/useReembolsos";
+import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-const fmt = (v: number) => v.toLocaleString(“pt-BR”, { style: “currency”, currency: “BRL” });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function getMesRef(year: number, month: number) {
 return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 function getMesLabel(year: number, month: number) {
-const label = new Date(year, month, 1).toLocaleDateString(“pt-BR”, { month: “long”, year: “numeric” });
+const label = new Date(year, month, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 return label.charAt(0).toUpperCase() + label.slice(1);
 }
 function formatDate(dateStr: string) {
-const [, m, d] = dateStr.split(”-”);
+const [, m, d] = dateStr.split("-");
 return `${d}/${m}`;
 }
 
-function getTipo(l: Lancamento | null): “parcelado” | “recorrente” | “simples” {
-if (!l) return “simples”;
-if (l.is_parcelado && l.parcelamento_id) return “parcelado”;
-if (l.recorrente && l.recorrencia_pai_id) return “recorrente”;
-return “simples”;
+function getTipo(l: Lancamento | null): "parcelado" | "recorrente" | "simples" {
+if (!l) return "simples";
+if (l.is_parcelado && l.parcelamento_id) return "parcelado";
+if (l.recorrente && l.recorrencia_pai_id) return "recorrente";
+return "simples";
 }
 
 // – Resumo Card reutilizavel –
@@ -53,7 +53,7 @@ totalLiquido,
 totalLuisa,
 totalReembolsadoAdriano,
 totalReembolsadoLuisa,
-accentColor = “#F59E0B”,
+accentColor = "#F59E0B",
 }: {
 totalPago: number;
 totalReembolsado: number;
@@ -171,7 +171,7 @@ const [mesAtual, setMesAtual] = useState(() => {
 const now = new Date();
 return { year: now.getFullYear(), month: now.getMonth() };
 });
-const [aba, setAba] = useState<“pais” | “adriano”>(“pais”);
+const [aba, setAba] = useState<"pais" | "adriano">("pais");
 
 const mesRef = getMesRef(mesAtual.year, mesAtual.month);
 const mesLabel = getMesLabel(mesAtual.year, mesAtual.month);
@@ -188,17 +188,17 @@ setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : 
 const lancamentosPais = useMemo(
 () => todos.filter((l) => {
 const sub = l.subcategoria_pais;
-if (!sub || sub === “”) return false;
+if (!sub || sub === "") return false;
 if (l.adriano) return false;
-if (sub === “Adriano”) return false;
+if (sub === "Adriano") return false;
 if (isLuisaLancamento(l)) return false;
 return true;
 }),
 [todos],
 );
-const despesasPais = useMemo(() => lancamentosPais.filter((l) => l.tipo === “despesa”), [lancamentosPais]);
+const despesasPais = useMemo(() => lancamentosPais.filter((l) => l.tipo === "despesa"), [lancamentosPais]);
 const receitasReembolsoPais = useMemo(
-() => todos.filter((l) => l.tipo === “receita” && l.categoria === “reembolso_pais”),
+() => todos.filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais"),
 [todos],
 );
 
@@ -217,13 +217,13 @@ const porCategoriaPais = useMemo(() => {
 const map: Record<string, number> = {};
 despesasPais.forEach((l) => {
 const subP = l.subcategoria_pais;
-const cat = subP && subP !== “” && subP !== “Geral” ? subP : l.categoria_macro || “Outros”;
+const cat = subP && subP !== "" && subP !== "Geral" ? subP : l.categoria_macro || "Outros";
 map[cat] = (map[cat] || 0) + Number(l.valor);
 });
 return Object.entries(map)
 .map(([cat, valor]) => {
 const group = getSubcategoriaGroup(cat) || cat;
-return { cat, valor, emoji: cat === “Vicente” ? “👦” : getGroupEmoji(group) };
+return { cat, valor, emoji: cat === "Vicente" ? "👦" : getGroupEmoji(group) };
 })
 .sort((a, b) => b.valor - a.valor);
 }, [despesasPais]);
@@ -231,13 +231,13 @@ return { cat, valor, emoji: cat === “Vicente” ? “👦” : getGroupEmoji(g
 const lancamentosComReembolsoPais = useMemo(() => {
 return despesasPais.map((l) => {
 const reembolsado = getTotalReembolsado(todosReembolsos, l.id);
-return { …l, reembolsado, liquido: Number(l.valor) - reembolsado };
+return { ...l, reembolsado, liquido: Number(l.valor) - reembolsado };
 }).sort((a, b) => Number(a.valor) - Number(b.valor));
 }, [despesasPais, todosReembolsos]);
 
 // == ADRIANO (inclui Luísa) ==
 const lancamentosAdriano = useMemo(
-() => todos.filter((l) => (l.adriano === true || isLuisaLancamento(l)) && l.tipo === “despesa”),
+() => todos.filter((l) => (l.adriano === true || isLuisaLancamento(l)) && l.tipo === "despesa"),
 [todos],
 );
 
@@ -257,16 +257,16 @@ const porCategoriaAdriano = useMemo(() => {
 const map: Record<string, number> = {};
 lancamentosAdriano.forEach((l) => {
 if (isLuisaLancamento(l)) {
-map[“Luísa”] = (map[“Luísa”] || 0) + Number(l.valor);
+map["Luísa"] = (map["Luísa"] || 0) + Number(l.valor);
 } else {
-const cat = l.categoria_macro || l.subcategoria || “Outros”;
+const cat = l.categoria_macro || l.subcategoria || "Outros";
 map[cat] = (map[cat] || 0) + Number(l.valor);
 }
 });
 return Object.entries(map)
 .map(([cat, valor]) => {
 const group = getSubcategoriaGroup(cat) || cat;
-return { cat, valor, emoji: cat === “Luísa” ? “👩‍🦳” : getGroupEmoji(group) };
+return { cat, valor, emoji: cat === "Luísa" ? "👩‍🦳" : getGroupEmoji(group) };
 })
 .sort((a, b) => b.valor - a.valor);
 }, [lancamentosAdriano]);
@@ -274,13 +274,13 @@ return { cat, valor, emoji: cat === “Luísa” ? “👩‍🦳” : getGroupE
 const lancamentosComReembolsoAdriano = useMemo(() => {
 return lancamentosAdriano.map((l) => {
 const reembolsado = getTotalReembolsado(todosReembolsos, l.id);
-return { …l, reembolsado, liquido: Number(l.valor) - reembolsado };
+return { ...l, reembolsado, liquido: Number(l.valor) - reembolsado };
 }).sort((a, b) => Number(a.valor) - Number(b.valor));
 }, [lancamentosAdriano, todosReembolsos]);
 
 const reembolsoByLancamento = useMemo(() => {
 const map = new Map<string, any>();
-for (const r of […todosReembolsos].sort((a, b) => b.data_reembolso.localeCompare(a.data_reembolso))) {
+for (const r of [...todosReembolsos].sort((a, b) => b.data_reembolso.localeCompare(a.data_reembolso))) {
 if (!map.has(r.lancamento_id)) map.set(r.lancamento_id, r);
 }
 return map;
@@ -302,8 +302,8 @@ let saldo = 0;
 for (const l of lancamentosAdrianoSomente) {
 const valor = Number(l.valor) || 0;
 if (!valor) continue;
-const pagoPor = (l.pago_por || “voce”).toLowerCase().normalize(“NFD”).replace(/[\u0300-\u036f]/g, “”);
-if (pagoPor === “voce”) {
+const pagoPor = (l.pago_por || "voce").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+if (pagoPor === "voce") {
 saldo += valor;
 } else {
 saldo -= valor;
@@ -334,25 +334,25 @@ await updateReembolso.mutateAsync({
 id: reembolsoTarget.reembolsoExistente.id,
 updates: {
 valor_reembolsado: data.valor_reembolsado,
-quem_reembolsou: data.quem_reembolsou || (aba === “adriano” ? “Adriano” : “Pais”),
+quem_reembolsou: data.quem_reembolsou || (aba === "adriano" ? "Adriano" : "Pais"),
 data_reembolso: data.data_reembolso,
 observacao: data.observacao ?? null,
 },
 });
-toast.success(“Reembolso atualizado!”);
+toast.success("Reembolso atualizado!");
 } else {
 await addReembolso.mutateAsync({
 lancamento_id: reembolsoTarget.id,
 valor_reembolsado: data.valor_reembolsado,
-quem_reembolsou: data.quem_reembolsou || (aba === “adriano” ? “Adriano” : “Pais”),
+quem_reembolsou: data.quem_reembolsou || (aba === "adriano" ? "Adriano" : "Pais"),
 data_reembolso: data.data_reembolso,
 observacao: data.observacao ?? null,
 });
-toast.success(“Reembolso registrado!”);
+toast.success("Reembolso registrado!");
 }
 setReembolsoTarget(null);
 } catch (e: any) {
-toast.error(“Erro ao salvar: “ + (e?.message || JSON.stringify(e)));
+toast.error("Erro ao salvar: " + (e?.message || JSON.stringify(e)));
 }
 };
 
@@ -361,9 +361,9 @@ if (!reembolsoTarget?.reembolsoExistente?.id) return;
 try {
 await deleteReembolso.mutateAsync(reembolsoTarget.reembolsoExistente.id);
 setReembolsoTarget(null);
-toast.success(“Reembolso excluído!”);
+toast.success("Reembolso excluído!");
 } catch (e: any) {
-toast.error(“Erro ao excluir: “ + (e?.message || JSON.stringify(e)));
+toast.error("Erro ao excluir: " + (e?.message || JSON.stringify(e)));
 }
 };
 
@@ -377,7 +377,7 @@ const updateLancamento = useUpdateLancamento();
 
 const handleSaveEdit = async (updates: Partial<Lancamento>) => {
 if (!editTarget) return;
-await updateLancamento.mutateAsync({ id: editTarget.id, …updates });
+await updateLancamento.mutateAsync({ id: editTarget.id, ...updates });
 setEditTarget(null);
 };
 
@@ -391,9 +391,9 @@ const handleDeleteSingle = async () => {
 if (!deleteTarget) return;
 try {
 await deleteLancamento.mutateAsync(deleteTarget.id);
-toast.success(“Lançamento excluído!”);
+toast.success("Lançamento excluído!");
 } catch (e: any) {
-toast.error(“Erro ao excluir: “ + (e?.message || “”));
+toast.error("Erro ao excluir: " + (e?.message || ""));
 } finally {
 setDeleteTarget(null);
 }
@@ -403,14 +403,14 @@ const handleDeleteFuture = async () => {
 if (!deleteTarget) return;
 try {
 const tipo = getTipo(deleteTarget);
-if (tipo === “parcelado” && deleteTarget.parcelamento_id) {
+if (tipo === "parcelado" && deleteTarget.parcelamento_id) {
 await deleteFutureParcelamento.mutateAsync({ parcelamento_id: deleteTarget.parcelamento_id, fromDate: deleteTarget.data });
-} else if (tipo === “recorrente” && deleteTarget.recorrencia_pai_id) {
+} else if (tipo === "recorrente" && deleteTarget.recorrencia_pai_id) {
 await deleteFutureRecorrencia.mutateAsync({ recorrencia_pai_id: deleteTarget.recorrencia_pai_id, fromDate: deleteTarget.data });
 }
-toast.success(“Lançamentos futuros excluídos!”);
+toast.success("Lançamentos futuros excluídos!");
 } catch (e: any) {
-toast.error(“Erro ao excluir: “ + (e?.message || “”));
+toast.error("Erro ao excluir: " + (e?.message || ""));
 } finally {
 setDeleteTarget(null);
 }
@@ -420,14 +420,14 @@ const handleDeleteAll = async () => {
 if (!deleteTarget) return;
 try {
 const tipo = getTipo(deleteTarget);
-if (tipo === “parcelado” && deleteTarget.parcelamento_id) {
+if (tipo === "parcelado" && deleteTarget.parcelamento_id) {
 await deleteAllParcelamento.mutateAsync(deleteTarget.parcelamento_id);
-} else if (tipo === “recorrente” && deleteTarget.recorrencia_pai_id) {
+} else if (tipo === "recorrente" && deleteTarget.recorrencia_pai_id) {
 await deleteAllRecorrencia.mutateAsync(deleteTarget.recorrencia_pai_id);
 }
-toast.success(“Todos os lançamentos excluídos!”);
+toast.success("Todos os lançamentos excluídos!");
 } catch (e: any) {
-toast.error(“Erro ao excluir: “ + (e?.message || “”));
+toast.error("Erro ao excluir: " + (e?.message || ""));
 } finally {
 setDeleteTarget(null);
 }
@@ -441,7 +441,7 @@ getEmoji: (l: any) => string,
 ) => (
 <div className="space-y-1">
 {items.map((l) => {
-const isLuisa = (l.subcategoria_pais || “”).trim() === “Luísa” || (l.subcategoria_pais || “”).trim() === “Luisa”;
+const isLuisa = (l.subcategoria_pais || "").trim() === "Luísa" || (l.subcategoria_pais || "").trim() === "Luisa";
 
 ```
     const row = (

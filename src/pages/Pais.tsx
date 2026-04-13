@@ -45,6 +45,7 @@ function getTipo(l: Lancamento | null): "parcelado" | "recorrente" | "simples" {
   return "simples";
 }
 
+// -- Resumo Card reutilizavel --
 function ResumoCard({
   totalPago,
   totalReembolsado,
@@ -116,6 +117,7 @@ function ResumoCard({
         </div>
       )}
 
+      {/* Bloco separado Luisa */}
       {totalLuisa != null && totalLuisa > 0 && (
         <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
           <div className="flex items-center gap-2">
@@ -236,11 +238,27 @@ export default function Pais() {
     [todos],
   );
 
+  // Separar Luisa
   const lancamentosLuisa = useMemo(() => lancamentosAdriano.filter(isLuisaLancamento), [lancamentosAdriano]);
   const lancamentosAdrianoSomente = useMemo(() => lancamentosAdriano.filter(l => !isLuisaLancamento(l)), [lancamentosAdriano]);
 
   const totalPagoAdriano = useMemo(() => lancamentosAdriano.reduce((s, l) => s + Number(l.valor), 0), [lancamentosAdriano]);
   const totalLuisa = useMemo(() => lancamentosLuisa.reduce((s, l) => s + Number(l.valor), 0), [lancamentosLuisa]);
+
+  // Totais separados por quem pagou (so Adriano, sem Luisa)
+  const totalVocePagouAdriano = useMemo(() =>
+    lancamentosAdrianoSomente
+      .filter(l => (l.pago_por || "voce").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") === "voce")
+      .reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentosAdrianoSomente]
+  );
+  const totalElepagouAdriano = useMemo(() =>
+    lancamentosAdrianoSomente
+      .filter(l => (l.pago_por || "voce").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") !== "voce")
+      .reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentosAdrianoSomente]
+  );
+
   const totalReembolsadoAdrianoTabela = useMemo(() => {
     const ids = new Set(lancamentosAdriano.map((l) => l.id));
     return todosReembolsos.filter((r) => ids.has(r.lancamento_id)).reduce((s, r) => s + Number(r.valor_reembolsado), 0);
@@ -290,6 +308,7 @@ export default function Pais() {
     return todosReembolsos.filter((r) => ids.has(r.lancamento_id)).reduce((s, r) => s + Number(r.valor_reembolsado), 0);
   }, [lancamentosLuisa, todosReembolsos]);
 
+  // Saldo liquido Adriano: positivo = Adriano te deve, negativo = voce deve ao Adriano
   const saldoLiquidoAdriano = useMemo(() => {
     let saldo = 0;
     for (const l of lancamentosAdrianoSomente) {
@@ -306,6 +325,7 @@ export default function Pais() {
     return saldo;
   }, [lancamentosAdrianoSomente, totalReembolsadoAdrianoSeparado]);
 
+  // Saldo liquido Luisa: total despesas - reembolsos
   const saldoLiquidoLuisa = totalLuisa - totalReembolsadoLuisaSeparado;
 
   const [reembolsoTarget, setReembolsoTarget] = useState<any>(null);
@@ -359,6 +379,7 @@ export default function Pais() {
     }
   };
 
+  // == Delete state & hooks (Adriano tab) ==
   const [actionsLanc, setActionsLanc] = useState<Lancamento | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Lancamento | null>(null);
   const [editTarget, setEditTarget] = useState<Lancamento | null>(null);
@@ -424,14 +445,17 @@ export default function Pais() {
     }
   };
 
+  // Helper para renderizar lista de lancamentos
   const renderLancamentos = (
-    items: Array<{ id: string; descricao: string; data: string; subcategoria_pais: string | null; categoria_macro: string | null; valor: number; reembolsado: number; liquido: number; adriano: boolean; is_parcelado: boolean; parcelamento_id: string | null; recorrente: boolean; recorrencia_pai_id: string | null }>,
+    items: Array<{ id: string; descricao: string; data: string; subcategoria_pais: string | null; categoria_macro: string | null; valor: number; reembolsado: number; liquido: number; adriano: boolean; is_parcelado: boolean; parcelamento_id: string | null; recorrente: boolean; recorrencia_pai_id: string | null; pago_por?: string }>,
     borderColor: string,
     getEmoji: (l: any) => string,
   ) => (
     <div className="space-y-1">
       {items.map((l) => {
         const isLuisa = (l.subcategoria_pais || "").trim() === "Luisa" || (l.subcategoria_pais || "").trim() === "Luisa";
+        const pagoPorNorm = (l.pago_por || "voce").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const vocePagou = pagoPorNorm === "voce";
 
         const row = (
           <div
@@ -466,10 +490,17 @@ export default function Pais() {
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                {formatDate(l.data)}
-                {l.subcategoria_pais && l.subcategoria_pais !== "Geral" && !isLuisa ? ` \u00B7 ${l.subcategoria_pais}` : ""}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-[10px] text-muted-foreground">
+                  {formatDate(l.data)}
+                  {l.subcategoria_pais && l.subcategoria_pais !== "Geral" && !isLuisa ? ` \u00B7 ${l.subcategoria_pais}` : ""}
+                </p>
+                {aba === "adriano" && !isLuisa && (
+                  <span className="text-[9px] text-muted-foreground">
+                    {vocePagou ? "\u{1F64B}\u200D\u2640\uFE0F eu paguei" : "\u{1F468} ele pagou"}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="text-right shrink-0">
@@ -496,6 +527,7 @@ export default function Pais() {
           );
         }
 
+        // Aba pais tambem tem swipe para editar/excluir
         return (
           <SwipeableItem
             key={l.id}
@@ -514,6 +546,7 @@ export default function Pais() {
       <BottomNav />
 
       <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-foreground">Pais</h1>
@@ -529,19 +562,21 @@ export default function Pais() {
           </div>
         </div>
 
+        {/* Abas */}
         <div className="flex gap-1 p-1 rounded-2xl bg-[#E8ECF5]">
           <button onClick={() => setAba("pais")}
             className={cn("flex-1 py-2 rounded-xl text-sm font-semibold transition-all",
               aba === "pais" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
-            Pais
+            {"\u{1F9D3}"} Pais
           </button>
           <button onClick={() => setAba("adriano")}
             className={cn("flex-1 py-2 rounded-xl text-sm font-semibold transition-all",
               aba === "adriano" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
-            Adriano
+            {"\u{1F468}"} Adriano
           </button>
         </div>
 
+        {/* == ABA PAIS == */}
         {aba === "pais" && (
           <>
             {despesasPais.length > 0 && (
@@ -607,6 +642,7 @@ export default function Pais() {
                   (l) => l.subcategoria_pais === "Vicente" ? "\u{1F466}" : getGroupEmoji(getSubcategoriaGroup(l.subcategoria_pais || "") || l.categoria_macro || "Outros"),
                 )}
 
+                {/* Receitas "Reembolso pais" */}
                 {receitasReembolsoPais.map((l) => (
                   <div key={l.id} className="flex items-center gap-3 py-2.5 border-b border-amber-100 last:border-0">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm"
@@ -625,22 +661,47 @@ export default function Pais() {
           </>
         )}
 
+        {/* == ABA ADRIANO == */}
         {aba === "adriano" && (
           <>
             {lancamentosAdriano.length > 0 && (
               <div className="glass-card p-4 space-y-3">
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Resumo do mes</p>
 
+                {/* Total dividido */}
                 <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(99,102,241,0.12)" }}>
                       <TrendingDown size={14} className="text-primary" />
                     </div>
-                    <span className="text-sm text-muted-foreground">Total pago</span>
+                    <span className="text-sm text-muted-foreground">Total dividido</span>
                   </div>
-                  <span className="text-sm font-bold text-foreground">{fmt(totalPagoAdriano)}</span>
+                  <span className="text-sm font-bold text-foreground">{fmt(totalPagoAdriano - totalLuisa)}</span>
                 </div>
 
+                {/* Sub-item: voce pagou */}
+                {totalVocePagouAdriano > 0 && (
+                  <div className="flex items-center justify-between py-1.5 pl-9">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">{"\u{1F64B}\u200D\u2640\uFE0F"}</span>
+                      <span className="text-xs text-muted-foreground">Voce pagou</span>
+                    </div>
+                    <span className="text-xs font-bold text-foreground">{fmt(totalVocePagouAdriano)}</span>
+                  </div>
+                )}
+
+                {/* Sub-item: Adriano pagou */}
+                {totalElepagouAdriano > 0 && (
+                  <div className="flex items-center justify-between py-1.5 pl-9">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">{"\u{1F468}"}</span>
+                      <span className="text-xs text-muted-foreground">Adriano pagou</span>
+                    </div>
+                    <span className="text-xs font-bold text-foreground">{fmt(totalElepagouAdriano)}</span>
+                  </div>
+                )}
+
+                {/* Saldo Adriano */}
                 <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(59,130,246,0.12)" }}>
@@ -655,6 +716,7 @@ export default function Pais() {
                   </span>
                 </div>
 
+                {/* Saldo Luisa */}
                 {(totalLuisa > 0 || saldoLiquidoLuisa !== 0) && (
                   <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
                     <div className="flex items-center gap-2">
@@ -671,6 +733,7 @@ export default function Pais() {
                   </div>
                 )}
 
+                {/* Total liquido a receber */}
                 <div className="flex items-center justify-between pt-1">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(217,112,82,0.12)" }}>

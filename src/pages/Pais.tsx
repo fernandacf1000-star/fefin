@@ -67,7 +67,6 @@ return (
 <div className="glass-card p-4 space-y-3">
 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Resumo do mês</p>
 
-```
   <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
     <div className="flex items-center gap-2">
       <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "rgba(99,102,241,0.12)" }}>
@@ -161,7 +160,6 @@ return (
     </div>
   )}
 </div>
-```
 
 );
 }
@@ -443,7 +441,6 @@ getEmoji: (l: any) => string,
 {items.map((l) => {
 const isLuisa = (l.subcategoria_pais || "").trim() === "Luísa" || (l.subcategoria_pais || "").trim() === "Luisa";
 
-```
     const row = (
       <div
         key={l.id}
@@ -519,7 +516,6 @@ const isLuisa = (l.subcategoria_pais || "").trim() === "Luísa" || (l.subcategor
     );
   })}
 </div>
-```
 
 );
 
@@ -527,7 +523,6 @@ return (
 <div className="gradient-bg min-h-screen pb-28 overflow-x-hidden">
 <BottomNav />
 
-```
   <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
     {/* Header */}
     <div className="flex items-center justify-between">
@@ -808,7 +803,6 @@ return (
     />
   )}
 </div>
-```
 
 );
 }

@@ -17,6 +17,7 @@ import {
   type Lancamento,
 } from "@/hooks/useLancamentos";
 import { useCartoes } from "@/hooks/useCartoes";
+import { useAllReembolsos } from "@/hooks/useReembolsos";
 import { getGroupEmoji, getSubcategoriaGroup, detectSubcategoria } from "@/lib/subcategorias";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -189,6 +190,7 @@ export default function Despesas() {
 
   const { data: lancamentos = [], isLoading } = useLancamentos(mesRef);
   const { data: cartoes = [] } = useCartoes();
+  const { data: todosReembolsos = [] } = useAllReembolsos();
 
   const deleteLancamento = useDeleteLancamento();
   const deleteFutureParcelamento = useDeleteFutureParcelamento();
@@ -222,9 +224,28 @@ export default function Despesas() {
     return filtered.sort((a, b) => Number(a.valor) - Number(b.valor));
   }, [lancamentos, filterTipo]);
 
-  const totalDespesas = useMemo(
+  const totalDespesasBrutas = useMemo(
     () => lancamentos.filter((l) => l.tipo === "despesa" && !l.adriano).reduce((s, l) => s + Number(l.valor), 0),
     [lancamentos],
+  );
+
+  // Reembolsos recebidos no mês (pais, Adriano, Luísa) — descontados do total
+  const totalReembolsadoMes = useMemo(() => {
+    const idsDespesas = new Set(
+      lancamentos.filter((l) => l.tipo === "despesa" && !l.adriano).map((l) => l.id)
+    );
+    const porTabela = todosReembolsos
+      .filter((r) => idsDespesas.has(r.lancamento_id) && r.data_reembolso.startsWith(mesRef))
+      .reduce((s, r) => s + Number(r.valor_reembolsado), 0);
+    const porReceita = lancamentos
+      .filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais")
+      .reduce((s, l) => s + Number(l.valor), 0);
+    return porTabela + porReceita;
+  }, [lancamentos, todosReembolsos, mesRef]);
+
+  const totalDespesas = useMemo(
+    () => totalDespesasBrutas - totalReembolsadoMes,
+    [totalDespesasBrutas, totalReembolsadoMes],
   );
   const totalReceitas = useMemo(
     () => lancamentos.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),

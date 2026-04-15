@@ -116,7 +116,8 @@ const emojiMapDash: Record<string, string> = {
 export default function Dashboard() {
   const [mesAtual, setMesAtual] = useState(() => {
     const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() };
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return { year: next.getFullYear(), month: next.getMonth() };
   });
 
   const mesRef = getMesRef(mesAtual.year, mesAtual.month);

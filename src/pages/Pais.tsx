@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, TrendingDown, RotateCcw, Wallet, Heart } fro
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import ReembolsoModal from "@/components/ReembolsoModal";
+import ReembolsoLivreModal from "@/components/ReembolsoLivreModal";
 import SwipeableItem from "@/components/SwipeableItem";
 import LancamentoActions from "@/components/LancamentoActions";
 import DeleteConfirmSheet from "@/components/DeleteConfirmSheet";
@@ -166,7 +167,8 @@ function ResumoCard({
 export default function Pais() {
   const [mesAtual, setMesAtual] = useState(() => {
     const now = new Date();
-    return { year: now.getFullYear(), month: now.getMonth() };
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return { year: next.getFullYear(), month: next.getMonth() };
   });
   const [aba, setAba] = useState<"pais" | "adriano">("pais");
 
@@ -329,6 +331,7 @@ export default function Pais() {
   const saldoLiquidoLuisa = totalLuisa - totalReembolsadoLuisaSeparado;
 
   const [reembolsoTarget, setReembolsoTarget] = useState<any>(null);
+  const [showReembolsoLivre, setShowReembolsoLivre] = useState(false);
   const addReembolso = useAddReembolso();
   const updateReembolso = useUpdateReembolso();
   const deleteReembolso = useDeleteReembolso();
@@ -579,6 +582,15 @@ export default function Pais() {
         {/* == ABA PAIS == */}
         {aba === "pais" && (
           <>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowReembolsoLivre(true)}
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-full border border-amber-300 text-amber-700 bg-amber-50 active:opacity-70"
+              >
+                + Reembolso
+              </button>
+            </div>
+
             {despesasPais.length > 0 && (
               <ResumoCard
                 totalPago={totalPagoPais}
@@ -664,6 +676,15 @@ export default function Pais() {
         {/* == ABA ADRIANO == */}
         {aba === "adriano" && (
           <>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowReembolsoLivre(true)}
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50 active:opacity-70"
+              >
+                + Reembolso
+              </button>
+            </div>
+
             {lancamentosAdriano.length > 0 && (
               <div className="glass-card p-4 space-y-3">
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Resumo do mes</p>
@@ -798,6 +819,13 @@ export default function Pais() {
           </>
         )}
       </div>
+
+      <ReembolsoLivreModal
+        open={showReembolsoLivre}
+        onClose={() => setShowReembolsoLivre(false)}
+        quemPadrao={aba === "adriano" ? "Adriano" : "Pais"}
+        mesReferencia={mesRef}
+      />
 
       {reembolsoTarget && (
         <ReembolsoModal

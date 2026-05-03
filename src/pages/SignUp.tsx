@@ -72,8 +72,7 @@ const SignUp = () => {
         {/* Logo */}
         <div className="text-center pt-8 animate-fade-up flex flex-col items-center">
           <h1 className="text-[38px] font-bold" style={{ fontFamily: "'Playfair Display', serif" }}>
-            <span className="text-foreground">Fe</span>
-            <span className="text-primary">Fin</span>
+            <span className="text-primary">Fina</span>
           </h1>
           <p className="mt-1 text-muted-foreground text-sm">Crie sua conta</p>
         </div>

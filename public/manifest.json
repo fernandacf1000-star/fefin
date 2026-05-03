@@ -1,43 +1,15 @@
 {
-  "name": "FeFin",
-  "short_name": "FeFin",
-  "description": "FeFin - Minhas Finanças, Minhas Regras",
+  "name": "Fina",
+  "short_name": "Fina",
+  "description": "Fina - Minhas Finanças, Minhas Regras",
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#D8DDE9",
-  "theme_color": "#6366F1",
+  "background_color": "#EDE8FF",
+  "theme_color": "#7C5BBF",
   "icons": [
-    {
-      "src": "/fefin-mascot-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "/fefin-icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/fefin-icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "/fefin-icon-512.png",
-      "sizes": "1024x1024",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/fefin-og-image.png",
-      "sizes": "1200x630",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "FeFin Dashboard"
-    }
+    { "src": "/fina-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/fina-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/fina-icon-512.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" }
   ]
 }

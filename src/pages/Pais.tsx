@@ -345,6 +345,7 @@ export default function Pais() {
   const [actionsLanc, setActionsLanc] = useState<Lancamento | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Lancamento | null>(null);
   const [editTarget, setEditTarget] = useState<Lancamento | null>(null);
+  const [showReembolsoLivre, setShowReembolsoLivre] = useState(false);
 
   const { data: cartoes = [] } = useCartoes();
   const updateLancamento = useUpdateLancamento();

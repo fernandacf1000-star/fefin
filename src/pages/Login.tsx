@@ -94,8 +94,7 @@ const Login = () => {
             </svg>
           </div>
           <h1 className="text-[38px] font-bold mt-3" style={{ fontFamily: "'Playfair Display', serif" }}>
-            <span className="text-foreground">Fe</span>
-            <span className="text-primary">Fin</span>
+            <span className="text-primary">Fina</span>
           </h1>
           <p className="mt-1.5 uppercase text-muted-foreground" style={{ fontSize: 11, letterSpacing: 2 }}>
             Minhas finanças, minhas regras

@@ -19,7 +19,6 @@ import {
 import type { Lancamento } from "@/hooks/useLancamentos";
 import { useCartoes } from "@/hooks/useCartoes";
 import { useAllReembolsos, getTotalReembolsado } from "@/hooks/useReembolsos";
-import ReembolsoLivreModal from "@/components/ReembolsoLivreModal";
 import { getGroupEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -345,7 +344,6 @@ export default function Pais() {
   const [actionsLanc, setActionsLanc] = useState<Lancamento | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Lancamento | null>(null);
   const [editTarget, setEditTarget] = useState<Lancamento | null>(null);
-  const [showReembolsoLivre, setShowReembolsoLivre] = useState(false);
 
   const { data: cartoes = [] } = useCartoes();
   const updateLancamento = useUpdateLancamento();
@@ -542,14 +540,6 @@ export default function Pais() {
         {/* == ABA PAIS == */}
         {aba === "pais" && (
           <>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowReembolsoLivre(true)}
-                className="text-[11px] font-semibold px-3 py-1.5 rounded-full border border-amber-300 text-amber-700 bg-amber-50 active:opacity-70"
-              >
-                + Reembolso
-              </button>
-            </div>
 
 
             {despesasPais.length > 0 && (
@@ -637,14 +627,6 @@ export default function Pais() {
         {/* == ABA ADRIANO == */}
         {aba === "adriano" && (
           <>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowReembolsoLivre(true)}
-                className="text-[11px] font-semibold px-3 py-1.5 rounded-full border border-blue-300 text-blue-700 bg-blue-50 active:opacity-70"
-              >
-                + Reembolso
-              </button>
-            </div>
 
 
             {lancamentosAdriano.length > 0 && (
@@ -857,13 +839,7 @@ export default function Pais() {
           cartoes={cartoes}
         />
       )}
-
-      <ReembolsoLivreModal
-        open={showReembolsoLivre}
-        onClose={() => setShowReembolsoLivre(false)}
-        quemPadrao={aba === "adriano" ? "Adriano" : "Pais"}
-        mesReferencia={mesRef}
-      />
     </div>
   );
 }
+    

@@ -29,10 +29,14 @@ function getMesReferenciaFatura(dataCompra: Date, cartaoSelecionado: Cartao | nu
   return mesVencimento.getFullYear() + '-' + String(mesVencimento.getMonth() + 1).padStart(2, '0');
 }
 
-const RECEITA_CATS_EDIT = ['Salario', 'Reembolso Pais', 'Resgate'] as const;
+const RECEITA_CATS_EDIT = ['Salario', 'Reembolso Pais', 'Reembolso Adriano', 'Reembolso Luísa', 'Resgate'] as const;
 type ReceitaCatEdit = (typeof RECEITA_CATS_EDIT)[number];
 const receitaCatMapEdit: Record<ReceitaCatEdit, string> = {
-  'Salario': 'salario', 'Reembolso Pais': 'reembolso_pais', 'Resgate': 'resgate_investimento',
+  'Salario': 'salario',
+  'Reembolso Pais': 'reembolso_pais',
+  'Reembolso Adriano': 'reembolso_adriano',
+  'Reembolso Luísa': 'reembolso_luisa',
+  'Resgate': 'resgate_investimento',
 };
 const receitaCatReverseMap: Record<string, ReceitaCatEdit> = Object.fromEntries(
   Object.entries(receitaCatMapEdit).map(([k, v]) => [v, k as ReceitaCatEdit]),

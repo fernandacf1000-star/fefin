@@ -150,6 +150,17 @@ export function calcularSaldoAdriano(lancamentos: Lancamento[]): number {
   for (const raw of lancamentos) {
     const l = normalizeLancamento(raw);
 
+    // Receitas de reembolso: compensam o saldo devedor
+    if (l.tipo === "receita") {
+      if (l.categoria === "reembolso_adriano") {
+        saldo -= Number(l.valor) || 0;
+      } else if (l.categoria === "reembolso_luisa") {
+        // Luísa é tratada separadamente no saldo, mas pode ser compensada aqui como positivo
+        // (não entra no saldo Adriano, mas sim no saldo Luísa)
+      }
+      continue;
+    }
+
     if (l.tipo !== "despesa") continue;
     if (!l.shared_group_id && !l.adriano) continue;
 

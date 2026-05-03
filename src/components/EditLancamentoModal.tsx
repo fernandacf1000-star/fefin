@@ -106,11 +106,12 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     setDiaRecorrencia(String(lancamento.dia_recorrencia || 1));
     setEditScope('este');
     const subP = lancamento.subcategoria_pais;
-    setIsVicente(subP === 'Vicente');
-    setIsLuisa(subP === 'Luisa' || subP === 'Luísa');
-    // Pais = has subcategoria_pais AND is not an Adriano mirror
     const isAdrianoMirror = lancamento.adriano || false;
-    setIsPais((subP != null && subP !== '' && !isAdrianoMirror) || subP === 'Vicente' || subP === 'Luisa' || subP === 'Luísa');
+    const subPNorm = (subP || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    setIsVicente(subPNorm === 'vicente');
+    setIsLuisa(subPNorm === 'luisa');
+    // isPais = tem subcategoria_pais válida E não é espelho Adriano E subcategoria_pais não é 'Adriano'
+    setIsPais(!isAdrianoMirror && !!subP && subP !== '' && subPNorm !== 'adriano');
     setIsAdriano(isAdrianoMirror);
     setPagoPor(((lancamento as any).pago_por as 'voce' | 'adriano') || 'voce');
     if (lancamento.cartao_id) {
@@ -143,7 +144,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     if (!isPais) return null;
     if (isVicente) return 'Vicente';
     if (isLuisa) return 'Luísa';
-    return subcategoria || detectCategoriaMacro(subcategoria || '') || 'Geral';
+    return 'Pais';
   };
 
   const refetchAll = () => {

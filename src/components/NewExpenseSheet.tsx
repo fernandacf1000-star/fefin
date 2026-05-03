@@ -24,10 +24,14 @@ function getMesReferenciaFatura(dataCompra: Date, cartaoSelecionado: Cartao | nu
   return `${mesVencimento.getFullYear()}-${String(mesVencimento.getMonth() + 1).padStart(2, "0")}`;
 }
 
-const RECEITA_CATS = ["Salário", "Reembolso Pais", "Resgate"] as const;
+const RECEITA_CATS = ["Salário", "Reembolso Pais", "Reembolso Adriano", "Reembolso Luísa", "Resgate"] as const;
 type ReceitaCat = (typeof RECEITA_CATS)[number];
 const receitaCatMap: Record<ReceitaCat, string> = {
-  "Salário": "salario", "Reembolso Pais": "reembolso_pais", "Resgate": "resgate_investimento",
+  "Salário": "salario",
+  "Reembolso Pais": "reembolso_pais",
+  "Reembolso Adriano": "reembolso_adriano",
+  "Reembolso Luísa": "reembolso_luisa",
+  "Resgate": "resgate_investimento",
 };
 
 interface Props {
@@ -136,7 +140,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
       const macro = detectCategoriaMacro(subcategoria || "") || null;
       const forma = formaPagamento === "Dinheiro" ? "dinheiro" : "credito";
       const cartao = formaPagamento === "Crédito" ? (cartaoId || cartoes[0]?.id || null) : null;
-      const subPais = isPais ? (isVicente ? "Vicente" : isLuisa ? "Luísa" : (subcategoria || macro || "Geral")) : null;
+      const subPais = isPais ? (isVicente ? "Vicente" : isLuisa ? "Luísa" : "Pais") : null;
       const cartaoObj = cartao ? cartoes.find((c) => c.id === cartao) || null : null;
 
       // Se marcou Adriano, o valor principal é metade

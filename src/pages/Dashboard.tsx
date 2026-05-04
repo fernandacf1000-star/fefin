@@ -12,28 +12,7 @@ const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 // ── SVG logos ──────────────────────────────────────────────────────────────
-const MastercardLogo = ({ size = 28 }: { size?: number }) => (
-  <svg width={size} height={Math.round(size * 0.62)} viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="14" cy="12" r="9" fill="#EB001B" />
-    <circle cx="24" cy="12" r="9" fill="#F79E1B" />
-    <path d="M19 5.5a9 9 0 0 1 0 13 9 9 0 0 1 0-13z" fill="#FF5F00" />
-  </svg>
-);
 
-const VisaLogo = ({ size = 28 }: { size?: number }) => (
-  <svg width={size} height={Math.round(size * 0.4)} viewBox="0 0 60 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <text x="2" y="16" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="18" fill="#1A1F71" letterSpacing="-1">
-      VISA
-    </text>
-  </svg>
-);
-
-const BandeiraLogo = ({ bandeira, size = 28 }: { bandeira: string; size?: number }) => {
-  const b = (bandeira || "").toLowerCase();
-  if (b === "mastercard") return <MastercardLogo size={size} />;
-  if (b === "visa") return <VisaLogo size={size} />;
-  return null;
-};
 
 // ── Mascot ────────────────────────────────────────────────────────────────
 const MascotHead = ({ size = 64 }: { size?: number }) => (
@@ -258,31 +237,31 @@ export default function Dashboard() {
   }, [despesas]);
 
   return (
-    <div className="gradient-bg min-h-screen pb-28 overflow-x-hidden">
+    <div className="min-h-screen pb-28 overflow-x-hidden" style={{ background: "linear-gradient(135deg, #7C5BBF 0%, #EDE8FF 100%)" }}>
       <BottomNav />
 
       <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <MascotHead size={48} />
+            <img src="/fina-mascot.png" alt="Fina" style={{ width: 48, height: "auto" }} className="drop-shadow" />
             <div>
-              <p className="text-[11px] text-muted-foreground">Olá,</p>
-              <p className="text-base font-bold text-foreground">{firstName} 👋</p>
+              <p className="text-[11px] text-white/70">Olá,</p>
+              <p className="text-base font-bold text-white">{firstName} 👋</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={prevMes}
-              className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              className="w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
             >
               <ChevronLeft size={15} />
             </button>
-            <span className="text-xl font-bold text-foreground px-1 min-w-[96px] text-center">
+            <span className="text-xl font-bold text-white px-1 min-w-[96px] text-center">
               {mesLabel}
             </span>
             <button
               onClick={nextMes}
-              className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              className="w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
             >
               <ChevronRight size={15} />
             </button>
@@ -300,7 +279,7 @@ export default function Dashboard() {
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="glass-card p-4 space-y-1">
+          <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-1 border border-purple-200/30">
             <div className="flex items-center gap-1.5">
               <TrendingDown size={13} className="text-destructive" />
               <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
@@ -310,7 +289,7 @@ export default function Dashboard() {
             <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalDespesas)}</p>
           </div>
 
-          <div className="glass-card p-4 space-y-1">
+          <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-1 border border-purple-200/30">
             <div className="flex items-center gap-1.5">
               <TrendingUp size={13} style={{ color: "#0D9488" }} />
               <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
@@ -322,7 +301,7 @@ export default function Dashboard() {
         </div>
 
         {totalResgates > 0 && (
-          <div className="glass-card px-4 py-3 flex items-center justify-between">
+          <div className="bg-white/80 backdrop-blur rounded-xl px-4 py-3 flex items-center justify-between border border-purple-200/30">
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
               Resgates
             </span>
@@ -350,7 +329,7 @@ export default function Dashboard() {
         )}
 
         {saldoAdriano === 0 && lancamentos.some((l) => l.adriano) && (
-          <div className="glass-card px-4 py-3 flex items-center justify-between">
+          <div className="bg-white/80 backdrop-blur rounded-xl px-4 py-3 flex items-center justify-between border border-purple-200/30">
             <div className="flex items-center gap-2">
               <Users size={14} className="text-muted-foreground" />
               <span className="text-[11px] text-muted-foreground font-medium">Contas com Adriano</span>
@@ -413,7 +392,7 @@ export default function Dashboard() {
 
         {!isLoading && lancamentos.length === 0 && (
           <div className="flex flex-col items-center py-16 space-y-3">
-            <MascotHead size={48} />
+            <img src="/fina-mascot.png" alt="Fina" style={{ width: 48, height: "auto" }} className="drop-shadow" />
             <p className="text-sm text-muted-foreground">Nenhum lançamento neste mês</p>
           </div>
         )}

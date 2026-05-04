@@ -11,41 +11,6 @@ import { getGroupEmoji } from "@/lib/subcategorias";
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-// ── SVG logos ──────────────────────────────────────────────────────────────
-
-
-// ── Mascot ────────────────────────────────────────────────────────────────
-const MascotHead = ({ size = 64 }: { size?: number }) => (
-  <svg width={size} height={Math.round(size * 1.2)} viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="50" cy="42" rx="34" ry="36" fill="#2C1810" />
-    <path d="M74 45 Q88 55 85 80 Q82 95 75 100 Q80 80 76 65 Q74 55 74 45Z" fill="#2C1810" />
-    <path d="M26 45 Q12 58 15 82 Q18 96 24 100 Q20 80 24 65 Q26 55 26 45Z" fill="#2C1810" />
-    <ellipse cx="50" cy="50" rx="28" ry="30" fill="#FDDBB4" />
-    {/* Topo do cabelo com mais volume */}
-    <ellipse cx="50" cy="16" rx="20" ry="14" fill="#2C1810" />
-    <path d="M32 40 Q39 36 44 39" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none" />
-    <path d="M56 39 Q61 36 68 40" stroke="#2C1810" strokeWidth="3" strokeLinecap="round" fill="none" />
-    <ellipse cx="38" cy="47" rx="5" ry="5.5" fill="white" />
-    <ellipse cx="62" cy="47" rx="5" ry="5.5" fill="white" />
-    <ellipse cx="38.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314" />
-    <ellipse cx="62.5" cy="47.5" rx="3.5" ry="4" fill="#3D2314" />
-    <circle cx="40" cy="46" r="1.2" fill="white" />
-    <circle cx="64" cy="46" r="1.2" fill="white" />
-    <path d="M38 63 Q50 72 62 63" stroke="#C68642" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-    <ellipse cx="30" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5" />
-    <ellipse cx="70" cy="60" rx="7" ry="4" fill="#FFB3A7" opacity="0.5" />
-    {/* Moedas mais próximas do rosto */}
-    <circle cx="24" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2" />
-    <text x="24" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
-    <circle cx="76" cy="55" r="5.5" fill="#F7D070" stroke="#E8B800" strokeWidth="1.2" />
-    <text x="76" y="58.5" textAnchor="middle" fontSize="6" fontWeight="bold" fill="#B8860B">$</text>
-    {/* Camisa com borda inferior arredondada */}
-    <path d="M22 92 Q20 112 26 116 L74 116 Q80 112 78 92 Q70 82 50 82 Q30 82 22 92Z" fill="#6366F1" />
-    <ellipse cx="18" cy="104" rx="7" ry="5" fill="#FDDBB4" />
-    <ellipse cx="82" cy="104" rx="7" ry="5" fill="#FDDBB4" />
-  </svg>
-);
-
 // ── Helpers ───────────────────────────────────────────────────────────────
 function getMesRef(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
@@ -106,7 +71,6 @@ export default function Dashboard() {
   const { data: cartoes = [] } = useCartoes();
   const { data: profile } = useProfile();
   const { data: todosReembolsos = [] } = useAllReembolsos();
-  const idsLancamentos = new Set(lancamentos.map((l) => l.id));
 
   const nome = profile?.nome || profile?.full_name || "";
   const firstName = nome.split(" ")[0] || "você";
@@ -175,10 +139,8 @@ export default function Dashboard() {
     [receitas]
   );
 
-  // ── Saldo Adriano ──────────────────────────────────────────────────────
   const saldoAdriano = useMemo(() => calcularSaldoAdriano(lancamentos), [lancamentos]);
 
-  // ── Melhor cartão ──────────────────────────────────────────────────────
   const melhorCartao = useMemo(() => {
     if (!cartoes.length) return null;
     return cartoes.reduce((best, c) => {
@@ -192,7 +154,6 @@ export default function Dashboard() {
     ? getCartaoCycle(melhorCartao.dia_fechamento).daysUntilClose
     : 0;
 
-  // ── Por cartão ─────────────────────────────────────────────────────────
   const porCartao = useMemo(
     () =>
       cartoes
@@ -206,7 +167,6 @@ export default function Dashboard() {
     [lancamentos, cartoes]
   );
 
-  // ── Categorias ─────────────────────────────────────────────────────────
   const categorias = useMemo(() => {
     const map: Record<string, number> = {};
 
@@ -269,11 +229,8 @@ export default function Dashboard() {
         </div>
 
         {melhorCartao && (
-          <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-white border border-border w-full shadow-sm">
-            <div className="flex items-center gap-2">
-              <BandeiraLogo bandeira={melhorCartao.bandeira} size={22} />
-              <span className="text-[12px] font-semibold text-foreground">{melhorCartao.nome}</span>
-            </div>
+          <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-white/80 backdrop-blur border border-purple-200/30 w-full shadow-sm">
+            <span className="text-[12px] font-semibold text-foreground">{melhorCartao.nome}</span>
             <span className="text-[10px] text-muted-foreground">fecha em {melhorDays}d</span>
           </div>
         )}
@@ -312,7 +269,7 @@ export default function Dashboard() {
         {saldoAdriano !== 0 && (
           <div
             className={cn(
-              "glass-card px-4 py-3 flex items-center justify-between border-l-4",
+              "bg-white/80 backdrop-blur rounded-xl px-4 py-3 flex items-center justify-between border-l-4 border border-purple-200/30",
               saldoAdriano > 0 ? "border-l-emerald-500" : "border-l-red-400"
             )}
           >
@@ -339,17 +296,14 @@ export default function Dashboard() {
         )}
 
         {porCartao.length > 0 && (
-          <div className="glass-card p-4 space-y-3">
+          <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-3 border border-purple-200/30">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
               Faturas do mês
             </p>
             <div className="space-y-2.5">
               {porCartao.map(({ cartao, total }) => (
                 <div key={cartao.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BandeiraLogo bandeira={cartao.bandeira} size={22} />
-                    <span className="text-sm text-foreground font-medium">{cartao.nome}</span>
-                  </div>
+                  <span className="text-sm text-foreground font-medium">{cartao.nome}</span>
                   <span className="text-sm font-bold text-foreground">{fmt(total)}</span>
                 </div>
               ))}
@@ -358,7 +312,7 @@ export default function Dashboard() {
         )}
 
         {categorias.length > 0 && (
-          <div className="glass-card p-4 space-y-3">
+          <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-3 border border-purple-200/30">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
               Despesas por categoria
             </p>

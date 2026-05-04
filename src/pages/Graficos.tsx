@@ -172,7 +172,7 @@ const Graficos = () => {
   };
 
   const composicao = useMemo(() => {
-    const despesas = lancamentos.filter((l) => l.tipo === "despesa");
+    const despesas = lancamentos.filter((l) => l.tipo === "despesa" && l.categoria !== "reembolso_pais" && l.categoria !== "reembolso_adriano" && l.categoria !== "reembolso_luisa");
     const map: Record<string, number> = {};
     despesas.forEach((d) => {
       const isVicente = d.subcategoria_pais === "Vicente";

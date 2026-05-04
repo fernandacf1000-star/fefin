@@ -53,7 +53,7 @@ const TabletSidebar = ({
               className={cn(
                 "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
                 isActive
-                  ? "gradient-emerald text-primary-foreground"
+                  ? "gradient-emerald text-[#7C5BBF]-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
@@ -75,7 +75,7 @@ const TabletSidebar = ({
         </button>
         <button
           onClick={onNewIncome}
-          className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+          className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl bg-[#7C5BBF]/10 text-[#7C5BBF] text-sm font-medium hover:bg-[#7C5BBF]/20 transition-colors"
         >
           <ArrowUpRight size={16} />
           <span>Nova receita</span>
@@ -104,7 +104,7 @@ const BottomNav = () => {
         key={item.label}
         onClick={() => navigate(item.path)}
         className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 overflow-hidden transition-all ${
-          isActive ? "text-primary" : "text-muted-foreground/50 hover:text-foreground"
+          isActive ? "text-[#7C5BBF]" : "text-muted-foreground/50 hover:text-foreground"
         }`}
         style={{ textAlign: "center" }}
       >

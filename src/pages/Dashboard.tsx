@@ -24,6 +24,26 @@ function getMesLabel(year: number, month: number) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+function normalizeKey(value: string | null | undefined): string {
+  return (value || "")
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+const ignoredDashboardCategories = new Set([
+  "reembolso_pais",
+  "reembolso_adriano",
+  "reembolso_luisa",
+  "resgate_investimento",
+]);
+
+function isPaisLancamento(l: { subcategoria_pais: string | null; adriano: boolean }) {
+  const subPais = normalizeKey(l.subcategoria_pais);
+  return !!subPais && subPais !== "geral" && subPais !== "adriano" && !l.adriano;
+}
+
 const emojiMapDash: Record<string, string> = {
   Moradia: "🏘️",
   Alimentação: "🥗",
@@ -87,7 +107,13 @@ export default function Dashboard() {
 
   // ── Totals ─────────────────────────────────────────────────────────────
   const despesas = useMemo(
-    () => lancamentos.filter((l) => l.tipo === "despesa" && !l.adriano),
+    () =>
+      lancamentos.filter(
+        (l) =>
+          l.tipo === "despesa" &&
+          !l.adriano &&
+          !ignoredDashboardCategories.has(normalizeKey(l.categoria))
+      ),
     [lancamentos]
   );
 
@@ -171,7 +197,7 @@ export default function Dashboard() {
     const map: Record<string, number> = {};
 
     despesas.forEach((l) => {
-      let cat = (getCategoriaDashboard(l) || "").trim();
+      let cat = isPaisLancamento(l) ? "Pais" : (getCategoriaDashboard(l) || "").trim();
 
       if (!cat) {
         if (l.subcategoria && l.subcategoria.trim()) cat = l.subcategoria.trim();
@@ -180,9 +206,10 @@ export default function Dashboard() {
 
       if (!cat) return;
 
-      const catNorm = cat.toLowerCase();
+      const catNorm = normalizeKey(cat);
 
       if (["despesa", "extra"].includes(catNorm)) return;
+      if (ignoredDashboardCategories.has(catNorm)) return;
 
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });

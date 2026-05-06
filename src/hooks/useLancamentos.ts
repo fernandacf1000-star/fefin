@@ -184,6 +184,56 @@ export function calcularSaldoAdriano(lancamentos: Lancamento[]): number {
   return saldo;
 }
 
+function splitParcelamentoTotalIntoInstallments(rows: Lancamento[]): Lancamento[] {
+  const adjusted = rows.map((r) => ({ ...r }));
+  const groups = new Map<string, { index: number; row: Lancamento }[]>();
+
+  adjusted.forEach((row, index) => {
+    if (
+      row.tipo === "despesa" &&
+      row.is_parcelado &&
+      row.parcelamento_id &&
+      row.parcela_total &&
+      row.parcela_total > 1
+    ) {
+      const current = groups.get(row.parcelamento_id) || [];
+      current.push({ index, row });
+      groups.set(row.parcelamento_id, current);
+    }
+  });
+
+  groups.forEach((group) => {
+    const ordered = [...group].sort(
+      (a, b) => Number(a.row.parcela_atual || 0) - Number(b.row.parcela_atual || 0)
+    );
+    const totalParcelas = Number(ordered[0]?.row.parcela_total || 0);
+
+    if (!totalParcelas || ordered.length !== totalParcelas) return;
+
+    const valorTotalInformado = Number(ordered[0].row.valor || 0);
+    const allRowsHaveSameTotal = ordered.every(
+      ({ row }) => Math.abs(Number(row.valor || 0) - valorTotalInformado) < 0.005
+    );
+
+    if (!allRowsHaveSameTotal) return;
+
+    const totalEmCentavos = Math.round(valorTotalInformado * 100);
+    const parcelaBaseEmCentavos = Math.trunc(totalEmCentavos / totalParcelas);
+    const diferencaCentavos = totalEmCentavos - parcelaBaseEmCentavos * totalParcelas;
+
+    ordered.forEach(({ index }, installmentIndex) => {
+      const centavos =
+        installmentIndex === ordered.length - 1
+          ? parcelaBaseEmCentavos + diferencaCentavos
+          : parcelaBaseEmCentavos;
+
+      adjusted[index].valor = centavos / 100;
+    });
+  });
+
+  return adjusted;
+}
+
 // ── queries ──────────────────────────────────────────────────────────────
 
 export function useLancamentos(mesRef?: string) {
@@ -257,7 +307,7 @@ export function useAddMultipleLancamentos() {
 
   return useMutation({
     mutationFn: async (rows: Partial<Lancamento>[]) => {
-      const payload = rows.map((r) =>
+      const payload = splitParcelamentoTotalIntoInstallments(rows.map((r) =>
         normalizeLancamento({
           id: (r.id as string) || "",
           user_id: user!.id,
@@ -289,7 +339,7 @@ export function useAddMultipleLancamentos() {
           pago_por: (r.pago_por as string) || "voce",
           created_at: "",
         })
-      );
+      ));
 
       const { error } = await supabase.from("lancamentos").insert(
         payload.map((r) => {

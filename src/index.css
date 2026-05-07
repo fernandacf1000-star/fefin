@@ -87,13 +87,8 @@
   .gradient-bg > div > h1,
   .gradient-bg > div > div:first-child h1,
   .gradient-bg > div > div:first-child p,
-  .gradient-bg > div > div:first-child span,
-  .gradient-bg > div > div:nth-child(2) > span {
+  .gradient-bg > div > div:first-child span {
     color: #FFFFFF !important;
-  }
-
-  .gradient-bg > div > div:nth-child(2) > button {
-    color: rgba(255, 255, 255, 0.88) !important;
   }
 
   .gradient-bg > div > div:first-child button {

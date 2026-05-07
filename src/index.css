@@ -84,6 +84,25 @@
     background: linear-gradient(135deg, #8B5CF6 0%, #EDE8FF 100%);
   }
 
+  .gradient-bg > div > h1,
+  .gradient-bg > div > div:first-child h1,
+  .gradient-bg > div > div:first-child p,
+  .gradient-bg > div > div:first-child span,
+  .gradient-bg > div > div:nth-child(2) > span {
+    color: #FFFFFF !important;
+  }
+
+  .gradient-bg > div > div:nth-child(2) > button {
+    color: rgba(255, 255, 255, 0.88) !important;
+  }
+
+  .gradient-bg > div > div:first-child button {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: #FFFFFF !important;
+    backdrop-filter: blur(8px);
+  }
+
   .text-gradient {
     background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%);
     -webkit-background-clip: text;

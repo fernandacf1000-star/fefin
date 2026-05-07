@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import NewExpenseSheet from "./NewExpenseSheet";
 import QuickEntrySheet from "./QuickEntrySheet";
+import FinaMascot from "./FinaMascot";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { APP_VERSION } from "@/version";
@@ -20,7 +21,6 @@ const navItems = [
 const leftItems = navItems.slice(0, 3);
 const rightItems = navItems.slice(3);
 
-/** Tablet sidebar (≥768px) */
 const TabletSidebar = ({
   onNewExpense,
   onNewIncome,
@@ -38,13 +38,16 @@ const TabletSidebar = ({
 
   return (
     <aside className="hidden md:flex flex-col w-[220px] shrink-0 border-r border-border bg-white h-screen fixed top-0 left-0 z-40">
-      {/* User header */}
       <div className="px-4 pt-6 pb-4 border-b border-border">
-        <p className="text-sm font-semibold text-foreground truncate">{nome || "FeFin"}</p>
-        <p className="text-[10px] text-muted-foreground truncate">{user?.email || ""}</p>
+        <div className="flex items-center gap-3">
+          <FinaMascot size={42} eager />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">{nome || "Fina"}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{user?.email || ""}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Nav items */}
       <nav className="flex-1 px-2 py-3 space-y-0.5">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -56,7 +59,7 @@ const TabletSidebar = ({
               className={cn(
                 "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
                 isActive
-                  ? "gradient-emerald text-[#7C5BBF]-foreground"
+                  ? "gradient-emerald text-white"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
@@ -67,7 +70,6 @@ const TabletSidebar = ({
         })}
       </nav>
 
-      {/* New entry buttons */}
       <div className="px-3 pb-3 space-y-2">
         <button
           onClick={onNewExpense}
@@ -92,9 +94,8 @@ const TabletSidebar = ({
         </button>
       </div>
 
-      {/* Version */}
       <div className="px-4 pb-4">
-        <p className="text-[9px] text-muted-foreground">FeFin {APP_VERSION}</p>
+        <p className="text-[9px] text-muted-foreground">Fina {APP_VERSION}</p>
       </div>
     </aside>
   );
@@ -138,7 +139,6 @@ const BottomNav = () => {
 
   return (
     <>
-      {/* Tablet sidebar */}
       <TabletSidebar
         onNewExpense={() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); }}
         onNewIncome={() => { setExpenseInitialTipo("receita"); setExpenseOpen(true); }}
@@ -153,7 +153,6 @@ const BottomNav = () => {
         ⚡ Rápido
       </button>
 
-      {/* Mobile bottom nav - hidden on tablet+ */}
       <nav
         className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full sm:max-w-[430px] border-t md:hidden"
         style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderColor: "#DDE3EE", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 16px))" }}

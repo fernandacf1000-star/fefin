@@ -1,3 +1,5 @@
+import FinaMascot from "@/components/FinaMascot";
+
 interface EmptyStateProps {
   title: string;
   subtitle?: string;
@@ -11,16 +13,7 @@ const EmptyState = ({ title, subtitle = "Adicione seu primeiro lan√ßamento do m√
   return (
     <div className="flex flex-col items-center justify-center py-12 animate-fade-up">
       <div className="mascot-empty">
-        <img
-          src="/fina-mascot.png"
-          alt="Fina"
-          width={96}
-          height={96}
-          loading="lazy"
-          decoding="async"
-          className="drop-shadow"
-          style={{ width: 96, height: "auto" }}
-        />
+        <FinaMascot size={104} />
       </div>
       <h2 className="text-base font-bold text-foreground mt-6 text-center">{decodeUnicodeEscapes(title)}</h2>
       <p className="text-xs mt-2 text-center max-w-[240px] text-muted-foreground">

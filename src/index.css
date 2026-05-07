@@ -45,7 +45,6 @@
     --sidebar-border: 220 20% 90%;
     --sidebar-ring: 239 84% 67%;
 
-    /* Custom tokens */
     --emerald: 239 84% 67%;
     --emerald-glow: 239 84% 72%;
     --surface-elevated: 222 25% 92%;
@@ -64,7 +63,7 @@
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
-    background-color: #D8DDE9;
+    background: linear-gradient(135deg, #8B5CF6 0%, #EDE8FF 100%);
   }
 
   body {
@@ -82,7 +81,7 @@
   }
 
   .gradient-bg {
-    background: #D8DDE9;
+    background: linear-gradient(135deg, #8B5CF6 0%, #EDE8FF 100%);
   }
 
   .text-gradient {
@@ -96,7 +95,6 @@
   }
 }
 
-/* Sidebar offset: pages shift right when sidebar is visible (md+) */
 @media (min-width: 768px) {
   .gradient-bg,
   .min-h-screen {

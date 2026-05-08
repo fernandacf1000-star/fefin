@@ -47,6 +47,13 @@ function normalizeAccentInsensitive(value: string | null | undefined): string {
     .toLowerCase();
 }
 
+function normalizePagoPor(value: string | null | undefined): string {
+  const normalized = normalizeAccentInsensitive(value);
+  if (!normalized || normalized === "fernanda" || normalized === "eu" || normalized === "voce" || normalized === "você") return "voce";
+  if (normalized === "adriano" || normalized === "ele") return "adriano";
+  return cleanText(value) || "voce";
+}
+
 function isInvalidVisualCategory(value: string | null | undefined): boolean {
   const normalized = normalizeAccentInsensitive(value);
   return (
@@ -97,7 +104,7 @@ export function normalizeLancamento(l: Lancamento): Lancamento {
     categoria_macro: categoria_macro || null,
     subcategoria: subcategoria || null,
     subcategoria_pais,
-    pago_por: cleanText(l.pago_por) || "voce",
+    pago_por: normalizePagoPor(l.pago_por),
   };
 }
 
@@ -141,6 +148,8 @@ export function isSharedLancamento(l: Lancamento): boolean {
 
 /**
  * Calcula saldo líquido entre o usuário e Adriano.
+ * Regra atual: despesas `adriano=true` são 50/50. Se Fernanda pagou 100%,
+ * Adriano deve metade. Se Adriano pagou 100%, Fernanda deve metade.
  * saldo > 0 → Adriano deve para o usuário
  * saldo < 0 → usuário deve para Adriano
  */
@@ -150,13 +159,9 @@ export function calcularSaldoAdriano(lancamentos: Lancamento[]): number {
   for (const raw of lancamentos) {
     const l = normalizeLancamento(raw);
 
-    // Receitas de reembolso: compensam o saldo devedor
     if (l.tipo === "receita") {
       if (l.categoria === "reembolso_adriano") {
         saldo -= Number(l.valor) || 0;
-      } else if (l.categoria === "reembolso_luisa") {
-        // Luísa é tratada separadamente no saldo, mas pode ser compensada aqui como positivo
-        // (não entra no saldo Adriano, mas sim no saldo Luísa)
       }
       continue;
     }
@@ -164,19 +169,20 @@ export function calcularSaldoAdriano(lancamentos: Lancamento[]): number {
     if (l.tipo !== "despesa") continue;
     if (!l.shared_group_id && !l.adriano) continue;
 
-    // Luísa não entra em divisão 50/50
+    // Luísa não entra em divisão 50/50 com Adriano
     if (isLuisaLancamento(l)) continue;
 
     const valor = Number(l.valor) || 0;
     if (!valor) continue;
 
     if (l.adriano) {
-      const pagoPor = normalizeAccentInsensitive(l.pago_por || "voce");
+      const metade = valor / 2;
+      const pagoPor = normalizePagoPor(l.pago_por || "voce");
 
       if (pagoPor === "voce") {
-        saldo += valor;
+        saldo += metade;
       } else {
-        saldo -= valor;
+        saldo -= metade;
       }
     }
   }

@@ -10,7 +10,7 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import Despesas from "./pages/Despesas";
-import Pais from "./pages/Pais";
+import Pais from "./pages/PaisV2";
 import Conta from "./pages/Conta";
 import NotFound from "./pages/NotFound";
 

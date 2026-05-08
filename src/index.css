@@ -122,6 +122,64 @@
 }
 
 @layer components {
+  div[class*="z-[90]"] {
+    color: #0f172a !important;
+  }
+
+  div[class*="z-[90]"] label,
+  div[class*="z-[90]"] h1,
+  div[class*="z-[90]"] h2,
+  div[class*="z-[90]"] h3,
+  div[class*="z-[90]"] p,
+  div[class*="z-[90]"] span {
+    color: inherit;
+  }
+
+  div[class*="z-[90]"] input,
+  div[class*="z-[90]"] textarea,
+  div[class*="z-[90]"] select,
+  div[class*="z-[90]"] [role="combobox"] {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+  }
+
+  div[class*="z-[90]"] input::placeholder,
+  div[class*="z-[90]"] textarea::placeholder {
+    color: #64748b !important;
+    opacity: 1 !important;
+  }
+
+  div[class*="z-[90]"] button:not([class*="bg-destructive"]):not([class*="gradient-emerald"]):not([class*="bg-primary"]),
+  div[class*="z-[90]"] button:not([class*="bg-destructive"]):not([class*="gradient-emerald"]):not([class*="bg-primary"]) span,
+  div[class*="z-[90]"] button:not([class*="bg-destructive"]):not([class*="gradient-emerald"]):not([class*="bg-primary"]) svg {
+    color: #0f172a !important;
+  }
+
+  div[class*="z-[90]"] button[class*="bg-[#E8ECF5]"],
+  div[class*="z-[90]"] div[class*="bg-[#E8ECF5]"] button {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+  }
+
+  div[class*="z-[90]"] div[class*="bg-[#E8ECF5]"] button.bg-white,
+  div[class*="z-[90]"] div[class*="bg-[#E8ECF5]"] button[class*="bg-white"] {
+    color: #0f172a !important;
+    background: #ffffff !important;
+  }
+
+  div[class*="z-[90]"] div[class*="bg-[#E8ECF5]"] button:not(.bg-white):not([class*="bg-white"]) {
+    color: #475569 !important;
+  }
+
+  div[class*="z-[90]"] .text-muted-foreground,
+  div[class*="z-[90]"] label.text-muted-foreground {
+    color: #64748b !important;
+  }
+
+  div[class*="z-[90]"] .text-foreground {
+    color: #0f172a !important;
+  }
+
   .rdp,
   .rdp-root,
   .rdp-month,

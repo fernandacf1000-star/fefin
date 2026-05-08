@@ -69,6 +69,18 @@
   body {
     @apply text-foreground font-sans antialiased;
   }
+
+  input,
+  textarea,
+  select {
+    color: #0f172a;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #64748b;
+    opacity: 1;
+  }
 }
 
 @layer utilities {
@@ -106,6 +118,96 @@
 
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+@layer components {
+  .rdp,
+  .rdp-root,
+  .rdp-month,
+  .rdp-months,
+  .rdp-table,
+  .rdp-caption,
+  .rdp-head,
+  .rdp-tbody {
+    color: #0f172a !important;
+    background: #ffffff !important;
+  }
+
+  .rdp-caption_label,
+  .rdp-nav_button,
+  .rdp-head_cell,
+  .rdp-cell,
+  .rdp-day,
+  .rdp-button,
+  .rdp-day_button {
+    color: #0f172a !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .rdp-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .rdp-head_row,
+  .rdp-row {
+    display: flex !important;
+    width: 100% !important;
+  }
+
+  .rdp-head_cell,
+  .rdp-cell {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    text-align: center !important;
+  }
+
+  .rdp-day,
+  .rdp-button,
+  .rdp-day_button {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    min-width: 2.25rem !important;
+    min-height: 2.25rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 0.6rem !important;
+    background: transparent !important;
+    border: 0 !important;
+    font-weight: 600 !important;
+  }
+
+  .rdp-day:hover,
+  .rdp-button:hover,
+  .rdp-day_button:hover {
+    background: #eef2ff !important;
+    color: #4338ca !important;
+  }
+
+  .rdp-day_selected,
+  .rdp-day_selected:hover,
+  .rdp-day[aria-selected='true'],
+  .rdp-button[aria-selected='true'],
+  .rdp-day_button[aria-selected='true'] {
+    background: #6366f1 !important;
+    color: #ffffff !important;
+  }
+
+  .rdp-day_today,
+  .rdp-day_today:not(.rdp-day_selected),
+  .rdp-day_button.rdp-day_today:not([aria-selected='true']) {
+    background: #ccfbf1 !important;
+    color: #0f766e !important;
+  }
+
+  .rdp-day_outside,
+  .rdp-day_disabled,
+  .rdp-day_hidden {
+    color: #94a3b8 !important;
+    opacity: 0.7 !important;
   }
 }
 

@@ -4,12 +4,15 @@ import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import { useLancamentos, isLuisaLancamento } from "@/hooks/useLancamentos";
 import { useAllReembolsos, getTotalReembolsado } from "@/hooks/useReembolsos";
+import { ALL_SUBCATEGORIAS, detectSubcategoria, getSubcategoriaEmoji, normalizeSub } from "@/lib/subcategorias";
 import { cn } from "@/lib/utils";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const absValue = (v: unknown) => Math.abs(Number(v) || 0);
+
+const VALID_SUBCATEGORIAS = new Set(ALL_SUBCATEGORIAS);
 
 function getMesRef(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
@@ -53,6 +56,23 @@ function getEmoji(label?: string | null) {
   if (s.includes("pais")) return "🧓";
   if (s.includes("moradia")) return "🏠";
   return "💸";
+}
+
+type LancamentoLike = {
+  descricao?: string | null;
+  categoria_macro?: string | null;
+  subcategoria?: string | null;
+  categoria?: string | null;
+};
+
+function getSubcategoriaValida(l: LancamentoLike): string | null {
+  const normalizada = normalizeSub(l.categoria_macro, l.subcategoria);
+  if (normalizada && VALID_SUBCATEGORIAS.has(normalizada)) return normalizada;
+
+  const detectada = detectSubcategoria(l.descricao || "");
+  if (detectada && VALID_SUBCATEGORIAS.has(detectada)) return detectada;
+
+  return null;
 }
 
 function SummaryRow({
@@ -179,12 +199,20 @@ export default function PaisV2() {
 
   const categorias = useMemo(() => {
     const map = new Map<string, number>();
+
     listaAtual.forEach((l) => {
-      const label = l.subcategoria || l.categoria_macro || l.categoria || "Sem categoria";
-      map.set(label, (map.get(label) || 0) + absValue(l.valor));
+      const subcategoria = getSubcategoriaValida(l);
+      if (!subcategoria) return;
+      map.set(subcategoria, (map.get(subcategoria) || 0) + absValue(l.valor));
     });
+
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   }, [listaAtual]);
+
+  const totalCategorias = useMemo(
+    () => categorias.reduce((s, [, valor]) => s + valor, 0),
+    [categorias],
+  );
 
   return (
     <div className="gradient-bg min-h-screen pb-28 overflow-x-hidden">
@@ -253,13 +281,12 @@ export default function PaisV2() {
           <Card className="space-y-3">
             <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Despesas por categoria</p>
             {categorias.map(([cat, valor]) => {
-              const totalBase = listaAtual.reduce((s, l) => s + absValue(l.valor), 0);
-              const pct = totalBase > 0 ? (valor / totalBase) * 100 : 0;
+              const pct = totalCategorias > 0 ? (valor / totalCategorias) * 100 : 0;
               return (
                 <div key={cat} className="space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span>{getEmoji(cat)}</span>
+                      <span>{getSubcategoriaEmoji(cat)}</span>
                       <span className="text-sm font-semibold text-slate-800 truncate">{cat}</span>
                     </div>
                     <span className="text-sm font-bold text-slate-900">{fmt(valor)}</span>
@@ -287,15 +314,17 @@ export default function PaisV2() {
                 const pagoPor = norm(l.pago_por);
                 const vocePagou = pagoPor === "voce" || pagoPor === "fernanda" || !pagoPor;
                 const valor = absValue(l.valor);
+                const subcategoria = getSubcategoriaValida(l);
+                const labelCategoria = subcategoria || l.categoria_macro || l.categoria || "Sem categoria";
                 return (
                   <div key={l.id} className="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-0">
                     <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                      <span>{getEmoji(l.subcategoria || l.categoria_macro || l.categoria)}</span>
+                      <span>{subcategoria ? getSubcategoriaEmoji(subcategoria) : getEmoji(labelCategoria)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-slate-900 truncate">{l.descricao}</p>
                       <p className="text-[11px] text-slate-500">
-                        {formatDate(l.data)} · {l.subcategoria || l.categoria_macro || l.categoria || "Sem categoria"}
+                        {formatDate(l.data)} · {labelCategoria}
                         {aba === "adriano" && !isLuisaLancamento(l) ? ` · ${vocePagou ? "eu paguei" : "ele pagou"}` : ""}
                       </p>
                     </div>

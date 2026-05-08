@@ -1,0 +1,202 @@
+/* Robust WCAG-oriented contrast overrides for all transaction forms.
+   This file is intentionally loaded after index.css. It targets both custom
+   fixed sheets/modals and Radix/shadcn dialogs/popovers. */
+
+#root div[class*="z-[70]"],
+#root div[class*="z-[80]"],
+#root div[class*="z-[90]"],
+#root div[class*="z-\[70\]"],
+#root div[class*="z-\[80\]"],
+#root div[class*="z-\[90\]"],
+#root [role="dialog"],
+#root [data-radix-dialog-content],
+#root [data-radix-popper-content-wrapper] {
+  color: #0f172a !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+#root div[class*="z-[70]"] *,
+#root div[class*="z-[80]"] *,
+#root div[class*="z-[90]"] *,
+#root div[class*="z-\[70\]"] *,
+#root div[class*="z-\[80\]"] *,
+#root div[class*="z-\[90\]"] *,
+#root [role="dialog"] *,
+#root [data-radix-dialog-content] *,
+#root [data-radix-popper-content-wrapper] * {
+  opacity: 1 !important;
+}
+
+#root div[class*="z-[70]"] h1,
+#root div[class*="z-[70]"] h2,
+#root div[class*="z-[70]"] h3,
+#root div[class*="z-[70]"] label,
+#root div[class*="z-[70]"] p,
+#root div[class*="z-[70]"] span,
+#root div[class*="z-[70]"] svg,
+#root div[class*="z-[80]"] h1,
+#root div[class*="z-[80]"] h2,
+#root div[class*="z-[80]"] h3,
+#root div[class*="z-[80]"] label,
+#root div[class*="z-[80]"] p,
+#root div[class*="z-[80]"] span,
+#root div[class*="z-[80]"] svg,
+#root div[class*="z-[90]"] h1,
+#root div[class*="z-[90]"] h2,
+#root div[class*="z-[90]"] h3,
+#root div[class*="z-[90]"] label,
+#root div[class*="z-[90]"] p,
+#root div[class*="z-[90]"] span,
+#root div[class*="z-[90]"] svg,
+#root [role="dialog"] h1,
+#root [role="dialog"] h2,
+#root [role="dialog"] h3,
+#root [role="dialog"] label,
+#root [role="dialog"] p,
+#root [role="dialog"] span,
+#root [role="dialog"] svg {
+  color: #0f172a !important;
+}
+
+#root div[class*="z-[70]"] .text-muted-foreground,
+#root div[class*="z-[80]"] .text-muted-foreground,
+#root div[class*="z-[90]"] .text-muted-foreground,
+#root div[class*="z-[70]"] label.text-muted-foreground,
+#root div[class*="z-[80]"] label.text-muted-foreground,
+#root div[class*="z-[90]"] label.text-muted-foreground,
+#root [role="dialog"] .text-muted-foreground,
+#root [role="dialog"] label.text-muted-foreground {
+  color: #475569 !important;
+}
+
+#root div[class*="z-[70]"] input,
+#root div[class*="z-[70]"] textarea,
+#root div[class*="z-[70]"] select,
+#root div[class*="z-[70]"] [role="combobox"],
+#root div[class*="z-[80]"] input,
+#root div[class*="z-[80]"] textarea,
+#root div[class*="z-[80]"] select,
+#root div[class*="z-[80]"] [role="combobox"],
+#root div[class*="z-[90]"] input,
+#root div[class*="z-[90]"] textarea,
+#root div[class*="z-[90]"] select,
+#root div[class*="z-[90]"] [role="combobox"],
+#root [role="dialog"] input,
+#root [role="dialog"] textarea,
+#root [role="dialog"] select,
+#root [role="dialog"] [role="combobox"] {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  background-color: #e8ecf5 !important;
+}
+
+#root div[class*="z-[70]"] input::placeholder,
+#root div[class*="z-[70]"] textarea::placeholder,
+#root div[class*="z-[80]"] input::placeholder,
+#root div[class*="z-[80]"] textarea::placeholder,
+#root div[class*="z-[90]"] input::placeholder,
+#root div[class*="z-[90]"] textarea::placeholder,
+#root [role="dialog"] input::placeholder,
+#root [role="dialog"] textarea::placeholder {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+  opacity: 1 !important;
+}
+
+#root div[class*="z-[70]"] button,
+#root div[class*="z-[70]"] button span,
+#root div[class*="z-[70]"] button svg,
+#root div[class*="z-[80]"] button,
+#root div[class*="z-[80]"] button span,
+#root div[class*="z-[80]"] button svg,
+#root div[class*="z-[90]"] button,
+#root div[class*="z-[90]"] button span,
+#root div[class*="z-[90]"] button svg,
+#root [role="dialog"] button,
+#root [role="dialog"] button span,
+#root [role="dialog"] button svg {
+  color: #0f172a !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+#root div[class*="z-[70]"] button[class*="bg-primary"],
+#root div[class*="z-[70]"] button[class*="gradient-emerald"],
+#root div[class*="z-[70]"] button[class*="bg-destructive"],
+#root div[class*="z-[80]"] button[class*="bg-primary"],
+#root div[class*="z-[80]"] button[class*="gradient-emerald"],
+#root div[class*="z-[80]"] button[class*="bg-destructive"],
+#root div[class*="z-[90]"] button[class*="bg-primary"],
+#root div[class*="z-[90]"] button[class*="gradient-emerald"],
+#root div[class*="z-[90]"] button[class*="bg-destructive"],
+#root [role="dialog"] button[class*="bg-primary"],
+#root [role="dialog"] button[class*="gradient-emerald"],
+#root [role="dialog"] button[class*="bg-destructive"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+#root div[class*="z-[70]"] button[class*="bg-primary"] *,
+#root div[class*="z-[70]"] button[class*="gradient-emerald"] *,
+#root div[class*="z-[70]"] button[class*="bg-destructive"] *,
+#root div[class*="z-[80]"] button[class*="bg-primary"] *,
+#root div[class*="z-[80]"] button[class*="gradient-emerald"] *,
+#root div[class*="z-[80]"] button[class*="bg-destructive"] *,
+#root div[class*="z-[90]"] button[class*="bg-primary"] *,
+#root div[class*="z-[90]"] button[class*="gradient-emerald"] *,
+#root div[class*="z-[90]"] button[class*="bg-destructive"] *,
+#root [role="dialog"] button[class*="bg-primary"] *,
+#root [role="dialog"] button[class*="gradient-emerald"] *,
+#root [role="dialog"] button[class*="bg-destructive"] * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+#root div[class*="z-[70]"] .bg-white,
+#root div[class*="z-[80]"] .bg-white,
+#root div[class*="z-[90]"] .bg-white,
+#root [role="dialog"] .bg-white {
+  color: #0f172a !important;
+}
+
+#root div[class*="z-[70]"] .bg-\[\#E8ECF5\],
+#root div[class*="z-[80]"] .bg-\[\#E8ECF5\],
+#root div[class*="z-[90]"] .bg-\[\#E8ECF5\],
+#root [role="dialog"] .bg-\[\#E8ECF5\] {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+#root .rdp,
+#root .rdp-root,
+#root .rdp-month,
+#root .rdp-months,
+#root .rdp-table,
+#root .rdp-caption,
+#root .rdp-head,
+#root .rdp-tbody {
+  color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+#root .rdp-caption_label,
+#root .rdp-nav_button,
+#root .rdp-head_cell,
+#root .rdp-cell,
+#root .rdp-day,
+#root .rdp-button,
+#root .rdp-day_button {
+  color: #0f172a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+#root .rdp-day_selected,
+#root .rdp-day_selected:hover,
+#root .rdp-day[aria-selected='true'],
+#root .rdp-button[aria-selected='true'],
+#root .rdp-day_button[aria-selected='true'] {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}

@@ -122,62 +122,120 @@
 }
 
 @layer components {
-  div[class*="z-[90]"] {
+  /* Critical contrast fix for white form modals/sheets.
+     This intentionally uses broad selectors because some form controls are
+     built with plain buttons/spans and were inheriting white text from page rules. */
+  body #root div[class*="z-[90]"],
+  body #root div[class*="z-\[90\]"],
+  body #root [role="dialog"],
+  body #root [data-radix-dialog-content],
+  body #root [data-radix-popper-content-wrapper] {
     color: #0f172a !important;
+    -webkit-text-fill-color: initial !important;
   }
 
-  div[class*="z-[90]"] label,
-  div[class*="z-[90]"] h1,
-  div[class*="z-[90]"] h2,
-  div[class*="z-[90]"] h3,
-  div[class*="z-[90]"] p,
-  div[class*="z-[90]"] span {
-    color: inherit;
-  }
-
-  div[class*="z-[90]"] input,
-  div[class*="z-[90]"] textarea,
-  div[class*="z-[90]"] select,
-  div[class*="z-[90]"] [role="combobox"] {
-    color: #0f172a !important;
-    -webkit-text-fill-color: #0f172a !important;
-  }
-
-  div[class*="z-[90]"] input::placeholder,
-  div[class*="z-[90]"] textarea::placeholder {
-    color: #64748b !important;
+  body #root div[class*="z-[90]"] *,
+  body #root div[class*="z-\[90\]"] *,
+  body #root [role="dialog"] *,
+  body #root [data-radix-dialog-content] *,
+  body #root [data-radix-popper-content-wrapper] * {
     opacity: 1 !important;
   }
 
-  div[class*="z-[90]"] button:not([class*="bg-destructive"]):not([class*="gradient-emerald"]):not([class*="bg-primary"]),
-  div[class*="z-[90]"] button:not([class*="bg-destructive"]):not([class*="gradient-emerald"]):not([class*="bg-primary"]) span,
-  div[class*="z-[90]"] button:not([class*="bg-destructive"]):not([class*="gradient-emerald"]):not([class*="bg-primary"]) svg {
+  body #root div[class*="z-[90]"] h1,
+  body #root div[class*="z-[90]"] h2,
+  body #root div[class*="z-[90]"] h3,
+  body #root div[class*="z-[90]"] label,
+  body #root div[class*="z-[90]"] p,
+  body #root div[class*="z-[90]"] span,
+  body #root div[class*="z-[90]"] svg,
+  body #root [role="dialog"] h1,
+  body #root [role="dialog"] h2,
+  body #root [role="dialog"] h3,
+  body #root [role="dialog"] label,
+  body #root [role="dialog"] p,
+  body #root [role="dialog"] span,
+  body #root [role="dialog"] svg {
     color: #0f172a !important;
   }
 
-  div[class*="z-[90]"] button[class*="bg-[#E8ECF5]"],
-  div[class*="z-[90]"] div[class*="bg-[#E8ECF5]"] button {
+  body #root div[class*="z-[90]"] .text-muted-foreground,
+  body #root div[class*="z-[90]"] label.text-muted-foreground,
+  body #root div[class*="z-[90]"] .text-secondary-foreground,
+  body #root [role="dialog"] .text-muted-foreground,
+  body #root [role="dialog"] label.text-muted-foreground,
+  body #root [role="dialog"] .text-secondary-foreground {
+    color: #475569 !important;
+  }
+
+  body #root div[class*="z-[90]"] input,
+  body #root div[class*="z-[90]"] textarea,
+  body #root div[class*="z-[90]"] select,
+  body #root div[class*="z-[90]"] [role="combobox"],
+  body #root [role="dialog"] input,
+  body #root [role="dialog"] textarea,
+  body #root [role="dialog"] select,
+  body #root [role="dialog"] [role="combobox"] {
+    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
+    background-color: #e8ecf5 !important;
+  }
+
+  body #root div[class*="z-[90]"] input::placeholder,
+  body #root div[class*="z-[90]"] textarea::placeholder,
+  body #root [role="dialog"] input::placeholder,
+  body #root [role="dialog"] textarea::placeholder {
+    color: #64748b !important;
+    -webkit-text-fill-color: #64748b !important;
+    opacity: 1 !important;
+  }
+
+  body #root div[class*="z-[90]"] button,
+  body #root div[class*="z-[90]"] button span,
+  body #root div[class*="z-[90]"] button svg,
+  body #root [role="dialog"] button,
+  body #root [role="dialog"] button span,
+  body #root [role="dialog"] button svg {
+    color: #0f172a !important;
+    -webkit-text-fill-color: currentColor !important;
+  }
+
+  body #root div[class*="z-[90]"] button[class*="bg-primary"],
+  body #root div[class*="z-[90]"] button[class*="gradient-emerald"],
+  body #root div[class*="z-[90]"] button[class*="bg-destructive"],
+  body #root [role="dialog"] button[class*="bg-primary"],
+  body #root [role="dialog"] button[class*="gradient-emerald"],
+  body #root [role="dialog"] button[class*="bg-destructive"] {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+
+  body #root div[class*="z-[90]"] button[class*="bg-primary"] *,
+  body #root div[class*="z-[90]"] button[class*="gradient-emerald"] *,
+  body #root div[class*="z-[90]"] button[class*="bg-destructive"] *,
+  body #root [role="dialog"] button[class*="bg-primary"] *,
+  body #root [role="dialog"] button[class*="gradient-emerald"] *,
+  body #root [role="dialog"] button[class*="bg-destructive"] * {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+
+  body #root div[class*="z-[90]"] .bg-white,
+  body #root [role="dialog"] .bg-white {
+    color: #0f172a !important;
+  }
+
+  body #root div[class*="z-[90]"] .bg-\[\#E8ECF5\],
+  body #root [role="dialog"] .bg-\[\#E8ECF5\] {
     color: #0f172a !important;
     -webkit-text-fill-color: #0f172a !important;
   }
 
-  div[class*="z-[90]"] div[class*="bg-[#E8ECF5]"] button.bg-white,
-  div[class*="z-[90]"] div[class*="bg-[#E8ECF5]"] button[class*="bg-white"] {
+  body #root div[class*="z-[90]"] [class*="text-white"]:not([class*="bg-primary"]):not([class*="bg-destructive"]),
+  body #root [role="dialog"] [class*="text-white"]:not([class*="bg-primary"]):not([class*="bg-destructive"]) {
     color: #0f172a !important;
-    background: #ffffff !important;
-  }
-
-  div[class*="z-[90]"] div[class*="bg-[#E8ECF5]"] button:not(.bg-white):not([class*="bg-white"]) {
-    color: #475569 !important;
-  }
-
-  div[class*="z-[90]"] .text-muted-foreground,
-  div[class*="z-[90]"] label.text-muted-foreground {
-    color: #64748b !important;
-  }
-
-  div[class*="z-[90]"] .text-foreground {
-    color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
   }
 
   .rdp,
@@ -252,6 +310,7 @@
   .rdp-day_button[aria-selected='true'] {
     background: #6366f1 !important;
     color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
   }
 
   .rdp-day_today,

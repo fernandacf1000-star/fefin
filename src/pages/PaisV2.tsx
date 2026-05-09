@@ -59,6 +59,12 @@ function getEmoji(label?: string | null) {
   return "💸";
 }
 
+function compareLancamentosByAmountAsc(a: Lancamento, b: Lancamento) {
+  const valorDiff = absValue(a.valor) - absValue(b.valor);
+  if (valorDiff !== 0) return valorDiff;
+  return a.data.localeCompare(b.data);
+}
+
 function SummaryRow({ icon, label, value, valueClassName }: { icon: React.ReactNode; label: string; value: string; valueClassName?: string }) {
   return (
     <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5] last:border-0">
@@ -146,7 +152,10 @@ export default function PaisV2() {
   const reembolsosLuisa = reembolsosLuisaReceita.reduce((sum, l) => sum + absValue(l.valor), 0);
   const luisaDeve = despesasLuisaTotal - reembolsosLuisa;
 
-  const listaAtual = aba === "pais" ? despesasPais : [...despesasAdriano, ...despesasLuisa];
+  const listaAtual = useMemo(() => {
+    const base = aba === "pais" ? despesasPais : [...despesasAdriano, ...despesasLuisa];
+    return [...base].sort(compareLancamentosByAmountAsc);
+  }, [aba, despesasPais, despesasAdriano, despesasLuisa]);
 
   const categorias = useMemo(() => {
     const map = new Map<string, number>();
@@ -220,7 +229,7 @@ export default function PaisV2() {
 
         <Card className="space-y-1">
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Lançamentos</p>
-          {isLoading ? <p className="text-sm text-slate-500">Carregando...</p> : listaAtual.length === 0 ? <EmptyState title="Nenhum lançamento" description="Não há lançamentos neste mês." /> : listaAtual.slice().sort((a, b) => a.data.localeCompare(b.data)).map((l) => {
+          {isLoading ? <p className="text-sm text-slate-500">Carregando...</p> : listaAtual.length === 0 ? <EmptyState title="Nenhum lançamento" description="Não há lançamentos neste mês." /> : listaAtual.map((l) => {
             const isLuisa = isLuisaLancamento(l);
             const pagoPor = aba === "adriano" && !isLuisa ? getPagoPorEfetivoAdriano(l) : norm(l.pago_por);
             const vocePagou = pagoPor === "voce" || pagoPor === "fernanda" || !pagoPor;

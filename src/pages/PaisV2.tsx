@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Home, Receipt, RotateCcw, Wallet, Users, Heart, HandCoins } from "lucide-react";
+import { ChevronLeft, ChevronRight, Receipt, RotateCcw, Wallet } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import EmptyState from "@/components/EmptyState";
 import LancamentoActions from "@/components/LancamentoActions";
@@ -31,14 +31,6 @@ function formatDate(dateStr: string) {
 
 function norm(value?: string | null) {
   return (value || "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
-
-function valorTotalAdriano(l: { valor: number }) {
-  return absValue(l.valor) * 2;
-}
-
-function valor50Adriano(l: { valor: number }) {
-  return absValue(l.valor);
 }
 
 type LancamentoLike = {
@@ -112,39 +104,58 @@ export default function PaisV2() {
     return !!sub && !l.adriano && sub !== "adriano" && sub !== "luisa";
   }), [despesas]);
 
-  const despesasAdriano = useMemo(() => despesas.filter((l) => l.adriano === true && !isLuisaLancamento(l)), [despesas]);
+  const despesasAdriano = useMemo(() => despesas.filter((l) => l.adriano === true && norm(l.subcategoria_pais) === "adriano"), [despesas]);
   const despesasLuisa = useMemo(() => despesas.filter((l) => isLuisaLancamento(l)), [despesas]);
   const reembolsosPaisReceita = useMemo(() => receitas.filter((l) => l.categoria === "reembolso_pais"), [receitas]);
-  const reembolsosAdrianoReceita = useMemo(() => receitas.filter((l) => l.categoria === "reembolso_adriano"), [receitas]);
+  const reembolsosLuisaReceita = useMemo(() => receitas.filter((l) => l.categoria === "reembolso_luisa"), [receitas]);
 
   const totalPagoPais = despesasPais.reduce((s, l) => s + absValue(l.valor), 0);
   const totalReembolsadoPais = despesasPais.reduce((s, l) => s + getTotalReembolsado(todosReembolsos, l.id), 0) + reembolsosPaisReceita.reduce((s, l) => s + absValue(l.valor), 0);
   const totalLiquidoPais = totalPagoPais - totalReembolsadoPais;
 
-  const totalPagoAdriano = despesasAdriano.reduce((s, l) => s + valorTotalAdriano(l), 0);
-  const totalPagoLuisa = despesasLuisa.reduce((s, l) => s + absValue(l.valor), 0);
-  const totalReembolsadoAdriano = despesasAdriano.reduce((s, l) => s + getTotalReembolsado(todosReembolsos, l.id), 0) + reembolsosAdrianoReceita.reduce((s, l) => s + absValue(l.valor), 0);
+  const principalPorSharedGroup = useMemo(() => {
+    const map = new Map<string, Lancamento>();
+    despesas.forEach((l) => {
+      if (!l.adriano && l.shared_group_id) map.set(l.shared_group_id, l);
+    });
+    return map;
+  }, [despesas]);
 
-  const despesasPagasPorVoceAdriano = despesasAdriano.filter((l) => norm(l.pago_por) === "voce" || norm(l.pago_por) === "fernanda" || !norm(l.pago_por));
-  const despesasPagasPorEleAdriano = despesasAdriano.filter((l) => { const p = norm(l.pago_por); return p && p !== "voce" && p !== "fernanda"; });
-  const totalPagoPorVoceAdriano = despesasPagasPorVoceAdriano.reduce((s, l) => s + valorTotalAdriano(l), 0);
-  const totalPagoPorEleAdriano = despesasPagasPorEleAdriano.reduce((s, l) => s + valorTotalAdriano(l), 0);
-  const adrianoDeve = despesasPagasPorVoceAdriano.reduce((s, l) => s + valor50Adriano(l), 0);
-  const voceDeve = despesasPagasPorEleAdriano.reduce((s, l) => s + valor50Adriano(l), 0);
-  const saldoAdriano = adrianoDeve - voceDeve - totalReembolsadoAdriano;
-  const meuCustoLiquidoAdriano = despesasAdriano.reduce((s, l) => s + valor50Adriano(l), 0);
+  const getPagoPorEfetivoAdriano = (l: Lancamento) => {
+    const principal = l.shared_group_id ? principalPorSharedGroup.get(l.shared_group_id) : null;
+    return norm(principal?.pago_por || l.pago_por);
+  };
+
+  const euPagueiAdriano = despesasAdriano
+    .filter((l) => {
+      const pagoPor = getPagoPorEfetivoAdriano(l);
+      return pagoPor === "voce" || pagoPor === "fernanda" || !pagoPor;
+    })
+    .reduce((sum, l) => sum + absValue(l.valor), 0);
+
+  const elePagouAdriano = despesasAdriano
+    .filter((l) => {
+      const pagoPor = getPagoPorEfetivoAdriano(l);
+      return pagoPor === "adriano" || pagoPor === "ele";
+    })
+    .reduce((sum, l) => sum + absValue(l.valor), 0);
+
+  const saldoAdriano = euPagueiAdriano - elePagouAdriano;
+
+  const despesasLuisaTotal = despesasLuisa.reduce((sum, l) => sum + absValue(l.valor), 0);
+  const reembolsosLuisa = reembolsosLuisaReceita.reduce((sum, l) => sum + absValue(l.valor), 0);
+  const luisaDeve = despesasLuisaTotal - reembolsosLuisa;
 
   const listaAtual = aba === "pais" ? despesasPais : [...despesasAdriano, ...despesasLuisa];
 
   const categorias = useMemo(() => {
     const map = new Map<string, number>();
-    listaAtual.forEach((l) => {
+    despesasPais.forEach((l) => {
       const subcategoria = getSubcategoriaValida(l) || l.subcategoria || l.categoria_macro || l.categoria || "Sem categoria";
-      const valorCategoria = aba === "adriano" && l.adriano ? valorTotalAdriano(l) : absValue(l.valor);
-      map.set(subcategoria, (map.get(subcategoria) || 0) + valorCategoria);
+      map.set(subcategoria, (map.get(subcategoria) || 0) + absValue(l.valor));
     });
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
-  }, [listaAtual, aba]);
+  }, [despesasPais]);
 
   const totalCategorias = categorias.reduce((s, [, valor]) => s + valor, 0);
 
@@ -189,20 +200,15 @@ export default function PaisV2() {
           </Card>
         ) : (
           <Card className="space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Resumo 50/50 com Adriano</p>
-            <SummaryRow icon={<Receipt size={15} className="text-indigo-600" />} label="Valor total compartilhado" value={fmt(totalPagoAdriano)} />
-            <SummaryRow icon={<Users size={15} className="text-blue-600" />} label="Eu paguei 100%" value={fmt(totalPagoPorVoceAdriano)} />
-            <SummaryRow icon={<HandCoins size={15} className="text-blue-600" />} label="Adriano deve 50%" value={fmt(adrianoDeve)} valueClassName="text-blue-700" />
-            <SummaryRow icon={<Users size={15} className="text-rose-600" />} label="Adriano pagou 100%" value={fmt(totalPagoPorEleAdriano)} />
-            <SummaryRow icon={<HandCoins size={15} className="text-rose-600" />} label="Eu devo 50%" value={fmt(voceDeve)} valueClassName="text-rose-700" />
-            <SummaryRow icon={<RotateCcw size={15} className="text-teal-600" />} label="Reembolsos recebidos" value={`- ${fmt(totalReembolsadoAdriano)}`} valueClassName="text-teal-700" />
-            <SummaryRow icon={<Wallet size={15} className="text-orange-600" />} label={saldoAdriano >= 0 ? "Saldo: Adriano me deve" : "Saldo: eu devo ao Adriano"} value={fmt(Math.abs(saldoAdriano))} valueClassName={saldoAdriano >= 0 ? "text-blue-700" : "text-rose-700"} />
-            <SummaryRow icon={<Home size={15} className="text-slate-600" />} label="Meu custo líquido 50%" value={fmt(meuCustoLiquidoAdriano)} />
-            {totalPagoLuisa > 0 && <SummaryRow icon={<Heart size={15} className="text-pink-600" />} label="Luísa" value={fmt(totalPagoLuisa)} valueClassName="text-pink-700" />}
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Resumo Adriano</p>
+            <SummaryRow icon={<span className="text-base">💰</span>} label="Eu paguei" value={fmt(euPagueiAdriano)} />
+            <SummaryRow icon={<span className="text-base">👨</span>} label="Ele pagou" value={fmt(elePagouAdriano)} />
+            <SummaryRow icon={<span className="text-base">💵</span>} label="Saldo a reembolsar" value={fmt(Math.abs(saldoAdriano))} valueClassName={saldoAdriano >= 0 ? "text-rose-600" : "text-teal-700"} />
+            <SummaryRow icon={<span className="text-base">👩‍🦳</span>} label="Luísa deve" value={fmt(luisaDeve)} valueClassName="text-pink-700" />
           </Card>
         )}
 
-        {categorias.length > 0 && (
+        {aba === "pais" && categorias.length > 0 && (
           <Card className="space-y-3">
             <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Despesas por categoria</p>
             {categorias.map(([cat, valor]) => {
@@ -215,13 +221,13 @@ export default function PaisV2() {
         <Card className="space-y-1">
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Lançamentos</p>
           {isLoading ? <p className="text-sm text-slate-500">Carregando...</p> : listaAtual.length === 0 ? <EmptyState title="Nenhum lançamento" description="Não há lançamentos neste mês." /> : listaAtual.slice().sort((a, b) => a.data.localeCompare(b.data)).map((l) => {
-            const pagoPor = norm(l.pago_por);
+            const isLuisa = isLuisaLancamento(l);
+            const pagoPor = aba === "adriano" && !isLuisa ? getPagoPorEfetivoAdriano(l) : norm(l.pago_por);
             const vocePagou = pagoPor === "voce" || pagoPor === "fernanda" || !pagoPor;
-            const valor = aba === "adriano" && l.adriano ? valorTotalAdriano(l) : absValue(l.valor);
-            const valor50 = aba === "adriano" && l.adriano ? valor50Adriano(l) : valor / 2;
+            const valor = absValue(l.valor);
             const subcategoria = getSubcategoriaValida(l);
             const labelCategoria = subcategoria || l.categoria_macro || l.categoria || "Sem categoria";
-            return <button key={l.id} onClick={() => setActionsLanc(l)} className="w-full flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-0 text-left"><div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0"><span>{getEmoji(labelCategoria)}</span></div><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{l.descricao}</p><p className="text-[11px] text-slate-500">{formatDate(l.data)} · {labelCategoria}{aba === "adriano" && !isLuisaLancamento(l) ? ` · ${vocePagou ? "eu paguei" : "ele pagou"}` : ""}</p></div><div className="text-right shrink-0"><p className="text-sm font-bold text-slate-900">{fmt(valor)}</p>{aba === "adriano" && !isLuisaLancamento(l) && <p className="text-[10px] text-slate-500">50% {fmt(valor50)}</p>}</div></button>;
+            return <button key={l.id} onClick={() => setActionsLanc(l)} className="w-full flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-0 text-left"><div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0"><span>{isLuisa ? "👩‍🦳" : getEmoji(labelCategoria)}</span></div><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{l.descricao}</p><p className="text-[11px] text-slate-500">{formatDate(l.data)} · {labelCategoria}{aba === "adriano" ? isLuisa ? " · Luísa" : ` · ${vocePagou ? "eu paguei" : "ele pagou"}` : ""}</p></div><div className="text-right shrink-0"><p className="text-sm font-bold text-slate-900">{fmt(valor)}</p></div></button>;
           })}
         </Card>
       </div>

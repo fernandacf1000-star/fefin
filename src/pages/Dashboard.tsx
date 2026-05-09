@@ -257,19 +257,23 @@ export default function Dashboard() {
         </div>
 
         {melhorCartao && (
-          <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl bg-white/82 backdrop-blur border border-purple-200/30 w-full shadow-sm">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-[74px] h-[52px] rounded-2xl bg-[#F5F1FF] flex items-center justify-center shrink-0 shadow-inner overflow-hidden">
-                <div className="scale-[0.78] origin-center">
-                  <CreditCardMini nome={melhorCartao.nome} bandeira={(melhorCartao as any).bandeira} />
-                </div>
+          <div className="mx-5 mt-6 rounded-[28px] border border-white/20 bg-white/10 backdrop-blur-md shadow-sm px-4 py-4 flex items-center gap-4 overflow-hidden">
+            <div className="h-20 w-32 shrink-0 rounded-2xl overflow-hidden max-[380px]:h-16 max-[380px]:w-24">
+              <CreditCardMini nome={melhorCartao.nome} bandeira={(melhorCartao as any).bandeira} />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-bold uppercase tracking-wide text-slate-500/80 leading-tight">
+                MELHOR CARTÃO
               </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500 leading-none">Melhor cartão</p>
-                <p className="text-[18px] leading-tight font-extrabold text-slate-900 truncate">{melhorCartao.nome}</p>
+              <div className="truncate text-2xl font-black text-slate-900 leading-tight max-[380px]:text-xl">
+                {melhorCartao.nome}
               </div>
             </div>
-            <span className="text-[12px] text-slate-500 shrink-0 ml-1 whitespace-nowrap">fecha em {melhorDays}d</span>
+
+            <div className="shrink-0 self-center text-sm font-medium text-slate-500 whitespace-nowrap max-[380px]:text-xs">
+              fecha em {melhorDays}d
+            </div>
           </div>
         )}
 

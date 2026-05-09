@@ -256,19 +256,23 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
           // Então ao salvar, precisamos dividir por 2 para cada lançamento do par
           const valorParaCadaUm = numValor / 2;
           
-          // Para lançamentos compartilhados, criar campos seguros (sem adriano e pago_por)
+          // IMPORTANTE: Criar objeto completamente novo apenas com campos EDITÁVEIS
+          // Não copiar nenhum campo de 'fields' que possa violar constraints
           const fieldsSeguros = {
-            descricao: fields.descricao,
+            descricao,
             valor: valorParaCadaUm,
-            data: fields.data,
-            subcategoria: fields.subcategoria,
-            categoria_macro: fields.categoria_macro,
-            forma_pagamento: fields.forma_pagamento,
-            cartao_id: fields.cartao_id,
-            mes_referencia_fatura: fields.mes_referencia_fatura,
-            // Manter subcategoria_pais do lançamento original
-            // NÃO enviar: adriano, pago_por (pode causar duplicate key)
+            data: dateToStr(data),
+            subcategoria: subcategoria || null,
+            categoria_macro: subcategoria ? macro : (selectedGroup || macro),
+            forma_pagamento: forma,
+            cartao_id: cid,
           };
+          
+          // Só adicionar mes_referencia_fatura se for crédito
+          if (forma === 'credito' && cid) {
+            const mrFatura = getMesReferenciaFatura(data, cartoes.find(c => c.id === cid) || null);
+            fieldsSeguros.mes_referencia_fatura = mrFatura;
+          }
           
           console.log('Atualizando lançamento principal com campos seguros:', fieldsSeguros);
           await updateLancamento.mutateAsync({ id: lancamento.id, ...fieldsSeguros });
@@ -287,21 +291,21 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
             for (const espelho of espelhos) {
               console.log('Atualizando espelho:', espelho.id);
               
-              // IMPORTANTE: Criar campos específicos para o espelho sem campos únicos
+              // IMPORTANTE: Criar campos específicos para o espelho
+              // Usar os mesmos campos editáveis, mas não incluir nada de fields
               const espelhoFields = {
-                descricao: fields.descricao,
+                descricao,
                 valor: valorParaCadaUm,
-                subcategoria: fields.subcategoria,
-                categoria_macro: fields.categoria_macro,
-                forma_pagamento: fields.forma_pagamento,
-                cartao_id: fields.cartao_id,
-                // Manter a subcategoria_pais original do espelho (geralmente 'Adriano')
-                // NÃO atualizar: data, adriano, shared_group_id, pago_por, subcategoria_pais
+                subcategoria: subcategoria || null,
+                categoria_macro: subcategoria ? macro : (selectedGroup || macro),
+                forma_pagamento: forma,
+                cartao_id: cid,
               };
               
-              // Só adicionar mes_referencia_fatura se houver
-              if (fields.mes_referencia_fatura !== undefined) {
-                espelhoFields.mes_referencia_fatura = fields.mes_referencia_fatura;
+              // Só adicionar mes_referencia_fatura se for crédito
+              if (forma === 'credito' && cid) {
+                const mrFatura = getMesReferenciaFatura(data, cartoes.find(c => c.id === cid) || null);
+                espelhoFields.mes_referencia_fatura = mrFatura;
               }
               
               console.log('Campos do espelho:', espelhoFields);

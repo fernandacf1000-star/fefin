@@ -62,7 +62,9 @@ function getEmoji(label?: string | null) {
 function compareLancamentosByAmountAsc(a: Lancamento, b: Lancamento) {
   const valorDiff = absValue(a.valor) - absValue(b.valor);
   if (valorDiff !== 0) return valorDiff;
-  return a.data.localeCompare(b.data);
+  const dateDiff = a.data.localeCompare(b.data);
+  if (dateDiff !== 0) return dateDiff;
+  return (a.descricao || "").localeCompare(b.descricao || "", "pt-BR");
 }
 
 function SummaryRow({ icon, label, value, valueClassName }: { icon: React.ReactNode; label: string; value: string; valueClassName?: string }) {
@@ -163,7 +165,7 @@ export default function PaisV2() {
       const subcategoria = getSubcategoriaValida(l) || l.subcategoria || l.categoria_macro || l.categoria || "Sem categoria";
       map.set(subcategoria, (map.get(subcategoria) || 0) + absValue(l.valor));
     });
-    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+    return [...map.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0], "pt-BR"));
   }, [despesasPais]);
 
   const totalCategorias = categorias.reduce((s, [, valor]) => s + valor, 0);
@@ -229,7 +231,7 @@ export default function PaisV2() {
 
         <Card className="space-y-1">
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Lançamentos</p>
-          {isLoading ? <p className="text-sm text-slate-500">Carregando...</p> : listaAtual.length === 0 ? <EmptyState title="Nenhum lançamento" description="Não há lançamentos neste mês." /> : listaAtual.map((l) => {
+          {isLoading ? <p className="text-sm text-slate-500">Carregando...</p> : listaAtual.length === 0 ? <EmptyState title="Nenhum lançamento" description="Não há lançamentos neste mês." /> : [...listaAtual].sort(compareLancamentosByAmountAsc).map((l) => {
             const isLuisa = isLuisaLancamento(l);
             const pagoPor = aba === "adriano" && !isLuisa ? getPagoPorEfetivoAdriano(l) : norm(l.pago_por);
             const vocePagou = pagoPor === "voce" || pagoPor === "fernanda" || !pagoPor;

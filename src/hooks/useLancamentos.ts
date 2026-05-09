@@ -232,7 +232,7 @@ async function findLinkedLancamento(current: Lancamento): Promise<Lancamento | n
 function linkedUpdatePayload(target: Lancamento, updates: Partial<Lancamento>) {
   const payload: Record<string, any> = {};
   const keys = [
-    "descricao", "valor", "categoria", "categoria_macro", "subcategoria", "subcategoria_pais", "data", "mes_referencia",
+    "descricao", "valor", "categoria", "categoria_macro", "subcategoria", "data", "mes_referencia",
     "forma_pagamento", "cartao_id", "pago_por", "is_parcelado", "parcela_atual", "parcela_total",
     "parcelamento_id", "recorrente", "dia_recorrencia", "recorrencia_ate", "recorrencia_pai_id", "pago"
   ];
@@ -245,8 +245,8 @@ function linkedUpdatePayload(target: Lancamento, updates: Partial<Lancamento>) {
     payload.shared_role = "adriano";
   } else {
     payload.adriano = false;
-    if (!("subcategoria_pais" in payload)) payload.subcategoria_pais = target.subcategoria_pais ?? null;
-    payload.shared_role = target.shared_group_id || target.shared_role === "principal" ? "principal" : null;
+    payload.subcategoria_pais = null;
+    payload.shared_role = "principal";
   }
   return payload;
 }
@@ -325,7 +325,7 @@ export function useLancamentos(mesRef?: string) {
   return useQuery({
     queryKey: ["lancamentos", mesRef || "all"],
     queryFn: async () => {
-      let q = supabase.from("lancamentos").select("*").eq("user_id", user!.id).order("data", { ascending: true });
+      let q = supabase.from("lancamentos").select("*").eq("user_id", user!.id).order("data", { ascending: false });
       if (mesRef) q = q.eq("mes_referencia", mesRef);
       const { data, error } = await q;
       if (error) throw error;

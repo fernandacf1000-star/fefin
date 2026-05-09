@@ -3,10 +3,9 @@ import { X, CalendarIcon, Users } from 'lucide-react';
 import { format, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
-
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   useUpdateLancamento,
   useAddMultipleLancamentos,
@@ -72,7 +71,6 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
   const [formaPagamento, setFormaPagamento] = useState<'dinheiro' | 'credito'>('dinheiro');
   const [cartaoId, setCartaoId] = useState('');
   const [saving, setSaving] = useState(false);
-  const [calendarOpen, setCalendarOpen] = useState(false);
   const [isParcelado, setIsParcelado] = useState(false);
   const [parcelas, setParcelas] = useState('2');
   const [recorrente, setRecorrente] = useState(false);
@@ -198,458 +196,431 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     let q = supabase.from('lancamentos').select('*').eq(groupKey, groupValue);
     if (scope === 'futuras') q = q.gte('data', currentData);
     else if (scope === 'este') q = q.eq('id', lancamento!.id);
-    const { data: rows } = await q;
-    return ((rows || []) as unknown as Lancamento[]).sort((a, b) => a.data.localeCompare(b.data));
+    const { data: rows, error } = await q.order('data', { ascending: true });
+    if (error) throw error;
+    return (rows || []) as Lancamento[];
   };
-
-  /**
-   * Update a batch of items with field-only updates (NO date changes).
-   * Each item keeps its original data and mes_referencia.
-   */
-  const batchUpdateFields = async (items: Lancamento[], fieldUpdates: Record<string, any>) => {
-    for (const item of items) {
-      await supabase.from('lancamentos').update(fieldUpdates as any).eq('id', item.id);
-    }
-  };
-
-  /**
-   * Update mirrors for a set of origin items (field-only, no date changes).
-   */
-  const batchUpdateMirrors = async (originIds: string[], fieldUpdates: Record<string, any>) => {
-    // Only update mirror-safe fields (not date, not adriano flag)
-    const mirrorFields: Record<string, any> = {
-      descricao: fieldUpdates.descricao,
-      valor: fieldUpdates.valor,
-      subcategoria: fieldUpdates.subcategoria,
-      categoria_macro: fieldUpdates.categoria_macro,
-      forma_pagamento: fieldUpdates.forma_pagamento,
-      cartao_id: fieldUpdates.cartao_id,
-      pago_por: fieldUpdates.pago_por,
-    };
-    for (const originId of originIds) {
-      await supabase.from('lancamentos').update(mirrorFields as any).eq('lancamento_origem_id', originId);
-    }
-  };
-
-  /**
-   * Create Adriano mirror row object for insertion.
-   */
-  const buildMirrorRow = (
-    origin: Lancamento,
-    numValor: number,
-    macro: string | null,
-    forma: string,
-    cartao: string | null,
-    seriesOverrides?: {
-      is_parcelado?: boolean;
-      parcela_atual?: number | null;
-      parcela_total?: number | null;
-      parcelamento_id?: string | null;
-      recorrente?: boolean;
-      dia_recorrencia?: number | null;
-      recorrencia_pai_id?: string | null;
-    }
-  ) => ({
-    descricao,
-    valor: numValor / 2,
-    tipo: 'despesa' as const,
-    categoria: origin.categoria || 'despesa',
-    subcategoria: subcategoria || null,
-    categoria_macro: macro,
-    forma_pagamento: forma,
-    cartao_id: cartao,
-    adriano: true,
-    pago_por: pagoPor,
-    subcategoria_pais: 'Adriano',
-    // Mirror keeps the SAME date as its origin
-    data: origin.data,
-    mes_referencia: origin.mes_referencia,
-    is_parcelado: seriesOverrides?.is_parcelado ?? false,
-    parcela_atual: seriesOverrides?.parcela_atual ?? null,
-    parcela_total: seriesOverrides?.parcela_total ?? null,
-    parcelamento_id: seriesOverrides?.parcelamento_id ?? null,
-    pago: false,
-    recorrente: seriesOverrides?.recorrente ?? false,
-    dia_recorrencia: seriesOverrides?.dia_recorrencia ?? null,
-    recorrencia_ate: null,
-    recorrencia_pai_id: seriesOverrides?.recorrencia_pai_id ?? null,
-    lancamento_origem_id: origin.id,
-  });
 
   const handleSave = async () => {
-    if (!lancamento || saving) return;
-    const numValor = getNumValor();
-    if (numValor <= 0) return;
+    if (!lancamento) return;
     setSaving(true);
+
     try {
-      const macro = detectCategoriaMacro(subcategoria || '') || null;
-      const forma = formaPagamento === 'dinheiro' ? 'dinheiro' : 'credito';
-      const cartao = formaPagamento === 'credito' ? cartaoId || null : null;
-      const novaData = format(data, 'yyyy-MM-dd');
-      const novoMesRef = data.getFullYear() + '-' + String(data.getMonth() + 1).padStart(2, '0');
       const isReceitaEdit = lancamento.tipo === 'receita';
-      const cartaoObj = cartao ? cartoes.find(c => c.id === cartao) || null : null;
-      const mesRefFatura = !isReceitaEdit && forma === 'credito'
-        ? getMesReferenciaFatura(data, cartaoObj)
-        : novoMesRef;
+      const numValor = getNumValor();
+      if (!numValor) throw new Error('Valor inválido');
 
-      const wasAdriano = lancamento.adriano || false;
-      const nowAdriano = !isReceitaEdit && isAdriano;
-      const adrianoChanged = wasAdriano !== nowAdriano;
-
-      // Se a despesa JÁ era (e continua sendo) dividida com Adriano,
-      // numValor é o valor total (dobrado na exibição). O banco guarda metade.
-      const valorParaBanco = (!adrianoChanged && nowAdriano) ? numValor / 2 : numValor;
-
-      const fieldUpdates = buildFieldUpdates({ isReceitaEdit, numValor: valorParaBanco, macro, forma, cartao });
-
-      const wasParcelado = lancamento.is_parcelado;
-      const wasRecorrente = lancamento.recorrente;
+      const wasParcelado = !!(lancamento.is_parcelado || lancamento.parcelamento_id);
+      const wasRecorrente = !!(lancamento.recorrente || lancamento.recorrencia_pai_id);
       const wasSimples = !wasParcelado && !wasRecorrente;
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ADRIANO ON: activate split for affected items
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      if (adrianoChanged && nowAdriano) {
-        const halfValor = numValor / 2;
-        const halfFieldUpdates = { ...fieldUpdates, valor: halfValor };
+      const macro = isReceitaEdit ? null : (subcategoria ? detectCategoriaMacro(subcategoria) : null);
+      const forma = formaPagamento === 'credito' ? 'credito' : 'dinheiro';
+      const cid = formaPagamento === 'credito' ? cartaoId : null;
 
-        if (wasParcelado && lancamento.parcelamento_id) {
-          const items = await fetchSeriesItems('parcelamento_id', lancamento.parcelamento_id, editScope, lancamento.data);
-          const mirrorParcelamentoId = genUUID();
-
-          // Update originals (only "este" gets new date)
-          for (const item of items) {
-            const upd: Record<string, any> = { ...halfFieldUpdates };
-            if (item.id === lancamento.id) {
-              upd.data = novaData;
-              upd.mes_referencia = mesRefFatura;
-            }
-            await supabase.from('lancamentos').update(upd as any).eq('id', item.id);
-          }
-
-          // Create mirrors (each keeps its origin's date)
-          const mirrors = items.map(item => {
-            const originForMirror = item.id === lancamento.id
-              ? { ...item, data: novaData, mes_referencia: mesRefFatura }
-              : item;
-            return buildMirrorRow(originForMirror, numValor, macro, forma, cartao, {
-              is_parcelado: true,
-              parcela_atual: item.parcela_atual,
-              parcela_total: item.parcela_total,
-              parcelamento_id: mirrorParcelamentoId,
-            });
-          });
-          if (mirrors.length > 0) await addMultiple.mutateAsync(mirrors as any);
-
-        } else if (wasRecorrente && lancamento.recorrencia_pai_id) {
-          const items = await fetchSeriesItems('recorrencia_pai_id', lancamento.recorrencia_pai_id, editScope, lancamento.data);
-          const mirrorPaiId = genUUID();
-
-          for (const item of items) {
-            const upd: Record<string, any> = { ...halfFieldUpdates };
-            if (item.id === lancamento.id) {
-              upd.data = novaData;
-              upd.mes_referencia = mesRefFatura;
-            }
-            await supabase.from('lancamentos').update(upd as any).eq('id', item.id);
-          }
-
-          const mirrors = items.map(item => {
-            const originForMirror = item.id === lancamento.id
-              ? { ...item, data: novaData, mes_referencia: mesRefFatura }
-              : item;
-            return buildMirrorRow(originForMirror, numValor, macro, forma, cartao, {
-              recorrente: true,
-              dia_recorrencia: item.dia_recorrencia,
-              recorrencia_pai_id: mirrorPaiId,
-            });
-          });
-          if (mirrors.length > 0) await addMultiple.mutateAsync(mirrors as any);
-
-        } else {
-          // Simple item → split
-          await updateLancamento.mutateAsync({
-            id: lancamento.id,
-            ...fieldUpdates,
-            valor: halfValor,
-            data: novaData,
-            mes_referencia: mesRefFatura,
-            adriano: false,
-          } as any);
-          const originForMirror = { ...lancamento, data: novaData, mes_referencia: mesRefFatura };
-          await addMultiple.mutateAsync([buildMirrorRow(originForMirror, numValor, macro, forma, cartao)] as any);
+      // A) SIMPLE → SIMPLE (single edit)
+      if (wasSimples && !isParcelado && !recorrente) {
+        const fields = buildFieldUpdates({ isReceitaEdit, numValor, macro, forma, cartao: cid });
+        fields.data = dateToStr(data);
+        if (!isReceitaEdit) {
+          const mrFatura = (forma === 'credito' && cid) ? getMesReferenciaFatura(data, cartoes.find(c => c.id === cid) || null) : null;
+          fields.mes_referencia_fatura = mrFatura;
         }
-
+        await updateLancamento.mutateAsync({ id: lancamento.id, ...fields });
         refetchAll();
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ADRIANO OFF: remove split, restore full value
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      } else if (adrianoChanged && !nowAdriano) {
-        // numValor já é o valor total (foi exibido dobrado ao usuário); basta usar direto
-        const fullFieldUpdates = { ...fieldUpdates, valor: numValor, adriano: false };
-
-        if (wasParcelado && lancamento.parcelamento_id) {
-          const items = await fetchSeriesItems('parcelamento_id', lancamento.parcelamento_id, editScope, lancamento.data);
-          for (const item of items) {
-            const upd: Record<string, any> = { ...fullFieldUpdates };
-            if (item.id === lancamento.id) {
-              upd.data = novaData;
-              upd.mes_referencia = mesRefFatura;
-            }
-            await supabase.from('lancamentos').update(upd as any).eq('id', item.id);
-            // Delete mirror linked to this origin
-            await supabase.from('lancamentos').delete().eq('lancamento_origem_id', item.id);
-          }
-        } else if (wasRecorrente && lancamento.recorrencia_pai_id) {
-          const items = await fetchSeriesItems('recorrencia_pai_id', lancamento.recorrencia_pai_id, editScope, lancamento.data);
-          for (const item of items) {
-            const upd: Record<string, any> = { ...fullFieldUpdates };
-            if (item.id === lancamento.id) {
-              upd.data = novaData;
-              upd.mes_referencia = mesRefFatura;
-            }
-            await supabase.from('lancamentos').update(upd as any).eq('id', item.id);
-            await supabase.from('lancamentos').delete().eq('lancamento_origem_id', item.id);
-          }
-        } else {
-          // Simple item
-          await updateLancamento.mutateAsync({
-            id: lancamento.id,
-            ...fullFieldUpdates,
-            data: novaData,
-            mes_referencia: mesRefFatura,
-          } as any);
-          await supabase.from('lancamentos').delete().eq('lancamento_origem_id', lancamento.id);
-        }
-
-        refetchAll();
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // CONVERT simple → parcelado (creation, not edit)
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      } else if (wasSimples && isParcelado && !recorrente) {
-        const nParcelas = parseInt(parcelas, 10) || 2;
-        const parcelamentoId = genUUID();
-        await updateLancamento.mutateAsync({
-          id: lancamento.id,
-          ...fieldUpdates,
-          data: novaData,
-          mes_referencia: mesRefFatura,
-          is_parcelado: true,
-          parcela_atual: 1,
-          parcela_total: nParcelas,
-          parcelamento_id: parcelamentoId,
-        } as any);
-        const newRows: any[] = [];
-        for (let i = 1; i < nParcelas; i++) {
-          const dp = addMonths(data, i);
-          const daysInMonth = new Date(dp.getFullYear(), dp.getMonth() + 1, 0).getDate();
-          const actualDay = Math.min(data.getDate(), daysInMonth);
-          const dpDate = new Date(dp.getFullYear(), dp.getMonth(), actualDay);
-          const dpStr = dateToStr(dpDate);
-          newRows.push({
-            descricao,
-            valor: numValor,
-            tipo: 'despesa',
-            categoria: lancamento.categoria || 'despesa',
-            subcategoria: subcategoria || null,
-            categoria_macro: macro,
-            forma_pagamento: forma,
-            cartao_id: cartao,
-            subcategoria_pais: getSubPais(),
-            data: dpStr,
-            mes_referencia: getMesReferenciaFatura(dpDate, cartaoObj),
-            parcela_atual: i + 1,
-            parcela_total: nParcelas,
-            is_parcelado: true,
-            parcelamento_id: parcelamentoId,
-            pago: false,
-            recorrente: false,
-            dia_recorrencia: null,
-            recorrencia_ate: null,
-            recorrencia_pai_id: null,
-            adriano: false,
-          });
-        }
-        if (newRows.length > 0) await addMultiple.mutateAsync(newRows);
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // CONVERT simple → recorrente (creation, not edit)
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      } else if (wasSimples && recorrente && !isParcelado) {
-        const diaR = parseInt(diaRecorrencia, 10) || 1;
-        const paiId = genUUID();
-        await updateLancamento.mutateAsync({
-          id: lancamento.id,
-          ...fieldUpdates,
-          data: novaData,
-          mes_referencia: mesRefFatura,
-          recorrente: true,
-          dia_recorrencia: diaR,
-          recorrencia_pai_id: paiId,
-          is_parcelado: false,
-          parcela_atual: null,
-          parcela_total: null,
-          parcelamento_id: null,
-        } as any);
-        const newRows: any[] = [];
-        for (let i = 1; i < 24; i++) {
-          const mr = addMonths(data, i);
-          const daysInMonth = new Date(mr.getFullYear(), mr.getMonth() + 1, 0).getDate();
-          const recDate = new Date(mr.getFullYear(), mr.getMonth(), Math.min(diaR, daysInMonth));
-          const drStr = dateToStr(recDate);
-          newRows.push({
-            descricao,
-            valor: numValor,
-            tipo: 'despesa',
-            categoria: lancamento.categoria || 'despesa',
-            subcategoria: subcategoria || null,
-            categoria_macro: macro,
-            forma_pagamento: forma,
-            cartao_id: cartao,
-            subcategoria_pais: getSubPais(),
-            data: drStr,
-            mes_referencia: getMesReferenciaFatura(recDate, cartaoObj),
-            parcela_atual: null,
-            parcela_total: null,
-            is_parcelado: false,
-            parcelamento_id: null,
-            pago: false,
-            recorrente: true,
-            dia_recorrencia: diaR,
-            recorrencia_ate: null,
-            recorrencia_pai_id: paiId,
-            adriano: false,
-          });
-        }
-        await addMultiple.mutateAsync(newRows);
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // EDIT existing parcelado series (NO date recalculation)
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      } else if (wasParcelado) {
-        if (editScope === 'este') {
-          // Only "este" allows date change
-          await updateLancamento.mutateAsync({
-            id: lancamento.id, ...fieldUpdates, data: novaData, mes_referencia: mesRefFatura,
-          } as any);
-          // Update linked mirror too
-          await supabase.from('lancamentos').update({
-            descricao: fieldUpdates.descricao,
-            valor: fieldUpdates.valor,
-            subcategoria: fieldUpdates.subcategoria,
-            categoria_macro: fieldUpdates.categoria_macro,
-            forma_pagamento: fieldUpdates.forma_pagamento,
-            cartao_id: fieldUpdates.cartao_id,
-          } as any).eq('lancamento_origem_id', lancamento.id);
-        } else {
-          // "futuras" or "todos": update fields only, dates stay as-is
-          const items = await fetchSeriesItems('parcelamento_id', lancamento.parcelamento_id!, editScope, lancamento.data);
-          await batchUpdateFields(items, fieldUpdates);
-          await batchUpdateMirrors(items.map(i => i.id), fieldUpdates);
-        }
-        refetchAll();
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // EDIT existing recorrente series (NO date recalculation)
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      } else if (wasRecorrente) {
-        if (editScope === 'este') {
-          await updateLancamento.mutateAsync({
-            id: lancamento.id, ...fieldUpdates, data: novaData, mes_referencia: mesRefFatura,
-          } as any);
-          await supabase.from('lancamentos').update({
-            descricao: fieldUpdates.descricao,
-            valor: fieldUpdates.valor,
-            subcategoria: fieldUpdates.subcategoria,
-            categoria_macro: fieldUpdates.categoria_macro,
-            forma_pagamento: fieldUpdates.forma_pagamento,
-            cartao_id: fieldUpdates.cartao_id,
-          } as any).eq('lancamento_origem_id', lancamento.id);
-        } else {
-          const items = await fetchSeriesItems('recorrencia_pai_id', lancamento.recorrencia_pai_id!, editScope, lancamento.data);
-          await batchUpdateFields(items, fieldUpdates);
-          await batchUpdateMirrors(items.map(i => i.id), fieldUpdates);
-        }
-        refetchAll();
-
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // SIMPLE edit (single item, not series)
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      } else {
-        await onSave({ ...fieldUpdates, data: novaData, mes_referencia: mesRefFatura });
+        onClose();
+        return;
       }
 
-      onClose();
+      // B) SIMPLE → PARCELADO
+      if (wasSimples && isParcelado && !recorrente) {
+        const nParcelas = Math.max(2, Math.min(48, parseInt(parcelas, 10) || 2));
+        const parcID = genUUID();
+        const firstCard = cartoes.find(c => c.id === cid) || null;
+        const cartas: Lancamento[] = [];
+        const val = numValor / nParcelas;
+        for (let i = 1; i <= nParcelas; i++) {
+          const mesOffset = new Date(data);
+          mesOffset.setMonth(data.getMonth() + (i - 1));
+          const mrFatura = (forma === 'credito' && firstCard) ? getMesReferenciaFatura(mesOffset, firstCard) : null;
+          cartas.push({
+            tipo: lancamento.tipo || 'despesa',
+            descricao: `${descricao} (${i}/${nParcelas})`,
+            valor: val,
+            data: dateToStr(mesOffset),
+            categoria: isReceitaEdit ? receitaCatMapEdit[receitaCat] : (macro || ''),
+            categoria_macro: macro,
+            subcategoria: subcategoria || null,
+            forma_pagamento: !isReceitaEdit ? forma : null,
+            cartao_id: !isReceitaEdit ? cid : null,
+            mes_referencia_fatura: !isReceitaEdit ? mrFatura : null,
+            is_parcelado: true,
+            parcelamento_id: parcID,
+            parcela_atual: i,
+            parcela_total: nParcelas,
+            recorrente: false,
+            subcategoria_pais: !isReceitaEdit ? getSubPais() : null,
+            adriano: isAdriano,
+            pago_por: pagoPor,
+          } as Lancamento);
+        }
+        await supabase.from('lancamentos').delete().eq('id', lancamento.id);
+        await addMultiple.mutateAsync(cartas);
+        refetchAll();
+        onClose();
+        return;
+      }
+
+      // C) SIMPLE → RECORRENTE
+      if (wasSimples && recorrente && !isParcelado) {
+        const diaRec = Math.max(1, Math.min(31, parseInt(diaRecorrencia, 10) || 1));
+        const recPaiID = genUUID();
+        const fields = buildFieldUpdates({ isReceitaEdit, numValor, macro, forma, cartao: cid });
+        fields.recorrente = true;
+        fields.recorrencia_pai_id = recPaiID;
+        fields.dia_recorrencia = diaRec;
+        fields.data = dateToStr(data);
+        if (!isReceitaEdit) {
+          const mrFatura = (forma === 'credito' && cid) ? getMesReferenciaFatura(data, cartoes.find(c => c.id === cid) || null) : null;
+          fields.mes_referencia_fatura = mrFatura;
+        }
+        await updateLancamento.mutateAsync({ id: lancamento.id, ...fields });
+        refetchAll();
+        onClose();
+        return;
+      }
+
+      // D) PARCELADO editing (by scope)
+      if (wasParcelado) {
+        const groupKey = 'parcelamento_id';
+        const groupValue = lancamento.parcelamento_id!;
+        const scope = editScope;
+        const items = await fetchSeriesItems(groupKey, groupValue, scope, lancamento.data!);
+
+        const adrianoChanged = (isAdriano !== !!lancamento.adriano);
+        const fields = buildFieldUpdates({ isReceitaEdit, numValor, macro, forma, cartao: cid });
+
+        if (scope === 'este') {
+          fields.data = dateToStr(data);
+          if (!isReceitaEdit) {
+            const cardToUse = cartoes.find(c => c.id === cid) || null;
+            const mrFatura = (forma === 'credito' && cardToUse) ? getMesReferenciaFatura(data, cardToUse) : null;
+            fields.mes_referencia_fatura = mrFatura;
+          }
+          if (adrianoChanged) {
+            if (isAdriano && !lancamento.adriano) {
+              await supabase.from('lancamentos').delete().eq('id', lancamento.id);
+              const metade = numValor / 2;
+              const cardToUse = cartoes.find(c => c.id === cid) || null;
+              const mrFatura = !isReceitaEdit && forma === 'credito' && cardToUse ? getMesReferenciaFatura(data, cardToUse) : null;
+              const novoEspelho: Lancamento = {
+                tipo: lancamento.tipo || 'despesa',
+                descricao,
+                valor: metade,
+                data: dateToStr(data),
+                categoria: isReceitaEdit ? receitaCatMapEdit[receitaCat] : (macro || ''),
+                categoria_macro: macro,
+                subcategoria: subcategoria || null,
+                forma_pagamento: !isReceitaEdit ? forma : null,
+                cartao_id: !isReceitaEdit ? cid : null,
+                mes_referencia_fatura: !isReceitaEdit ? mrFatura : null,
+                is_parcelado: lancamento.is_parcelado,
+                parcelamento_id: lancamento.parcelamento_id,
+                parcela_atual: lancamento.parcela_atual,
+                parcela_total: lancamento.parcela_total,
+                recorrente: lancamento.recorrente || false,
+                subcategoria_pais: !isReceitaEdit ? 'Adriano' : null,
+                adriano: true,
+                pago_por: pagoPor,
+                shared_group_id: genUUID(),
+              } as Lancamento;
+              await addMultiple.mutateAsync([novoEspelho]);
+            } else if (!isAdriano && lancamento.adriano) {
+              const subP = lancamento.subcategoria_pais || '';
+              if (subP.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'adriano') {
+                await supabase.from('lancamentos').delete().eq('shared_group_id', lancamento.shared_group_id!);
+              } else {
+                await updateLancamento.mutateAsync({ id: lancamento.id, ...fields });
+              }
+            }
+          } else {
+            await updateLancamento.mutateAsync({ id: lancamento.id, ...fields });
+          }
+        } else {
+          // scope = futuras | todos
+          if (adrianoChanged) {
+            if (isAdriano && !lancamento.adriano) {
+              const ids = items.filter(it => it.adriano !== true).map(it => it.id);
+              if (ids.length > 0) await supabase.from('lancamentos').delete().in('id', ids);
+              const cartas: Lancamento[] = [];
+              for (const it of items) {
+                if (it.adriano) continue;
+                const itDate = new Date(it.data + 'T12:00:00');
+                const metade = numValor / 2;
+                const cardToUse = cartoes.find(c => c.id === cid) || null;
+                const mrFatura = !isReceitaEdit && forma === 'credito' && cardToUse ? getMesReferenciaFatura(itDate, cardToUse) : null;
+                const espelho: Lancamento = {
+                  tipo: it.tipo || 'despesa',
+                  descricao,
+                  valor: metade,
+                  data: it.data!,
+                  categoria: isReceitaEdit ? receitaCatMapEdit[receitaCat] : (macro || ''),
+                  categoria_macro: macro,
+                  subcategoria: subcategoria || null,
+                  forma_pagamento: !isReceitaEdit ? forma : null,
+                  cartao_id: !isReceitaEdit ? cid : null,
+                  mes_referencia_fatura: !isReceitaEdit ? mrFatura : null,
+                  is_parcelado: it.is_parcelado,
+                  parcelamento_id: it.parcelamento_id,
+                  parcela_atual: it.parcela_atual,
+                  parcela_total: it.parcela_total,
+                  recorrente: it.recorrente || false,
+                  subcategoria_pais: !isReceitaEdit ? 'Adriano' : null,
+                  adriano: true,
+                  pago_por: pagoPor,
+                  shared_group_id: genUUID(),
+                } as Lancamento;
+                cartas.push(espelho);
+              }
+              await addMultiple.mutateAsync(cartas);
+            } else if (!isAdriano && lancamento.adriano) {
+              const subP = lancamento.subcategoria_pais || '';
+              const norm = subP.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+              if (norm === 'adriano') {
+                const groupIDs = Array.from(new Set(items.map(it => it.shared_group_id).filter(Boolean))) as string[];
+                if (groupIDs.length > 0) {
+                  for (const gid of groupIDs) {
+                    await supabase.from('lancamentos').delete().eq('shared_group_id', gid);
+                  }
+                }
+              } else {
+                const ids = items.map(it => it.id);
+                if (ids.length > 0) {
+                  for (const id of ids) await updateLancamento.mutateAsync({ id, ...fields });
+                }
+              }
+            }
+          } else {
+            const ids = items.map(it => it.id);
+            if (ids.length > 0) {
+              for (const id of ids) await updateLancamento.mutateAsync({ id, ...fields });
+            }
+          }
+        }
+        refetchAll();
+        onClose();
+        return;
+      }
+
+      // E) RECORRENTE editing (by scope)
+      if (wasRecorrente) {
+        const groupKey = 'recorrencia_pai_id';
+        const groupValue = lancamento.recorrencia_pai_id!;
+        const scope = editScope;
+        const items = await fetchSeriesItems(groupKey, groupValue, scope, lancamento.data!);
+
+        const adrianoChanged = (isAdriano !== !!lancamento.adriano);
+        const fields = buildFieldUpdates({ isReceitaEdit, numValor, macro, forma, cartao: cid });
+
+        if (scope === 'este') {
+          fields.data = dateToStr(data);
+          if (!isReceitaEdit) {
+            const cardToUse = cartoes.find(c => c.id === cid) || null;
+            const mrFatura = (forma === 'credito' && cardToUse) ? getMesReferenciaFatura(data, cardToUse) : null;
+            fields.mes_referencia_fatura = mrFatura;
+          }
+          if (adrianoChanged) {
+            if (isAdriano && !lancamento.adriano) {
+              await supabase.from('lancamentos').delete().eq('id', lancamento.id);
+              const metade = numValor / 2;
+              const cardToUse = cartoes.find(c => c.id === cid) || null;
+              const mrFatura = !isReceitaEdit && forma === 'credito' && cardToUse ? getMesReferenciaFatura(data, cardToUse) : null;
+              const novoEspelho: Lancamento = {
+                tipo: lancamento.tipo || 'despesa',
+                descricao,
+                valor: metade,
+                data: dateToStr(data),
+                categoria: isReceitaEdit ? receitaCatMapEdit[receitaCat] : (macro || ''),
+                categoria_macro: macro,
+                subcategoria: subcategoria || null,
+                forma_pagamento: !isReceitaEdit ? forma : null,
+                cartao_id: !isReceitaEdit ? cid : null,
+                mes_referencia_fatura: !isReceitaEdit ? mrFatura : null,
+                recorrente: lancamento.recorrente,
+                recorrencia_pai_id: lancamento.recorrencia_pai_id,
+                dia_recorrencia: lancamento.dia_recorrencia,
+                subcategoria_pais: !isReceitaEdit ? 'Adriano' : null,
+                adriano: true,
+                pago_por: pagoPor,
+                shared_group_id: genUUID(),
+              } as Lancamento;
+              await addMultiple.mutateAsync([novoEspelho]);
+            } else if (!isAdriano && lancamento.adriano) {
+              const subP = lancamento.subcategoria_pais || '';
+              if (subP.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'adriano') {
+                await supabase.from('lancamentos').delete().eq('shared_group_id', lancamento.shared_group_id!);
+              } else {
+                await updateLancamento.mutateAsync({ id: lancamento.id, ...fields });
+              }
+            }
+          } else {
+            await updateLancamento.mutateAsync({ id: lancamento.id, ...fields });
+          }
+        } else {
+          // scope = futuras | todos
+          if (adrianoChanged) {
+            if (isAdriano && !lancamento.adriano) {
+              const ids = items.filter(it => it.adriano !== true).map(it => it.id);
+              if (ids.length > 0) await supabase.from('lancamentos').delete().in('id', ids);
+              const cartas: Lancamento[] = [];
+              for (const it of items) {
+                if (it.adriano) continue;
+                const itDate = new Date(it.data + 'T12:00:00');
+                const metade = numValor / 2;
+                const cardToUse = cartoes.find(c => c.id === cid) || null;
+                const mrFatura = !isReceitaEdit && forma === 'credito' && cardToUse ? getMesReferenciaFatura(itDate, cardToUse) : null;
+                const espelho: Lancamento = {
+                  tipo: it.tipo || 'despesa',
+                  descricao,
+                  valor: metade,
+                  data: it.data!,
+                  categoria: isReceitaEdit ? receitaCatMapEdit[receitaCat] : (macro || ''),
+                  categoria_macro: macro,
+                  subcategoria: subcategoria || null,
+                  forma_pagamento: !isReceitaEdit ? forma : null,
+                  cartao_id: !isReceitaEdit ? cid : null,
+                  mes_referencia_fatura: !isReceitaEdit ? mrFatura : null,
+                  recorrente: it.recorrente,
+                  recorrencia_pai_id: it.recorrencia_pai_id,
+                  dia_recorrencia: it.dia_recorrencia,
+                  subcategoria_pais: !isReceitaEdit ? 'Adriano' : null,
+                  adriano: true,
+                  pago_por: pagoPor,
+                  shared_group_id: genUUID(),
+                } as Lancamento;
+                cartas.push(espelho);
+              }
+              await addMultiple.mutateAsync(cartas);
+            } else if (!isAdriano && lancamento.adriano) {
+              const subP = lancamento.subcategoria_pais || '';
+              const norm = subP.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+              if (norm === 'adriano') {
+                const groupIDs = Array.from(new Set(items.map(it => it.shared_group_id).filter(Boolean))) as string[];
+                if (groupIDs.length > 0) {
+                  for (const gid of groupIDs) {
+                    await supabase.from('lancamentos').delete().eq('shared_group_id', gid);
+                  }
+                }
+              } else {
+                const ids = items.map(it => it.id);
+                if (ids.length > 0) {
+                  for (const id of ids) await updateLancamento.mutateAsync({ id, ...fields });
+                }
+              }
+            }
+          } else {
+            const ids = items.map(it => it.id);
+            if (ids.length > 0) {
+              for (const id of ids) await updateLancamento.mutateAsync({ id, ...fields });
+            }
+          }
+        }
+        refetchAll();
+        onClose();
+        return;
+      }
+
+    } catch (err) {
+      console.error('Erro ao salvar:', err);
     } finally {
       setSaving(false);
     }
   };
 
   if (!open || !lancamento) return null;
+
   const isReceita = lancamento.tipo === 'receita';
-  const wasParcelado = lancamento.is_parcelado;
-  const wasRecorrente = lancamento.recorrente;
+  const wasParcelado = !!(lancamento.is_parcelado || lancamento.parcelamento_id);
+  const wasRecorrente = !!(lancamento.recorrente || lancamento.recorrencia_pai_id);
   const wasSimples = !wasParcelado && !wasRecorrente;
+  const selectedGroupData = selectedGroup ? SUBCATEGORIA_GROUPS.find(g => g.group === selectedGroup) : null;
 
   return (
     <>
-      <div className='fixed inset-0 z-[80] bg-black/25 backdrop-blur-sm' onClick={onClose} />
-      <div className='fixed inset-x-4 top-1/2 -translate-y-1/2 z-[90] max-h-[88vh] overflow-y-auto rounded-3xl bg-white shadow-xl border border-border'>
-        <div className='px-5 pt-5 pb-8 space-y-4'>
-          <div className='flex items-center justify-between'>
-            <h2 className='text-base font-bold text-foreground'>Editar lançamento</h2>
-            <button onClick={onClose} className='p-1.5 rounded-full hover:bg-secondary'>
-              <X size={17} className='text-muted-foreground' />
-            </button>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
+
+      {/* Modal inferior tipo sheet, igual ao NewExpenseSheetFixed */}
+      <div className="fixed inset-x-0 bottom-0 bg-white rounded-t-3xl z-50 max-h-[90vh] overflow-y-auto">
+        {/* Header sticky */}
+        <div className="sticky top-0 bg-white px-5 pt-5 pb-3 border-b border-border/40 flex items-center justify-between z-10">
+          <h2 className="text-lg font-bold">Editar lançamento</h2>
+          <button onClick={onClose} className="text-muted-foreground">
+            <X size={22} />
+          </button>
+        </div>
+
+        <div className="px-5 pt-4 pb-6 space-y-4">
+          {/* Descrição */}
+          <div className="space-y-1">
+            <Input
+              placeholder="Digite a descrição..."
+              value={descricao}
+              onChange={e => setDescricao(e.target.value)}
+              className="h-11 rounded-2xl border-2 border-[#E8ECF5] bg-[#E8ECF5]/30 px-4 text-sm font-medium"
+            />
           </div>
 
-          <div className='space-y-1.5'>
-            <label className='text-xs font-medium text-muted-foreground'>Descrição</label>
-            <Input value={descricao} onChange={e => setDescricao(e.target.value)} className='bg-[#E8ECF5] border-0 rounded-xl' />
+          {/* Valor e Data */}
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              placeholder="R$ 0,00"
+              value={valor}
+              onChange={e => handleValorChange(e.target.value)}
+              inputMode="numeric"
+              className="h-11 rounded-2xl border-2 border-[#E8ECF5] bg-[#E8ECF5]/30 px-4 text-sm font-bold"
+            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="h-11 rounded-2xl border-2 border-[#E8ECF5] bg-[#E8ECF5]/30 px-4 text-sm font-medium text-left flex items-center justify-between">
+                  <span>{format(data, "dd/MM/yyyy", { locale: ptBR })}</span>
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={data}
+                  onSelect={d => d && setData(d)}
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
-          <div className='space-y-1.5'>
-            <label className='text-xs font-medium text-muted-foreground'>Valor</label>
-            <div className='relative'>
-              <span className='absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground'>R$</span>
-              <Input value={valor} onChange={e => handleValorChange(e.target.value)}
-                className='bg-[#E8ECF5] border-0 pl-9 text-base font-bold rounded-xl' inputMode='numeric' />
-            </div>
-          </div>
+          {/* Aviso de data em lote */}
+          {(wasParcelado || wasRecorrente) && editScope !== 'este' && (
+            <p className="text-[10px] text-amber-600 px-1">
+              ⚠ A data só é alterada para "Só este lançamento". Em lote, as datas originais são preservadas.
+            </p>
+          )}
 
-          <div className='space-y-1.5'>
-            <label className='text-xs font-medium text-muted-foreground'>Data</label>
-            <Button variant='outline' className='w-full justify-start bg-[#E8ECF5] border-0 text-foreground text-sm rounded-xl'
-              onClick={() => setCalendarOpen(v => !v)}>
-              <CalendarIcon className='mr-2 h-4 w-4 text-muted-foreground' />
-              {format(data, "dd 'de' MMMM, yyyy", { locale: ptBR })}
-            </Button>
-            {calendarOpen && (
-              <div className='rounded-xl overflow-hidden border border-border bg-white shadow-md'>
-                <Calendar mode='single' selected={data}
-                  onSelect={d => { if (d) { setData(d); setCalendarOpen(false); } }}
-                  initialFocus className='p-3 pointer-events-auto' />
-              </div>
-            )}
-            {/* Show hint when editing series with non-este scope */}
-            {(wasParcelado || wasRecorrente) && editScope !== 'este' && (
-              <p className='text-[10px] text-amber-600 px-1'>
-                ⚠ A data só é alterada para "Só este lançamento". Em lote, as datas originais são preservadas.
-              </p>
-            )}
-          </div>
-
+          {/* === RECEITA === */}
           {isReceita && (
-            <div className='space-y-2'>
-              <label className='text-xs font-medium text-muted-foreground'>Categoria</label>
-              <div className='flex flex-wrap gap-1.5'>
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground px-1">Categoria</p>
+              <div className="flex flex-wrap gap-2">
                 {RECEITA_CATS_EDIT.map(cat => (
-                  <button key={cat} onClick={() => setReceitaCat(cat)}
-                    className={cn('px-3 py-1.5 rounded-xl text-xs font-medium transition-colors',
-                      receitaCat === cat ? 'gradient-emerald text-primary-foreground' : 'bg-[#E8ECF5] text-muted-foreground')}>
+                  <button
+                    key={cat}
+                    onClick={() => setReceitaCat(cat)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl text-xs font-medium transition-colors",
+                      receitaCat === cat
+                        ? "gradient-emerald text-primary-foreground"
+                        : "bg-[#E8ECF5] text-muted-foreground"
+                    )}
+                  >
                     {cat}
                   </button>
                 ))}
@@ -657,168 +628,296 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
             </div>
           )}
 
+          {/* === DESPESA === */}
           {!isReceita && (
-            <div className='space-y-2'>
-              <label className='text-xs font-medium text-muted-foreground'>Categoria</label>
-              <div className='grid grid-cols-4 gap-1.5'>
-                {SUBCATEGORIA_GROUPS.map(group => {
-                  const isActive = selectedGroup === group.group;
-                  const hasSelection = group.items.some(i => i.name === subcategoria);
-                  return (
-                    <button key={group.group}
-                      onClick={() => setSelectedGroup(isActive ? null : group.group)}
-                      className={cn('flex flex-col items-center gap-0.5 py-2 rounded-xl transition-all',
-                        isActive ? 'bg-primary/10 ring-2 ring-primary'
-                          : hasSelection ? 'bg-primary/5 ring-1 ring-primary/30' : 'bg-[#E8ECF5]')}>
-                      <span className='text-lg'>{group.emoji}</span>
-                      <span className={cn('text-[9px] font-medium',
-                        isActive ? 'text-primary' : hasSelection ? 'text-primary/70' : 'text-muted-foreground')}>
-                        {group.group}
-                      </span>
+            <>
+              {/* Categoria */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground px-1">Categoria</p>
+                <div className="flex flex-wrap gap-2">
+                  {SUBCATEGORIA_GROUPS.map(group => (
+                    <button
+                      key={group.group}
+                      onClick={() => {
+                        setSelectedGroup(group.group);
+                        setSubcategoria(null);
+                      }}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl text-xs font-medium transition-colors",
+                        selectedGroup === group.group
+                          ? "gradient-emerald text-primary-foreground"
+                          : "bg-[#E8ECF5] text-muted-foreground"
+                      )}
+                    >
+                      {group.emoji} {group.group}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-              {selectedGroup && (() => {
-                const group = SUBCATEGORIA_GROUPS.find(g => g.group === selectedGroup);
-                if (!group) return null;
-                return (
-                  <div className='rounded-xl p-2.5 space-y-1.5' style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)' }}>
-                    <p className='text-[9px] font-semibold text-primary uppercase tracking-wider'>{group.group}</p>
-                    <div className='flex flex-wrap gap-1.5'>
-                      {group.items.map(item => (
-                        <button key={item.name}
-                          onClick={() => setSubcategoria(subcategoria === item.name ? null : item.name)}
-                          className={cn('px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors',
-                            subcategoria === item.name ? 'bg-primary text-primary-foreground' : 'bg-white border border-border text-muted-foreground')}>
-                          {item.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
 
-          {!isReceita && (
-            <div className='space-y-2'>
-              <label className='text-xs font-medium text-muted-foreground'>Pagamento</label>
-              <div className='flex gap-1 p-1 rounded-xl bg-[#E8ECF5]'>
-                {(['dinheiro', 'credito'] as const).map(f => (
-                  <button key={f} onClick={() => setFormaPagamento(f)}
-                    className={cn('flex-1 py-2 rounded-lg text-xs font-semibold transition-all',
-                      formaPagamento === f ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground')}>
-                    {f === 'dinheiro' ? 'Dinheiro' : 'Crédito'}
-                  </button>
-                ))}
+              {/* Subcategoria */}
+              {selectedGroupData && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground px-1">Subcategoria</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedGroupData.items.map(item => (
+                      <button
+                        key={item.name}
+                        onClick={() => setSubcategoria(item.name)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-medium transition-colors",
+                          subcategoria === item.name
+                            ? "gradient-emerald text-primary-foreground"
+                            : "bg-[#E8ECF5] text-muted-foreground"
+                        )}
+                      >
+                        {item.emoji} {item.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Forma de pagamento */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground px-1">Forma de pagamento</p>
+                <div className="flex gap-1 p-1 rounded-xl bg-[#E8ECF5]">
+                  {(['dinheiro', 'credito'] as const).map(f => (
+                    <button
+                      key={f}
+                      onClick={() => setFormaPagamento(f)}
+                      className={cn(
+                        "flex-1 py-2 rounded-lg text-xs font-semibold transition-all",
+                        formaPagamento === f
+                          ? "bg-white shadow-sm text-foreground"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {f === 'dinheiro' ? '💵 Dinheiro' : '💳 Crédito'}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {formaPagamento === 'credito' && cartoes.length > 0 && (
-                <div className='flex gap-2 flex-wrap'>
-                  {cartoes.map(c => (
-                    <button key={c.id} onClick={() => setCartaoId(c.id)}
-                      className={cn('px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors',
-                        cartaoId === c.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-white border-border text-muted-foreground')}>
-                      {c.nome}
+
+              {/* Cartões */}
+              {formaPagamento === 'credito' && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground px-1">Cartão</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {cartoes.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => setCartaoId(c.id)}
+                        className={cn(
+                          "py-2 px-3 rounded-xl text-xs font-semibold transition-all",
+                          cartaoId === c.id
+                            ? "gradient-emerald text-primary-foreground"
+                            : "bg-[#E8ECF5] text-muted-foreground"
+                        )}
+                      >
+                        {c.nome}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Despesa dos Pais */}
+              <button
+                onClick={() => {
+                  setIsPais(v => {
+                    if (v) {
+                      setIsVicente(false);
+                      setIsLuisa(false);
+                    }
+                    return !v;
+                  });
+                }}
+                className={cn(
+                  "w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
+                  isPais ? "border-amber-400 bg-amber-50" : "border-[#E8ECF5] bg-[#E8ECF5]"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <Users size={15} className={isPais ? "text-amber-600" : "text-muted-foreground"} />
+                  <span className={cn("text-sm font-medium", isPais ? "text-amber-700" : "text-muted-foreground")}>
+                    Despesa dos Pais
+                  </span>
+                </div>
+                <div className={cn("w-9 h-5 rounded-full flex items-center px-0.5", isPais ? "bg-amber-400 justify-end" : "bg-muted justify-start")}>
+                  <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                </div>
+              </button>
+
+              {/* Vicente e Luísa */}
+              {isPais && (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setIsVicente(v => !v);
+                      setIsLuisa(false);
+                    }}
+                    className={cn(
+                      "py-2 rounded-xl text-xs font-medium",
+                      isVicente ? "bg-green-100 text-green-700" : "bg-[#E8ECF5] text-muted-foreground"
+                    )}
+                  >
+                    👦 Vicente
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsLuisa(v => !v);
+                      setIsVicente(false);
+                    }}
+                    className={cn(
+                      "py-2 rounded-xl text-xs font-medium",
+                      isLuisa ? "bg-pink-100 text-pink-700" : "bg-[#E8ECF5] text-muted-foreground"
+                    )}
+                  >
+                    👩‍🦳 Luísa
+                  </button>
+                </div>
+              )}
+
+              {/* Dividir com Adriano */}
+              <button
+                disabled={isPais}
+                onClick={() => setIsAdriano(v => !v)}
+                className={cn(
+                  "w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all",
+                  isPais
+                    ? "opacity-40 border-[#E8ECF5] bg-[#E8ECF5]"
+                    : isAdriano
+                    ? "border-blue-400 bg-blue-50"
+                    : "border-[#E8ECF5] bg-[#E8ECF5]"
+                )}
+              >
+                <span className={cn("text-sm font-medium", isAdriano ? "text-blue-700" : "text-muted-foreground")}>
+                  👨 Dividir com Adriano
+                </span>
+                <div className={cn("w-9 h-5 rounded-full flex items-center px-0.5", isAdriano ? "bg-blue-400 justify-end" : "bg-muted justify-start")}>
+                  <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                </div>
+              </button>
+
+              {/* Quem pagou (se Adriano ativo) */}
+              {isAdriano && (
+                <div className="flex gap-1 p-1 rounded-xl bg-[#E8ECF5]">
+                  {([
+                    { key: 'voce', label: '🙋‍♀️ Eu paguei' },
+                    { key: 'adriano', label: '👨 Adriano pagou' }
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setPagoPor(opt.key)}
+                      className={cn(
+                        "flex-1 py-2 rounded-lg text-xs font-semibold transition-all",
+                        pagoPor === opt.key
+                          ? "bg-white shadow-sm text-foreground"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {opt.label}
                     </button>
                   ))}
                 </div>
               )}
-            </div>
-          )}
 
-          {!isReceita && (
-            <>
-              <button
-                onClick={() => {
-                  setIsPais(v => {
-                    if (v) { setIsVicente(false); setIsLuisa(false); }
-                    return !v;
-                  });
-                }}
-                className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
-                  isPais ? 'border-amber-400 bg-amber-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
-                <div className='flex items-center gap-2'>
-                  <Users size={15} className={isPais ? 'text-amber-600' : 'text-muted-foreground'} />
-                  <span className={cn('text-sm font-medium', isPais ? 'text-amber-700' : 'text-muted-foreground')}>
-                    Despesa dos pais
-                  </span>
-                </div>
-                <div className={cn('w-9 h-5 rounded-full flex items-center px-0.5 transition-all',
-                  isPais ? 'bg-amber-400 justify-end' : 'bg-muted justify-start')}>
-                  <div className='w-4 h-4 rounded-full bg-white shadow-sm' />
-                </div>
-              </button>
-
-              {/* Vicente (sub-option under Pais) */}
-              {isPais && (
-                <button
-                  onClick={() => { setIsVicente(v => { if (!v) setIsLuisa(false); return !v; }); }}
-                  className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
-                    isVicente ? 'border-green-400 bg-green-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
-                  <div className='flex items-center gap-2'>
-                    <span className='text-base'>👦</span>
-                    <span className={cn('text-sm font-medium', isVicente ? 'text-green-700' : 'text-muted-foreground')}>
-                      Despesa do Vicente
-                    </span>
+              {/* Converter em (só para simples) */}
+              {wasSimples && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground px-1">Converter em</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setIsParcelado(v => !v);
+                        if (!isParcelado) setRecorrente(false);
+                      }}
+                      className={cn(
+                        "flex-1 px-4 py-2.5 rounded-2xl border-2 text-sm font-medium",
+                        isParcelado
+                          ? "border-primary/40 bg-primary/5 text-primary"
+                          : "border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground"
+                      )}
+                    >
+                      💳 Parcelar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setRecorrente(v => !v);
+                        if (!recorrente) setIsParcelado(false);
+                      }}
+                      className={cn(
+                        "flex-1 px-4 py-2.5 rounded-2xl border-2 text-sm font-medium",
+                        recorrente
+                          ? "border-primary/40 bg-primary/5 text-primary"
+                          : "border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground"
+                      )}
+                    >
+                      🔁 Recorrente
+                    </button>
                   </div>
-                  <div className={cn('w-9 h-5 rounded-full flex items-center px-0.5 transition-all',
-                    isVicente ? 'bg-green-400 justify-end' : 'bg-muted justify-start')}>
-                    <div className='w-4 h-4 rounded-full bg-white shadow-sm' />
-                  </div>
-                </button>
+                </div>
               )}
 
-              {/* Luísa (sub-option under Pais) */}
-              {isPais && (
-                <button
-                  onClick={() => { setIsLuisa(v => { if (!v) setIsVicente(false); return !v; }); }}
-                  className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
-                    isLuisa ? 'border-pink-400 bg-pink-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
-                  <div className='flex items-center gap-2'>
-                    <span className='text-base'>{'\u{1F469}\u200D\u{1F9B3}'}</span>
-                    <span className={cn('text-sm font-medium', isLuisa ? 'text-pink-700' : 'text-muted-foreground')}>
-                      Despesa da Luísa
-                    </span>
-                  </div>
-                  <div className={cn('w-9 h-5 rounded-full flex items-center px-0.5 transition-all',
-                    isLuisa ? 'bg-pink-400 justify-end' : 'bg-muted justify-start')}>
-                    <div className='w-4 h-4 rounded-full bg-white shadow-sm' />
-                  </div>
-                </button>
+              {/* Número de parcelas */}
+              {isParcelado && (
+                <Input
+                  type="number"
+                  min={2}
+                  max={48}
+                  value={parcelas}
+                  onChange={e => setParcelas(e.target.value)}
+                  className="h-10 rounded-2xl border-2 border-[#E8ECF5] bg-[#E8ECF5]/30 px-4 text-sm font-medium"
+                  placeholder="Parcelas"
+                />
               )}
 
-              {/* Dividir com Adriano (only when NOT Pais) */}
-              <button
-                onClick={() => { if (canSplit) setIsAdriano(v => !v); }}
-                disabled={!canSplit}
-                className={cn('w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all',
-                  !canSplit ? 'opacity-40 cursor-not-allowed border-[#E8ECF5] bg-[#E8ECF5]' :
-                  isAdriano ? 'border-blue-400 bg-blue-50' : 'border-[#E8ECF5] bg-[#E8ECF5]')}>
-                <div className='flex items-center gap-2'>
-                  <span className='text-base'>👨</span>
-                  <span className={cn('text-sm font-medium', isAdriano ? 'text-blue-700' : 'text-muted-foreground')}>
-                    Dividir com Adriano
-                  </span>
-                </div>
-                <div className={cn('w-9 h-5 rounded-full flex items-center px-0.5 transition-all',
-                  isAdriano ? 'bg-blue-400 justify-end' : 'bg-muted justify-start')}>
-                  <div className='w-4 h-4 rounded-full bg-white shadow-sm' />
-                </div>
-              </button>
-              {!canSplit && (
-                <p className='text-[10px] text-amber-600 px-4 -mt-2'>
-                  Despesas de Pais/Vicente/Luísa não podem ser divididas.
-                </p>
+              {/* Dia da recorrência */}
+              {recorrente && (
+                <Input
+                  type="number"
+                  min={1}
+                  max={31}
+                  value={diaRecorrencia}
+                  onChange={e => setDiaRecorrencia(e.target.value)}
+                  className="h-10 rounded-2xl border-2 border-[#E8ECF5] bg-[#E8ECF5]/30 px-4 text-sm font-medium"
+                  placeholder="Dia da recorrência"
+                />
               )}
-              {isAdriano && (
-                <div className='space-y-1.5 px-1 -mt-1'>
-                  <p className='text-xs font-medium text-muted-foreground'>Quem pagou?</p>
-                  <div className='flex gap-1 p-1 rounded-xl bg-[#E8ECF5]'>
-                    {([{ key: 'voce', label: '🙋‍♀️ Eu' }, { key: 'adriano', label: '👨 Adriano' }] as const).map(opt => (
-                      <button key={opt.key} onClick={() => setPagoPor(opt.key as 'voce' | 'adriano')}
-                        className={cn('flex-1 py-2 rounded-lg text-xs font-semibold transition-all',
-                          pagoPor === opt.key ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground')}>
+
+              {/* Escopo de edição (parcelado/recorrente) */}
+              {(wasParcelado || wasRecorrente) && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground px-1">Aplicar alteração em</p>
+                  <div className="flex flex-col gap-1.5">
+                    {[
+                      { key: 'este', label: 'Só este lançamento' },
+                      {
+                        key: 'futuras',
+                        label: wasParcelado ? 'Este e próximas parcelas' : 'Este e próximas recorrências'
+                      },
+                      {
+                        key: 'todos',
+                        label: wasParcelado ? 'Todas as parcelas' : 'Todas as recorrências'
+                      }
+                    ].map(opt => (
+                      <button
+                        key={opt.key}
+                        onClick={() => setEditScope(opt.key as EditScope)}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all text-left",
+                          editScope === opt.key
+                            ? "border-primary/40 bg-primary/5 text-primary"
+                            : "border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0",
+                          editScope === opt.key ? "border-primary" : "border-muted-foreground/40"
+                        )}>
+                          {editScope === opt.key && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        </div>
                         {opt.label}
                       </button>
                     ))}
@@ -828,70 +927,21 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
             </>
           )}
 
-          {!isReceita && wasSimples && (
-            <div className='space-y-2'>
-              <label className='text-xs font-medium text-muted-foreground'>Converter em</label>
-              <div className='flex gap-2'>
-                <button
-                  onClick={() => { setIsParcelado(v => !v); if (!isParcelado) setRecorrente(false); }}
-                  className={cn('flex-1 flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium border transition-all',
-                    isParcelado ? 'border-primary/40 bg-primary/5 text-primary' : 'border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground')}>
-                  <span>Parcelado</span>
-                  {isParcelado && (
-                    <input type='number' min={2} max={48} value={parcelas}
-                      onChange={e => setParcelas(e.target.value)} onClick={e => e.stopPropagation()}
-                      className='w-10 text-center bg-white rounded-lg border border-border text-xs font-bold text-foreground' inputMode='numeric' />
-                  )}
-                </button>
-                <button
-                  onClick={() => { setRecorrente(v => !v); if (!recorrente) setIsParcelado(false); }}
-                  className={cn('flex-1 flex items-center justify-center px-3 py-2.5 rounded-xl text-sm font-medium border transition-all',
-                    recorrente ? 'border-primary/40 bg-primary/5 text-primary' : 'border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground')}>
-                  Recorrente
-                </button>
-              </div>
-              {recorrente && (
-                <div className='flex items-center gap-2 px-1'>
-                  <span className='text-xs text-muted-foreground'>Repetir no dia</span>
-                  <Input type='number' min={1} max={31} value={diaRecorrencia}
-                    onChange={e => setDiaRecorrencia(e.target.value)}
-                    className='bg-[#E8ECF5] border-0 w-16 text-center rounded-xl' inputMode='numeric' />
-                  <span className='text-xs text-muted-foreground'>de cada mês</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {!isReceita && (wasParcelado || wasRecorrente) && (
-            <div className='space-y-2'>
-              <label className='text-xs font-medium text-muted-foreground'>Aplicar alteração em</label>
-              <div className='flex flex-col gap-1.5'>
-                {[
-                  { key: 'este', label: 'Só este lançamento' },
-                  { key: 'futuras', label: wasParcelado ? 'Este e próximas parcelas' : 'Este e próximas recorrências' },
-                  { key: 'todos', label: wasParcelado ? 'Todas as parcelas' : 'Todas as recorrências' },
-                ].map(opt => (
-                  <button key={opt.key} onClick={() => setEditScope(opt.key as EditScope)}
-                    className={cn('flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border transition-all text-left',
-                      editScope === opt.key ? 'border-primary/40 bg-primary/5 text-primary' : 'border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground')}>
-                    <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0',
-                      editScope === opt.key ? 'border-primary' : 'border-muted-foreground/40')}>
-                      {editScope === opt.key && <div className='w-2 h-2 rounded-full bg-primary' />}
-                    </div>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className='flex gap-3 pt-1'>
-            <Button variant='outline' onClick={onClose} className='flex-1 bg-secondary border-0 text-muted-foreground rounded-xl'>
+          {/* Botões de ação */}
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 rounded-2xl bg-secondary border-0 text-muted-foreground font-medium"
+            >
               Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={saving} className='flex-1 gradient-emerald text-primary-foreground font-semibold rounded-xl'>
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 py-3.5 rounded-2xl gradient-emerald text-white font-bold shadow-lg disabled:opacity-60 active:scale-[0.99] transition-transform"
+            >
               {saving ? 'Salvando...' : 'Salvar'}
-            </Button>
+            </button>
           </div>
         </div>
       </div>

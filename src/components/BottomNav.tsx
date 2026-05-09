@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Home, Receipt, BarChart3, TrendingUp, Plus, Users, Percent, ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import NewExpenseSheet from "./NewExpenseSheet";
+import NewExpenseSheet from "./NewExpenseSheetFixed";
 import FinaMascot from "./FinaMascot";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,13 +20,7 @@ const navItems = [
 const leftItems = navItems.slice(0, 3);
 const rightItems = navItems.slice(3);
 
-const TabletSidebar = ({
-  onNewExpense,
-  onNewIncome,
-}: {
-  onNewExpense: () => void;
-  onNewIncome: () => void;
-}) => {
+const TabletSidebar = ({ onNewExpense, onNewIncome }: { onNewExpense: () => void; onNewIncome: () => void }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: profile } = useProfile();
@@ -50,16 +44,7 @@ const TabletSidebar = ({
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
           return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={cn(
-                "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                isActive
-                  ? "gradient-emerald text-white"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-              )}
-            >
+            <button key={item.path} onClick={() => navigate(item.path)} className={cn("flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors", isActive ? "gradient-emerald text-white" : "text-muted-foreground hover:text-foreground hover:bg-secondary")}>
               <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
               <span>{item.label}</span>
             </button>
@@ -68,17 +53,11 @@ const TabletSidebar = ({
       </nav>
 
       <div className="px-3 pb-3 space-y-2">
-        <button
-          onClick={onNewExpense}
-          className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors"
-        >
+        <button onClick={onNewExpense} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl bg-destructive/10 text-destructive text-sm font-medium hover:bg-destructive/20 transition-colors">
           <ArrowDownLeft size={16} />
           <span>Nova despesa</span>
         </button>
-        <button
-          onClick={onNewIncome}
-          className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl bg-[#7C5BBF]/10 text-[#7C5BBF] text-sm font-medium hover:bg-[#7C5BBF]/20 transition-colors"
-        >
+        <button onClick={onNewIncome} className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl bg-[#7C5BBF]/10 text-[#7C5BBF] text-sm font-medium hover:bg-[#7C5BBF]/20 transition-colors">
           <ArrowUpRight size={16} />
           <span>Nova receita</span>
         </button>
@@ -101,55 +80,25 @@ const BottomNav = () => {
     const isActive = location.pathname === item.path;
     const Icon = item.icon;
     return (
-      <button
-        key={item.label}
-        onClick={() => navigate(item.path)}
-        className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 overflow-hidden transition-all ${
-          isActive ? "text-[#7C5BBF]" : "text-muted-foreground/50 hover:text-foreground"
-        }`}
-        style={{ textAlign: "center" }}
-      >
+      <button key={item.label} onClick={() => navigate(item.path)} className={`flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 h-12 overflow-hidden transition-all ${isActive ? "text-[#7C5BBF]" : "text-muted-foreground/50 hover:text-foreground"}`} style={{ textAlign: "center" }}>
         <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} className="shrink-0" />
-        <span
-          className="leading-tight text-center w-full transition-all"
-          style={{
-            fontSize: "9px",
-            fontWeight: 500,
-            opacity: isActive ? 1 : 0,
-            height: isActive ? "auto" : 0,
-            overflow: "hidden",
-          }}
-        >
-          {item.label}
-        </span>
+        <span className="leading-tight text-center w-full transition-all" style={{ fontSize: "9px", fontWeight: 500, opacity: isActive ? 1 : 0, height: isActive ? "auto" : 0, overflow: "hidden" }}>{item.label}</span>
       </button>
     );
   };
 
   return (
     <>
-      <TabletSidebar
-        onNewExpense={() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); }}
-        onNewIncome={() => { setExpenseInitialTipo("receita"); setExpenseOpen(true); }}
-      />
-
-      <nav
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full sm:max-w-[430px] border-t md:hidden"
-        style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderColor: "#DDE3EE", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 16px))" }}
-      >
+      <TabletSidebar onNewExpense={() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); }} onNewIncome={() => { setExpenseInitialTipo("receita"); setExpenseOpen(true); }} />
+      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full sm:max-w-[430px] border-t md:hidden" style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderColor: "#DDE3EE", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 16px))" }}>
         <div className="flex justify-around items-center w-full px-0" style={{ padding: "8px 0" }}>
           {leftItems.map(renderItem)}
-          <button
-            onClick={() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); }}
-            className="w-[52px] h-[52px] -mt-6 rounded-full gradient-emerald flex items-center justify-center shadow-lg active:scale-95 transition-transform shrink-0"
-            style={{ boxShadow: "0 4px 16px rgba(99,102,241,0.4)" }}
-          >
+          <button onClick={() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); }} className="w-[52px] h-[52px] -mt-6 rounded-full gradient-emerald flex items-center justify-center shadow-lg active:scale-95 transition-transform shrink-0" style={{ boxShadow: "0 4px 16px rgba(99,102,241,0.4)" }}>
             <Plus size={24} className="text-white" />
           </button>
           {rightItems.map(renderItem)}
         </div>
       </nav>
-
       <NewExpenseSheet open={expenseOpen} onClose={() => setExpenseOpen(false)} initialTipo={expenseInitialTipo} />
     </>
   );

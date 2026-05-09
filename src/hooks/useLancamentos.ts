@@ -34,17 +34,12 @@ export interface Lancamento {
   created_at: string;
 }
 
-// ── helpers ──────────────────────────────────────────────────────────────
-
 function cleanText(value: string | null | undefined): string {
   return (value || "").trim();
 }
 
 function normalizeAccentInsensitive(value: string | null | undefined): string {
-  return cleanText(value)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+  return cleanText(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
 function normalizePagoPor(value: string | null | undefined): string {
@@ -56,86 +51,57 @@ function normalizePagoPor(value: string | null | undefined): string {
 
 function isInvalidVisualCategory(value: string | null | undefined): boolean {
   const normalized = normalizeAccentInsensitive(value);
-  return (
-    !normalized ||
-    normalized === "extra" ||
-    normalized === "despesa" ||
-    normalized === "outros" ||
-    normalized === "sem categoria"
-  );
+  return !normalized || normalized === "extra" || normalized === "despesa" || normalized === "outros" || normalized === "sem categoria";
 }
 
-function normalizeSubcategoriaPais(
-  subcategoriaPais: string | null,
-  subcategoria: string | null,
-  adriano: boolean
-): string | null {
+function normalizeSubcategoriaPais(subcategoriaPais: string | null, subcategoria: string | null, adriano: boolean): string | null {
   const subPais = cleanText(subcategoriaPais);
   const sub = cleanText(subcategoria);
-
   const subPaisNorm = normalizeAccentInsensitive(subPais);
   const subNorm = normalizeAccentInsensitive(sub);
-
   if (subPaisNorm === "luisa" || subNorm === "luisa") return "Luísa";
   if (subPaisNorm === "vicente" || subNorm === "vicente") return "Vicente";
   if (subPaisNorm === "adriano") return "Adriano";
-
   if (subPais) return subPais;
   if (adriano && subNorm === "luisa") return "Luísa";
-
   return null;
 }
 
 export function normalizeLancamento(l: Lancamento): Lancamento {
-  const subcategoria_pais = normalizeSubcategoriaPais(
-    l.subcategoria_pais,
-    l.subcategoria,
-    l.adriano
-  );
-
   const categoria_macro = cleanText(l.categoria_macro);
   const categoria = cleanText(l.categoria);
   const subcategoria = cleanText(l.subcategoria);
-
   return {
     ...l,
     descricao: cleanText(l.descricao),
     categoria: categoria || "",
     categoria_macro: categoria_macro || null,
     subcategoria: subcategoria || null,
-    subcategoria_pais,
+    subcategoria_pais: normalizeSubcategoriaPais(l.subcategoria_pais, l.subcategoria, l.adriano),
     pago_por: normalizePagoPor(l.pago_por),
   };
 }
 
-/** Normaliza categoria visual para dashboard */
 export function getCategoriaDashboard(l: Lancamento): string {
   const lanc = normalizeLancamento(l);
-
   const subPais = cleanText(lanc.subcategoria_pais);
   const subPaisNorm = normalizeAccentInsensitive(subPais);
-
   if (subPaisNorm === "vicente") return "Vicente";
   if (subPaisNorm === "luisa") return "Luísa";
   if (subPaisNorm === "adriano") return "Adriano";
   if (subPais && subPaisNorm !== "geral") return "Pais";
-
   const macro = cleanText(lanc.categoria_macro);
   if (!isInvalidVisualCategory(macro)) return macro;
-
   const sub = cleanText(lanc.subcategoria);
   if (!isInvalidVisualCategory(sub)) return sub;
-
   const cat = cleanText(lanc.categoria);
   if (!isInvalidVisualCategory(cat)) return cat;
-
   return "";
 }
 
 export function isLuisaLancamento(l: Lancamento): boolean {
   const lanc = normalizeLancamento(l);
-  const sub = normalizeAccentInsensitive(lanc.subcategoria_pais);
-  return sub === "luisa";
+  return normalizeAccentInsensitive(lanc.subcategoria_pais) === "luisa";
 }
 
 export function isAdrianoLancamento(l: Lancamento): boolean {
@@ -146,161 +112,176 @@ export function isSharedLancamento(l: Lancamento): boolean {
   return !!l.shared_group_id || l.adriano;
 }
 
-/**
- * Calcula saldo líquido entre o usuário e Adriano.
- * Regra atual: despesas `adriano=true` são 50/50. Se Fernanda pagou 100%,
- * Adriano deve metade. Se Adriano pagou 100%, Fernanda deve metade.
- * saldo > 0 → Adriano deve para o usuário
- * saldo < 0 → usuário deve para Adriano
- */
 export function calcularSaldoAdriano(lancamentos: Lancamento[]): number {
   let saldo = 0;
-
   for (const raw of lancamentos) {
     const l = normalizeLancamento(raw);
-
     if (l.tipo === "receita") {
-      if (l.categoria === "reembolso_adriano") {
-        saldo -= Number(l.valor) || 0;
-      }
+      if (l.categoria === "reembolso_adriano") saldo -= Number(l.valor) || 0;
       continue;
     }
-
     if (l.tipo !== "despesa") continue;
     if (!l.shared_group_id && !l.adriano) continue;
-
-    // Luísa não entra em divisão 50/50 com Adriano
     if (isLuisaLancamento(l)) continue;
-
     const valor = Number(l.valor) || 0;
     if (!valor) continue;
-
-    if (l.adriano) {
-      const metade = valor / 2;
-      const pagoPor = normalizePagoPor(l.pago_por || "voce");
-
-      if (pagoPor === "voce") {
-        saldo += metade;
-      } else {
-        saldo -= metade;
-      }
-    }
+    if (l.adriano) saldo += normalizePagoPor(l.pago_por) === "voce" ? valor : -valor;
   }
-
   return saldo;
+}
+
+function asLancamento(row: any): Lancamento {
+  return normalizeLancamento(row as Lancamento);
+}
+
+function stripDbFields(row: any) {
+  const copy = { ...row };
+  delete copy.id;
+  delete copy.created_at;
+  delete copy.editado_individualmente;
+  return copy;
+}
+
+function stripUpdateFields(row: any) {
+  const copy = { ...row };
+  delete copy.id;
+  delete copy.user_id;
+  delete copy.created_at;
+  delete copy.editado_individualmente;
+  return copy;
 }
 
 function splitParcelamentoTotalIntoInstallments(rows: Lancamento[]): Lancamento[] {
   const adjusted = rows.map((r) => ({ ...r }));
   const groups = new Map<string, { index: number; row: Lancamento }[]>();
-
   adjusted.forEach((row, index) => {
-    if (
-      row.tipo === "despesa" &&
-      row.is_parcelado &&
-      row.parcelamento_id &&
-      row.parcela_total &&
-      row.parcela_total > 1
-    ) {
+    if (row.tipo === "despesa" && row.is_parcelado && row.parcelamento_id && row.parcela_total && row.parcela_total > 1) {
       const current = groups.get(row.parcelamento_id) || [];
       current.push({ index, row });
       groups.set(row.parcelamento_id, current);
     }
   });
-
   groups.forEach((group) => {
-    const ordered = [...group].sort(
-      (a, b) => Number(a.row.parcela_atual || 0) - Number(b.row.parcela_atual || 0)
-    );
+    const ordered = [...group].sort((a, b) => Number(a.row.parcela_atual || 0) - Number(b.row.parcela_atual || 0));
     const totalParcelas = Number(ordered[0]?.row.parcela_total || 0);
-
     if (!totalParcelas || ordered.length !== totalParcelas) return;
-
     const valorTotalInformado = Number(ordered[0].row.valor || 0);
-    const allRowsHaveSameTotal = ordered.every(
-      ({ row }) => Math.abs(Number(row.valor || 0) - valorTotalInformado) < 0.005
-    );
-
+    const allRowsHaveSameTotal = ordered.every(({ row }) => Math.abs(Number(row.valor || 0) - valorTotalInformado) < 0.005);
     if (!allRowsHaveSameTotal) return;
-
     const totalEmCentavos = Math.round(valorTotalInformado * 100);
     const parcelaBaseEmCentavos = Math.trunc(totalEmCentavos / totalParcelas);
     const diferencaCentavos = totalEmCentavos - parcelaBaseEmCentavos * totalParcelas;
-
     ordered.forEach(({ index }, installmentIndex) => {
-      const centavos =
-        installmentIndex === ordered.length - 1
-          ? parcelaBaseEmCentavos + diferencaCentavos
-          : parcelaBaseEmCentavos;
-
+      const centavos = installmentIndex === ordered.length - 1 ? parcelaBaseEmCentavos + diferencaCentavos : parcelaBaseEmCentavos;
       adjusted[index].valor = centavos / 100;
     });
   });
-
   return adjusted;
 }
 
-// ── queries ──────────────────────────────────────────────────────────────
+function pairComparable(l: Lancamento, o: Lancamento): boolean {
+  return l.user_id === o.user_id &&
+    l.tipo === "despesa" && o.tipo === "despesa" &&
+    l.adriano !== o.adriano &&
+    l.descricao === o.descricao &&
+    l.data === o.data &&
+    l.mes_referencia === o.mes_referencia &&
+    Math.abs(Number(l.valor || 0) - Number(o.valor || 0)) < 0.01 &&
+    (l.categoria || "") === (o.categoria || "") &&
+    (l.categoria_macro || "") === (o.categoria_macro || "") &&
+    (l.subcategoria || "") === (o.subcategoria || "") &&
+    normalizePagoPor(l.pago_por) === normalizePagoPor(o.pago_por);
+}
+
+async function findLinkedLancamento(current: Lancamento): Promise<Lancamento | null> {
+  if (current.tipo !== "despesa") return null;
+
+  if (current.shared_group_id) {
+    const { data } = await supabase
+      .from("lancamentos")
+      .select("*")
+      .eq("shared_group_id", current.shared_group_id)
+      .neq("id", current.id)
+      .maybeSingle();
+    if (data) return asLancamento(data);
+  }
+
+  if (current.lancamento_origem_id) {
+    const { data } = await supabase.from("lancamentos").select("*").eq("id", current.lancamento_origem_id).maybeSingle();
+    if (data) return asLancamento(data);
+  }
+
+  const q = supabase
+    .from("lancamentos")
+    .select("*")
+    .eq("user_id", current.user_id)
+    .eq("tipo", "despesa")
+    .eq("data", current.data)
+    .eq("mes_referencia", current.mes_referencia)
+    .eq("descricao", current.descricao)
+    .eq("valor", current.valor)
+    .neq("id", current.id)
+    .neq("adriano", current.adriano)
+    .order("created_at", { ascending: false });
+
+  const { data } = await q;
+  const rows = ((data || []) as unknown as Lancamento[]).map(normalizeLancamento);
+  return rows.find((row) => pairComparable(current, row)) || rows[0] || null;
+}
+
+function linkedUpdatePayload(target: Lancamento, updates: Partial<Lancamento>) {
+  const payload: Record<string, any> = {};
+  const keys = [
+    "descricao", "valor", "categoria", "categoria_macro", "subcategoria", "data", "mes_referencia",
+    "forma_pagamento", "cartao_id", "pago_por", "is_parcelado", "parcela_atual", "parcela_total",
+    "parcelamento_id", "recorrente", "dia_recorrencia", "recorrencia_ate", "recorrencia_pai_id", "pago"
+  ];
+  keys.forEach((k) => {
+    if (k in updates) payload[k] = (updates as any)[k];
+  });
+  if (target.adriano) {
+    payload.adriano = true;
+    payload.subcategoria_pais = "Adriano";
+    payload.shared_role = "adriano";
+  } else {
+    payload.adriano = false;
+    payload.subcategoria_pais = null;
+    payload.shared_role = "principal";
+  }
+  return payload;
+}
+
+async function ensurePairLinked(a: Lancamento, b: Lancamento) {
+  const gid = a.shared_group_id || b.shared_group_id || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+  const principal = a.adriano ? b : a;
+  const mirror = a.adriano ? a : b;
+  await supabase.from("lancamentos").update({ shared_group_id: gid, shared_role: "principal", lancamento_origem_id: null } as any).eq("id", principal.id);
+  await supabase.from("lancamentos").update({ shared_group_id: gid, shared_role: "adriano", lancamento_origem_id: principal.id, subcategoria_pais: "Adriano", adriano: true } as any).eq("id", mirror.id);
+}
 
 export function useLancamentos(mesRef?: string) {
   const { user } = useAuth();
-
   return useQuery({
     queryKey: ["lancamentos", mesRef || "all"],
     queryFn: async () => {
-      let q = supabase
-        .from("lancamentos")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("data", { ascending: true });
-
+      let q = supabase.from("lancamentos").select("*").eq("user_id", user!.id).order("data", { ascending: true });
       if (mesRef) q = q.eq("mes_referencia", mesRef);
-
       const { data, error } = await q;
       if (error) throw error;
-
       return ((data || []) as unknown as Lancamento[]).map(normalizeLancamento);
     },
     enabled: !!user,
   });
 }
 
-// ── mutations ────────────────────────────────────────────────────────────
-
 export function useAddLancamento() {
   const { user } = useAuth();
   const qc = useQueryClient();
-
   return useMutation({
-    mutationFn: async (
-      row: Omit<
-        Lancamento,
-        | "id"
-        | "user_id"
-        | "created_at"
-        | "editado_individualmente"
-        | "lancamento_origem_id"
-      >
-    ) => {
-      const normalized = normalizeLancamento({
-        ...(row as Lancamento),
-        id: "",
-        user_id: user!.id,
-        created_at: "",
-        editado_individualmente: false,
-        lancamento_origem_id: null,
-      });
-
-      // Remove fields the DB auto-populates or that are empty strings for timestamps
-      const { id: _id, created_at: _ca, ...rest } = normalized;
-      const payload = {
-        ...rest,
-        user_id: user!.id,
-        recorrencia_ate: rest.recorrencia_ate || null,
-      };
-
+    mutationFn: async (row: Omit<Lancamento, "id" | "user_id" | "created_at" | "editado_individualmente" | "lancamento_origem_id">) => {
+      const normalized = normalizeLancamento({ ...(row as Lancamento), id: "", user_id: user!.id, created_at: "", editado_individualmente: false, lancamento_origem_id: null });
+      const payload = { ...stripDbFields(normalized), user_id: user!.id, recorrencia_ate: normalized.recorrencia_ate || null };
       const { error } = await supabase.from("lancamentos").insert(payload as any);
-
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
@@ -310,54 +291,23 @@ export function useAddLancamento() {
 export function useAddMultipleLancamentos() {
   const { user } = useAuth();
   const qc = useQueryClient();
-
   return useMutation({
     mutationFn: async (rows: Partial<Lancamento>[]) => {
-      const payload = splitParcelamentoTotalIntoInstallments(rows.map((r) =>
-        normalizeLancamento({
-          id: (r.id as string) || "",
-          user_id: user!.id,
-          descricao: (r.descricao as string) || "",
-          valor: Number(r.valor || 0),
-          tipo: (r.tipo as "despesa" | "receita") || "despesa",
-          categoria: (r.categoria as string) || "",
-          categoria_macro: (r.categoria_macro as string | null) ?? null,
-          subcategoria_pais: (r.subcategoria_pais as string | null) ?? null,
-          subcategoria: (r.subcategoria as string | null) ?? null,
-          data: (r.data as string) || "",
-          mes_referencia: (r.mes_referencia as string) || "",
-          parcela_atual: (r.parcela_atual as number | null) ?? null,
-          parcela_total: (r.parcela_total as number | null) ?? null,
-          is_parcelado: !!r.is_parcelado,
-          parcelamento_id: (r.parcelamento_id as string | null) ?? null,
-          pago: !!r.pago,
-          forma_pagamento: (r.forma_pagamento as string | null) ?? null,
-          cartao_id: (r.cartao_id as string | null) ?? null,
-          editado_individualmente: !!r.editado_individualmente,
-          recorrente: !!r.recorrente,
-          dia_recorrencia: (r.dia_recorrencia as number | null) ?? null,
-          recorrencia_ate: (r.recorrencia_ate as string | null) ?? null,
-          recorrencia_pai_id: (r.recorrencia_pai_id as string | null) ?? null,
-          adriano: !!r.adriano,
-          shared_group_id: (r.shared_group_id as string | null) ?? null,
-          shared_role: (r.shared_role as "principal" | "adriano" | null) ?? null,
-          lancamento_origem_id: (r.lancamento_origem_id as string | null) ?? null,
-          pago_por: (r.pago_por as string) || "voce",
-          created_at: "",
-        })
-      ));
-
-      const { error } = await supabase.from("lancamentos").insert(
-        payload.map((r) => {
-          const { id: _id, created_at: _ca, ...rest } = r;
-          return {
-            ...rest,
-            user_id: user!.id,
-            recorrencia_ate: rest.recorrencia_ate || null,
-          };
-        }) as any
-      );
-
+      const normalizedRows = rows.map((r) => normalizeLancamento({
+        id: (r.id as string) || "", user_id: user!.id, descricao: (r.descricao as string) || "", valor: Number(r.valor || 0),
+        tipo: (r.tipo as "despesa" | "receita") || "despesa", categoria: (r.categoria as string) || "",
+        categoria_macro: (r.categoria_macro as string | null) ?? null, subcategoria_pais: (r.subcategoria_pais as string | null) ?? null,
+        subcategoria: (r.subcategoria as string | null) ?? null, data: (r.data as string) || "", mes_referencia: (r.mes_referencia as string) || "",
+        parcela_atual: (r.parcela_atual as number | null) ?? null, parcela_total: (r.parcela_total as number | null) ?? null,
+        is_parcelado: !!r.is_parcelado, parcelamento_id: (r.parcelamento_id as string | null) ?? null, pago: !!r.pago,
+        forma_pagamento: (r.forma_pagamento as string | null) ?? null, cartao_id: (r.cartao_id as string | null) ?? null,
+        editado_individualmente: !!r.editado_individualmente, recorrente: !!r.recorrente, dia_recorrencia: (r.dia_recorrencia as number | null) ?? null,
+        recorrencia_ate: (r.recorrencia_ate as string | null) ?? null, recorrencia_pai_id: (r.recorrencia_pai_id as string | null) ?? null,
+        adriano: !!r.adriano, shared_group_id: (r.shared_group_id as string | null) ?? null, shared_role: (r.shared_role as "principal" | "adriano" | null) ?? null,
+        lancamento_origem_id: (r.lancamento_origem_id as string | null) ?? null, pago_por: (r.pago_por as string) || "voce", created_at: "",
+      }));
+      const adjusted = splitParcelamentoTotalIntoInstallments(normalizedRows);
+      const { error } = await supabase.from("lancamentos").insert(adjusted.map((r) => ({ ...stripDbFields(r), user_id: user!.id, recorrencia_ate: r.recorrencia_ate || null })) as any);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
@@ -366,62 +316,23 @@ export function useAddMultipleLancamentos() {
 
 export function useUpdateLancamento() {
   const qc = useQueryClient();
-
   return useMutation({
     mutationFn: async (upd: Partial<Lancamento> & { id: string }) => {
       const { id, ...rest } = upd;
+      const { data: currentRaw, error: fetchError } = await supabase.from("lancamentos").select("*").eq("id", id).maybeSingle();
+      if (fetchError) throw fetchError;
+      if (!currentRaw) return;
+      const current = asLancamento(currentRaw);
+      const payload = stripUpdateFields(rest);
+      if ("pago_por" in payload) payload.pago_por = normalizePagoPor(payload.pago_por);
+      await supabase.from("lancamentos").update(payload as any).eq("id", id).throwOnError();
 
-      const normalizedRest =
-        "descricao" in rest ||
-        "categoria" in rest ||
-        "categoria_macro" in rest ||
-        "subcategoria" in rest ||
-        "subcategoria_pais" in rest ||
-        "adriano" in rest
-          ? normalizeLancamento({
-              id,
-              user_id: "",
-              descricao: (rest.descricao as string) || "",
-              valor: Number(rest.valor || 0),
-              tipo: (rest.tipo as "despesa" | "receita") || "despesa",
-              categoria: (rest.categoria as string) || "",
-              categoria_macro: (rest.categoria_macro as string | null) ?? null,
-              subcategoria_pais: (rest.subcategoria_pais as string | null) ?? null,
-              subcategoria: (rest.subcategoria as string | null) ?? null,
-              data: (rest.data as string) || "",
-              mes_referencia: (rest.mes_referencia as string) || "",
-              parcela_atual: (rest.parcela_atual as number | null) ?? null,
-              parcela_total: (rest.parcela_total as number | null) ?? null,
-              is_parcelado: !!rest.is_parcelado,
-              parcelamento_id: (rest.parcelamento_id as string | null) ?? null,
-              pago: !!rest.pago,
-              forma_pagamento: (rest.forma_pagamento as string | null) ?? null,
-              cartao_id: (rest.cartao_id as string | null) ?? null,
-              editado_individualmente: !!rest.editado_individualmente,
-              recorrente: !!rest.recorrente,
-              dia_recorrencia: (rest.dia_recorrencia as number | null) ?? null,
-              recorrencia_ate: (rest.recorrencia_ate as string | null) ?? null,
-              recorrencia_pai_id: (rest.recorrencia_pai_id as string | null) ?? null,
-              adriano: !!rest.adriano,
-              shared_group_id: (rest.shared_group_id as string | null) ?? null,
-              shared_role: (rest.shared_role as "principal" | "adriano" | null) ?? null,
-              lancamento_origem_id: (rest.lancamento_origem_id as string | null) ?? null,
-              pago_por: (rest.pago_por as string) || "voce",
-              created_at: "",
-            })
-          : (rest as Lancamento);
-
-      const payload = { ...normalizedRest };
-      delete (payload as any).id;
-      delete (payload as any).user_id;
-      delete (payload as any).created_at;
-
-      const { error } = await supabase
-        .from("lancamentos")
-        .update(payload as any)
-        .eq("id", id);
-
-      if (error) throw error;
+      const linked = await findLinkedLancamento(current);
+      if (linked) {
+        await ensurePairLinked(current, linked);
+        const linkedPayload = linkedUpdatePayload(linked, payload as Partial<Lancamento>);
+        await supabase.from("lancamentos").update(linkedPayload as any).eq("id", linked.id).throwOnError();
+      }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
   });
@@ -429,17 +340,17 @@ export function useUpdateLancamento() {
 
 export function useDeleteLancamento() {
   const qc = useQueryClient();
-
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("lancamentos").delete().eq("id", id);
-      if (error) throw error;
+      const { data: currentRaw, error: fetchError } = await supabase.from("lancamentos").select("*").eq("id", id).maybeSingle();
+      if (fetchError) throw fetchError;
+      const current = currentRaw ? asLancamento(currentRaw) : null;
+      const linked = current ? await findLinkedLancamento(current) : null;
+      if (linked) await supabase.from("lancamentos").delete().eq("id", linked.id).throwOnError();
+      await supabase.from("lancamentos").delete().eq("id", id).throwOnError();
     },
     onSuccess: async () => {
-      await Promise.all([
-        qc.invalidateQueries({ queryKey: ["lancamentos"] }),
-        qc.invalidateQueries({ queryKey: ["reembolsos"] }),
-      ]);
+      await Promise.all([qc.invalidateQueries({ queryKey: ["lancamentos"] }), qc.invalidateQueries({ queryKey: ["reembolsos"] })]);
     },
   });
 }
@@ -447,22 +358,9 @@ export function useDeleteLancamento() {
 export function useDeleteFutureParcelamento() {
   const { user } = useAuth();
   const qc = useQueryClient();
-
   return useMutation({
-    mutationFn: async ({
-      parcelamento_id,
-      fromDate,
-    }: {
-      parcelamento_id: string;
-      fromDate: string;
-    }) => {
-      const { error } = await supabase
-        .from("lancamentos")
-        .delete()
-        .eq("user_id", user!.id)
-        .eq("parcelamento_id", parcelamento_id)
-        .gte("data", fromDate);
-
+    mutationFn: async ({ parcelamento_id, fromDate }: { parcelamento_id: string; fromDate: string }) => {
+      const { error } = await supabase.from("lancamentos").delete().eq("user_id", user!.id).eq("parcelamento_id", parcelamento_id).gte("data", fromDate);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
@@ -472,15 +370,9 @@ export function useDeleteFutureParcelamento() {
 export function useDeleteAllParcelamento() {
   const { user } = useAuth();
   const qc = useQueryClient();
-
   return useMutation({
     mutationFn: async (parcelamento_id: string) => {
-      const { error } = await supabase
-        .from("lancamentos")
-        .delete()
-        .eq("user_id", user!.id)
-        .eq("parcelamento_id", parcelamento_id);
-
+      const { error } = await supabase.from("lancamentos").delete().eq("user_id", user!.id).eq("parcelamento_id", parcelamento_id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
@@ -490,22 +382,9 @@ export function useDeleteAllParcelamento() {
 export function useDeleteFutureRecorrencia() {
   const { user } = useAuth();
   const qc = useQueryClient();
-
   return useMutation({
-    mutationFn: async ({
-      recorrencia_pai_id,
-      fromDate,
-    }: {
-      recorrencia_pai_id: string;
-      fromDate: string;
-    }) => {
-      const { error } = await supabase
-        .from("lancamentos")
-        .delete()
-        .eq("user_id", user!.id)
-        .eq("recorrencia_pai_id", recorrencia_pai_id)
-        .gte("data", fromDate);
-
+    mutationFn: async ({ recorrencia_pai_id, fromDate }: { recorrencia_pai_id: string; fromDate: string }) => {
+      const { error } = await supabase.from("lancamentos").delete().eq("user_id", user!.id).eq("recorrencia_pai_id", recorrencia_pai_id).gte("data", fromDate);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
@@ -515,15 +394,9 @@ export function useDeleteFutureRecorrencia() {
 export function useDeleteAllRecorrencia() {
   const { user } = useAuth();
   const qc = useQueryClient();
-
   return useMutation({
     mutationFn: async (recorrencia_pai_id: string) => {
-      const { error } = await supabase
-        .from("lancamentos")
-        .delete()
-        .eq("user_id", user!.id)
-        .eq("recorrencia_pai_id", recorrencia_pai_id);
-
+      const { error } = await supabase.from("lancamentos").delete().eq("user_id", user!.id).eq("recorrencia_pai_id", recorrencia_pai_id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),

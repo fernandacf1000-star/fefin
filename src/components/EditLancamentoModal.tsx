@@ -169,7 +169,10 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       descricao,
       valor: opts.numValor,
       subcategoria: subcategoria || null,
-      categoria_macro: opts.macro,
+      // Se temos subcategoria, usar o macro detectado dela
+      // Se não temos subcategoria mas temos selectedGroup, usar o selectedGroup como macro
+      // Caso contrário, usar o macro passado
+      categoria_macro: subcategoria ? opts.macro : (selectedGroup || opts.macro),
       forma_pagamento: opts.isReceitaEdit ? null : opts.forma,
       cartao_id: opts.isReceitaEdit ? null : opts.cartao,
       subcategoria_pais: opts.isReceitaEdit ? null : getSubPais(),
@@ -207,6 +210,10 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
     setSaving(true);
 
     try {
+      console.log('=== INICIANDO SALVAMENTO ===');
+      console.log('Lançamento original:', lancamento);
+      console.log('Valores atuais:', { descricao, valor, subcategoria, selectedGroup });
+
       const isReceitaEdit = lancamento.tipo === 'receita';
       const numValor = getNumValor();
       if (!numValor) throw new Error('Valor inválido');
@@ -215,18 +222,31 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       const wasRecorrente = !!(lancamento.recorrente || lancamento.recorrencia_pai_id);
       const wasSimples = !wasParcelado && !wasRecorrente;
 
+      console.log('Tipo de lançamento:', { isReceitaEdit, wasParcelado, wasRecorrente, wasSimples });
+
       const macro = isReceitaEdit ? null : (subcategoria ? detectCategoriaMacro(subcategoria) : null);
       const forma = formaPagamento === 'credito' ? 'credito' : 'dinheiro';
       const cid = formaPagamento === 'credito' ? cartaoId : null;
 
+      console.log('Campos calculados:', { 
+        macro, 
+        selectedGroup,
+        subcategoria,
+        forma, 
+        cid,
+        macroFinal: subcategoria ? macro : (selectedGroup || macro)
+      });
+
       // A) SIMPLE → SIMPLE (single edit)
       if (wasSimples && !isParcelado && !recorrente) {
+        console.log('Caso A: SIMPLE → SIMPLE');
         const fields = buildFieldUpdates({ isReceitaEdit, numValor, macro, forma, cartao: cid });
         fields.data = dateToStr(data);
         if (!isReceitaEdit) {
           const mrFatura = (forma === 'credito' && cid) ? getMesReferenciaFatura(data, cartoes.find(c => c.id === cid) || null) : null;
           fields.mes_referencia_fatura = mrFatura;
         }
+        console.log('Campos para atualizar:', fields);
         await updateLancamento.mutateAsync({ id: lancamento.id, ...fields });
         refetchAll();
         toast.success('Lançamento atualizado', { duration: 1500 });
@@ -537,8 +557,10 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
       }
 
     } catch (err) {
-      console.error('Erro ao salvar:', err);
-      toast.error('Erro ao salvar alterações');
+      console.error('=== ERRO AO SALVAR ===');
+      console.error('Erro completo:', err);
+      console.error('Mensagem:', err instanceof Error ? err.message : String(err));
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar alterações');
     } finally {
       setSaving(false);
     }

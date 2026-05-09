@@ -239,7 +239,7 @@ function linkedUpdatePayload(target: Lancamento, updates: Partial<Lancamento>) {
   keys.forEach((k) => {
     if (k in updates) payload[k] = (updates as any)[k];
   });
-  if (target.adriano) {
+  if (target.adriano || target.shared_role === "adriano") {
     payload.adriano = true;
     payload.subcategoria_pais = "Adriano";
     payload.shared_role = "adriano";
@@ -257,6 +257,67 @@ async function ensurePairLinked(a: Lancamento, b: Lancamento) {
   const mirror = a.adriano ? a : b;
   await supabase.from("lancamentos").update({ shared_group_id: gid, shared_role: "principal", lancamento_origem_id: null } as any).eq("id", principal.id);
   await supabase.from("lancamentos").update({ shared_group_id: gid, shared_role: "adriano", lancamento_origem_id: principal.id, subcategoria_pais: "Adriano", adriano: true } as any).eq("id", mirror.id);
+}
+
+async function fetchLancamentosByIds(ids: string[]): Promise<Lancamento[]> {
+  const uniqueIds = Array.from(new Set(ids)).filter(Boolean);
+  if (uniqueIds.length === 0) return [];
+  const { data, error } = await supabase.from("lancamentos").select("*").in("id", uniqueIds);
+  if (error) throw error;
+  return ((data || []) as unknown as Lancamento[]).map(normalizeLancamento);
+}
+
+async function resolveIdsWithSharedPairs(rows: Lancamento[]): Promise<string[]> {
+  const ids = new Set(rows.map((row) => row.id));
+  const sharedGroupIds = Array.from(new Set(rows.map((row) => row.shared_group_id).filter(Boolean))) as string[];
+
+  if (sharedGroupIds.length > 0) {
+    const { data, error } = await supabase
+      .from("lancamentos")
+      .select("id")
+      .in("shared_group_id", sharedGroupIds);
+    if (error) throw error;
+    (data || []).forEach((row: any) => ids.add(row.id));
+  }
+
+  for (const row of rows) {
+    if (!row.shared_group_id) {
+      const linked = await findLinkedLancamento(row);
+      if (linked) ids.add(linked.id);
+    }
+  }
+
+  return Array.from(ids);
+}
+
+async function fetchRecorrenciaScopeRows(params: { userId: string; recorrenciaPaiId: string; fromDate?: string }): Promise<Lancamento[]> {
+  let q = supabase
+    .from("lancamentos")
+    .select("*")
+    .eq("user_id", params.userId)
+    .eq("recorrencia_pai_id", params.recorrenciaPaiId);
+  if (params.fromDate) q = q.gte("data", params.fromDate);
+
+  const { data, error } = await q;
+  if (error) throw error;
+  return ((data || []) as unknown as Lancamento[]).map(normalizeLancamento);
+}
+
+async function deleteLancamentosByIds(ids: string[]) {
+  const uniqueIds = Array.from(new Set(ids)).filter(Boolean);
+  if (uniqueIds.length === 0) return;
+  const { error } = await supabase.from("lancamentos").delete().in("id", uniqueIds);
+  if (error) throw error;
+}
+
+async function updateLancamentosByScope(rows: Lancamento[], updates: Partial<Lancamento>) {
+  const targetIds = await resolveIdsWithSharedPairs(rows);
+  const targets = await fetchLancamentosByIds(targetIds);
+  for (const target of targets) {
+    const payload = linkedUpdatePayload(target, updates);
+    if ("pago_por" in payload) payload.pago_por = normalizePagoPor(payload.pago_por);
+    await supabase.from("lancamentos").update(payload as any).eq("id", target.id).throwOnError();
+  }
 }
 
 export function useLancamentos(mesRef?: string) {
@@ -325,7 +386,7 @@ export function useUpdateLancamento() {
       const current = asLancamento(currentRaw);
       const payload = stripUpdateFields(rest);
       if ("pago_por" in payload) payload.pago_por = normalizePagoPor(payload.pago_por);
-      await supabase.from("lancamentos").update(payload as any).eq("id", id).throwOnError();
+      await supabase.from("lancamentos").update(linkedUpdatePayload(current, payload as Partial<Lancamento>) as any).eq("id", id).throwOnError();
 
       const linked = await findLinkedLancamento(current);
       if (linked) {
@@ -345,9 +406,9 @@ export function useDeleteLancamento() {
       const { data: currentRaw, error: fetchError } = await supabase.from("lancamentos").select("*").eq("id", id).maybeSingle();
       if (fetchError) throw fetchError;
       const current = currentRaw ? asLancamento(currentRaw) : null;
-      const linked = current ? await findLinkedLancamento(current) : null;
-      if (linked) await supabase.from("lancamentos").delete().eq("id", linked.id).throwOnError();
-      await supabase.from("lancamentos").delete().eq("id", id).throwOnError();
+      if (!current) return;
+      const ids = await resolveIdsWithSharedPairs([current]);
+      await deleteLancamentosByIds(ids);
     },
     onSuccess: async () => {
       await Promise.all([qc.invalidateQueries({ queryKey: ["lancamentos"] }), qc.invalidateQueries({ queryKey: ["reembolsos"] })]);
@@ -360,8 +421,10 @@ export function useDeleteFutureParcelamento() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ parcelamento_id, fromDate }: { parcelamento_id: string; fromDate: string }) => {
-      const { error } = await supabase.from("lancamentos").delete().eq("user_id", user!.id).eq("parcelamento_id", parcelamento_id).gte("data", fromDate);
+      const { data, error } = await supabase.from("lancamentos").select("*").eq("user_id", user!.id).eq("parcelamento_id", parcelamento_id).gte("data", fromDate);
       if (error) throw error;
+      const ids = await resolveIdsWithSharedPairs(((data || []) as unknown as Lancamento[]).map(normalizeLancamento));
+      await deleteLancamentosByIds(ids);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
   });
@@ -372,8 +435,10 @@ export function useDeleteAllParcelamento() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (parcelamento_id: string) => {
-      const { error } = await supabase.from("lancamentos").delete().eq("user_id", user!.id).eq("parcelamento_id", parcelamento_id);
+      const { data, error } = await supabase.from("lancamentos").select("*").eq("user_id", user!.id).eq("parcelamento_id", parcelamento_id);
       if (error) throw error;
+      const ids = await resolveIdsWithSharedPairs(((data || []) as unknown as Lancamento[]).map(normalizeLancamento));
+      await deleteLancamentosByIds(ids);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
   });
@@ -384,10 +449,13 @@ export function useDeleteFutureRecorrencia() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ recorrencia_pai_id, fromDate }: { recorrencia_pai_id: string; fromDate: string }) => {
-      const { error } = await supabase.from("lancamentos").delete().eq("user_id", user!.id).eq("recorrencia_pai_id", recorrencia_pai_id).gte("data", fromDate);
-      if (error) throw error;
+      const rows = await fetchRecorrenciaScopeRows({ userId: user!.id, recorrenciaPaiId: recorrencia_pai_id, fromDate });
+      const ids = await resolveIdsWithSharedPairs(rows);
+      await deleteLancamentosByIds(ids);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
+    onSuccess: async () => {
+      await Promise.all([qc.invalidateQueries({ queryKey: ["lancamentos"] }), qc.invalidateQueries({ queryKey: ["reembolsos"] })]);
+    },
   });
 }
 
@@ -396,8 +464,35 @@ export function useDeleteAllRecorrencia() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (recorrencia_pai_id: string) => {
-      const { error } = await supabase.from("lancamentos").delete().eq("user_id", user!.id).eq("recorrencia_pai_id", recorrencia_pai_id);
-      if (error) throw error;
+      const rows = await fetchRecorrenciaScopeRows({ userId: user!.id, recorrenciaPaiId: recorrencia_pai_id });
+      const ids = await resolveIdsWithSharedPairs(rows);
+      await deleteLancamentosByIds(ids);
+    },
+    onSuccess: async () => {
+      await Promise.all([qc.invalidateQueries({ queryKey: ["lancamentos"] }), qc.invalidateQueries({ queryKey: ["reembolsos"] })]);
+    },
+  });
+}
+
+export function useUpdateFutureRecorrencia() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ recorrencia_pai_id, fromDate, updates }: { recorrencia_pai_id: string; fromDate: string; updates: Partial<Lancamento> }) => {
+      const rows = await fetchRecorrenciaScopeRows({ userId: user!.id, recorrenciaPaiId: recorrencia_pai_id, fromDate });
+      await updateLancamentosByScope(rows, stripUpdateFields(updates) as Partial<Lancamento>);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
+  });
+}
+
+export function useUpdateAllRecorrencia() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ recorrencia_pai_id, updates }: { recorrencia_pai_id: string; updates: Partial<Lancamento> }) => {
+      const rows = await fetchRecorrenciaScopeRows({ userId: user!.id, recorrenciaPaiId: recorrencia_pai_id });
+      await updateLancamentosByScope(rows, stripUpdateFields(updates) as Partial<Lancamento>);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lancamentos"] }),
   });

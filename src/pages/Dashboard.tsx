@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Users, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
 import CreditCardMini from "@/components/CreditCardMini";
@@ -79,6 +80,7 @@ const emojiMapDash: Record<string, string> = {
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [mesAtual, setMesAtual] = useState(() => {
     const now = new Date();
     const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -236,6 +238,13 @@ export default function Dashboard() {
               <p className="text-[11px] text-white/70">Olá,</p>
               <p className="text-base font-bold text-white">{firstName} 👋</p>
             </div>
+            <button
+              onClick={() => navigate("/conta")}
+              className="ml-1 w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+              title="Perfil e Cartões"
+            >
+              <User size={15} />
+            </button>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -257,23 +266,19 @@ export default function Dashboard() {
         </div>
 
         {melhorCartao && (
-          <div className="mx-5 mt-6 rounded-[28px] border border-white/20 bg-white/10 backdrop-blur-md shadow-sm px-4 py-4 flex items-center gap-4 overflow-hidden">
-            <div className="h-20 w-32 shrink-0 rounded-2xl overflow-hidden max-[380px]:h-16 max-[380px]:w-24">
-              <CreditCardMini nome={melhorCartao.nome} bandeira={(melhorCartao as any).bandeira} />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-bold uppercase tracking-wide text-slate-500/80 leading-tight">
-                MELHOR CARTÃO
+          <div className="bg-white/80 backdrop-blur rounded-xl px-4 py-3 flex items-center justify-between border border-purple-200/30">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-12 h-8 shrink-0 rounded-lg overflow-hidden">
+                <div className="scale-[0.6] origin-top-left -ml-1">
+                  <CreditCardMini nome={melhorCartao.nome} bandeira={(melhorCartao as any).bandeira} />
+                </div>
               </div>
-              <div className="truncate text-2xl font-black text-slate-900 leading-tight max-[380px]:text-xl">
-                {melhorCartao.nome}
+              <div className="min-w-0">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Melhor cartão</p>
+                <p className="text-sm font-bold text-foreground truncate">{melhorCartao.nome}</p>
               </div>
             </div>
-
-            <div className="shrink-0 self-center text-sm font-medium text-slate-500 whitespace-nowrap max-[380px]:text-xs">
-              fecha em {melhorDays}d
-            </div>
+            <span className="text-xs text-muted-foreground shrink-0 ml-2 whitespace-nowrap">fecha em {melhorDays}d</span>
           </div>
         )}
 

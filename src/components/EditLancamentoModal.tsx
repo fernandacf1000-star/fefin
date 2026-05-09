@@ -256,9 +256,22 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
           // Então ao salvar, precisamos dividir por 2 para cada lançamento do par
           const valorParaCadaUm = numValor / 2;
           
-          // Atualizar o lançamento atual com metade do valor
-          const fieldsComValorCorreto = { ...fields, valor: valorParaCadaUm };
-          await updateLancamento.mutateAsync({ id: lancamento.id, ...fieldsComValorCorreto });
+          // Para lançamentos compartilhados, criar campos seguros (sem adriano e pago_por)
+          const fieldsSeguros = {
+            descricao: fields.descricao,
+            valor: valorParaCadaUm,
+            data: fields.data,
+            subcategoria: fields.subcategoria,
+            categoria_macro: fields.categoria_macro,
+            forma_pagamento: fields.forma_pagamento,
+            cartao_id: fields.cartao_id,
+            mes_referencia_fatura: fields.mes_referencia_fatura,
+            // Manter subcategoria_pais do lançamento original
+            // NÃO enviar: adriano, pago_por (pode causar duplicate key)
+          };
+          
+          console.log('Atualizando lançamento principal com campos seguros:', fieldsSeguros);
+          await updateLancamento.mutateAsync({ id: lancamento.id, ...fieldsSeguros });
           console.log('Lançamento principal atualizado com valor:', valorParaCadaUm);
           
           // Buscar e atualizar o espelho também
@@ -273,9 +286,33 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
           if (espelhos && espelhos.length > 0) {
             for (const espelho of espelhos) {
               console.log('Atualizando espelho:', espelho.id);
-              const espelhoFields = { ...fields, valor: valorParaCadaUm };
-              await updateLancamento.mutateAsync({ id: espelho.id, ...espelhoFields });
-              console.log('Espelho atualizado com sucesso com valor:', valorParaCadaUm);
+              
+              // IMPORTANTE: Criar campos específicos para o espelho sem campos únicos
+              const espelhoFields = {
+                descricao: fields.descricao,
+                valor: valorParaCadaUm,
+                subcategoria: fields.subcategoria,
+                categoria_macro: fields.categoria_macro,
+                forma_pagamento: fields.forma_pagamento,
+                cartao_id: fields.cartao_id,
+                // Manter a subcategoria_pais original do espelho (geralmente 'Adriano')
+                // NÃO atualizar: data, adriano, shared_group_id, pago_por, subcategoria_pais
+              };
+              
+              // Só adicionar mes_referencia_fatura se houver
+              if (fields.mes_referencia_fatura !== undefined) {
+                espelhoFields.mes_referencia_fatura = fields.mes_referencia_fatura;
+              }
+              
+              console.log('Campos do espelho:', espelhoFields);
+              
+              try {
+                await updateLancamento.mutateAsync({ id: espelho.id, ...espelhoFields });
+                console.log('Espelho atualizado com sucesso com valor:', valorParaCadaUm);
+              } catch (updateError) {
+                console.error('Erro ao atualizar espelho:', updateError);
+                throw new Error(`Erro ao atualizar espelho: ${updateError.message || updateError}`);
+              }
             }
           }
         } else {

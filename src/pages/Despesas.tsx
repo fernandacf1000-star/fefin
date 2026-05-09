@@ -19,10 +19,10 @@ import {
 import { useCartoes } from "@/hooks/useCartoes";
 import { useAllReembolsos } from "@/hooks/useReembolsos";
 import { getGroupEmoji, getSubcategoriaGroup, detectSubcategoria } from "@/lib/subcategorias";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const absValue = (v: unknown) => Math.abs(Number(v) || 0);
 
 function getMesRef(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
@@ -37,6 +37,12 @@ function getMesLabel(year: number, month: number) {
 function formatDate(dateStr: string) {
   const [y, m, d] = dateStr.split("-");
   return `${d}/${m}/${y}`;
+}
+
+function compareLancamentosByAmountAsc(a: Lancamento, b: Lancamento) {
+  const valorDiff = absValue(a.valor) - absValue(b.valor);
+  if (valorDiff !== 0) return valorDiff;
+  return a.data.localeCompare(b.data);
 }
 
 // ── Row ────────────────────────────────────────────────────────────────────
@@ -222,7 +228,7 @@ export default function Despesas() {
     else if (filterTipo === "resgate") filtered = semAdriano.filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento");
     else if (filterTipo === "receita") filtered = semAdriano.filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento");
     else filtered = semAdriano.filter((l) => l.tipo === filterTipo);
-    return filtered.sort((a, b) => Number(a.valor) - Number(b.valor));
+    return [...filtered].sort(compareLancamentosByAmountAsc);
   }, [lancamentos, filterTipo]);
 
   const totalDespesasBrutas = useMemo(

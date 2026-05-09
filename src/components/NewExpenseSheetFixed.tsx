@@ -82,6 +82,14 @@ function addMonthsKeepingDay(base: Date, months: number) {
   return new Date(tentative.getFullYear(), tentative.getMonth(), Math.min(base.getDate(), lastDay));
 }
 
+function parseParcelasInput(value: string): number | null {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return null;
+  const parsed = Number(digits);
+  if (!Number.isInteger(parsed)) return null;
+  return Math.min(48, Math.max(2, parsed));
+}
+
 export default function NewExpenseSheetFixed({ open, onClose, initialTipo = "despesa" }: Props) {
   const { data: cartoes = [] } = useCartoes();
   const { data: historicoLancamentos = [] } = useLancamentos();
@@ -102,7 +110,7 @@ export default function NewExpenseSheetFixed({ open, onClose, initialTipo = "des
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>("Dinheiro");
   const [cartaoId, setCartaoId] = useState("");
   const [isParcelado, setIsParcelado] = useState(false);
-  const [parcelas, setParcelas] = useState("2");
+  const [parcelas, setParcelas] = useState("3");
   const [recorrente, setRecorrente] = useState(false);
   const [diaRecorrencia, setDiaRecorrencia] = useState("1");
   const [receitaCat, setReceitaCat] = useState<ReceitaCat>("Salário");
@@ -139,7 +147,7 @@ export default function NewExpenseSheetFixed({ open, onClose, initialTipo = "des
     setFormaPagamento("Dinheiro");
     setCartaoId("");
     setIsParcelado(false);
-    setParcelas("2");
+    setParcelas("3");
     setRecorrente(false);
     setDiaRecorrencia("1");
     setReceitaCat("Salário");
@@ -161,6 +169,16 @@ export default function NewExpenseSheetFixed({ open, onClose, initialTipo = "des
     }
     const num = parseInt(digits, 10) / 100;
     setValor(num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  };
+
+  const handleParcelasChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 2);
+    setParcelas(digits);
+  };
+
+  const handleParcelasBlur = () => {
+    const parsed = parseParcelasInput(parcelas);
+    setParcelas(String(parsed ?? 2));
   };
 
   const getNumValor = () => parseFloat(valor.replace(/\./g, "").replace(",", ".")) || 0;
@@ -354,7 +372,11 @@ export default function NewExpenseSheetFixed({ open, onClose, initialTipo = "des
           if (adrianoRow) rows.push({ ...adrianoRow, ...common });
         }
       } else if (isParcelado) {
-        const n = parseInt(parcelas, 10) || 2;
+        const n = parseParcelasInput(parcelas);
+        if (!n) {
+          toast.error("Informe o número de parcelas");
+          return;
+        }
         const pId = makeUUID();
         for (let i = 0; i < n; i++) {
           const d = addMonthsKeepingDay(data, i);
@@ -481,7 +503,16 @@ export default function NewExpenseSheetFixed({ open, onClose, initialTipo = "des
                 <button onClick={() => { setRecorrente((v) => !v); if (!recorrente) setIsParcelado(false); }} className={cn("flex-1 px-4 py-2.5 rounded-2xl border-2 text-sm font-medium", recorrente ? "border-primary/40 bg-primary/5 text-primary" : "border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground")}>🔁 Recorrente</button>
               </div>
 
-              {isParcelado && <Input type="number" min={2} max={48} value={parcelas} onChange={(e) => setParcelas(e.target.value)} className="h-10 rounded-2xl border-2 border-[#E8ECF5] bg-[#E8ECF5]/30 px-4 text-sm font-medium" placeholder="Parcelas" />}
+              {isParcelado && (
+                <div className="space-y-2">
+                  <Input type="text" inputMode="numeric" pattern="[0-9]*" value={parcelas} onChange={(e) => handleParcelasChange(e.target.value)} onBlur={handleParcelasBlur} className="h-10 rounded-2xl border-2 border-[#E8ECF5] bg-[#E8ECF5]/30 px-4 text-sm font-medium" placeholder="Número de parcelas" />
+                  <div className="flex gap-2 flex-wrap">
+                    {[2, 3, 4, 6, 10, 12].map((qtd) => (
+                      <button key={qtd} type="button" onClick={() => setParcelas(String(qtd))} className={cn("px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors", parcelas === String(qtd) ? "gradient-emerald text-primary-foreground" : "bg-[#E8ECF5] text-muted-foreground")}>{qtd}x</button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {recorrente && <Input type="number" min={1} max={31} value={diaRecorrencia} onChange={(e) => setDiaRecorrencia(e.target.value)} className="h-10 rounded-2xl border-2 border-[#E8ECF5] bg-[#E8ECF5]/30 px-4 text-sm font-medium" placeholder="Dia da recorrência" />}
 
               <button onClick={() => { setIsPais((v) => !v); setManualTouched((prev) => ({ ...prev, pais: true })); }} className={cn("w-full flex items-center justify-between px-4 py-2.5 rounded-2xl border-2 transition-all", isPais ? "border-amber-400 bg-amber-50" : "border-[#E8ECF5] bg-[#E8ECF5]")}>

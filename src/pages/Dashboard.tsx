@@ -257,17 +257,19 @@ export default function Dashboard() {
         </div>
 
         {melhorCartao && (
-          <div className="flex items-center justify-between px-4 py-4 rounded-[28px] bg-white/85 backdrop-blur border border-purple-200/30 w-full shadow-sm">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="w-24 h-20 rounded-3xl bg-[#F5F1FF] flex items-center justify-center shrink-0 shadow-inner">
-                <CreditCardMini nome={melhorCartao.nome} bandeira={(melhorCartao as any).bandeira} />
+          <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl bg-white/82 backdrop-blur border border-purple-200/30 w-full shadow-sm">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-[74px] h-[52px] rounded-2xl bg-[#F5F1FF] flex items-center justify-center shrink-0 shadow-inner overflow-hidden">
+                <div className="scale-[0.78] origin-center">
+                  <CreditCardMini nome={melhorCartao.nome} bandeira={(melhorCartao as any).bandeira} />
+                </div>
               </div>
               <div className="min-w-0">
-                <p className="text-[12px] font-extrabold uppercase tracking-wide text-slate-500">Melhor cartão</p>
-                <p className="text-[22px] leading-tight font-extrabold text-slate-900 truncate">{melhorCartao.nome}</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500 leading-none">Melhor cartão</p>
+                <p className="text-[18px] leading-tight font-extrabold text-slate-900 truncate">{melhorCartao.nome}</p>
               </div>
             </div>
-            <span className="text-[14px] text-slate-500 shrink-0 ml-3">fecha em {melhorDays}d</span>
+            <span className="text-[12px] text-slate-500 shrink-0 ml-1 whitespace-nowrap">fecha em {melhorDays}d</span>
           </div>
         )}
 

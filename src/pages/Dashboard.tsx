@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Users, CreditCard, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
 import { useLancamentos, calcularSaldoAdriano, getCategoriaDashboard } from "@/hooks/useLancamentos";
@@ -257,8 +257,17 @@ export default function Dashboard() {
 
         {melhorCartao && (
           <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-white/80 backdrop-blur border border-purple-200/30 w-full shadow-sm">
-            <span className="text-[12px] font-semibold text-foreground">{melhorCartao.nome}</span>
-            <span className="text-[10px] text-muted-foreground">fecha em {melhorDays}d</span>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                <CreditCard size={18} className="text-violet-700" />
+                <Sparkles size={11} className="absolute -top-1 -right-1 text-amber-500 fill-amber-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Melhor cartão</p>
+                <p className="text-[12px] font-bold text-foreground truncate">{melhorCartao.nome}</p>
+              </div>
+            </div>
+            <span className="text-[10px] text-muted-foreground shrink-0 ml-2">fecha em {melhorDays}d</span>
           </div>
         )}
 

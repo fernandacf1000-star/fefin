@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Users, CreditCard, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
+import CreditCardMini from "@/components/CreditCardMini";
 import { useLancamentos, calcularSaldoAdriano, getCategoriaDashboard } from "@/hooks/useLancamentos";
 import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";
 import { useProfile } from "@/hooks/useProfile";
@@ -256,18 +257,17 @@ export default function Dashboard() {
         </div>
 
         {melhorCartao && (
-          <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-white/80 backdrop-blur border border-purple-200/30 w-full shadow-sm">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
-                <CreditCard size={18} className="text-violet-700" />
-                <Sparkles size={11} className="absolute -top-1 -right-1 text-amber-500 fill-amber-500" />
+          <div className="flex items-center justify-between px-4 py-4 rounded-[28px] bg-white/85 backdrop-blur border border-purple-200/30 w-full shadow-sm">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-24 h-20 rounded-3xl bg-[#F5F1FF] flex items-center justify-center shrink-0 shadow-inner">
+                <CreditCardMini nome={melhorCartao.nome} bandeira={(melhorCartao as any).bandeira} />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Melhor cartão</p>
-                <p className="text-[12px] font-bold text-foreground truncate">{melhorCartao.nome}</p>
+                <p className="text-[12px] font-extrabold uppercase tracking-wide text-slate-500">Melhor cartão</p>
+                <p className="text-[22px] leading-tight font-extrabold text-slate-900 truncate">{melhorCartao.nome}</p>
               </div>
             </div>
-            <span className="text-[10px] text-muted-foreground shrink-0 ml-2">fecha em {melhorDays}d</span>
+            <span className="text-[14px] text-slate-500 shrink-0 ml-3">fecha em {melhorDays}d</span>
           </div>
         )}
 

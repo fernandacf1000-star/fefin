@@ -15,6 +15,7 @@ import type { Cartao } from '@/hooks/useCartoes';
 import { SUBCATEGORIA_GROUPS, detectCategoriaMacro } from '@/lib/subcategorias';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 function getMesReferenciaFatura(dataCompra: Date, cartaoSelecionado: Cartao | null): string {
   if (!cartaoSelecionado) {
@@ -228,6 +229,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
         }
         await updateLancamento.mutateAsync({ id: lancamento.id, ...fields });
         refetchAll();
+        toast.success('Lançamento atualizado', { duration: 1500 });
         onClose();
         return;
       }
@@ -267,6 +269,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
         await supabase.from('lancamentos').delete().eq('id', lancamento.id);
         await addMultiple.mutateAsync(cartas);
         refetchAll();
+        toast.success('Convertido em parcelado', { duration: 1500 });
         onClose();
         return;
       }
@@ -286,6 +289,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
         }
         await updateLancamento.mutateAsync({ id: lancamento.id, ...fields });
         refetchAll();
+        toast.success('Convertido em recorrente', { duration: 1500 });
         onClose();
         return;
       }
@@ -408,6 +412,7 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
           }
         }
         refetchAll();
+        toast.success('Parcelas atualizadas', { duration: 1500 });
         onClose();
         return;
       }
@@ -526,12 +531,14 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
           }
         }
         refetchAll();
+        toast.success('Recorrências atualizadas', { duration: 1500 });
         onClose();
         return;
       }
 
     } catch (err) {
       console.error('Erro ao salvar:', err);
+      toast.error('Erro ao salvar alterações');
     } finally {
       setSaving(false);
     }

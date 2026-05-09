@@ -115,6 +115,7 @@ export default function PaisV2() {
   const despesasAdriano = useMemo(() => despesas.filter((l) => l.adriano === true && norm(l.subcategoria_pais) === "adriano"), [despesas]);
   const despesasLuisa = useMemo(() => despesas.filter((l) => isLuisaLancamento(l)), [despesas]);
   const reembolsosPaisReceita = useMemo(() => receitas.filter((l) => l.categoria === "reembolso_pais"), [receitas]);
+  const reembolsosAdrianoReceita = useMemo(() => receitas.filter((l) => l.categoria === "reembolso_adriano"), [receitas]);
   const reembolsosLuisaReceita = useMemo(() => receitas.filter((l) => l.categoria === "reembolso_luisa"), [receitas]);
 
   const totalPagoPais = despesasPais.reduce((s, l) => s + absValue(l.valor), 0);
@@ -148,16 +149,17 @@ export default function PaisV2() {
     })
     .reduce((sum, l) => sum + absValue(l.valor), 0);
 
-  const saldoAdriano = euPagueiAdriano - elePagouAdriano;
+  const totalReembolsadoAdriano = reembolsosAdrianoReceita.reduce((sum, l) => sum + absValue(l.valor), 0);
+  const saldoAdriano = euPagueiAdriano - elePagouAdriano - totalReembolsadoAdriano;
 
   const despesasLuisaTotal = despesasLuisa.reduce((sum, l) => sum + absValue(l.valor), 0);
   const reembolsosLuisa = reembolsosLuisaReceita.reduce((sum, l) => sum + absValue(l.valor), 0);
   const luisaDeve = despesasLuisaTotal - reembolsosLuisa;
 
   const listaAtual = useMemo(() => {
-    const base = aba === "pais" ? despesasPais : [...despesasAdriano, ...despesasLuisa];
+    const base = aba === "pais" ? despesasPais : [...despesasAdriano, ...despesasLuisa, ...reembolsosAdrianoReceita];
     return [...base].sort(compareLancamentosByAmountAsc);
-  }, [aba, despesasPais, despesasAdriano, despesasLuisa]);
+  }, [aba, despesasPais, despesasAdriano, despesasLuisa, reembolsosAdrianoReceita]);
 
   const categorias = useMemo(() => {
     const map = new Map<string, number>();
@@ -214,6 +216,7 @@ export default function PaisV2() {
             <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Resumo Adriano</p>
             <SummaryRow icon={<span className="text-base">💰</span>} label="Eu paguei" value={fmt(euPagueiAdriano)} />
             <SummaryRow icon={<span className="text-base">👨</span>} label="Ele pagou" value={fmt(elePagouAdriano)} />
+            <SummaryRow icon={<RotateCcw size={15} className="text-teal-600" />} label="Reembolsado" value={`- ${fmt(totalReembolsadoAdriano)}`} valueClassName="text-teal-700" />
             <SummaryRow icon={<span className="text-base">💵</span>} label="Saldo a reembolsar" value={fmt(Math.abs(saldoAdriano))} valueClassName={saldoAdriano >= 0 ? "text-rose-600" : "text-teal-700"} />
             <SummaryRow icon={<span className="text-base">👩‍🦳</span>} label="Luísa deve" value={fmt(luisaDeve)} valueClassName="text-pink-700" />
           </Card>
@@ -233,12 +236,13 @@ export default function PaisV2() {
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Lançamentos</p>
           {isLoading ? <p className="text-sm text-slate-500">Carregando...</p> : listaAtual.length === 0 ? <EmptyState title="Nenhum lançamento" description="Não há lançamentos neste mês." /> : [...listaAtual].sort(compareLancamentosByAmountAsc).map((l) => {
             const isLuisa = isLuisaLancamento(l);
+            const isReembolsoAdriano = l.tipo === "receita" && l.categoria === "reembolso_adriano";
             const pagoPor = aba === "adriano" && !isLuisa ? getPagoPorEfetivoAdriano(l) : norm(l.pago_por);
             const vocePagou = pagoPor === "voce" || pagoPor === "fernanda" || !pagoPor;
             const valor = absValue(l.valor);
             const subcategoria = getSubcategoriaValida(l);
-            const labelCategoria = subcategoria || l.categoria_macro || l.categoria || "Sem categoria";
-            return <button key={l.id} onClick={() => setActionsLanc(l)} className="w-full flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-0 text-left"><div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0"><span>{isLuisa ? "👩‍🦳" : getEmoji(labelCategoria)}</span></div><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{l.descricao}</p><p className="text-[11px] text-slate-500">{formatDate(l.data)} · {labelCategoria}{aba === "adriano" ? isLuisa ? " · Luísa" : ` · ${vocePagou ? "eu paguei" : "ele pagou"}` : ""}</p></div><div className="text-right shrink-0"><p className="text-sm font-bold text-slate-900">{fmt(valor)}</p></div></button>;
+            const labelCategoria = isReembolsoAdriano ? "Reembolso Adriano" : subcategoria || l.categoria_macro || l.categoria || "Sem categoria";
+            return <button key={l.id} onClick={() => setActionsLanc(l)} className="w-full flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-0 text-left"><div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0"><span>{isReembolsoAdriano ? "↩️" : isLuisa ? "👩‍🦳" : getEmoji(labelCategoria)}</span></div><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-900 truncate">{l.descricao}</p><p className="text-[11px] text-slate-500">{formatDate(l.data)} · {labelCategoria}{aba === "adriano" && !isReembolsoAdriano ? isLuisa ? " · Luísa" : ` · ${vocePagou ? "eu paguei" : "ele pagou"}` : ""}</p></div><div className="text-right shrink-0"><p className={cn("text-sm font-bold", isReembolsoAdriano ? "text-teal-700" : "text-slate-900")}>{isReembolsoAdriano ? "- " : ""}{fmt(valor)}</p></div></button>;
           })}
         </Card>
       </div>

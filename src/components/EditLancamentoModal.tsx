@@ -247,7 +247,43 @@ const EditLancamentoModal = ({ open, lancamento, onClose, onSave, cartoes }: Pro
           fields.mes_referencia_fatura = mrFatura;
         }
         console.log('Campos para atualizar:', fields);
-        await updateLancamento.mutateAsync({ id: lancamento.id, ...fields });
+        
+        // Se é uma despesa com Adriano, precisamos atualizar também o espelho
+        if (!isReceitaEdit && lancamento.shared_group_id) {
+          console.log('Lançamento com Adriano detectado. shared_group_id:', lancamento.shared_group_id);
+          
+          // O numValor já é o valor TOTAL (se for espelho, já multiplicamos por 2 no display)
+          // Então ao salvar, precisamos dividir por 2 para cada lançamento do par
+          const valorParaCadaUm = numValor / 2;
+          
+          // Atualizar o lançamento atual com metade do valor
+          const fieldsComValorCorreto = { ...fields, valor: valorParaCadaUm };
+          await updateLancamento.mutateAsync({ id: lancamento.id, ...fieldsComValorCorreto });
+          console.log('Lançamento principal atualizado com valor:', valorParaCadaUm);
+          
+          // Buscar e atualizar o espelho também
+          const { data: espelhos } = await supabase
+            .from('lancamentos')
+            .select('*')
+            .eq('shared_group_id', lancamento.shared_group_id)
+            .neq('id', lancamento.id);
+          
+          console.log('Espelhos encontrados:', espelhos?.length || 0);
+          
+          if (espelhos && espelhos.length > 0) {
+            for (const espelho of espelhos) {
+              console.log('Atualizando espelho:', espelho.id);
+              const espelhoFields = { ...fields, valor: valorParaCadaUm };
+              await updateLancamento.mutateAsync({ id: espelho.id, ...espelhoFields });
+              console.log('Espelho atualizado com sucesso com valor:', valorParaCadaUm);
+            }
+          }
+        } else {
+          console.log('Lançamento simples (sem Adriano)');
+          // Lançamento simples sem Adriano - usar valor total
+          await updateLancamento.mutateAsync({ id: lancamento.id, ...fields });
+        }
+        
         refetchAll();
         toast.success('Lançamento atualizado', { duration: 1500 });
         onClose();

@@ -3,7 +3,6 @@ import { Home, Receipt, BarChart3, TrendingUp, Plus, Users, Percent, ArrowDownLe
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import NewExpenseSheet from "./NewExpenseSheet";
-import QuickEntrySheet from "./QuickEntrySheet";
 import FinaMascot from "./FinaMascot";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,11 +23,9 @@ const rightItems = navItems.slice(3);
 const TabletSidebar = ({
   onNewExpense,
   onNewIncome,
-  onQuickEntry,
 }: {
   onNewExpense: () => void;
   onNewIncome: () => void;
-  onQuickEntry: () => void;
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -85,13 +82,6 @@ const TabletSidebar = ({
           <ArrowUpRight size={16} />
           <span>Nova receita</span>
         </button>
-        <button
-          onClick={onQuickEntry}
-          className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl bg-[#6366F1]/10 text-[#6366F1] text-sm font-medium hover:bg-[#6366F1]/20 transition-colors"
-        >
-          <span className="text-base">⚡</span>
-          <span>Entrada rápida</span>
-        </button>
       </div>
 
       <div className="px-4 pb-4">
@@ -105,7 +95,6 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [expenseOpen, setExpenseOpen] = useState(false);
-  const [quickEntryOpen, setQuickEntryOpen] = useState(false);
   const [expenseInitialTipo, setExpenseInitialTipo] = useState<"despesa" | "receita">("despesa");
 
   const renderItem = (item: { icon: any; label: string; path: string }) => {
@@ -142,16 +131,7 @@ const BottomNav = () => {
       <TabletSidebar
         onNewExpense={() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); }}
         onNewIncome={() => { setExpenseInitialTipo("receita"); setExpenseOpen(true); }}
-        onQuickEntry={() => setQuickEntryOpen(true)}
       />
-
-      <button
-        onClick={() => setQuickEntryOpen(true)}
-        className="fixed bottom-[140px] right-5 z-50 md:hidden rounded-full bg-[#6366F1] px-4 py-3 text-sm font-bold text-white shadow-lg active:scale-95 transition-transform"
-        style={{ boxShadow: "0 8px 24px rgba(99,102,241,0.32)" }}
-      >
-        ⚡ Rápido
-      </button>
 
       <nav
         className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full sm:max-w-[430px] border-t md:hidden"
@@ -170,7 +150,6 @@ const BottomNav = () => {
         </div>
       </nav>
 
-      <QuickEntrySheet open={quickEntryOpen} onClose={() => setQuickEntryOpen(false)} />
       <NewExpenseSheet open={expenseOpen} onClose={() => setExpenseOpen(false)} initialTipo={expenseInitialTipo} />
     </>
   );

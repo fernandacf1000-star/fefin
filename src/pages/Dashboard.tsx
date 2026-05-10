@@ -230,23 +230,24 @@ export default function Dashboard() {
     <div className="min-h-screen pb-28 overflow-x-hidden" style={{ background: "linear-gradient(135deg, #7C5BBF 0%, #EDE8FF 100%)" }}>
       <BottomNav />
 
-      <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/fina-mascot.png" alt="Fina" style={{ width: 48, height: "auto" }} className="drop-shadow" />
-            <div>
+      <div className="max-w-lg mx-auto px-4 pt-[calc(env(safe-area-inset-top)+4.5rem)] space-y-4 relative">
+        <button
+          onClick={() => navigate("/conta")}
+          className="absolute top-[calc(env(safe-area-inset-top)+1rem)] right-4 z-20 w-11 h-11 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shadow-sm"
+          title="Perfil e Cartões"
+        >
+          <User size={18} />
+        </button>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <img src="/fina-mascot.png" alt="Fina" style={{ width: 48, height: "auto" }} className="drop-shadow shrink-0" />
+            <div className="min-w-0">
               <p className="text-[11px] text-white/70">Olá,</p>
-              <p className="text-base font-bold text-white">{firstName} 👋</p>
+              <p className="text-base font-bold text-white truncate">{firstName} 👋</p>
             </div>
-            <button
-              onClick={() => navigate("/conta")}
-              className="ml-1 w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-              title="Perfil e Cartões"
-            >
-              <User size={15} />
-            </button>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={prevMes}
               className="w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"

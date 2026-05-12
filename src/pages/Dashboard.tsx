@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Users, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp, User, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
 import CreditCardMini from "@/components/CreditCardMini";
 import { useLancamentos, calcularSaldoAdriano, getCategoriaDashboard } from "@/hooks/useLancamentos";
@@ -9,29 +8,21 @@ import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";
 import { useProfile } from "@/hooks/useProfile";
 import { useAllReembolsos } from "@/hooks/useReembolsos";
 import { getGroupEmoji } from "@/lib/subcategorias";
+import { cn } from "@/lib/utils";
 
-const fmt = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-// ── Helpers ───────────────────────────────────────────────────────────────
 function getMesRef(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 
 function getMesLabel(year: number, month: number) {
-  const label = new Date(year, month, 1).toLocaleDateString("pt-BR", {
-    month: "long",
-    year: "numeric",
-  });
+  const label = new Date(year, month, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 function normalizeKey(value: string | null | undefined): string {
-  return (value || "")
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+  return (value || "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
 const ignoredDashboardCategories = new Set([
@@ -46,39 +37,6 @@ function isPaisLancamento(l: { subcategoria_pais: string | null; adriano: boolea
   return !!subPais && subPais !== "geral" && subPais !== "adriano" && !l.adriano;
 }
 
-const emojiMapDash: Record<string, string> = {
-  Moradia: "🏘️",
-  Alimentação: "🥗",
-  Transporte: "🚗",
-  Saúde: "💊",
-  Pessoal: "💅",
-  Lazer: "🎮",
-  Investimentos: "📈",
-  Pais: "🧓",
-  Vicente: "👦",
-  "Luísa": "💗",
-  Adriano: "👨",
-  Casa: "🏠",
-  Roupas: "👗",
-  Farmácia: "💊",
-  "Compras Online": "🛒",
-  Beleza: "💄",
-  Supermercado: "🛍️",
-  Academia: "🏋️",
-  Contas: "💡",
-  "Internet/Celular": "📱",
-  "Plano de saúde": "🩺",
-  Consultas: "🩺",
-  Combustível: "⛽",
-  Estacionamento: "🅿️",
-  Restaurantes: "🍽️",
-  Presentes: "🎁",
-  Viagens: "✈️",
-  "Condomínio/IPTU": "🏢",
-  Seguro: "🛡️",
-};
-
-// ── Dashboard ─────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate();
   const [mesAtual, setMesAtual] = useState(() => {
@@ -95,35 +53,18 @@ export default function Dashboard() {
   const { data: profile } = useProfile();
   const { data: todosReembolsos = [] } = useAllReembolsos();
 
-  const nome = profile?.nome || profile?.full_name || "";
-  const firstName = nome.split(" ")[0] || "você";
+  const nome = profile?.nome || profile?.full_name || "Fernanda";
+  const firstName = nome.split(" ")[0] || "Fernanda";
 
-  const prevMes = () =>
-    setMesAtual(({ year, month }) =>
-      month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }
-    );
+  const prevMes = () => setMesAtual(({ year, month }) => (month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }));
+  const nextMes = () => setMesAtual(({ year, month }) => (month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }));
 
-  const nextMes = () =>
-    setMesAtual(({ year, month }) =>
-      month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }
-    );
-
-  // ── Totals ─────────────────────────────────────────────────────────────
   const despesas = useMemo(
-    () =>
-      lancamentos.filter(
-        (l) =>
-          l.tipo === "despesa" &&
-          !l.adriano &&
-          !ignoredDashboardCategories.has(normalizeKey(l.categoria))
-      ),
+    () => lancamentos.filter((l) => l.tipo === "despesa" && !l.adriano && !ignoredDashboardCategories.has(normalizeKey(l.categoria))),
     [lancamentos]
   );
 
-  const receitas = useMemo(
-    () => lancamentos.filter((l) => l.tipo === "receita"),
-    [lancamentos]
-  );
+  const receitas = useMemo(() => lancamentos.filter((l) => l.tipo === "receita"), [lancamentos]);
 
   const totalReembolsadoMesTabela = useMemo(() => {
     const ids = new Set(despesas.map((l) => l.id));
@@ -133,38 +74,19 @@ export default function Dashboard() {
   }, [despesas, todosReembolsos, mesRef]);
 
   const totalReembolsadoMesReceitas = useMemo(
-    () =>
-      lancamentos
-        .filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais")
-        .reduce((s, l) => s + Number(l.valor), 0),
+    () => lancamentos.filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais").reduce((s, l) => s + Number(l.valor), 0),
     [lancamentos]
   );
 
   const totalReembolsadoMes = totalReembolsadoMesTabela + totalReembolsadoMesReceitas;
-
-  const totalResgates = useMemo(
-    () =>
-      receitas
-        .filter((l) => l.categoria === "resgate_investimento")
-        .reduce((s, l) => s + Number(l.valor), 0),
+  const totalDespesasBrutas = useMemo(() => despesas.reduce((s, l) => s + Number(l.valor), 0), [despesas]);
+  const totalDespesas = useMemo(() => totalDespesasBrutas - totalReembolsadoMes, [totalDespesasBrutas, totalReembolsadoMes]);
+  const totalReceitas = useMemo(
+    () => receitas.filter((l) => l.categoria !== "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
     [receitas]
   );
-
-  const totalDespesasBrutas = useMemo(
-    () => despesas.reduce((s, l) => s + Number(l.valor), 0),
-    [despesas]
-  );
-
-  const totalDespesas = useMemo(
-    () => totalDespesasBrutas - totalReembolsadoMes,
-    [totalDespesasBrutas, totalReembolsadoMes]
-  );
-
-  const totalReceitas = useMemo(
-    () =>
-      receitas
-        .filter((l) => l.categoria !== "resgate_investimento")
-        .reduce((s, l) => s + Number(l.valor), 0),
+  const totalResgates = useMemo(
+    () => receitas.filter((l) => l.categoria === "resgate_investimento").reduce((s, l) => s + Number(l.valor), 0),
     [receitas]
   );
 
@@ -179,50 +101,30 @@ export default function Dashboard() {
     });
   }, [cartoes]);
 
-  const melhorDays = melhorCartao
-    ? getCartaoCycle(melhorCartao.dia_fechamento).daysUntilClose
-    : 0;
+  const melhorDays = melhorCartao ? getCartaoCycle(melhorCartao.dia_fechamento).daysUntilClose : 0;
 
   const porCartao = useMemo(
-    () =>
-      cartoes
-        .map((c) => ({
-          cartao: c,
-          total: lancamentos
-            .filter((l) => l.cartao_id === c.id && l.tipo === "despesa" && !l.adriano)
-            .reduce((s, l) => s + Number(l.valor), 0),
-        }))
-        .filter((x) => x.total > 0),
+    () => cartoes
+      .map((c) => ({
+        cartao: c,
+        total: lancamentos.filter((l) => l.cartao_id === c.id && l.tipo === "despesa" && !l.adriano).reduce((s, l) => s + Number(l.valor), 0),
+      }))
+      .filter((x) => x.total > 0),
     [lancamentos, cartoes]
   );
 
   const categorias = useMemo(() => {
     const map: Record<string, number> = {};
-
     despesas.forEach((l) => {
       let cat = isPaisLancamento(l) ? "Pais" : (getCategoriaDashboard(l) || "").trim();
-
-      if (!cat) {
-        if (l.subcategoria && l.subcategoria.trim()) cat = l.subcategoria.trim();
-        else if (l.categoria_macro && l.categoria_macro.trim()) cat = l.categoria_macro.trim();
-      }
-
+      if (!cat) cat = l.subcategoria?.trim() || l.categoria_macro?.trim() || "";
       if (!cat) return;
-
       const catNorm = normalizeKey(cat);
-
-      if (["despesa", "extra"].includes(catNorm)) return;
-      if (ignoredDashboardCategories.has(catNorm)) return;
-
+      if (["despesa", "extra"].includes(catNorm) || ignoredDashboardCategories.has(catNorm)) return;
       map[cat] = (map[cat] || 0) + Number(l.valor);
     });
-
     return Object.entries(map)
-      .map(([cat, valor]) => ({
-        cat,
-        valor,
-        emoji: emojiMapDash[cat] || getGroupEmoji(cat) || "📦",
-      }))
+      .map(([cat, valor]) => ({ cat, valor, emoji: getGroupEmoji(cat) || "•" }))
       .sort((a, b) => b.valor - a.valor);
   }, [despesas]);
 
@@ -230,66 +132,55 @@ export default function Dashboard() {
     <div className="min-h-screen pb-28 overflow-x-hidden" style={{ background: "linear-gradient(135deg, #7C5BBF 0%, #EDE8FF 100%)" }}>
       <BottomNav />
 
-      <div className="max-w-lg mx-auto px-4 pt-[calc(env(safe-area-inset-top)+4.5rem)] space-y-4 relative">
+      <div className="max-w-lg mx-auto px-4 pt-[calc(env(safe-area-inset-top)+1rem)] space-y-3 relative">
         <button
           onClick={() => navigate("/conta")}
-          className="absolute top-[calc(env(safe-area-inset-top)+1rem)] right-4 z-20 w-11 h-11 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shadow-sm"
+          className="absolute top-[calc(env(safe-area-inset-top)+1rem)] right-4 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shadow-sm"
           title="Perfil e Cartões"
         >
-          <User size={18} />
+          <User size={17} />
         </button>
 
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <img src="/fina-mascot.png" alt="Fina" style={{ width: 48, height: "auto" }} className="drop-shadow shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[11px] text-white/70">Olá,</p>
-              <p className="text-base font-bold text-white truncate">{firstName} 👋</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={prevMes}
-              className="w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-            >
-              <ChevronLeft size={15} />
-            </button>
-            <span className="text-xl font-bold text-white px-1 min-w-[96px] text-center">
-              {mesLabel}
-            </span>
-            <button
-              onClick={nextMes}
-              className="w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-            >
-              <ChevronRight size={15} />
-            </button>
+        <div className="flex items-center gap-3 pr-14 min-h-[76px]">
+          <img src="/fina-mascot.png" alt="Fina" style={{ width: 76, height: "auto" }} className="drop-shadow shrink-0" />
+          <div className="min-w-0">
+            <p className="text-base leading-none text-white/75">Olá,</p>
+            <p className="text-3xl leading-tight font-bold text-white whitespace-nowrap">{firstName}</p>
           </div>
         </div>
 
+        <div className="flex items-center justify-center gap-3 pt-1 pb-1">
+          <button onClick={prevMes} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0">
+            <ChevronLeft size={18} />
+          </button>
+          <span className="text-3xl sm:text-4xl font-bold text-white px-1 min-w-[220px] text-center leading-tight whitespace-nowrap">{mesLabel}</span>
+          <button onClick={nextMes} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0">
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
         {melhorCartao && (
-          <div className="bg-white/80 backdrop-blur rounded-xl px-4 py-3 flex items-center justify-between border border-purple-200/30">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-12 h-8 shrink-0 rounded-lg overflow-hidden">
-                <div className="scale-[0.6] origin-top-left -ml-1">
+          <div className="bg-white/80 backdrop-blur rounded-2xl px-5 py-3 min-h-[88px] flex items-center justify-between border border-purple-200/30 shadow-sm">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-[72px] h-[48px] shrink-0 rounded-xl overflow-hidden flex items-center justify-center">
+                <div className="scale-[0.82] origin-center">
                   <CreditCardMini nome={melhorCartao.nome} bandeira={(melhorCartao as any).bandeira} />
                 </div>
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Melhor cartão</p>
-                <p className="text-sm font-bold text-foreground truncate">{melhorCartao.nome}</p>
+                <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none">Melhor cartão</p>
+                <p className="text-xl font-bold text-foreground leading-tight mt-2 truncate">{melhorCartao.nome}</p>
               </div>
             </div>
-            <span className="text-xs text-muted-foreground shrink-0 ml-2 whitespace-nowrap">fecha em {melhorDays}d</span>
+            <span className="text-base text-muted-foreground shrink-0 ml-3 whitespace-nowrap">fecha em {melhorDays}d</span>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 pt-1">
           <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-1 border border-purple-200/30">
             <div className="flex items-center gap-1.5">
               <TrendingDown size={13} className="text-destructive" />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-                Despesas
-              </span>
+              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Despesas</span>
             </div>
             <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalDespesas)}</p>
           </div>
@@ -297,9 +188,7 @@ export default function Dashboard() {
           <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-1 border border-purple-200/30">
             <div className="flex items-center gap-1.5">
               <TrendingUp size={13} style={{ color: "#0D9488" }} />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-                Receitas
-              </span>
+              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Receitas</span>
             </div>
             <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalReceitas)}</p>
           </div>
@@ -307,29 +196,18 @@ export default function Dashboard() {
 
         {totalResgates > 0 && (
           <div className="bg-white/80 backdrop-blur rounded-xl px-4 py-3 flex items-center justify-between border border-purple-200/30">
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-              Resgates
-            </span>
+            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Resgates</span>
             <span className="text-sm font-bold text-muted-foreground">{fmt(totalResgates)}</span>
           </div>
         )}
 
         {saldoAdriano !== 0 && (
-          <div
-            className={cn(
-              "bg-white/80 backdrop-blur rounded-xl px-4 py-3 flex items-center justify-between border-l-4 border border-purple-200/30",
-              saldoAdriano > 0 ? "border-l-emerald-500" : "border-l-red-400"
-            )}
-          >
+          <div className={cn("bg-white/80 backdrop-blur rounded-xl px-4 py-3 flex items-center justify-between border-l-4 border border-purple-200/30", saldoAdriano > 0 ? "border-l-emerald-500" : "border-l-red-400")}>
             <div className="flex items-center gap-2">
               <Users size={14} className="text-muted-foreground" />
-              <span className="text-[11px] text-muted-foreground font-medium">
-                {saldoAdriano > 0 ? "Adriano te deve" : "Você deve para Adriano"}
-              </span>
+              <span className="text-[11px] text-muted-foreground font-medium">{saldoAdriano > 0 ? "Adriano te deve" : "Você deve para Adriano"}</span>
             </div>
-            <span className={cn("text-sm font-bold", saldoAdriano > 0 ? "text-emerald-600" : "text-red-500")}>
-              {fmt(Math.abs(saldoAdriano))}
-            </span>
+            <span className={cn("text-sm font-bold", saldoAdriano > 0 ? "text-emerald-600" : "text-red-500")}>{fmt(Math.abs(saldoAdriano))}</span>
           </div>
         )}
 
@@ -339,15 +217,13 @@ export default function Dashboard() {
               <Users size={14} className="text-muted-foreground" />
               <span className="text-[11px] text-muted-foreground font-medium">Contas com Adriano</span>
             </div>
-            <span className="text-sm font-medium text-emerald-600">✓ Em dia</span>
+            <span className="text-sm font-medium text-emerald-600">Em dia</span>
           </div>
         )}
 
         {porCartao.length > 0 && (
           <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-3 border border-purple-200/30">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              Faturas do mês
-            </p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Faturas do mês</p>
             <div className="space-y-2.5">
               {porCartao.map(({ cartao, total }) => (
                 <div key={cartao.id} className="flex items-center justify-between">
@@ -361,9 +237,7 @@ export default function Dashboard() {
 
         {categorias.length > 0 && (
           <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-3 border border-purple-200/30">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              Despesas por categoria
-            </p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Despesas por categoria</p>
             <div className="space-y-2.5">
               {categorias.map(({ cat, valor, emoji }) => {
                 const pct = totalDespesasBrutas > 0 ? (valor / totalDespesasBrutas) * 100 : 0;
@@ -380,10 +254,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="h-2 rounded-full bg-[#E8ECF5] overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, background: "#6366F1" }}
-                      />
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: "#6366F1" }} />
                     </div>
                   </div>
                 );
@@ -399,11 +270,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {isLoading && (
-          <div className="text-center py-12 text-sm text-muted-foreground">
-            Carregando...
-          </div>
-        )}
+        {isLoading && <div className="text-center py-12 text-sm text-muted-foreground">Carregando...</div>}
       </div>
     </div>
   );

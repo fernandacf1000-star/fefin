@@ -145,14 +145,6 @@ const BottomNav = () => {
         onQuickEntry={() => setQuickEntryOpen(true)}
       />
 
-      <button
-        onClick={() => setQuickEntryOpen(true)}
-        className="fixed bottom-[140px] right-5 z-50 md:hidden rounded-full bg-[#6366F1] px-4 py-3 text-sm font-bold text-white shadow-lg active:scale-95 transition-transform"
-        style={{ boxShadow: "0 8px 24px rgba(99,102,241,0.32)" }}
-      >
-        ⚡ Rápido
-      </button>
-
       {/* Mobile bottom nav - hidden on tablet+ */}
       <nav
         className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full sm:max-w-[430px] border-t md:hidden"

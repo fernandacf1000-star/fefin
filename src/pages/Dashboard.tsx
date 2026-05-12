@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp, User, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
 import { useLancamentos, calcularSaldoAdriano, getCategoriaDashboard } from "@/hooks/useLancamentos";
@@ -11,7 +12,6 @@ import { getGroupEmoji } from "@/lib/subcategorias";
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-// ── Helpers ───────────────────────────────────────────────────────────────
 function getMesRef(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
@@ -76,8 +76,8 @@ const emojiMapDash: Record<string, string> = {
   Seguro: "🛡️",
 };
 
-// ── Dashboard ─────────────────────────────────────────────────────────────
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [mesAtual, setMesAtual] = useState(() => {
     const now = new Date();
     const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -92,8 +92,8 @@ export default function Dashboard() {
   const { data: profile } = useProfile();
   const { data: todosReembolsos = [] } = useAllReembolsos();
 
-  const nome = profile?.nome || profile?.full_name || "";
-  const firstName = nome.split(" ")[0] || "você";
+  const nome = profile?.nome || profile?.full_name || "Fernanda";
+  const firstName = nome.split(" ")[0] || "Fernanda";
 
   const prevMes = () =>
     setMesAtual(({ year, month }) =>
@@ -105,7 +105,6 @@ export default function Dashboard() {
       month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }
     );
 
-  // ── Totals ─────────────────────────────────────────────────────────────
   const despesas = useMemo(
     () =>
       lancamentos.filter(
@@ -227,42 +226,57 @@ export default function Dashboard() {
     <div className="min-h-screen pb-28 overflow-x-hidden" style={{ background: "linear-gradient(135deg, #7C5BBF 0%, #EDE8FF 100%)" }}>
       <BottomNav />
 
-      <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/fina-mascot.png" alt="Fina" style={{ width: 48, height: "auto" }} className="drop-shadow" />
-            <div>
-              <p className="text-[11px] text-white/70">Olá,</p>
-              <p className="text-base font-bold text-white">{firstName} 👋</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={prevMes}
-              className="w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-            >
-              <ChevronLeft size={15} />
-            </button>
-            <span className="text-xl font-bold text-white px-1 min-w-[96px] text-center">
-              {mesLabel}
-            </span>
-            <button
-              onClick={nextMes}
-              className="w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
-            >
-              <ChevronRight size={15} />
-            </button>
+      <div className="max-w-lg mx-auto px-4 pt-[calc(env(safe-area-inset-top)+1rem)] space-y-3 relative">
+        <button
+          onClick={() => navigate("/conta")}
+          className="absolute top-[calc(env(safe-area-inset-top)+1rem)] right-4 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shadow-sm"
+          title="Perfil e Cartões"
+        >
+          <User size={17} />
+        </button>
+
+        <div className="flex items-center gap-3 pr-14 min-h-[76px]">
+          <img src="/fina-mascot.png" alt="Fina" style={{ width: 76, height: "auto" }} className="drop-shadow shrink-0" />
+          <div className="min-w-0">
+            <p className="text-base leading-none text-white/75">Olá,</p>
+            <p className="text-3xl leading-tight font-bold text-white whitespace-nowrap">{firstName}</p>
           </div>
         </div>
 
+        <div className="flex items-center justify-center gap-3 py-1">
+          <button
+            onClick={prevMes}
+            className="w-10 h-10 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span className="text-3xl sm:text-4xl font-bold text-white px-1 min-w-[220px] text-center leading-tight whitespace-nowrap">
+            {mesLabel}
+          </span>
+          <button
+            onClick={nextMes}
+            className="w-10 h-10 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
         {melhorCartao && (
-          <div className="flex items-center justify-between px-4 py-3 rounded-2xl bg-white/80 backdrop-blur border border-purple-200/30 w-full shadow-sm">
-            <span className="text-[12px] font-semibold text-foreground">{melhorCartao.nome}</span>
-            <span className="text-[10px] text-muted-foreground">fecha em {melhorDays}d</span>
+          <div className="bg-white/80 backdrop-blur rounded-2xl px-5 py-3 min-h-[88px] flex items-center justify-between border border-purple-200/30 shadow-sm">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-[72px] h-[48px] shrink-0 rounded-xl bg-gradient-to-br from-blue-600 to-blue-400 shadow-inner flex items-center justify-center text-white text-[10px] font-bold uppercase tracking-wide">
+                {melhorCartao.nome}
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none">Melhor cartão</p>
+                <p className="text-xl font-bold text-foreground leading-tight mt-2 truncate">{melhorCartao.nome}</p>
+              </div>
+            </div>
+            <span className="text-base text-muted-foreground shrink-0 ml-3 whitespace-nowrap">fecha em {melhorDays}d</span>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 pt-1">
           <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-1 border border-purple-200/30">
             <div className="flex items-center gap-1.5">
               <TrendingDown size={13} className="text-destructive" />

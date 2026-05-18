@@ -223,129 +223,129 @@ export default function Dashboard() {
   }, [despesas]);
 
   return (
-    <div className="min-h-screen pb-28 overflow-x-hidden" style={{ background: "linear-gradient(135deg, #7C5BBF 0%, #EDE8FF 100%)" }}>
+    <div className="min-h-screen pb-24 overflow-x-hidden" style={{ background: "linear-gradient(135deg, #7C5BBF 0%, #EDE8FF 100%)" }}>
       <BottomNav />
 
-      <div className="max-w-lg mx-auto px-4 pt-[calc(env(safe-area-inset-top)+1rem)] space-y-3 relative">
+      <div className="max-w-lg mx-auto px-3 pt-[calc(env(safe-area-inset-top)+0.6rem)] space-y-2.5 relative">
         <button
           onClick={() => navigate("/conta")}
-          className="absolute top-[calc(env(safe-area-inset-top)+1rem)] right-4 z-20 w-10 h-10 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shadow-sm"
+          className="absolute top-[calc(env(safe-area-inset-top)+0.6rem)] right-3 z-20 w-9 h-9 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shadow-sm"
           title="Perfil e Cartões"
         >
-          <User size={17} />
+          <User size={16} />
         </button>
 
-        <div className="flex items-center gap-3 pr-14 min-h-[76px]">
-          <img src="/fina-mascot.png" alt="Fina" style={{ width: 76, height: "auto" }} className="drop-shadow shrink-0" />
+        <div className="flex items-center gap-2.5 pr-12 min-h-[58px]">
+          <img src="/fina-mascot.png" alt="Fina" style={{ width: 58, height: "auto" }} className="drop-shadow shrink-0" />
           <div className="min-w-0">
-            <p className="text-base leading-none text-white/75">Olá,</p>
-            <p className="text-3xl leading-tight font-bold text-white whitespace-nowrap">{firstName}</p>
+            <p className="text-sm leading-none text-white/75">Olá,</p>
+            <p className="text-2xl leading-tight font-bold text-white whitespace-nowrap">{firstName}</p>
           </div>
         </div>
 
-        <div className="flex items-center justify-center gap-3 py-1">
+        <div className="flex items-center justify-center gap-2 py-0.5">
           <button
             onClick={prevMes}
-            className="w-10 h-10 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
+            className="w-9 h-9 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={17} />
           </button>
-          <span className="text-3xl sm:text-4xl font-bold text-white px-1 min-w-[220px] text-center leading-tight whitespace-nowrap">
+          <span className="text-2xl sm:text-3xl font-bold text-white px-1 min-w-[170px] text-center leading-tight whitespace-nowrap">
             {mesLabel}
           </span>
           <button
             onClick={nextMes}
-            className="w-10 h-10 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
+            className="w-9 h-9 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={17} />
           </button>
         </div>
 
         {melhorCartao && (
-          <div className="bg-white/80 backdrop-blur rounded-2xl px-5 py-3 min-h-[88px] flex items-center justify-between border border-purple-200/30 shadow-sm">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="w-[72px] h-[48px] shrink-0 rounded-xl bg-gradient-to-br from-blue-600 to-blue-400 shadow-inner flex items-center justify-center text-white text-[10px] font-bold uppercase tracking-wide">
+          <div className="bg-white/82 backdrop-blur rounded-xl px-4 py-2.5 min-h-[68px] flex items-center justify-between border border-purple-200/30 shadow-sm">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-[58px] h-[38px] shrink-0 rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 shadow-inner flex items-center justify-center text-white text-[9px] font-bold uppercase tracking-wide">
                 {melhorCartao.nome}
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none">Melhor cartão</p>
-                <p className="text-xl font-bold text-foreground leading-tight mt-2 truncate">{melhorCartao.nome}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none">Melhor cartão</p>
+                <p className="text-lg font-bold text-foreground leading-tight mt-1 truncate">{melhorCartao.nome}</p>
               </div>
             </div>
-            <span className="text-base text-muted-foreground shrink-0 ml-3 whitespace-nowrap">fecha em {melhorDays}d</span>
+            <span className="text-sm text-muted-foreground shrink-0 ml-2 whitespace-nowrap">fecha em {melhorDays}d</span>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-1 border border-purple-200/30">
+        <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+          <div className="bg-white/82 backdrop-blur rounded-xl p-3 space-y-1 border border-purple-200/30 overflow-hidden">
             <div className="flex items-center gap-1.5">
-              <TrendingDown size={13} className="text-destructive" />
+              <TrendingDown size={12} className="text-destructive" />
               <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
                 Despesas
               </span>
             </div>
-            <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalDespesas)}</p>
+            <p className="text-[clamp(1rem,4.4vw,1.15rem)] font-bold text-foreground leading-tight whitespace-nowrap tabular-nums">{fmt(totalDespesas)}</p>
           </div>
 
-          <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-1 border border-purple-200/30">
+          <div className="bg-white/82 backdrop-blur rounded-xl p-3 space-y-1 border border-purple-200/30 overflow-hidden">
             <div className="flex items-center gap-1.5">
-              <TrendingUp size={13} style={{ color: "#0D9488" }} />
+              <TrendingUp size={12} style={{ color: "#0D9488" }} />
               <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
                 Receitas
               </span>
             </div>
-            <p className="text-lg font-bold text-foreground leading-tight">{fmt(totalReceitas)}</p>
+            <p className="text-[clamp(1rem,4.4vw,1.15rem)] font-bold text-foreground leading-tight whitespace-nowrap tabular-nums">{fmt(totalReceitas)}</p>
           </div>
         </div>
 
         {totalResgates > 0 && (
-          <div className="bg-white/80 backdrop-blur rounded-xl px-4 py-3 flex items-center justify-between border border-purple-200/30">
+          <div className="bg-white/82 backdrop-blur rounded-xl px-3.5 py-2.5 flex items-center justify-between border border-purple-200/30">
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
               Resgates
             </span>
-            <span className="text-sm font-bold text-muted-foreground">{fmt(totalResgates)}</span>
+            <span className="text-sm font-bold text-muted-foreground tabular-nums">{fmt(totalResgates)}</span>
           </div>
         )}
 
         {saldoAdriano !== 0 && (
           <div
             className={cn(
-              "bg-white/80 backdrop-blur rounded-xl px-4 py-3 flex items-center justify-between border-l-4 border border-purple-200/30",
+              "bg-white/82 backdrop-blur rounded-xl px-3.5 py-2.5 flex items-center justify-between border-l-4 border border-purple-200/30",
               saldoAdriano > 0 ? "border-l-emerald-500" : "border-l-red-400"
             )}
           >
-            <div className="flex items-center gap-2">
-              <Users size={14} className="text-muted-foreground" />
-              <span className="text-[11px] text-muted-foreground font-medium">
+            <div className="flex items-center gap-2 min-w-0">
+              <Users size={14} className="text-muted-foreground shrink-0" />
+              <span className="text-[12px] text-muted-foreground font-medium truncate">
                 {saldoAdriano > 0 ? "Adriano te deve" : "Você deve para Adriano"}
               </span>
             </div>
-            <span className={cn("text-sm font-bold", saldoAdriano > 0 ? "text-emerald-600" : "text-red-500")}>
+            <span className={cn("text-base font-bold tabular-nums whitespace-nowrap ml-2", saldoAdriano > 0 ? "text-emerald-600" : "text-red-500")}>
               {fmt(Math.abs(saldoAdriano))}
             </span>
           </div>
         )}
 
         {saldoAdriano === 0 && lancamentos.some((l) => l.adriano) && (
-          <div className="bg-white/80 backdrop-blur rounded-xl px-4 py-3 flex items-center justify-between border border-purple-200/30">
-            <div className="flex items-center gap-2">
-              <Users size={14} className="text-muted-foreground" />
-              <span className="text-[11px] text-muted-foreground font-medium">Contas com Adriano</span>
+          <div className="bg-white/82 backdrop-blur rounded-xl px-3.5 py-2.5 flex items-center justify-between border border-purple-200/30">
+            <div className="flex items-center gap-2 min-w-0">
+              <Users size={14} className="text-muted-foreground shrink-0" />
+              <span className="text-[12px] text-muted-foreground font-medium truncate">Contas com Adriano</span>
             </div>
-            <span className="text-sm font-medium text-emerald-600">✓ Em dia</span>
+            <span className="text-sm font-medium text-emerald-600 whitespace-nowrap ml-2">✓ Em dia</span>
           </div>
         )}
 
         {porCartao.length > 0 && (
-          <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-3 border border-purple-200/30">
+          <div className="bg-white/82 backdrop-blur rounded-xl p-3.5 space-y-2.5 border border-purple-200/30">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
               Faturas do mês
             </p>
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {porCartao.map(({ cartao, total }) => (
-                <div key={cartao.id} className="flex items-center justify-between">
-                  <span className="text-sm text-foreground font-medium">{cartao.nome}</span>
-                  <span className="text-sm font-bold text-foreground">{fmt(total)}</span>
+                <div key={cartao.id} className="flex items-center justify-between gap-3">
+                  <span className="text-[13px] text-foreground font-medium truncate">{cartao.nome}</span>
+                  <span className="text-[13px] font-bold text-foreground tabular-nums whitespace-nowrap">{fmt(total)}</span>
                 </div>
               ))}
             </div>
@@ -353,26 +353,26 @@ export default function Dashboard() {
         )}
 
         {categorias.length > 0 && (
-          <div className="bg-white/80 backdrop-blur rounded-xl p-4 space-y-3 border border-purple-200/30">
+          <div className="bg-white/82 backdrop-blur rounded-xl p-3.5 space-y-2.5 border border-purple-200/30">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
               Despesas por categoria
             </p>
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {categorias.map(({ cat, valor, emoji }) => {
                 const pct = totalDespesasBrutas > 0 ? (valor / totalDespesasBrutas) * 100 : 0;
                 return (
                   <div key={cat} className="space-y-1">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-sm shrink-0">{emoji}</span>
-                        <span className="text-[12px] font-medium text-foreground truncate">{cat}</span>
+                        <span className="text-[13px] shrink-0">{emoji}</span>
+                        <span className="text-[11px] font-medium text-foreground truncate">{cat}</span>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className="text-[10px] text-muted-foreground">{pct.toFixed(0)}%</span>
-                        <span className="text-[12px] font-bold text-foreground">{fmt(valor)}</span>
+                      <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                        <span className="text-[10px] text-muted-foreground tabular-nums">{pct.toFixed(0)}%</span>
+                        <span className="text-[11px] font-bold text-foreground tabular-nums whitespace-nowrap">{fmt(valor)}</span>
                       </div>
                     </div>
-                    <div className="h-2 rounded-full bg-[#E8ECF5] overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-[#E8ECF5] overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{ width: `${pct}%`, background: "#6366F1" }}
@@ -386,8 +386,8 @@ export default function Dashboard() {
         )}
 
         {!isLoading && lancamentos.length === 0 && (
-          <div className="flex flex-col items-center py-16 space-y-3">
-            <img src="/fina-mascot.png" alt="Fina" style={{ width: 48, height: "auto" }} className="drop-shadow" />
+          <div className="flex flex-col items-center py-14 space-y-3">
+            <img src="/fina-mascot.png" alt="Fina" style={{ width: 44, height: "auto" }} className="drop-shadow" />
             <p className="text-sm text-muted-foreground">Nenhum lançamento neste mês</p>
           </div>
         )}

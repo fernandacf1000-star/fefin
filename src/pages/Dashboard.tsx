@@ -223,129 +223,122 @@ export default function Dashboard() {
   }, [despesas]);
 
   return (
-    <div className="min-h-screen pb-24 overflow-x-hidden" style={{ background: "linear-gradient(135deg, #7C5BBF 0%, #EDE8FF 100%)" }}>
+    <div className="relative min-h-screen overflow-x-hidden bg-[#F7F3FF] pb-24">
+      <div className="absolute inset-x-0 top-0 h-[210px] bg-gradient-to-br from-[#7C5BBF] to-[#B69BE8]" />
       <BottomNav />
 
-      <div className="max-w-lg mx-auto px-3 pt-[calc(env(safe-area-inset-top)+0.6rem)] space-y-2.5 relative">
+      <div className="relative z-10 max-w-lg mx-auto px-4 pt-[calc(env(safe-area-inset-top)+0.45rem)] space-y-2">
         <button
           onClick={() => navigate("/conta")}
-          className="absolute top-[calc(env(safe-area-inset-top)+0.6rem)] right-3 z-20 w-9 h-9 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shadow-sm"
+          className="absolute top-[calc(env(safe-area-inset-top)+0.45rem)] right-4 z-20 w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-colors shadow-sm"
           title="Perfil e Cartões"
         >
-          <User size={16} />
+          <User size={15} />
         </button>
 
-        <div className="flex items-center gap-2.5 pr-12 min-h-[58px]">
-          <img src="/fina-mascot.png" alt="Fina" style={{ width: 58, height: "auto" }} className="drop-shadow shrink-0" />
+        <div className="flex items-center gap-2.5 pr-11 min-h-[48px]">
+          <img src="/fina-mascot.png" alt="Fina" style={{ width: 48, height: "auto" }} className="drop-shadow shrink-0" />
           <div className="min-w-0">
-            <p className="text-sm leading-none text-white/75">Olá,</p>
-            <p className="text-2xl leading-tight font-bold text-white whitespace-nowrap">{firstName}</p>
+            <p className="text-xs leading-none text-white/80">Olá,</p>
+            <p className="text-xl leading-tight font-bold text-white whitespace-nowrap">{firstName}</p>
           </div>
         </div>
 
         <div className="flex items-center justify-center gap-2 py-0.5">
           <button
             onClick={prevMes}
-            className="w-9 h-9 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
+            className="w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
           >
-            <ChevronLeft size={17} />
+            <ChevronLeft size={16} />
           </button>
-          <span className="text-2xl sm:text-3xl font-bold text-white px-1 min-w-[170px] text-center leading-tight whitespace-nowrap">
+          <span className="text-xl sm:text-2xl font-bold text-white px-1 min-w-[148px] text-center leading-tight whitespace-nowrap">
             {mesLabel}
           </span>
           <button
             onClick={nextMes}
-            className="w-9 h-9 rounded-full bg-white/20 backdrop-blur border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
+            className="w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
           >
-            <ChevronRight size={17} />
+            <ChevronRight size={16} />
           </button>
         </div>
 
         {melhorCartao && (
-          <div className="bg-white/82 backdrop-blur rounded-xl px-4 py-2.5 min-h-[68px] flex items-center justify-between border border-purple-200/30 shadow-sm">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-[58px] h-[38px] shrink-0 rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 shadow-inner flex items-center justify-center text-white text-[9px] font-bold uppercase tracking-wide">
+          <div className="bg-white rounded-2xl px-3 py-2 min-h-[58px] flex items-center justify-between border border-white shadow-sm">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-[48px] h-[32px] shrink-0 rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 shadow-inner flex items-center justify-center text-white text-[8px] font-bold uppercase tracking-wide">
                 {melhorCartao.nome}
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground leading-none">Melhor cartão</p>
-                <p className="text-lg font-bold text-foreground leading-tight mt-1 truncate">{melhorCartao.nome}</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-500 leading-none">Melhor cartão</p>
+                <p className="text-base font-bold text-slate-900 leading-tight mt-1 truncate">{melhorCartao.nome}</p>
               </div>
             </div>
-            <span className="text-sm text-muted-foreground shrink-0 ml-2 whitespace-nowrap">fecha em {melhorDays}d</span>
+            <span className="text-xs text-slate-500 shrink-0 ml-2 whitespace-nowrap">fecha em {melhorDays}d</span>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2.5 pt-0.5">
-          <div className="bg-white/82 backdrop-blur rounded-xl p-3 space-y-1 border border-purple-200/30 overflow-hidden">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-white rounded-2xl p-2.5 space-y-0.5 border border-white shadow-sm overflow-hidden">
             <div className="flex items-center gap-1.5">
-              <TrendingDown size={12} className="text-destructive" />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-                Despesas
-              </span>
+              <TrendingDown size={11} className="text-destructive" />
+              <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wide">Despesas</span>
             </div>
-            <p className="text-[clamp(1rem,4.4vw,1.15rem)] font-bold text-foreground leading-tight whitespace-nowrap tabular-nums">{fmt(totalDespesas)}</p>
+            <p className="text-[clamp(0.95rem,4vw,1.05rem)] font-bold text-slate-900 leading-tight whitespace-nowrap tabular-nums">{fmt(totalDespesas)}</p>
           </div>
 
-          <div className="bg-white/82 backdrop-blur rounded-xl p-3 space-y-1 border border-purple-200/30 overflow-hidden">
+          <div className="bg-white rounded-2xl p-2.5 space-y-0.5 border border-white shadow-sm overflow-hidden">
             <div className="flex items-center gap-1.5">
-              <TrendingUp size={12} style={{ color: "#0D9488" }} />
-              <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-                Receitas
-              </span>
+              <TrendingUp size={11} style={{ color: "#0D9488" }} />
+              <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wide">Receitas</span>
             </div>
-            <p className="text-[clamp(1rem,4.4vw,1.15rem)] font-bold text-foreground leading-tight whitespace-nowrap tabular-nums">{fmt(totalReceitas)}</p>
+            <p className="text-[clamp(0.95rem,4vw,1.05rem)] font-bold text-slate-900 leading-tight whitespace-nowrap tabular-nums">{fmt(totalReceitas)}</p>
           </div>
         </div>
 
         {totalResgates > 0 && (
-          <div className="bg-white/82 backdrop-blur rounded-xl px-3.5 py-2.5 flex items-center justify-between border border-purple-200/30">
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-              Resgates
-            </span>
-            <span className="text-sm font-bold text-muted-foreground tabular-nums">{fmt(totalResgates)}</span>
+          <div className="bg-white rounded-2xl px-3 py-2 flex items-center justify-between border border-white shadow-sm">
+            <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wide">Resgates</span>
+            <span className="text-xs font-bold text-slate-600 tabular-nums">{fmt(totalResgates)}</span>
           </div>
         )}
 
         {saldoAdriano !== 0 && (
           <div
             className={cn(
-              "bg-white/82 backdrop-blur rounded-xl px-3.5 py-2.5 flex items-center justify-between border-l-4 border border-purple-200/30",
+              "bg-white rounded-2xl px-3 py-2 flex items-center justify-between border-l-4 border-white shadow-sm",
               saldoAdriano > 0 ? "border-l-emerald-500" : "border-l-red-400"
             )}
           >
             <div className="flex items-center gap-2 min-w-0">
-              <Users size={14} className="text-muted-foreground shrink-0" />
-              <span className="text-[12px] text-muted-foreground font-medium truncate">
+              <Users size={13} className="text-slate-500 shrink-0" />
+              <span className="text-[11px] text-slate-500 font-medium truncate">
                 {saldoAdriano > 0 ? "Adriano te deve" : "Você deve para Adriano"}
               </span>
             </div>
-            <span className={cn("text-base font-bold tabular-nums whitespace-nowrap ml-2", saldoAdriano > 0 ? "text-emerald-600" : "text-red-500")}>
+            <span className={cn("text-sm font-bold tabular-nums whitespace-nowrap ml-2", saldoAdriano > 0 ? "text-emerald-600" : "text-red-500")}>
               {fmt(Math.abs(saldoAdriano))}
             </span>
           </div>
         )}
 
         {saldoAdriano === 0 && lancamentos.some((l) => l.adriano) && (
-          <div className="bg-white/82 backdrop-blur rounded-xl px-3.5 py-2.5 flex items-center justify-between border border-purple-200/30">
+          <div className="bg-white rounded-2xl px-3 py-2 flex items-center justify-between border border-white shadow-sm">
             <div className="flex items-center gap-2 min-w-0">
-              <Users size={14} className="text-muted-foreground shrink-0" />
-              <span className="text-[12px] text-muted-foreground font-medium truncate">Contas com Adriano</span>
+              <Users size={13} className="text-slate-500 shrink-0" />
+              <span className="text-[11px] text-slate-500 font-medium truncate">Contas com Adriano</span>
             </div>
-            <span className="text-sm font-medium text-emerald-600 whitespace-nowrap ml-2">✓ Em dia</span>
+            <span className="text-xs font-medium text-emerald-600 whitespace-nowrap ml-2">✓ Em dia</span>
           </div>
         )}
 
         {porCartao.length > 0 && (
-          <div className="bg-white/82 backdrop-blur rounded-xl p-3.5 space-y-2.5 border border-purple-200/30">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              Faturas do mês
-            </p>
-            <div className="space-y-2">
+          <div className="bg-white rounded-2xl p-3 space-y-2 border border-white shadow-sm">
+            <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Faturas do mês</p>
+            <div className="space-y-1.5">
               {porCartao.map(({ cartao, total }) => (
                 <div key={cartao.id} className="flex items-center justify-between gap-3">
-                  <span className="text-[13px] text-foreground font-medium truncate">{cartao.nome}</span>
-                  <span className="text-[13px] font-bold text-foreground tabular-nums whitespace-nowrap">{fmt(total)}</span>
+                  <span className="text-xs text-slate-900 font-medium truncate">{cartao.nome}</span>
+                  <span className="text-xs font-bold text-slate-900 tabular-nums whitespace-nowrap">{fmt(total)}</span>
                 </div>
               ))}
             </div>
@@ -353,23 +346,21 @@ export default function Dashboard() {
         )}
 
         {categorias.length > 0 && (
-          <div className="bg-white/82 backdrop-blur rounded-xl p-3.5 space-y-2.5 border border-purple-200/30">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-              Despesas por categoria
-            </p>
-            <div className="space-y-2">
+          <div className="bg-white rounded-2xl p-3 space-y-2 border border-white shadow-sm">
+            <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Despesas por categoria</p>
+            <div className="space-y-1.5">
               {categorias.map(({ cat, valor, emoji }) => {
                 const pct = totalDespesasBrutas > 0 ? (valor / totalDespesasBrutas) * 100 : 0;
                 return (
-                  <div key={cat} className="space-y-1">
+                  <div key={cat} className="space-y-0.5">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-[13px] shrink-0">{emoji}</span>
-                        <span className="text-[11px] font-medium text-foreground truncate">{cat}</span>
+                        <span className="text-xs shrink-0">{emoji}</span>
+                        <span className="text-[11px] font-medium text-slate-900 truncate">{cat}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                        <span className="text-[10px] text-muted-foreground tabular-nums">{pct.toFixed(0)}%</span>
-                        <span className="text-[11px] font-bold text-foreground tabular-nums whitespace-nowrap">{fmt(valor)}</span>
+                        <span className="text-[9px] text-slate-500 tabular-nums">{pct.toFixed(0)}%</span>
+                        <span className="text-[11px] font-bold text-slate-900 tabular-nums whitespace-nowrap">{fmt(valor)}</span>
                       </div>
                     </div>
                     <div className="h-1.5 rounded-full bg-[#E8ECF5] overflow-hidden">

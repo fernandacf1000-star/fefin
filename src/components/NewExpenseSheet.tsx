@@ -17,23 +17,27 @@ function getMesReferenciaFatura(dataCompra: Date, cartaoSelecionado: Cartao | nu
     return `${dataCompra.getFullYear()}-${String(dataCompra.getMonth() + 1).padStart(2, "0")}`;
   }
 
+  const diaFecha = cartaoSelecionado.dia_fechamento;
   const diaVence = cartaoSelecionado.dia_vencimento;
 
-  // Corte = 8 dias corridos antes do vencimento
-  // Encontra o próximo vencimento cujo corte >= dataCompra
+  // Encontra o próximo fechamento >= dataCompra e retorna o mês do vencimento correspondente
   for (let offset = 0; offset <= 2; offset++) {
-    const candidateVenc = new Date(dataCompra.getFullYear(), dataCompra.getMonth() + offset, diaVence);
-    const corte = new Date(candidateVenc);
-    corte.setDate(corte.getDate() - 8);
+    const fechamento = new Date(dataCompra.getFullYear(), dataCompra.getMonth() + offset, diaFecha);
 
-    if (dataCompra <= corte) {
-      return `${candidateVenc.getFullYear()}-${String(candidateVenc.getMonth() + 1).padStart(2, "0")}`;
+    if (dataCompra <= fechamento) {
+      // Vencimento: se diaVence > diaFecha → mesmo mês do fechamento; senão → mês seguinte
+      const vencimento = diaVence > diaFecha
+        ? new Date(dataCompra.getFullYear(), dataCompra.getMonth() + offset, diaVence)
+        : new Date(dataCompra.getFullYear(), dataCompra.getMonth() + offset + 1, diaVence);
+      return `${vencimento.getFullYear()}-${String(vencimento.getMonth() + 1).padStart(2, "0")}`;
     }
   }
 
   // Fallback (não deve ocorrer na prática)
-  const fallback = new Date(dataCompra.getFullYear(), dataCompra.getMonth() + 2, diaVence);
-  return `${fallback.getFullYear()}-${String(fallback.getMonth() + 1).padStart(2, "0")}`;
+  const vencFallback = diaVence > diaFecha
+    ? new Date(dataCompra.getFullYear(), dataCompra.getMonth() + 2, diaVence)
+    : new Date(dataCompra.getFullYear(), dataCompra.getMonth() + 3, diaVence);
+  return `${vencFallback.getFullYear()}-${String(vencFallback.getMonth() + 1).padStart(2, "0")}`;
 }
 
 const RECEITA_CATS = ["Salário", "Reembolso Pais", "Reembolso Adriano", "Reembolso Luísa", "Resgate"] as const;

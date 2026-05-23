@@ -27,21 +27,12 @@ const Splash = ({ onFinish }: { onFinish: () => void }) => {
         }}
       />
 
-      {/* Mascote */}
-      <div className="relative z-10 splash-float">
-        <img
-          src="/fina-mascot.png"
-          alt="Fina"
-          style={{ width: 180, height: 'auto', filter: 'drop-shadow(0 8px 24px rgba(107,78,168,0.35))' }}
-        />
-      </div>
-
       {/* Logo */}
-      <div className="relative z-10 mt-4 splash-logo-in">
+      <div className="relative z-10 splash-logo-in">
         <img
           src="/fina-logo.png"
           alt="Fina"
-          style={{ width: 200, height: 'auto', filter: 'drop-shadow(0 4px 12px rgba(107,78,168,0.25))' }}
+          style={{ width: 220, height: 'auto', filter: 'drop-shadow(0 4px 12px rgba(107,78,168,0.25))' }}
         />
       </div>
 
@@ -72,11 +63,6 @@ const Splash = ({ onFinish }: { onFinish: () => void }) => {
       </div>
 
       <style>{`
-        .splash-float { animation: splashFloat 3s ease-in-out infinite; }
-        @keyframes splashFloat {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
         .splash-logo-in { animation: splashFadeUp 0.7s ease-out both; }
         @keyframes splashFadeUp {
           from { opacity: 0; transform: translateY(12px); }

@@ -16,12 +16,24 @@ function getMesReferenciaFatura(dataCompra: Date, cartaoSelecionado: Cartao | nu
   if (!cartaoSelecionado) {
     return `${dataCompra.getFullYear()}-${String(dataCompra.getMonth() + 1).padStart(2, "0")}`;
   }
-  const diaCompra = dataCompra.getDate();
-  const diaFecha = cartaoSelecionado.dia_fechamento;
-  const diaVence = cartaoSelecionado.dia_vencimento ?? diaFecha + 5;
-  const mesFechamento = diaCompra <= diaFecha ? dataCompra : addMonths(dataCompra, 1);
-  const mesVencimento = diaVence > diaFecha ? mesFechamento : addMonths(mesFechamento, 1);
-  return `${mesVencimento.getFullYear()}-${String(mesVencimento.getMonth() + 1).padStart(2, "0")}`;
+
+  const diaVence = cartaoSelecionado.dia_vencimento;
+
+  // Corte = 8 dias corridos antes do vencimento
+  // Encontra o próximo vencimento cujo corte >= dataCompra
+  for (let offset = 0; offset <= 2; offset++) {
+    const candidateVenc = new Date(dataCompra.getFullYear(), dataCompra.getMonth() + offset, diaVence);
+    const corte = new Date(candidateVenc);
+    corte.setDate(corte.getDate() - 8);
+
+    if (dataCompra <= corte) {
+      return `${candidateVenc.getFullYear()}-${String(candidateVenc.getMonth() + 1).padStart(2, "0")}`;
+    }
+  }
+
+  // Fallback (não deve ocorrer na prática)
+  const fallback = new Date(dataCompra.getFullYear(), dataCompra.getMonth() + 2, diaVence);
+  return `${fallback.getFullYear()}-${String(fallback.getMonth() + 1).padStart(2, "0")}`;
 }
 
 const RECEITA_CATS = ["Salário", "Reembolso Pais", "Reembolso Adriano", "Reembolso Luísa", "Resgate"] as const;

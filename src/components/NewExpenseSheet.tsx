@@ -182,17 +182,27 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
         const parcelamentoId = crypto.randomUUID?.() ?? `${Date.now()}`;
         const parcelamentoIdAdriano = isAdriano ? (crypto.randomUUID?.() ?? `${Date.now()}-a`) : null;
         const rows: any[] = [];
+
+        // Calcula mes_referencia da 1ª parcela com base na data da compra
+        // As demais avançam +1 mês a partir daí (cada parcela cai em uma fatura diferente)
+        const mesRef1 = getMesReferenciaFatura(data, cartaoObj);
+        const [mesRef1Year, mesRef1Month] = mesRef1.split("-").map(Number);
+
         for (let i = 0; i < nParcelas; i++) {
+          // Data da parcela: mesmo dia da compra, mês avança +i (ajustado para meses curtos)
           const d = addMonths(data, i);
-          // FIX Bug 1: ajusta o dia para meses mais curtos (ex: compra dia 31, fev tem 28 dias)
           const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
           const actualDay = Math.min(data.getDate(), daysInMonth);
           const dataStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(actualDay).padStart(2,"0")}`;
-          const dataObj = new Date(d.getFullYear(), d.getMonth(), actualDay);
+
+          // mes_referencia: 1ª parcela usa a fatura calculada, demais avançam +i meses
+          const mesRefDate = new Date(mesRef1Year, mesRef1Month - 1 + i, 1);
+          const mesRefStr = `${mesRefDate.getFullYear()}-${String(mesRefDate.getMonth()+1).padStart(2,"0")}`;
+
           rows.push({
             ...baseRow,
             data: dataStr,
-            mes_referencia: getMesReferenciaFatura(dataObj, cartaoObj),
+            mes_referencia: mesRefStr,
             parcela_atual: i + 1, parcela_total: nParcelas,
             is_parcelado: true, parcelamento_id: parcelamentoId,
             recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
@@ -201,7 +211,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
             rows.push({
               ...adrianoRow,
               data: dataStr,
-              mes_referencia: getMesReferenciaFatura(dataObj, cartaoObj),
+              mes_referencia: mesRefStr,
               parcela_atual: i + 1, parcela_total: nParcelas,
               is_parcelado: true, parcelamento_id: parcelamentoIdAdriano,
               recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,

@@ -450,6 +450,26 @@ export function useDeleteFutureParcelamento() {
       parcelamento_id: string;
       fromDate: string;
     }) => {
+      // FIX Bug 2: busca IDs das parcelas afetadas para deletar espelhos Adriano em cascata
+      const { data: originsData } = await supabase
+        .from("lancamentos")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("parcelamento_id", parcelamento_id)
+        .gte("data", fromDate);
+
+      const originIds = (originsData || []).map((r: any) => r.id);
+
+      // Deleta espelhos Adriano vinculados (lancamento_origem_id)
+      if (originIds.length > 0) {
+        const { error: mirrorError } = await supabase
+          .from("lancamentos")
+          .delete()
+          .in("lancamento_origem_id", originIds);
+        if (mirrorError) throw mirrorError;
+      }
+
+      // Deleta as parcelas principais
       const { error } = await supabase
         .from("lancamentos")
         .delete()
@@ -469,6 +489,25 @@ export function useDeleteAllParcelamento() {
 
   return useMutation({
     mutationFn: async (parcelamento_id: string) => {
+      // FIX Bug 2: busca IDs de todas as parcelas para deletar espelhos Adriano em cascata
+      const { data: originsData } = await supabase
+        .from("lancamentos")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("parcelamento_id", parcelamento_id);
+
+      const originIds = (originsData || []).map((r: any) => r.id);
+
+      // Deleta espelhos Adriano vinculados (lancamento_origem_id)
+      if (originIds.length > 0) {
+        const { error: mirrorError } = await supabase
+          .from("lancamentos")
+          .delete()
+          .in("lancamento_origem_id", originIds);
+        if (mirrorError) throw mirrorError;
+      }
+
+      // Deleta as parcelas principais
       const { error } = await supabase
         .from("lancamentos")
         .delete()
@@ -493,6 +532,26 @@ export function useDeleteFutureRecorrencia() {
       recorrencia_pai_id: string;
       fromDate: string;
     }) => {
+      // FIX Bug 2: busca IDs das recorrências afetadas para deletar espelhos Adriano em cascata
+      const { data: originsData } = await supabase
+        .from("lancamentos")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("recorrencia_pai_id", recorrencia_pai_id)
+        .gte("data", fromDate);
+
+      const originIds = (originsData || []).map((r: any) => r.id);
+
+      // Deleta espelhos Adriano vinculados (lancamento_origem_id)
+      if (originIds.length > 0) {
+        const { error: mirrorError } = await supabase
+          .from("lancamentos")
+          .delete()
+          .in("lancamento_origem_id", originIds);
+        if (mirrorError) throw mirrorError;
+      }
+
+      // Deleta as recorrências principais
       const { error } = await supabase
         .from("lancamentos")
         .delete()
@@ -512,6 +571,25 @@ export function useDeleteAllRecorrencia() {
 
   return useMutation({
     mutationFn: async (recorrencia_pai_id: string) => {
+      // FIX Bug 2: busca IDs de todas as recorrências para deletar espelhos Adriano em cascata
+      const { data: originsData } = await supabase
+        .from("lancamentos")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("recorrencia_pai_id", recorrencia_pai_id);
+
+      const originIds = (originsData || []).map((r: any) => r.id);
+
+      // Deleta espelhos Adriano vinculados (lancamento_origem_id)
+      if (originIds.length > 0) {
+        const { error: mirrorError } = await supabase
+          .from("lancamentos")
+          .delete()
+          .in("lancamento_origem_id", originIds);
+        if (mirrorError) throw mirrorError;
+      }
+
+      // Deleta as recorrências principais
       const { error } = await supabase
         .from("lancamentos")
         .delete()

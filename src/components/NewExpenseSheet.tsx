@@ -184,11 +184,15 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
         const rows: any[] = [];
         for (let i = 0; i < nParcelas; i++) {
           const d = addMonths(data, i);
-          const dataStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(data.getDate()).padStart(2,"0")}`;
+          // FIX Bug 1: ajusta o dia para meses mais curtos (ex: compra dia 31, fev tem 28 dias)
+          const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+          const actualDay = Math.min(data.getDate(), daysInMonth);
+          const dataStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(actualDay).padStart(2,"0")}`;
+          const dataObj = new Date(d.getFullYear(), d.getMonth(), actualDay);
           rows.push({
             ...baseRow,
             data: dataStr,
-            mes_referencia: getMesReferenciaFatura(d, cartaoObj),
+            mes_referencia: getMesReferenciaFatura(dataObj, cartaoObj),
             parcela_atual: i + 1, parcela_total: nParcelas,
             is_parcelado: true, parcelamento_id: parcelamentoId,
             recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,
@@ -197,7 +201,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
             rows.push({
               ...adrianoRow,
               data: dataStr,
-              mes_referencia: getMesReferenciaFatura(d, cartaoObj),
+              mes_referencia: getMesReferenciaFatura(dataObj, cartaoObj),
               parcela_atual: i + 1, parcela_total: nParcelas,
               is_parcelado: true, parcelamento_id: parcelamentoIdAdriano,
               recorrente: false, dia_recorrencia: null, recorrencia_ate: null, recorrencia_pai_id: null,

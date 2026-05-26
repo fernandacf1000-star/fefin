@@ -183,8 +183,8 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
         const parcelamentoIdAdriano = isAdriano ? (crypto.randomUUID?.() ?? `${Date.now()}-a`) : null;
         const rows: any[] = [];
 
-        // Calcula mes_referencia da 1ª parcela com base na data da compra
-        // As demais avançam +1 mês a partir daí (cada parcela cai em uma fatura diferente)
+        // Calcula fatura da 1ª parcela com base na data da compra original.
+        // As demais avançam +1 mês a partir daí — cada parcela cai em uma fatura diferente.
         const mesRef1 = getMesReferenciaFatura(data, cartaoObj);
         const [mesRef1Year, mesRef1Month] = mesRef1.split("-").map(Number);
 
@@ -195,7 +195,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
           const actualDay = Math.min(data.getDate(), daysInMonth);
           const dataStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(actualDay).padStart(2,"0")}`;
 
-          // mes_referencia: 1ª parcela usa a fatura calculada, demais avançam +i meses
+          // mes_referencia: 1ª parcela usa fatura calculada, demais avançam +i meses
           const mesRefDate = new Date(mesRef1Year, mesRef1Month - 1 + i, 1);
           const mesRefStr = `${mesRefDate.getFullYear()}-${String(mesRefDate.getMonth()+1).padStart(2,"0")}`;
 

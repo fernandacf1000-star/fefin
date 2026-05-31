@@ -77,7 +77,7 @@ const Graficos = () => {
       const receitas = mesLancs
         .filter((l) => l.tipo === "receita" && l.categoria !== "resgate_investimento")
         .reduce((s, l) => s + Number(l.valor), 0);
-      const despesas = mesLancs.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0);
+      const despesas = mesLancs.filter((l) => l.tipo === "despesa" && !l.adriano).reduce((s, l) => s + Number(l.valor), 0);
       const resgates = mesLancs
         .filter((l) => l.tipo === "receita" && l.categoria === "resgate_investimento")
         .reduce((s, l) => s + Number(l.valor), 0);
@@ -144,7 +144,7 @@ const Graficos = () => {
   );
   const totalDespesas = useMemo(
     () =>
-      lancamentos.filter((l) => l.tipo === "despesa").reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,
+      lancamentos.filter((l) => l.tipo === "despesa" && !l.adriano).reduce((s, l) => s + Number(l.valor), 0) - totalReembolsadoMes,
     [lancamentos, totalReembolsadoMes],
   );
 

@@ -6,6 +6,7 @@ import { useCartoes } from "@/hooks/useCartoes";
 import { useAddLancamento, useAddMultipleLancamentos } from "@/hooks/useLancamentos";
 import { detectSubcategoria, detectCategoriaMacro } from "@/lib/subcategorias";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -68,70 +69,20 @@ async function parseExpenseWithAI(
   imageBase64: string | null,
   cartoes: Array<{ id: string; nome: string; bandeira: string }>
 ): Promise<ParsedExpense> {
-  const cartoesList = cartoes.map(c => `${c.nome} (${c.bandeira})`).join(", ");
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const systemPrompt = `Você é um parser especializado em notificações de cartão de crédito e comprovantes brasileiros.
-Extraia as informações e retorne APENAS JSON válido, sem markdown, sem explicações.
-
-Cartões disponíveis no app: ${cartoesList || "Mastercard, Visa"}
-Data de hoje: ${today}
-
-Nomes conhecidos:
-- FERNANDA CAVALHEIRO = dono: "eu"
-- ADRIANO = dono: "adriano"  
-- AMELIA / AMÉLIA / AMELIA CAVALHEIRO = dono: "pais"
-- ANTONIO / ANTÔNIO = dono: "pais"
-- Qualquer outro nome = dono: "pais"
-
-Retorne exatamente este JSON:
-{
-  "descricao": "nome do estabelecimento limpo (ex: The One Personnalité, iFood, Uber)",
-  "valor": 163.23,
-  "data": "2026-06-09",
-  "cartaoNome": "nome do cartão dos disponíveis, ou null se não identificado",
-  "owner": "eu | pais | adriano",
-  "ownerRaw": "nome como apareceu no texto, ou null",
-  "formaPagamento": "credito | dinheiro",
-  "subcategoria": "categoria mais provável: Restaurante, Supermercado, Farmácia, Transporte, Saúde, Lazer, Vestuário, Streaming, Assinatura, Casa, Eletrônicos, Viagem, ou null",
-  "confidence": "high | medium | low"
-}`;
-
-  const userContent: any[] = [];
-
-  if (imageBase64) {
-    userContent.push({
-      type: "image",
-      source: { type: "base64", media_type: "image/jpeg", data: imageBase64 }
-    });
-  }
-
-  userContent.push({
-    type: "text",
-    text: text || "Extraia as informações da imagem acima."
-  });
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "anthropic-dangerous-direct-browser-access": "true",
+  const { data, error } = await supabase.functions.invoke("parse-expense", {
+    body: {
+      text,
+      imageBase64,
+      cartoes: cartoes.map(c => ({ nome: c.nome, bandeira: c.bandeira })),
     },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userContent }],
-    }),
   });
 
-  if (!response.ok) throw new Error("Erro na API de IA");
+  if (error) throw new Error(error.message || "Erro na função de IA");
+  if (data?.error) throw new Error(data.error);
 
-  const data = await response.json();
-  const raw = data.content?.[0]?.text || "";
-
-  const clean = raw.replace(/```json|```/g, "").trim();
-  const parsed = JSON.parse(clean);
+  const parsed = data;
 
   // Normaliza owner
   const ownerMap: Record<string, Owner> = {

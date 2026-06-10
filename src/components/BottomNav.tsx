@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Home, Receipt, BarChart3, TrendingUp, Plus, Users, Percent, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { Home, Receipt, BarChart3, TrendingUp, Plus, Users, Percent, ArrowDownLeft, ArrowUpRight, Sparkles, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import NewExpenseSheet from "./NewExpenseSheet";
 import QuickEntrySheet from "./QuickEntrySheet";
+import SmartImportSheet from "./SmartImportSheet";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { APP_VERSION } from "@/version";
@@ -25,10 +26,12 @@ const TabletSidebar = ({
   onNewExpense,
   onNewIncome,
   onQuickEntry,
+  onSmartImport,
 }: {
   onNewExpense: () => void;
   onNewIncome: () => void;
   onQuickEntry: () => void;
+  onSmartImport: () => void;
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -84,6 +87,13 @@ const TabletSidebar = ({
           <span>Nova receita</span>
         </button>
         <button
+          onClick={onSmartImport}
+          className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+        >
+          <Sparkles size={16} />
+          <span>Importar notificação</span>
+        </button>
+        <button
           onClick={onQuickEntry}
           className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl bg-[#6366F1]/10 text-[#6366F1] text-sm font-medium hover:bg-[#6366F1]/20 transition-colors"
         >
@@ -105,7 +115,14 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [quickEntryOpen, setQuickEntryOpen] = useState(false);
+  const [smartImportOpen, setSmartImportOpen] = useState(false);
   const [expenseInitialTipo, setExpenseInitialTipo] = useState<"despesa" | "receita">("despesa");
+  const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+
+  const handlePlusOption = (fn: () => void) => {
+    setPlusMenuOpen(false);
+    fn();
+  };
 
   const renderItem = (item: { icon: any; label: string; path: string }) => {
     const isActive = location.pathname === item.path;
@@ -143,7 +160,74 @@ const BottomNav = () => {
         onNewExpense={() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); }}
         onNewIncome={() => { setExpenseInitialTipo("receita"); setExpenseOpen(true); }}
         onQuickEntry={() => setQuickEntryOpen(true)}
+        onSmartImport={() => setSmartImportOpen(true)}
       />
+
+      {/* Plus menu overlay */}
+      {plusMenuOpen && (
+        <div
+          className="fixed inset-0 z-[55] bg-black/20 backdrop-blur-sm md:hidden"
+          onClick={() => setPlusMenuOpen(false)}
+        />
+      )}
+
+      {/* Plus menu popup */}
+      <div
+        className={cn(
+          "fixed z-[56] left-1/2 -translate-x-1/2 md:hidden transition-all duration-200",
+          plusMenuOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none translate-y-2"
+        )}
+        style={{ bottom: "calc(80px + env(safe-area-inset-bottom, 16px))" }}
+      >
+        <div className="flex flex-col items-center gap-2 bg-white rounded-3xl shadow-2xl border border-border px-4 py-3 min-w-[220px]">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Nova entrada</p>
+
+          {/* Importar notificação */}
+          <button
+            onClick={() => handlePlusOption(() => setSmartImportOpen(true))}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-primary/8 hover:bg-primary/15 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-full gradient-emerald flex items-center justify-center shrink-0">
+              <Sparkles size={16} className="text-white" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold text-foreground">Importar notificação</p>
+              <p className="text-[10px] text-muted-foreground">Cole SMS ou tire foto</p>
+            </div>
+          </button>
+
+          <div className="w-full h-px bg-border/60" />
+
+          {/* Despesa manual */}
+          <button
+            onClick={() => handlePlusOption(() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); })}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl hover:bg-secondary transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+              <ArrowDownLeft size={15} className="text-red-500" />
+            </div>
+            <p className="text-sm font-medium text-foreground">Despesa manual</p>
+          </button>
+
+          {/* Receita manual */}
+          <button
+            onClick={() => handlePlusOption(() => { setExpenseInitialTipo("receita"); setExpenseOpen(true); })}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl hover:bg-secondary transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+              <ArrowUpRight size={15} className="text-green-500" />
+            </div>
+            <p className="text-sm font-medium text-foreground">Receita manual</p>
+          </button>
+        </div>
+
+        {/* Seta apontando para o botão + */}
+        <div className="flex justify-center mt-1">
+          <div className="w-3 h-3 bg-white border-b border-r border-border rotate-45 -mt-2" />
+        </div>
+      </div>
 
       {/* Mobile bottom nav - hidden on tablet+ */}
       <nav
@@ -153,11 +237,17 @@ const BottomNav = () => {
         <div className="flex justify-around items-center w-full px-0" style={{ padding: "8px 0" }}>
           {leftItems.map(renderItem)}
           <button
-            onClick={() => { setExpenseInitialTipo("despesa"); setExpenseOpen(true); }}
-            className="w-[52px] h-[52px] -mt-6 rounded-full gradient-emerald flex items-center justify-center shadow-lg active:scale-95 transition-transform shrink-0"
-            style={{ boxShadow: "0 4px 16px rgba(99,102,241,0.4)" }}
+            onClick={() => setPlusMenuOpen(v => !v)}
+            className={cn(
+              "w-[52px] h-[52px] -mt-6 rounded-full flex items-center justify-center shadow-lg active:scale-95 transition-all shrink-0",
+              plusMenuOpen ? "bg-muted" : "gradient-emerald"
+            )}
+            style={{ boxShadow: plusMenuOpen ? "none" : "0 4px 16px rgba(99,102,241,0.4)" }}
           >
-            <Plus size={24} className="text-white" />
+            {plusMenuOpen
+              ? <X size={22} className="text-muted-foreground" />
+              : <Plus size={24} className="text-white" />
+            }
           </button>
           {rightItems.map(renderItem)}
         </div>
@@ -165,6 +255,7 @@ const BottomNav = () => {
 
       <QuickEntrySheet open={quickEntryOpen} onClose={() => setQuickEntryOpen(false)} />
       <NewExpenseSheet open={expenseOpen} onClose={() => setExpenseOpen(false)} initialTipo={expenseInitialTipo} />
+      <SmartImportSheet open={smartImportOpen} onClose={() => setSmartImportOpen(false)} />
     </>
   );
 };

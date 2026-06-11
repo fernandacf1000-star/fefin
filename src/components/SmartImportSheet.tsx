@@ -1,10 +1,10 @@
 import React, { useState, useRef } from "react";
-import { X, Sparkles, Camera, Image as ImageIcon, ClipboardPaste, Check, AlertCircle, Loader2 } from "lucide-react";
+import { X, Sparkles, Image as ImageIcon, ClipboardPaste, Check, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parse } from "date-fns";
 import { useCartoes } from "@/hooks/useCartoes";
 import { useAddLancamento, useAddMultipleLancamentos } from "@/hooks/useLancamentos";
-import { detectSubcategoria, detectCategoriaMacro } from "@/lib/subcategorias";
+import { detectSubcategoria, detectCategoriaMacro, ALL_SUBCATEGORIAS, getSubcategoriaEmoji, getSubcategoriaGroup } from "@/lib/subcategorias";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -146,7 +146,6 @@ const SmartImportSheet = ({ open, onClose }: Props) => {
   const [parsed, setParsed] = useState<ParsedExpense | null>(null);
   const [editedParsed, setEditedParsed] = useState<ParsedExpense | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
   const reset = () => {
@@ -316,8 +315,6 @@ const SmartImportSheet = ({ open, onClose }: Props) => {
               />
 
               {/* Foto */}
-              <input ref={fileRef} type="file" accept="image/*" capture="environment"
-                className="hidden" onChange={handleImage} />
               <input ref={galleryRef} type="file" accept="image/*"
                 className="hidden" onChange={handleImage} />
 
@@ -332,22 +329,13 @@ const SmartImportSheet = ({ open, onClose }: Props) => {
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => fileRef.current?.click()}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-border text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
-                  >
-                    <Camera size={16} />
-                    Tirar foto
-                  </button>
-                  <button
-                    onClick={() => galleryRef.current?.click()}
-                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-border text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
-                  >
-                    <ImageIcon size={16} />
-                    Galeria
-                  </button>
-                </div>
+                <button
+                  onClick={() => galleryRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-border text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
+                >
+                  <ImageIcon size={16} />
+                  Adicionar imagem
+                </button>
               )}
 
               {error && (
@@ -441,7 +429,27 @@ const SmartImportSheet = ({ open, onClose }: Props) => {
                 />
               </div>
 
-              {/* Data */}
+              {/* Categoria */}
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground">Categoria</p>
+                <select
+                  value={editedParsed.subcategoria || ""}
+                  onChange={e => setEditedParsed(p => p ? { ...p, subcategoria: e.target.value || null } : p)}
+                  className="w-full bg-[#E8ECF5] border-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 appearance-none"
+                >
+                  <option value="">— Sem categoria —</option>
+                  {ALL_SUBCATEGORIAS.map(s => (
+                    <option key={s} value={s}>
+                      {getSubcategoriaEmoji(s)} {getSubcategoriaGroup(s)} &gt; {s}
+                    </option>
+                  ))}
+                </select>
+                {editedParsed.subcategoria && (
+                  <p className="text-[10px] text-muted-foreground px-1">
+                    Categoria sugerida pela IA — toque para alterar
+                  </p>
+                )}
+              </div>
               <div className="space-y-1.5">
                 <p className="text-xs text-muted-foreground">Data</p>
                 <input
@@ -527,7 +535,7 @@ const SmartImportSheet = ({ open, onClose }: Props) => {
               <div className={cn("rounded-xl p-3 border-2", ownerColor(editedParsed.owner))}>
                 <p className="text-xs font-semibold">{ownerLabel(editedParsed.owner)}</p>
                 <p className="text-lg font-bold mt-0.5">{fmt(editedParsed.valor)}</p>
-                <p className="text-xs opacity-80">{editedParsed.descricao} · {editedParsed.data}</p>
+                <p className="text-xs opacity-80">{editedParsed.descricao} · {editedParsed.data}{editedParsed.subcategoria ? ` · ${getSubcategoriaEmoji(editedParsed.subcategoria)} ${editedParsed.subcategoria}` : " · sem categoria"}</p>
                 {editedParsed.owner === "adriano" && (
                   <p className="text-[10px] mt-1 opacity-70">
                     Será dividido: {fmt(editedParsed.valor / 2)} para você + {fmt(editedParsed.valor / 2)} para Adriano

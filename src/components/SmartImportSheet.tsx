@@ -309,8 +309,8 @@ const SmartImportSheet = ({ open, onClose }: Props) => {
               <textarea
                 value={text}
                 onChange={e => setText(e.target.value)}
-                placeholder={"Cole aqui a mensagem do banco:\n\nEx: Compra aprovada no THE ONE PERSONNALITE p/ AMELIA CAVALHEIRO valor RS 163,23 em 09/06/2026"}
-                rows={5}
+                placeholder="Cole aqui a mensagem do banco..."
+                rows={4}
                 className="w-full bg-[#E8ECF5] rounded-2xl px-4 py-3 text-sm text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-muted-foreground/60"
               />
 

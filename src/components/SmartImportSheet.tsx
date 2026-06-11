@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { X, Sparkles, Camera, ClipboardPaste, Check, AlertCircle, Loader2 } from "lucide-react";
+import { X, Sparkles, Camera, Image as ImageIcon, ClipboardPaste, Check, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parse } from "date-fns";
 import { useCartoes } from "@/hooks/useCartoes";
@@ -147,6 +147,7 @@ const SmartImportSheet = ({ open, onClose }: Props) => {
   const [editedParsed, setEditedParsed] = useState<ParsedExpense | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
 
   const reset = () => {
     setStep("input"); setText(""); setImageBase64(null);
@@ -317,6 +318,8 @@ const SmartImportSheet = ({ open, onClose }: Props) => {
               {/* Foto */}
               <input ref={fileRef} type="file" accept="image/*" capture="environment"
                 className="hidden" onChange={handleImage} />
+              <input ref={galleryRef} type="file" accept="image/*"
+                className="hidden" onChange={handleImage} />
 
               {imagePreview ? (
                 <div className="relative rounded-2xl overflow-hidden">
@@ -329,13 +332,22 @@ const SmartImportSheet = ({ open, onClose }: Props) => {
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-border text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
-                >
-                  <Camera size={16} />
-                  Tirar foto do comprovante
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-border text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
+                  >
+                    <Camera size={16} />
+                    Tirar foto
+                  </button>
+                  <button
+                    onClick={() => galleryRef.current?.click()}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-border text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
+                  >
+                    <ImageIcon size={16} />
+                    Galeria
+                  </button>
+                </div>
               )}
 
               {error && (

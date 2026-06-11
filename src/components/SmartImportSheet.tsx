@@ -20,6 +20,7 @@ interface ParsedExpense {
   owner: Owner;
   ownerRaw: string | null;
   formaPagamento: "credito" | "dinheiro";
+  parcelas: number | null;
   subcategoria: string | null;
   confidence: "high" | "medium" | "low";
   rawText: string;
@@ -98,6 +99,7 @@ async function parseExpenseWithAI(
     owner: ownerMap[parsed.owner] || "eu",
     ownerRaw: parsed.ownerRaw || null,
     formaPagamento: parsed.formaPagamento === "dinheiro" ? "dinheiro" : "credito",
+    parcelas: typeof parsed.parcelas === "number" && parsed.parcelas > 1 ? parsed.parcelas : null,
     subcategoria: parsed.subcategoria || null,
     confidence: parsed.confidence || "medium",
     rawText: text,
@@ -204,42 +206,61 @@ const SmartImportSheet = ({ open, onClose }: Props) => {
       const isPais = editedParsed.owner === "pais";
       const isAdriano = editedParsed.owner === "adriano";
       const subPais = isPais ? "Pais" : null;
-      const valorPrincipal = isAdriano ? editedParsed.valor / 2 : editedParsed.valor;
 
-      const baseRow = {
-        descricao: editedParsed.descricao,
-        valor: valorPrincipal,
-        tipo: "despesa" as const,
-        categoria: "despesa",
-        subcategoria_pais: subPais,
-        subcategoria: editedParsed.subcategoria || null,
-        categoria_macro: macro,
-        data: editedParsed.data,
-        mes_referencia: mesRef,
-        parcela_atual: null, parcela_total: null,
-        is_parcelado: false, parcelamento_id: null,
-        pago: false,
-        forma_pagamento: editedParsed.formaPagamento,
-        cartao_id: cartaoId,
-        recorrente: false, dia_recorrencia: null,
-        recorrencia_ate: null, recorrencia_pai_id: null,
-        adriano: false, shared_group_id: null, shared_role: null,
-        pago_por: "voce" as const,
+      const nParcelas = editedParsed.parcelas && editedParsed.parcelas > 1 ? editedParsed.parcelas : 1;
+      const isParcelado = nParcelas > 1;
+      const parcelamentoId = isParcelado ? crypto.randomUUID() : null;
+      const valorParcela = editedParsed.valor / nParcelas;
+      const valorPorPessoa = isAdriano ? valorParcela / 2 : valorParcela;
+
+      // Avança mes_referencia N meses a partir do mesRef base
+      const addMonths = (yyyyMm: string, n: number): string => {
+        const [y, m] = yyyyMm.split("-").map(Number);
+        const d = new Date(y, m - 1 + n, 1);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       };
 
-      if (isAdriano) {
-        const adrianoRow = {
-          ...baseRow,
-          valor: editedParsed.valor / 2,
-          subcategoria_pais: "Adriano",
-          adriano: true,
+      const rows: any[] = [];
+      for (let i = 1; i <= nParcelas; i++) {
+        const base = {
+          descricao: editedParsed.descricao,
+          valor: valorPorPessoa,
+          tipo: "despesa" as const,
+          categoria: "despesa",
+          subcategoria_pais: subPais,
+          subcategoria: editedParsed.subcategoria || null,
+          categoria_macro: macro,
+          data: editedParsed.data,
+          mes_referencia: addMonths(mesRef, i - 1),
+          parcela_atual: isParcelado ? i : null,
+          parcela_total: isParcelado ? nParcelas : null,
+          is_parcelado: isParcelado,
+          parcelamento_id: parcelamentoId,
+          pago: false,
+          forma_pagamento: editedParsed.formaPagamento,
+          cartao_id: cartaoId,
+          recorrente: false, dia_recorrencia: null,
+          recorrencia_ate: null, recorrencia_pai_id: null,
+          adriano: false, shared_group_id: null, shared_role: null,
+          pago_por: "voce" as const,
         };
-        await addMultiple.mutateAsync([baseRow, adrianoRow] as any);
-      } else {
-        await addLancamento.mutateAsync(baseRow as any);
+        rows.push(base);
+        if (isAdriano) {
+          rows.push({ ...base, subcategoria_pais: "Adriano", adriano: true });
+        }
       }
 
-      toast.success(`✅ "${editedParsed.descricao}" registrada!`);
+      if (rows.length === 1) {
+        await addLancamento.mutateAsync(rows[0] as any);
+      } else {
+        await addMultiple.mutateAsync(rows as any);
+      }
+
+      toast.success(
+        isParcelado
+          ? `✅ "${editedParsed.descricao}" — ${nParcelas}x de ${valorParcela.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} registrada!`
+          : `✅ "${editedParsed.descricao}" registrada!`
+      );
       handleClose();
     } catch (e: any) {
       toast.error(e.message || "Erro ao salvar");
@@ -417,6 +438,44 @@ const SmartImportSheet = ({ open, onClose }: Props) => {
                   onChange={e => setEditedParsed(p => p ? { ...p, data: e.target.value } : p)}
                   className="w-full bg-[#E8ECF5] border-0 rounded-xl px-4 py-2.5 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
+              </div>
+
+              {/* Parcelas */}
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground">Parcelamento</p>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1 p-1 rounded-xl bg-[#E8ECF5] flex-1">
+                    <button
+                      onClick={() => setEditedParsed(p => p ? { ...p, parcelas: null } : p)}
+                      className={cn("flex-1 py-2 rounded-lg text-xs font-semibold transition-all",
+                        !editedParsed.parcelas ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
+                      À vista
+                    </button>
+                    <button
+                      onClick={() => setEditedParsed(p => p ? { ...p, parcelas: p.parcelas || 2 } : p)}
+                      className={cn("flex-1 py-2 rounded-lg text-xs font-semibold transition-all",
+                        editedParsed.parcelas ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
+                      Parcelado
+                    </button>
+                  </div>
+                  {editedParsed.parcelas && (
+                    <div className="relative w-24">
+                      <input
+                        type="number" min={2} max={48}
+                        value={editedParsed.parcelas}
+                        onChange={e => setEditedParsed(p => p ? { ...p, parcelas: Math.max(2, parseInt(e.target.value) || 2) } : p)}
+                        className="w-full bg-[#E8ECF5] border-0 rounded-xl px-3 py-2 text-sm font-bold text-foreground text-center focus:outline-none focus:ring-2 focus:ring-primary/40"
+                        inputMode="numeric"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">x</span>
+                    </div>
+                  )}
+                </div>
+                {editedParsed.parcelas && editedParsed.parcelas > 1 && (
+                  <p className="text-[10px] text-muted-foreground px-1">
+                    {editedParsed.parcelas}x de {(editedParsed.valor / editedParsed.parcelas).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} · total {editedParsed.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  </p>
+                )}
               </div>
 
               {/* Cartão */}

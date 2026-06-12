@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp, User, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import BottomNav from "@/components/BottomNav";
-import { useLancamentos, calcularSaldoAdriano, getCategoriaDashboard } from "@/hooks/useLancamentos";
+import { useLancamentos, getCategoriaDashboard } from "@/hooks/useLancamentos";
 import { useCartoes, getCartaoCycle } from "@/hooks/useCartoes";
 import { useProfile } from "@/hooks/useProfile";
 import { useAllReembolsos } from "@/hooks/useReembolsos";
@@ -164,21 +164,6 @@ export default function Dashboard() {
     [receitas]
   );
 
-  const saldoAdriano = useMemo(() => calcularSaldoAdriano(lancamentos), [lancamentos]);
-
-  const melhorCartao = useMemo(() => {
-    if (!cartoes.length) return null;
-    return cartoes.reduce((best, c) => {
-      const { daysUntilClose: d } = getCartaoCycle(c.dia_fechamento);
-      const { daysUntilClose: bd } = getCartaoCycle(best.dia_fechamento);
-      return d > bd ? c : best;
-    });
-  }, [cartoes]);
-
-  const melhorDays = melhorCartao
-    ? getCartaoCycle(melhorCartao.dia_fechamento).daysUntilClose
-    : 0;
-
   const porCartao = useMemo(
     () =>
       cartoes
@@ -222,145 +207,150 @@ export default function Dashboard() {
       .sort((a, b) => b.valor - a.valor);
   }, [despesas]);
 
+  const hoje = new Date();
+  const isCurrentMonth = hoje.getFullYear() === mesAtual.year && hoje.getMonth() === mesAtual.month;
+  const diasRestantes = isCurrentMonth
+    ? new Date(mesAtual.year, mesAtual.month + 1, 0).getDate() - hoje.getDate()
+    : null;
+
+  const sobrou = totalReceitas - totalDespesas;
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#F7F3FF] pb-24">
-      <div className="absolute inset-x-0 top-0 h-[210px] bg-gradient-to-br from-[#7C5BBF] to-[#B69BE8]" />
+    <div className="relative min-h-screen overflow-x-hidden pb-28" style={{ background: "linear-gradient(178deg,#F2F3FD 0%,#FBFBFE 30%)" }}>
       <BottomNav />
 
-      <div className="relative z-10 max-w-lg mx-auto px-4 pt-[calc(env(safe-area-inset-top)+0.45rem)] space-y-2">
+      <div className="relative z-10 max-w-lg mx-auto px-4 pt-[calc(env(safe-area-inset-top)+0.8rem)] space-y-3">
+
+        {/* Perfil */}
         <button
           onClick={() => navigate("/conta")}
-          className="absolute top-[calc(env(safe-area-inset-top)+0.45rem)] right-4 z-20 w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-colors shadow-sm"
+          className="absolute top-[calc(env(safe-area-inset-top)+0.8rem)] right-4 z-20 w-8 h-8 rounded-full bg-white border border-[#EEEFF7] flex items-center justify-center text-[#6366F1] shadow-sm"
           title="Perfil e Cartões"
         >
-          <User size={15} />
+          <User size={14} />
         </button>
 
-        <div className="flex items-center gap-2.5 pr-11 min-h-[48px]">
-          <img src="/fina-mascot.png" alt="Fina" style={{ width: 48, height: "auto" }} className="drop-shadow shrink-0" />
-          <div className="min-w-0">
-            <p className="text-xs leading-none text-white/80">Olá,</p>
-            <p className="text-xl leading-tight font-bold text-white whitespace-nowrap">{firstName}</p>
+        {/* Topo */}
+        <div className="text-center pt-1">
+          <p className="text-xs text-[#8B8FA8]">Olá, {firstName} 👋</p>
+          <div className="flex items-center justify-center gap-2 mt-0.5">
+            <button onClick={prevMes} className="w-7 h-7 rounded-full bg-white border border-[#EEEFF7] flex items-center justify-center text-[#9CA0B8] shadow-sm shrink-0">
+              <ChevronLeft size={14} />
+            </button>
+            <h1 className="text-[22px] font-bold text-[#22253A] leading-tight min-w-[150px]">{mesLabel}</h1>
+            <button onClick={nextMes} className="w-7 h-7 rounded-full bg-white border border-[#EEEFF7] flex items-center justify-center text-[#9CA0B8] shadow-sm shrink-0">
+              <ChevronRight size={14} />
+            </button>
           </div>
+          {diasRestantes !== null && diasRestantes > 0 && (
+            <span className="inline-block mt-1.5 text-[10.5px] font-semibold text-[#6366F1] bg-[#EAEAFE] rounded-full px-3 py-1">
+              faltam {diasRestantes} dias para o mês acabar
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center justify-center gap-2 py-0.5">
-          <button
-            onClick={prevMes}
-            className="w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <span className="text-xl sm:text-2xl font-bold text-white px-1 min-w-[148px] text-center leading-tight whitespace-nowrap">
-            {mesLabel}
-          </span>
-          <button
-            onClick={nextMes}
-            className="w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/40 flex items-center justify-center text-white hover:bg-white/30 transition-colors shrink-0"
-          >
-            <ChevronRight size={16} />
-          </button>
+        {/* Herói: Sobrou */}
+        <div className="bg-white rounded-[22px] px-4 py-5 text-center shadow-[0_3px_14px_rgba(99,102,241,0.08)]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#9CA0B8]">
+            {isCurrentMonth ? "Sobrou até agora" : "Sobrou no mês"}
+          </p>
+          <p className={cn(
+            "text-[32px] font-semibold leading-tight mt-1.5 tabular-nums tracking-tight",
+            sobrou >= 0 ? "text-[#22253A]" : "text-[#D26358]"
+          )}>
+            {sobrou >= 0 && <span className="text-[#3D8B5F]">+</span>}{fmt(sobrou)}
+          </p>
+          <div className="flex mt-4 pt-3.5 border-t border-[#F0F1F8]">
+            <div className="flex-1 border-r border-[#F0F1F8]">
+              <p className="text-[10px] font-semibold text-[#9CA0B8]">↑ Entrou</p>
+              <p className="text-[14.5px] font-semibold text-[#3D8B5F] tabular-nums mt-0.5">{fmt(totalReceitas)}</p>
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] font-semibold text-[#9CA0B8]">↓ Saiu</p>
+              <p className="text-[14.5px] font-semibold text-[#D26358] tabular-nums mt-0.5">{fmt(totalDespesas)}</p>
+            </div>
+          </div>
+          {totalResgates > 0 && (
+            <p className="text-[10px] text-[#9CA0B8] mt-2.5">
+              + {fmt(totalResgates)} em resgates de investimento
+            </p>
+          )}
         </div>
 
-        {melhorCartao && (
-          <div className="bg-white rounded-2xl px-3 py-2 min-h-[58px] flex items-center justify-between border border-white shadow-sm">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-[48px] h-[32px] shrink-0 rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 shadow-inner flex items-center justify-center text-white text-[8px] font-bold uppercase tracking-wide">
-                {melhorCartao.nome}
-              </div>
-              <div className="min-w-0">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-500 leading-none">Melhor cartão</p>
-                <p className="text-base font-bold text-slate-900 leading-tight mt-1 truncate">{melhorCartao.nome}</p>
-              </div>
-            </div>
-            <span className="text-xs text-slate-500 shrink-0 ml-2 whitespace-nowrap">fecha em {melhorDays}d</span>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-2">
-          <div className="bg-white rounded-2xl p-2.5 space-y-0.5 border border-white shadow-sm overflow-hidden">
-            <div className="flex items-center gap-1.5">
-              <TrendingDown size={11} className="text-destructive" />
-              <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wide">Despesas</span>
-            </div>
-            <p className="text-[clamp(0.95rem,4vw,1.05rem)] font-bold text-slate-900 leading-tight whitespace-nowrap tabular-nums">{fmt(totalDespesas)}</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-2.5 space-y-0.5 border border-white shadow-sm overflow-hidden">
-            <div className="flex items-center gap-1.5">
-              <TrendingUp size={11} style={{ color: "#0D9488" }} />
-              <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wide">Receitas</span>
-            </div>
-            <p className="text-[clamp(0.95rem,4vw,1.05rem)] font-bold text-slate-900 leading-tight whitespace-nowrap tabular-nums">{fmt(totalReceitas)}</p>
-          </div>
-        </div>
-
-        {totalResgates > 0 && (
-          <div className="bg-white rounded-2xl px-3 py-2 flex items-center justify-between border border-white shadow-sm">
-            <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-wide">Resgates</span>
-            <span className="text-xs font-bold text-slate-600 tabular-nums">{fmt(totalResgates)}</span>
-          </div>
-        )}
-
+        {/* Faturas */}
         {porCartao.length > 0 && (
-          <div className="bg-white rounded-2xl p-3 space-y-2 border border-white shadow-sm">
-            <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Faturas do mês</p>
-            <div className="space-y-1.5">
-              {porCartao.map(({ cartao, total }) => (
-                <div key={cartao.id} className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-slate-900 font-medium truncate">{cartao.nome}</span>
-                  <span className="text-xs font-bold text-slate-900 tabular-nums whitespace-nowrap">{fmt(total)}</span>
+          <div className="bg-white rounded-[22px] px-4 py-4 shadow-[0_2px_10px_rgba(99,102,241,0.06)]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#9CA0B8] mb-2">Faturas</p>
+            {porCartao.map(({ cartao, total }, i) => {
+              const { daysUntilClose } = getCartaoCycle(cartao.dia_fechamento);
+              return (
+                <div
+                  key={cartao.id}
+                  className={cn(
+                    "flex items-center justify-between py-2.5",
+                    i > 0 && "border-t border-dashed border-[#EEEFF7]"
+                  )}
+                >
+                  <div>
+                    <p className="text-[13px] font-semibold text-[#22253A]">{cartao.nome}</p>
+                    <p className="text-[10.5px] font-medium text-[#9CA0B8] mt-0.5">
+                      {daysUntilClose > 0 ? `fecha em ${daysUntilClose} dias` : "fechada"}
+                    </p>
+                  </div>
+                  <span className="text-[13.5px] font-semibold text-[#22253A] tabular-nums">{fmt(total)}</span>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
 
+        {/* Categorias */}
         {categorias.length > 0 && (
-          <div className="bg-white rounded-2xl p-3 space-y-2 border border-white shadow-sm">
-            <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Despesas por categoria</p>
-            <div className="space-y-1.5">
-              {categorias.map(({ cat, valor, emoji }) => {
-                const pct = totalDespesasBrutas > 0 ? (valor / totalDespesasBrutas) * 100 : 0;
-                return (
-                  <div key={cat} className="space-y-0.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-xs shrink-0">{emoji}</span>
-                        <span className="text-[11px] font-medium text-slate-900 truncate">{cat}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                        <span className="text-[9px] text-slate-500 tabular-nums">{pct.toFixed(0)}%</span>
-                        <span className="text-[11px] font-bold text-slate-900 tabular-nums whitespace-nowrap">{fmt(valor)}</span>
-                      </div>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-[#E8ECF5] overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, background: "#6366F1" }}
-                      />
+          <div className="bg-white rounded-[22px] px-4 py-4 shadow-[0_2px_10px_rgba(99,102,241,0.06)]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#9CA0B8] mb-2">Para onde foi</p>
+            {categorias.map(({ cat, valor, emoji }, i) => {
+              const pct = totalDespesasBrutas > 0 ? (valor / totalDespesasBrutas) * 100 : 0;
+              const filled = Math.min(10, Math.max(1, Math.round(pct / 10)));
+              return (
+                <div
+                  key={cat}
+                  className={cn(
+                    "flex items-center gap-2.5 py-2",
+                    i > 0 && "border-t border-dashed border-[#EEEFF7]"
+                  )}
+                >
+                  <span className="text-[15px] w-5 text-center shrink-0">{emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12.5px] font-semibold text-[#22253A] truncate">{cat}</p>
+                    <div className="flex gap-[3px] mt-1">
+                      {Array.from({ length: 10 }).map((_, d) => (
+                        <span
+                          key={d}
+                          className="h-[5px] w-[11px] rounded-[3px]"
+                          style={{ background: d < filled ? "#6366F1" : "#EEEFF7" }}
+                        />
+                      ))}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                  <span className="text-[12.5px] font-semibold text-[#22253A] tabular-nums shrink-0">{fmt(valor)}</span>
+                </div>
+              );
+            })}
           </div>
         )}
 
+        {/* Vazio */}
         {!isLoading && lancamentos.length === 0 && (
           <div className="flex flex-col items-center py-14 space-y-3">
             <img src="/fina-mascot.png" alt="Fina" style={{ width: 44, height: "auto" }} className="drop-shadow" />
-            <p className="text-sm text-muted-foreground">Nenhum lançamento neste mês</p>
+            <p className="text-sm text-[#9CA0B8]">Nenhum lançamento neste mês</p>
           </div>
         )}
 
         {isLoading && (
-          <div className="text-center py-12 text-sm text-muted-foreground">
-            Carregando...
-          </div>
+          <div className="text-center py-12 text-sm text-[#9CA0B8]">Carregando...</div>
         )}
       </div>
     </div>
   );
 }
-

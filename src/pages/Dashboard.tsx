@@ -302,35 +302,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {saldoAdriano !== 0 && (
-          <div
-            className={cn(
-              "bg-white rounded-2xl px-3 py-2 flex items-center justify-between border-l-4 border-white shadow-sm",
-              saldoAdriano > 0 ? "border-l-emerald-500" : "border-l-red-400"
-            )}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <Users size={13} className="text-slate-500 shrink-0" />
-              <span className="text-[11px] text-slate-500 font-medium truncate">
-                {saldoAdriano > 0 ? "Adriano te deve" : "Você deve para Adriano"}
-              </span>
-            </div>
-            <span className={cn("text-sm font-bold tabular-nums whitespace-nowrap ml-2", saldoAdriano > 0 ? "text-emerald-600" : "text-red-500")}>
-              {fmt(Math.abs(saldoAdriano))}
-            </span>
-          </div>
-        )}
-
-        {saldoAdriano === 0 && lancamentos.some((l) => l.adriano) && (
-          <div className="bg-white rounded-2xl px-3 py-2 flex items-center justify-between border border-white shadow-sm">
-            <div className="flex items-center gap-2 min-w-0">
-              <Users size={13} className="text-slate-500 shrink-0" />
-              <span className="text-[11px] text-slate-500 font-medium truncate">Contas com Adriano</span>
-            </div>
-            <span className="text-xs font-medium text-emerald-600 whitespace-nowrap ml-2">✓ Em dia</span>
-          </div>
-        )}
-
         {porCartao.length > 0 && (
           <div className="bg-white rounded-2xl p-3 space-y-2 border border-white shadow-sm">
             <p className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Faturas do mês</p>
@@ -392,3 +363,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

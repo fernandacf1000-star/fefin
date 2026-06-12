@@ -63,7 +63,7 @@ function ResumoCard({
   accentColor?: string;
 }) {
   return (
-    <div className="glass-card p-4 space-y-3">
+    <div className="bg-white rounded-[22px] p-4 space-y-3 shadow-[0_2px_10px_rgba(99,102,241,0.06)]">
       <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Resumo do mes</p>
 
       <div className="flex items-center justify-between py-2 border-b border-[#E8ECF5]">
@@ -503,36 +503,34 @@ export default function Pais() {
   );
 
   return (
-    <div className="gradient-bg min-h-screen pb-28 overflow-x-hidden">
+    <div className="min-h-screen pb-28 overflow-x-hidden" style={{ background: "linear-gradient(178deg,#F2F3FD 0%,#FBFBFE 30%)" }}>
       <BottomNav />
 
       <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-foreground">Pais</h1>
-            <p className="text-xl font-bold text-muted-foreground">{mesLabel}</p>
-          </div>
-          <div className="flex items-center gap-1">
-            <button onClick={prevMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
-              <ChevronLeft size={15} />
+        <div className="text-center pt-1">
+          <p className="text-xs text-[#8B8FA8]">Pais & Adriano</p>
+          <div className="flex items-center justify-center gap-2 mt-0.5">
+            <button onClick={prevMes} className="w-7 h-7 rounded-full bg-white border border-[#EEEFF7] flex items-center justify-center text-[#9CA0B8] shadow-sm shrink-0">
+              <ChevronLeft size={14} />
             </button>
-            <button onClick={nextMes} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground">
-              <ChevronRight size={15} />
+            <h1 className="text-[22px] font-bold text-[#22253A] leading-tight min-w-[150px]">{mesLabel}</h1>
+            <button onClick={nextMes} className="w-7 h-7 rounded-full bg-white border border-[#EEEFF7] flex items-center justify-center text-[#9CA0B8] shadow-sm shrink-0">
+              <ChevronRight size={14} />
             </button>
           </div>
         </div>
 
         {/* Abas */}
-        <div className="flex gap-1 p-1 rounded-2xl bg-[#E8ECF5]">
+        <div className="flex gap-1 p-1 rounded-full bg-white shadow-[0_2px_10px_rgba(99,102,241,0.06)]">
           <button onClick={() => setAba("pais")}
-            className={cn("flex-1 py-2 rounded-xl text-sm font-semibold transition-all",
-              aba === "pais" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
+            className={cn("flex-1 py-2 rounded-full text-sm font-semibold transition-all",
+              aba === "pais" ? "bg-[#6366F1] text-white" : "text-[#9CA0B8]")}>
             {"\u{1F9D3}"} Pais
           </button>
           <button onClick={() => setAba("adriano")}
-            className={cn("flex-1 py-2 rounded-xl text-sm font-semibold transition-all",
-              aba === "adriano" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground")}>
+            className={cn("flex-1 py-2 rounded-full text-sm font-semibold transition-all",
+              aba === "adriano" ? "bg-[#6366F1] text-white" : "text-[#9CA0B8]")}>
             {"\u{1F468}"} Adriano
           </button>
         </div>
@@ -551,7 +549,7 @@ export default function Pais() {
             )}
 
             {porCategoriaPais.length > 0 && (
-              <div className="glass-card p-4 space-y-3">
+              <div className="bg-white rounded-[22px] p-4 space-y-3 shadow-[0_2px_10px_rgba(99,102,241,0.06)]">
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Despesas por categoria</p>
                 <div className="space-y-2.5">
                   {porCategoriaPais.map(({ cat, valor, emoji }) => {
@@ -597,7 +595,7 @@ export default function Pais() {
             ) : lancamentosPais.length === 0 && receitasReembolsoPais.length === 0 ? (
               <EmptyState title="Sem lancamentos dos pais" subtitle="Nenhuma despesa dos pais registrada neste mes" />
             ) : (
-              <div className="glass-card p-4 space-y-3">
+              <div className="bg-white rounded-[22px] p-4 space-y-3 shadow-[0_2px_10px_rgba(99,102,241,0.06)]">
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lancamentos</p>
                 {renderLancamentos(
                   lancamentosComReembolsoPais,
@@ -630,7 +628,7 @@ export default function Pais() {
 
 
             {lancamentosAdriano.length > 0 && (
-              <div className="glass-card p-4 space-y-3">
+              <div className="bg-white rounded-[22px] p-4 space-y-3 shadow-[0_2px_10px_rgba(99,102,241,0.06)]">
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Resumo do mes</p>
 
                 {/* Total dividido */}
@@ -726,7 +724,7 @@ export default function Pais() {
             )}
 
             {porCategoriaAdriano.length > 0 && (
-              <div className="glass-card p-4 space-y-3">
+              <div className="bg-white rounded-[22px] p-4 space-y-3 shadow-[0_2px_10px_rgba(99,102,241,0.06)]">
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Despesas por categoria</p>
                 <div className="space-y-2.5">
                   {porCategoriaAdriano.map(({ cat, valor, emoji }) => {
@@ -763,7 +761,7 @@ export default function Pais() {
             ) : lancamentosAdriano.length === 0 && receitasReembolsoAdriano.length === 0 && receitasReembolsoLuisa.length === 0 ? (
               <EmptyState title="Sem lancamentos do Adriano" subtitle="Marque 'Dividir com Adriano' ao criar uma despesa" />
             ) : (
-              <div className="glass-card p-4 space-y-3">
+              <div className="bg-white rounded-[22px] p-4 space-y-3 shadow-[0_2px_10px_rgba(99,102,241,0.06)]">
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Lancamentos</p>
                 {renderLancamentos(
                   lancamentosComReembolsoAdriano,
@@ -843,3 +841,4 @@ export default function Pais() {
   );
 }
     
+

@@ -73,12 +73,12 @@ const LancamentoRow = ({ lancamento: l, onTap, selected, selectionMode, onToggle
   return (
     <div
       className={cn(
-        "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-colors",
+        "flex items-center gap-3 px-4 py-3 rounded-[18px] transition-colors shadow-[0_2px_8px_rgba(99,102,241,0.05)]",
         selected
-          ? "border-primary/40 bg-primary/5"
+          ? "bg-[#EAEAFE] ring-1 ring-[#6366F1]/40"
           : isPais
-          ? "bg-white border-l-2 border-l-amber-400 border-t-transparent border-r-transparent border-b-transparent"
-          : "bg-white border-transparent",
+          ? "bg-white border-l-[3px] border-l-amber-300"
+          : "bg-white",
       )}
       onClick={() => (selectionMode ? onToggleSelect(l.id) : onTap(l))}
     >
@@ -330,46 +330,38 @@ export default function Despesas() {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="gradient-bg min-h-screen pb-28 overflow-x-hidden">
+    <div className="min-h-screen pb-28 overflow-x-hidden" style={{ background: "linear-gradient(178deg,#F2F3FD 0%,#FBFBFE 30%)" }}>
       <BottomNav />
 
       <div className="max-w-lg mx-auto px-4 pt-14 space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-foreground">Transa{"\u00E7\u00F5"}es</h1>
-            {!selectionMode && <p className="text-xl font-bold text-muted-foreground">{mesLabel}</p>}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={prevMes}
-              className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground"
-            >
-              <ChevronLeft size={15} />
+        <div className="text-center pt-1">
+          <p className="text-xs text-[#8B8FA8]">Transa{"\u00E7\u00F5"}es</p>
+          <div className="flex items-center justify-center gap-2 mt-0.5">
+            <button onClick={prevMes} className="w-7 h-7 rounded-full bg-white border border-[#EEEFF7] flex items-center justify-center text-[#9CA0B8] shadow-sm shrink-0">
+              <ChevronLeft size={14} />
             </button>
-            <button
-              onClick={nextMes}
-              className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-muted-foreground"
-            >
-              <ChevronRight size={15} />
+            <h1 className="text-[22px] font-bold text-[#22253A] leading-tight min-w-[150px]">{mesLabel}</h1>
+            <button onClick={nextMes} className="w-7 h-7 rounded-full bg-white border border-[#EEEFF7] flex items-center justify-center text-[#9CA0B8] shadow-sm shrink-0">
+              <ChevronRight size={14} />
             </button>
           </div>
         </div>
 
         {/* Resumo */}
         {!selectionMode && (
-          <div className="grid grid-cols-3 gap-2">
-            <div className="glass-card px-2 py-3 border-l-2 min-w-0" style={{ borderLeftColor: "#6366F1" }}>
-              <p className="text-[10px] text-muted-foreground">Despesas</p>
-              <p className="text-xs font-bold text-foreground truncate">{fmt(totalDespesas)}</p>
+          <div className="bg-white rounded-[22px] px-2 py-3.5 flex shadow-[0_2px_10px_rgba(99,102,241,0.06)]">
+            <div className="flex-1 text-center border-r border-[#F0F1F8] min-w-0 px-1">
+              <p className="text-[10px] font-semibold text-[#9CA0B8]">{"\u2193"} Despesas</p>
+              <p className="text-[12.5px] font-semibold text-[#D26358] tabular-nums truncate mt-0.5">{fmt(totalDespesas)}</p>
             </div>
-            <div className="glass-card px-2 py-3 border-l-2 min-w-0" style={{ borderLeftColor: "#0D9488" }}>
-              <p className="text-[10px] text-muted-foreground">Receitas</p>
-              <p className="text-xs font-bold text-foreground truncate">{fmt(totalReceitas)}</p>
+            <div className="flex-1 text-center border-r border-[#F0F1F8] min-w-0 px-1">
+              <p className="text-[10px] font-semibold text-[#9CA0B8]">{"\u2191"} Receitas</p>
+              <p className="text-[12.5px] font-semibold text-[#3D8B5F] tabular-nums truncate mt-0.5">{fmt(totalReceitas)}</p>
             </div>
-            <div className="glass-card px-2 py-3 border-l-2 min-w-0" style={{ borderLeftColor: "#78716C" }}>
-              <p className="text-[10px] text-muted-foreground">Resgates</p>
-              <p className="text-xs font-bold text-foreground truncate">{fmt(totalResgates)}</p>
+            <div className="flex-1 text-center min-w-0 px-1">
+              <p className="text-[10px] font-semibold text-[#9CA0B8]">Resgates</p>
+              <p className="text-[12.5px] font-semibold text-[#22253A] tabular-nums truncate mt-0.5">{fmt(totalResgates)}</p>
             </div>
           </div>
         )}
@@ -404,12 +396,12 @@ export default function Despesas() {
                   key={t}
                   onClick={() => setFilterTipo(t)}
                   className={cn(
-                    "px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors",
+                    "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors",
                     filterTipo === t
                       ? t === "resgate"
                         ? "text-white"
-                        : "gradient-emerald text-primary-foreground"
-                      : "bg-white border border-border text-muted-foreground",
+                        : "bg-[#6366F1] text-white"
+                      : "bg-white border border-[#EEEFF7] text-[#9CA0B8]",
                   )}
                   style={filterTipo === t && t === "resgate" ? { background: "#78716C" } : undefined}
                 >
@@ -421,7 +413,7 @@ export default function Despesas() {
                   setSelectionMode(true);
                   setSelected(new Set());
                 }}
-                className="ml-auto px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-border text-muted-foreground"
+                className="ml-auto px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white border border-[#EEEFF7] text-[#9CA0B8]"
               >
                 Selecionar
               </button>
@@ -514,3 +506,4 @@ export default function Despesas() {
     </div>
   );
 }
+

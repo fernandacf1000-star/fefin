@@ -76,6 +76,38 @@ const emojiMapDash: Record<string, string> = {
   Seguro: "🛡️",
 };
 
+// Chip de bandeira (Visa / Mastercard) — visual leve e reconhecível
+function BandeiraChip({ bandeira, nome, size = "md" }: { bandeira: string; nome: string; size?: "sm" | "md" }) {
+  const key = (bandeira || nome || "").toLowerCase();
+  const isVisa = key.includes("visa") || key.includes("infinit");
+  const isMaster = key.includes("master") || key.includes("the one") || key.includes("mc");
+  const w = size === "sm" ? 34 : 40;
+  const h = size === "sm" ? 22 : 26;
+
+  if (isMaster) {
+    return (
+      <div className="rounded-md flex items-center justify-center shrink-0" style={{ width: w, height: h, background: "#22253A" }}>
+        <div className="flex items-center" style={{ marginRight: -6 }}>
+          <span style={{ width: h * 0.5, height: h * 0.5, borderRadius: "50%", background: "#EB5C4D", display: "block" }} />
+          <span style={{ width: h * 0.5, height: h * 0.5, borderRadius: "50%", background: "#F6A623", display: "block", marginLeft: -6, mixBlendMode: "screen" }} />
+        </div>
+      </div>
+    );
+  }
+  if (isVisa) {
+    return (
+      <div className="rounded-md flex items-center justify-center shrink-0" style={{ width: w, height: h, background: "#1A1F71" }}>
+        <span style={{ color: "#fff", fontWeight: 800, fontSize: size === "sm" ? 9 : 11, fontStyle: "italic", letterSpacing: "0.02em" }}>VISA</span>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-md flex items-center justify-center shrink-0 text-[#9CA0B8]" style={{ width: w, height: h, background: "#EEEFF7", fontSize: 9, fontWeight: 700 }}>
+      {(nome || "?").slice(0, 4).toUpperCase()}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [mesAtual, setMesAtual] = useState(() => {
@@ -292,17 +324,15 @@ export default function Dashboard() {
 
         {/* Melhor cartão para comprar agora */}
         {melhorCartao && (
-          <div className="rounded-[20px] px-4 py-3 flex items-center gap-3 shadow-[0_3px_14px_rgba(99,102,241,0.10)]" style={{ background: "linear-gradient(120deg,#5B5FD6,#6366F1)" }}>
-            <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center text-xl shrink-0">
-              {"\u{1F4B3}"}
-            </div>
+          <div className="bg-white rounded-[18px] px-4 py-3 flex items-center gap-3 shadow-[0_2px_10px_rgba(99,102,241,0.06)] border-l-[3px] border-l-[#6366F1]">
+            <BandeiraChip bandeira={melhorCartao.bandeira} nome={melhorCartao.nome} />
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 leading-none">Melhor cartão para comprar agora</p>
-              <p className="text-[15px] font-bold text-white leading-tight mt-1 truncate">{melhorCartao.nome}</p>
+              <p className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-[#9CA0B8] leading-none">Melhor p/ comprar agora</p>
+              <p className="text-[14px] font-bold text-[#22253A] leading-tight mt-1 truncate">{melhorCartao.nome}</p>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-[18px] font-bold text-white leading-none tabular-nums">{melhorDays}</p>
-              <p className="text-[9px] font-medium text-white/70 mt-0.5">dias p/ fechar</p>
+              <p className="text-[17px] font-bold text-[#6366F1] leading-none tabular-nums">{melhorDays}</p>
+              <p className="text-[9px] font-medium text-[#9CA0B8] mt-0.5">dias p/ fechar</p>
             </div>
           </div>
         )}
@@ -321,11 +351,14 @@ export default function Dashboard() {
                     i > 0 && "border-t border-dashed border-[#EEEFF7]"
                   )}
                 >
-                  <div>
-                    <p className="text-[13px] font-semibold text-[#22253A]">{cartao.nome}</p>
-                    <p className="text-[10.5px] font-medium text-[#9CA0B8] mt-0.5">
-                      {daysUntilClose > 0 ? `fecha em ${daysUntilClose} dias` : "fechada"}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <BandeiraChip bandeira={cartao.bandeira} nome={cartao.nome} size="sm" />
+                    <div>
+                      <p className="text-[13px] font-semibold text-[#22253A]">{cartao.nome}</p>
+                      <p className="text-[10.5px] font-medium text-[#9CA0B8] mt-0.5">
+                        {daysUntilClose > 0 ? `fecha em ${daysUntilClose} dias` : "fechada"}
+                      </p>
+                    </div>
                   </div>
                   <span className="text-[13.5px] font-semibold text-[#22253A] tabular-nums">{fmt(total)}</span>
                 </div>

@@ -164,6 +164,19 @@ export default function Dashboard() {
     [receitas]
   );
 
+  const melhorCartao = useMemo(() => {
+    if (!cartoes.length) return null;
+    return cartoes.reduce((best, c) => {
+      const { daysUntilClose: d } = getCartaoCycle(c.dia_fechamento);
+      const { daysUntilClose: bd } = getCartaoCycle(best.dia_fechamento);
+      return d > bd ? c : best;
+    });
+  }, [cartoes]);
+
+  const melhorDays = melhorCartao
+    ? getCartaoCycle(melhorCartao.dia_fechamento).daysUntilClose
+    : 0;
+
   const porCartao = useMemo(
     () =>
       cartoes
@@ -276,6 +289,23 @@ export default function Dashboard() {
             </p>
           )}
         </div>
+
+        {/* Melhor cartão para comprar agora */}
+        {isCurrentMonth && melhorCartao && (
+          <div className="rounded-[20px] px-4 py-3 flex items-center gap-3 shadow-[0_3px_14px_rgba(99,102,241,0.10)]" style={{ background: "linear-gradient(120deg,#5B5FD6,#6366F1)" }}>
+            <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center text-xl shrink-0">
+              {"\u{1F4B3}"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/70 leading-none">Melhor cartão para comprar agora</p>
+              <p className="text-[15px] font-bold text-white leading-tight mt-1 truncate">{melhorCartao.nome}</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-[18px] font-bold text-white leading-none tabular-nums">{melhorDays}</p>
+              <p className="text-[9px] font-medium text-white/70 mt-0.5">dias p/ fechar</p>
+            </div>
+          </div>
+        )}
 
         {/* Faturas */}
         {porCartao.length > 0 && (

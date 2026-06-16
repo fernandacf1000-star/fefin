@@ -291,7 +291,7 @@ export default function Dashboard() {
         </div>
 
         {/* Melhor cartão para comprar agora */}
-        {isCurrentMonth && melhorCartao && (
+        {melhorCartao && (
           <div className="rounded-[20px] px-4 py-3 flex items-center gap-3 shadow-[0_3px_14px_rgba(99,102,241,0.10)]" style={{ background: "linear-gradient(120deg,#5B5FD6,#6366F1)" }}>
             <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center text-xl shrink-0">
               {"\u{1F4B3}"}

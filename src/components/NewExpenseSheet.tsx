@@ -76,6 +76,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
   const [cartaoId, setCartaoId] = useState<string>("");
   const [isParcelado, setIsParcelado] = useState(false);
   const [parcelas, setParcelas] = useState("2");
+  const [parcelaModo, setParcelaModo] = useState<"total" | "parcela">("parcela");
   const [recorrente, setRecorrente] = useState(false);
   const [diaRecorrencia, setDiaRecorrencia] = useState("1");
   const [receitaCat, setReceitaCat] = useState<ReceitaCat>("Salário");
@@ -93,7 +94,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
     setSubcategoria(null); setSelectedGroup(null); setIsPais(false); setIsVicente(false); setIsLuisa(false);
     setIsAdriano(false); setPagoPor('voce');
     setFormaPagamento("Dinheiro"); setCartaoId("");
-    setIsParcelado(false); setParcelas("2");
+    setIsParcelado(false); setParcelas("2"); setParcelaModo("parcela");
     setRecorrente(false); setDiaRecorrencia("1");
     setReceitaCat("Salário");
   };
@@ -108,6 +109,8 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
   };
 
   const getNumValor = () => parseFloat(valor.replace(/\./g, "").replace(",", ".")) || 0;
+  const formatBRL = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const nParcelasNum = () => Math.max(1, parseInt(parcelas, 10) || 1);
 
   const handleSave = async () => {
     if (!descricao.trim()) { toast.error("Preencha a descrição"); return; }
@@ -179,6 +182,9 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
 
       if (isParcelado) {
         const nParcelas = parseInt(parcelas, 10) || 2;
+        // Valor de UMA parcela conforme o modo: "total" divide pelo nº de parcelas; "parcela" usa o valor cheio.
+        const valorParcelaPrincipal = parcelaModo === "total" ? valorPrincipal / nParcelas : valorPrincipal;
+        const valorParcelaAdriano = adrianoRow ? (parcelaModo === "total" ? (numValor / 2) / nParcelas : (numValor / 2)) : 0;
         const parcelamentoId = crypto.randomUUID?.() ?? `${Date.now()}`;
         const parcelamentoIdAdriano = isAdriano ? (crypto.randomUUID?.() ?? `${Date.now()}-a`) : null;
         const rows: any[] = [];
@@ -201,6 +207,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
 
           rows.push({
             ...baseRow,
+            valor: valorParcelaPrincipal,
             data: dataStr,
             mes_referencia: mesRefStr,
             parcela_atual: i + 1, parcela_total: nParcelas,
@@ -210,6 +217,7 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
           if (adrianoRow) {
             rows.push({
               ...adrianoRow,
+              valor: valorParcelaAdriano,
               data: dataStr,
               mes_referencia: mesRefStr,
               parcela_atual: i + 1, parcela_total: nParcelas,
@@ -396,6 +404,32 @@ const NewExpenseSheet = ({ open, onClose, initialTipo = "despesa" }: Props) => {
                   🔁 Recorrente
                 </button>
               </div>
+
+              {isParcelado && (
+                <div className="space-y-1.5 px-1">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setParcelaModo("total")}
+                      className={cn("flex-1 px-3 py-2 rounded-xl text-xs font-semibold border transition-all",
+                        parcelaModo === "total" ? "border-primary/40 bg-primary/5 text-primary" : "border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground")}>
+                      Valor total
+                    </button>
+                    <button
+                      onClick={() => setParcelaModo("parcela")}
+                      className={cn("flex-1 px-3 py-2 rounded-xl text-xs font-semibold border transition-all",
+                        parcelaModo === "parcela" ? "border-primary/40 bg-primary/5 text-primary" : "border-[#E8ECF5] bg-[#E8ECF5] text-muted-foreground")}>
+                      Por parcela
+                    </button>
+                  </div>
+                  {getNumValor() > 0 && (
+                    <p className="text-xs text-center text-muted-foreground">
+                      {parcelaModo === "total"
+                        ? `${nParcelasNum()}× de ${formatBRL(getNumValor() / nParcelasNum())} = ${formatBRL(getNumValor())}`
+                        : `${nParcelasNum()}× de ${formatBRL(getNumValor())} = ${formatBRL(getNumValor() * nParcelasNum())}`}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {recorrente && (
                 <div className="flex items-center gap-2 px-1">

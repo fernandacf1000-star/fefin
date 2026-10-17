@@ -238,10 +238,9 @@ export default function Despesas() {
     const porTabela = todosReembolsos
       .filter((r) => idsDespesas.has(r.lancamento_id) && r.data_reembolso.startsWith(mesRef))
       .reduce((s, r) => s + Number(r.valor_reembolsado), 0);
-    const porReceita = lancamentos
-      .filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais")
-      .reduce((s, l) => s + Number(l.valor), 0);
-    return porTabela + porReceita;
+    // Reembolsos lançados como receita já entram em totalReceitas.
+    // Subtraí-los aqui também contaria o mesmo valor duas vezes.
+    return porTabela;
   }, [lancamentos, todosReembolsos, mesRef]);
 
   const totalDespesas = useMemo(

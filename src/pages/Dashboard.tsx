@@ -160,15 +160,9 @@ export default function Dashboard() {
       .reduce((s, r) => s + Number(r.valor_reembolsado), 0);
   }, [despesas, todosReembolsos, mesRef]);
 
-  const totalReembolsadoMesReceitas = useMemo(
-    () =>
-      lancamentos
-        .filter((l) => l.tipo === "receita" && l.categoria === "reembolso_pais")
-        .reduce((s, l) => s + Number(l.valor), 0),
-    [lancamentos]
-  );
-
-  const totalReembolsadoMes = totalReembolsadoMesTabela + totalReembolsadoMesReceitas;
+  // Reembolsos lançados como receita já entram em totalReceitas.
+  // Apenas os registros da tabela de reembolsos reduzem as despesas.
+  const totalReembolsadoMes = totalReembolsadoMesTabela;
 
   const totalResgates = useMemo(
     () =>

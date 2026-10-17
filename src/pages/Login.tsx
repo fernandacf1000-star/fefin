@@ -46,7 +46,7 @@ const Login = () => {
       } else {
         localStorage.removeItem(REMEMBER_KEY);
       }
-      navigate("/dashboard");
+      navigate("/novo");
     } catch (error: any) {
       toast.error("E-mail ou senha incorretos. Tente novamente.");
     } finally {

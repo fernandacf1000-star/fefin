@@ -16,6 +16,7 @@ import Patrimonio from "./pages/Patrimonio";
 import IR from "./pages/IR";
 import Conta from "./pages/Conta";
 import NotFound from "./pages/NotFound";
+import NextFefin from "./next/NextFefin";
 
 const queryClient = new QueryClient();
 
@@ -35,8 +36,9 @@ const AppRoutes = () => {
     <div className="w-full sm:max-w-[430px] md:max-w-none mx-auto min-h-screen relative bg-background overflow-x-hidden">
       {showSplash && <Splash onFinish={handleSplashFinish} />}
       <Routes>
-        <Route path="/" element={!loading && session ? <Navigate to="/dashboard" replace /> : <Login />} />
-        <Route path="/cadastro" element={!loading && session ? <Navigate to="/dashboard" replace /> : <SignUp />} />
+        <Route path="/" element={!loading && session ? <Navigate to="/novo" replace /> : <Login />} />
+        <Route path="/cadastro" element={!loading && session ? <Navigate to="/novo" replace /> : <SignUp />} />
+        <Route path="/novo" element={<ProtectedRoute><NextFefin /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/despesas" element={<ProtectedRoute><Despesas /></ProtectedRoute>} />
         <Route path="/pais" element={<ProtectedRoute><Pais /></ProtectedRoute>} />

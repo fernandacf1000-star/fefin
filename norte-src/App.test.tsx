@@ -74,11 +74,6 @@ vi.mock("./supabase", () => {
           ],
           error: null,
         }).then(resolve);
-      if (this.table === "profiles")
-        return Promise.resolve({
-          data: { meta_mensal: 1000 },
-          error: null,
-        }).then(resolve);
       let data = state.rows;
       if (this.op === "insert") {
         data = (this.body as Record<string, unknown>[]).map((r, i) => ({
@@ -111,7 +106,11 @@ vi.mock("./supabase", () => {
   return {
     configured: true,
     supabase: {
-      from: (t: string) => new Query(t),
+      from: (t: string) => {
+        if (t === "profiles")
+          throw new Error("Norte must never access profiles");
+        return new Query(t);
+      },
       functions: { invoke: state.ai },
       auth: {
         getSession: async () => ({
@@ -295,4 +294,28 @@ describe("fluxos do Norte", () => {
       "password",
     );
   });
+});
+
+it("mostra saldo negativo, aviso de atenção e nenhuma configuração mensal", async () => {
+  state.rows = [entry({ tipo: "receita", valor: 100 }), entry({ valor: 250 })];
+  const { container } = render(<App />);
+  await screen.findByText("Anotado hoje");
+  expect(container.querySelector(".big-number")?.textContent).toMatch(
+    /-.*150,00/,
+  );
+  expect(
+    container
+      .querySelector(".big-number")
+      ?.classList.contains("attention-text"),
+  ).toBe(true);
+  expect(
+    screen.getByText(/Passou do que entrou neste mês em/).textContent,
+  ).toMatch(/150,00/);
+  expect(screen.getByText(/que entraram neste mês/).textContent).toMatch(
+    /100,00/,
+  );
+  expect(screen.getByRole("progressbar").getAttribute("value")).toBe("100");
+  fireEvent.click(screen.getByRole("button", { name: "Tudo" }));
+  expect(screen.queryByLabelText("Valor mensal (R$)")).toBeNull();
+  expect(screen.queryByText(/Defina/)).toBeNull();
 });

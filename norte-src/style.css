@@ -652,3 +652,12 @@ body:has(dialog[open]) {
     padding-right: 18px;
   }
 }
+
+.attention-text {
+  color: var(--attention);
+}
+.income-line {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 12px 0 0;
+}

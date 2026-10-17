@@ -3,6 +3,8 @@ import {
   cardDates,
   dateKey,
   monthSpending,
+  monthIncome,
+  monthSummary,
   memory,
   categoryPatch,
   parentRule,
@@ -219,5 +221,119 @@ describe("SMS", () => {
     expect(smsRows(p, "u", null, "g").map((r) => r.valor)).toEqual([
       33.33, 33.33, 33.34,
     ]);
+  });
+});
+
+describe("receitas menos gastos", () => {
+  const october = new Date(2026, 9, 17);
+  it("salário com tipo despesa é receita, nunca gasto, no mês da data", () => {
+    const rows = [
+      entry({
+        categoria: "salario",
+        tipo: "despesa",
+        valor: 22110.46,
+        data: "2026-10-01",
+      }),
+      entry({
+        categoria: "salario",
+        tipo: "despesa",
+        valor: 22110.46,
+        data: "2026-11-01",
+      }),
+    ];
+    expect(monthIncome(rows, october)).toBe(22110.46);
+    expect(monthSpending(rows, october)).toBe(0);
+    expect(monthIncome(rows, new Date(2026, 10, 17))).toBe(22110.46);
+  });
+  it("salário já tipado como receita entra uma única vez", () => {
+    expect(
+      monthIncome(
+        [entry({ tipo: "receita", categoria: "salario", valor: 1000 })],
+        october,
+      ),
+    ).toBe(1000);
+  });
+  it("exclui reembolso dos pais e mantém reembolsos de Adriano e Luísa", () => {
+    const rows = [
+      entry({ tipo: "receita", categoria: "reembolso_pais", valor: 900 }),
+      entry({ tipo: "receita", categoria: "reembolso_adriano", valor: 200 }),
+      entry({ tipo: "receita", categoria: "reembolso_luisa", valor: 100 }),
+    ];
+    expect(monthIncome(rows, october)).toBe(300);
+  });
+  it("gastos dos Pais não reduzem o saldo", () => {
+    const summary = monthSummary(
+      [
+        entry({ tipo: "receita", valor: 1000 }),
+        entry({ subcategoria_pais: "Pais", valor: 500 }),
+        entry({ valor: 100 }),
+      ],
+      october,
+    );
+    expect(summary.balance).toBe(900);
+    expect(summary.spent).toBe(100);
+    expect(summary.progress).toBe(10);
+  });
+  it("saldo negativo continua negativo e limite semanal fica zero", () => {
+    const summary = monthSummary(
+      [entry({ tipo: "receita", valor: 100 }), entry({ valor: 250 })],
+      october,
+    );
+    expect(summary.balance).toBe(-150);
+    expect(summary.daysLeft).toBe(15);
+    expect(summary.daily).toBe(-10);
+    expect(summary.weekly).toBe(0);
+    expect(summary.progress).toBe(100);
+  });
+  it("mês sem receita mostra apenas os gastos como saldo negativo", () => {
+    expect(monthSummary([entry({ valor: 123.45 })], october)).toMatchObject({
+      income: 0,
+      spent: 123.45,
+      balance: -123.45,
+      weekly: 0,
+      progress: 100,
+    });
+    expect(monthSummary([], october)).toMatchObject({
+      income: 0,
+      spent: 0,
+      balance: 0,
+      weekly: 0,
+      progress: 0,
+    });
+  });
+  it("receitas ignoram parcelas e mês da fatura", () => {
+    const rows = [
+      entry({
+        tipo: "receita",
+        data: "2026-10-01",
+        mes_referencia: "2026-11",
+        is_parcelado: true,
+        parcela_atual: 4,
+        valor: 200,
+      }),
+    ];
+    expect(monthIncome(rows, october)).toBe(200);
+    expect(monthIncome(rows, new Date(2027, 0, 17))).toBe(0);
+  });
+  it("arredonda totais antes de subtrair, como nos totais reais de outubro", () => {
+    const rows = [
+      entry({ tipo: "receita", valor: 64691.96 }),
+      entry({ valor: 27500 }),
+      entry({ valor: 53.225 }),
+    ];
+    expect(monthSummary(rows, october)).toMatchObject({
+      income: 64691.96,
+      spent: 27553.23,
+      balance: 37138.73,
+    });
+  });
+  it("semana usa sete dias mesmo na última semana incompleta do mês", () => {
+    const summary = monthSummary(
+      [entry({ tipo: "receita", valor: 600 })],
+      new Date(2026, 9, 30),
+    );
+    expect(summary.daysLeft).toBe(2);
+    expect(summary.daily).toBe(300);
+    expect(summary.weekly).toBe(2100);
   });
 });

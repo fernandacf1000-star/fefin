@@ -143,14 +143,79 @@ export const effectiveDate = (r: Entry) =>
 export const countsAsSpending = (r: Entry) =>
   r.tipo === "despesa" &&
   !r.subcategoria_pais &&
-  r.categoria_macro !== "Aportes";
+  r.categoria_macro !== "Aportes" &&
+  r.categoria !== "salario";
+// Sum the stored decimal precision first, then round each monthly total to cents.
+// Historical shared expenses include half-cent amounts; rounding each row changes totals.
+export function sumMoney(values: number[]): number {
+  const parts = values.map((value) =>
+    Number(value)
+      .toLocaleString("en-US", {
+        useGrouping: false,
+        maximumFractionDigits: 20,
+      })
+      .split("."),
+  );
+  const precision = Math.max(
+    0,
+    ...parts.map(([, fraction = ""]) => fraction.length),
+  );
+  const scale = 10n ** BigInt(precision);
+  const total = parts.reduce((sum, [whole, fraction = ""]) => {
+    const negative = whole.startsWith("-");
+    const amount =
+      BigInt(whole.replace("-", "")) * scale +
+      BigInt(fraction.padEnd(precision, "0") || "0");
+    return sum + (negative ? -amount : amount);
+  }, 0n);
+  const absolute = total < 0n ? -total : total;
+  const cents = (absolute * 100n + scale / 2n) / scale;
+  return Number(total < 0n ? -cents : cents) / 100;
+}
+export const countsAsIncome = (r: Entry) =>
+  (r.tipo === "receita" || r.categoria === "salario") &&
+  r.categoria !== "reembolso_pais";
+export function monthIncome(rows: Entry[], today: Date) {
+  return sumMoney(
+    rows
+      .filter(
+        (r) => countsAsIncome(r) && r.data.slice(0, 7) === monthKey(today),
+      )
+      .map((r) => Number(r.valor)),
+  );
+}
 export function monthSpending(rows: Entry[], today: Date) {
-  return rows
-    .filter(
-      (r) =>
-        countsAsSpending(r) && monthKey(effectiveDate(r)) === monthKey(today),
-    )
-    .reduce((n, r) => n + Number(r.valor), 0);
+  return sumMoney(
+    rows
+      .filter(
+        (r) =>
+          countsAsSpending(r) && monthKey(effectiveDate(r)) === monthKey(today),
+      )
+      .map((r) => Number(r.valor)),
+  );
+}
+export function monthSummary(rows: Entry[], today: Date) {
+  const income = monthIncome(rows, today);
+  const spent = monthSpending(rows, today);
+  const balance = (Math.round(income * 100) - Math.round(spent * 100)) / 100;
+  const daysLeft =
+    new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() -
+    today.getDate() +
+    1;
+  return {
+    income,
+    spent,
+    balance,
+    daysLeft,
+    daily: balance / daysLeft,
+    weekly: Math.max(0, (balance / daysLeft) * 7),
+    progress:
+      income > 0
+        ? Math.min(100, Math.max(0, (spent / income) * 100))
+        : spent > 0
+          ? 100
+          : 0,
+  };
 }
 export function categoryPatch(cat: Category, old: Entry) {
   return {

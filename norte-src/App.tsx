@@ -14,7 +14,7 @@ import {
   parseMoney,
   effectiveDate,
   countsAsSpending,
-  monthSpending,
+  monthSummary,
   cardDates,
 } from "./domain";
 import type { Entry, Card, Category } from "./domain";
@@ -102,7 +102,6 @@ export default function App() {
     [authReady, setAuthReady] = useState(false);
   const [rows, setRows] = useState<Entry[]>([]),
     [cards, setCards] = useState<Card[]>([]),
-    [budget, setBudget] = useState<number | null>(null),
     [loading, setLoading] = useState(true),
     [loadFailed, setLoadFailed] = useState(false);
   const [tab, setTab] = useState("Hoje"),
@@ -112,8 +111,6 @@ export default function App() {
     [changing, setChanging] = useState<Set<string>>(new Set());
   const [now, setNow] = useState(new Date()),
     [review, setReview] = useState(""),
-    [budgetInput, setBudgetInput] = useState(""),
-    [budgetBusy, setBudgetBusy] = useState(false),
     [undo, setUndo] = useState<string[]>([]),
     [undoBusy, setUndoBusy] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null),
@@ -155,29 +152,17 @@ export default function App() {
     setLoading(true);
     setLoadFailed(false);
     try {
-      const [entries, c, p] = await Promise.all([
+      const [entries, c] = await Promise.all([
         historyFor(uid),
         sb!
           .from("cartoes")
           .select("id,nome,dia_fechamento,dia_vencimento,ativo")
           .eq("user_id", uid)
           .eq("ativo", true),
-        sb!
-          .from("profiles")
-          .select("meta_mensal")
-          .eq("user_id", uid)
-          .maybeSingle(),
       ]);
       if (c.error) throw c.error;
-      if (p.error) throw p.error;
       setRows(entries);
       setCards(c.data ?? []);
-      setBudget(
-        p.data?.meta_mensal == null ? null : Number(p.data.meta_mensal),
-      );
-      setBudgetInput(
-        p.data?.meta_mensal == null ? "" : String(p.data.meta_mensal),
-      );
       setError("");
     } catch {
       setLoadFailed(true);
@@ -189,7 +174,6 @@ export default function App() {
   useEffect(() => {
     setRows([]);
     setCards([]);
-    setBudget(null);
     setUndo([]);
     cancelled.current.clear();
     void load();
@@ -227,12 +211,13 @@ export default function App() {
   const ranked = cards
     .map((c) => ({ ...c, ...cardDates(c, now) }))
     .sort((a, b) => b.days - a.days || a.nome.localeCompare(b.nome));
-  const spent = monthSpending(rows, now),
-    left = (budget ?? 0) - spent,
-    daysLeft =
-      new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() -
-      now.getDate() +
-      1;
+  const {
+    income,
+    balance: left,
+    daily,
+    weekly: weeklyAvailable,
+    progress,
+  } = monthSummary(rows, now);
   const weekAgo = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -256,6 +241,7 @@ export default function App() {
   const todayRows = rows.filter(
     (r) =>
       r.tipo === "despesa" &&
+      r.categoria !== "salario" &&
       (r.created_at
         ? dateKey(new Date(r.created_at)) === dateKey(now)
         : r.data === dateKey(now)) &&
@@ -508,31 +494,6 @@ export default function App() {
       setUndoBusy(false);
     }
   }
-  async function saveBudget() {
-    if (!uid) return;
-    const value = parseMoney(budgetInput);
-    if (!budgetInput.trim() || !Number.isFinite(value) || value < 0) {
-      setError("Use um valor válido para o mês.");
-      return;
-    }
-    setBudgetBusy(true);
-    try {
-      const { data, error } = await sb!
-        .from("profiles")
-        .update({ meta_mensal: Math.round(value * 100) / 100 })
-        .eq("user_id", uid)
-        .select("user_id");
-      if (error || data?.length !== 1)
-        throw error ?? new Error("Perfil não encontrado");
-      setBudget(value);
-      setError("");
-      setNotice("Valor do mês atualizado.");
-    } catch {
-      setError("Não consegui atualizar o valor. Tente novamente.");
-    } finally {
-      setBudgetBusy(false);
-    }
-  }
   if (!authReady)
     return (
       <main className="app">
@@ -608,44 +569,27 @@ export default function App() {
                   <br />
                   neste mês
                 </h1>
-                {budget === null ? (
-                  <>
-                    <p className="setup">
-                      Defina seu gasto livre para começar.
-                    </p>
-                    <button onClick={() => setTab("Tudo")}>
-                      Definir valor do mês
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="big-number">{money(Math.max(0, left))}</div>
-                    <progress
-                      aria-label="Parcela do gasto livre já utilizada"
-                      max="100"
-                      value={
-                        budget > 0
-                          ? Math.min(100, (spent / budget) * 100)
-                          : spent > 0
-                            ? 100
-                            : 0
-                      }
-                    />
-                    <p className="pace">
-                      {left < 0
-                        ? "O valor planejado foi usado. Um ajuste de cada vez."
-                        : spent <=
-                            (budget * now.getDate()) /
-                              new Date(
-                                now.getFullYear(),
-                                now.getMonth() + 1,
-                                0,
-                              ).getDate()
-                          ? "Seu ritmo está dentro do planejado."
-                          : "Dá para seguir com um pouco mais de calma."}
-                    </p>
-                  </>
+                <div
+                  className={`big-number${left < 0 ? " attention-text" : ""}`}
+                >
+                  {money(left)}
+                </div>
+                <progress
+                  aria-label="Quanto das receitas já foi gasto"
+                  max="100"
+                  value={progress}
+                />
+                <p className="income-line">
+                  de {money(income)} que entraram neste mês
+                </p>
+                {left < 0 && (
+                  <p className="attention-text">
+                    Passou do que entrou neste mês em {money(Math.abs(left))}
+                  </p>
                 )}
+                <p className="pace">
+                  Ritmo diário: {money(daily)} por dia até o fim do mês.
+                </p>
                 <button
                   className="primary add"
                   ref={opener}
@@ -722,12 +666,8 @@ export default function App() {
                 <strong>{top}</strong>
               </div>
               <div className="week-line">
-                <span>Por semana até o fim do mês</span>
-                <strong>
-                  {budget === null
-                    ? "Defina o valor do mês"
-                    : money(Math.max(0, left) / Math.max(1, daysLeft / 7))}
-                </strong>
+                <span>Dá para gastar por semana</span>
+                <strong>{money(weeklyAvailable)}</strong>
               </div>
               <button
                 className="primary"
@@ -760,7 +700,10 @@ export default function App() {
                 rows
                   .filter(
                     (r) =>
-                      r.tipo === "despesa" && r.cartao_id === c.id && !r.pago,
+                      r.tipo === "despesa" &&
+                      r.categoria !== "salario" &&
+                      r.cartao_id === c.id &&
+                      !r.pago,
                   )
                   .forEach((r) =>
                     invoices.set(
@@ -802,30 +745,6 @@ export default function App() {
                 );
               })}
               {!cards.length && <p className="muted">Nenhum cartão ativo.</p>}
-              <form
-                className="budget-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void saveBudget();
-                }}
-              >
-                <h2>Seu gasto livre do mês</h2>
-                <p>O valor disponível para seus gastos pessoais.</p>
-                <label htmlFor="budget">Valor mensal (R$)</label>
-                <div className="input-action">
-                  <input
-                    id="budget"
-                    inputMode="decimal"
-                    value={budgetInput}
-                    onChange={(e) => setBudgetInput(e.target.value)}
-                    placeholder="0,00"
-                    required
-                  />
-                  <button disabled={budgetBusy}>
-                    {budgetBusy ? "Salvando…" : "Salvar"}
-                  </button>
-                </div>
-              </form>
               <a
                 className="external"
                 href="https://fefin.lovable.app"

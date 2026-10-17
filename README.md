@@ -15,7 +15,9 @@ Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no ambiente ou e
 
 ## Regras
 
-- O orçamento usa a data da compra, deslocando a parcela N em N−1 meses; exclui receitas, Aportes e lançamentos reembolsados dos Pais.
+- O saldo principal é receitas menos gastos do mês, sem ler ou gravar `profiles.meta_mensal`. Receitas incluem `tipo=receita` e `categoria=salario` (mesmo com tipo despesa), excluindo `reembolso_pais`. Outros reembolsos permanecem. Receitas usam o mês da data, sem deslocamento de parcelas.
+- Gastos usam a data da compra, deslocando a parcela N em N−1 meses; excluem salário, Aportes e lançamentos reembolsados dos Pais. Os totais mensais são somados com a precisão original e arredondados para centavos antes da subtração.
+- Saldos negativos são exibidos sem corte em zero, na cor de atenção. Ritmo diário = saldo / dias restantes (incluindo hoje); semanal = max(0, saldo / dias restantes × 7).
 - A fatura usa o próximo fechamento, incluindo o dia atual. O pagamento acontece no primeiro vencimento estritamente posterior ao fechamento.
 - A memória compara descrições sem acentos/caixa e conta cada parcelamento uma única vez. Frequência vence; empate usa o registro mais recente.
 - Categorias são fixas. Pais mantém macro conhecida e usa `subcategoria_pais='Pais'`. Correções atualizam todas as parcelas do grupo.
@@ -40,4 +42,4 @@ No iPhone: abrir a URL no Safari, Compartilhar → Adicionar à Tela de Início.
 
 ## Validação
 
-21 testes automatizados cobrem calendário, limites de mês, orçamento e parcelas, memória e empates, regras dos pais, quatro formatos de SMS, arredondamento, login sem sessão, anotação com IA indisponível, desfazer, edição de categoria e revisão semanal. Os testes de interface usam Supabase simulado e não alteram dados reais. A validação autenticada com dados reais depende da sessão pessoal da usuária.
+31 testes automatizados cobrem calendário, limites de mês, orçamento e parcelas, memória e empates, regras dos pais, quatro formatos de SMS, arredondamento, login sem sessão, anotação com IA indisponível, desfazer, edição de categoria e revisão semanal. Os testes de interface usam Supabase simulado e não alteram dados reais. A validação autenticada com dados reais depende da sessão pessoal da usuária.

@@ -1,1 +1,8 @@
 project_id = "zhzaiphsnfqcgvtckdgv"
+
+[functions.norte-ai]
+verify_jwt = true
+
+# This webhook authenticates through x-sms-key / SMS_SECRET.
+[functions.sms-lancamento]
+verify_jwt = false

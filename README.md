@@ -1,73 +1,43 @@
-# Welcome to your Lovable project
+# Norte
 
-## Project info
+Aplicativo pessoal com três abas: Hoje, Semana e Tudo. React 18, TypeScript estrito, Vite, CSS simples e Supabase. O código ativo está em `norte-src/`; `index.html` aponta exclusivamente para ele. O código legado de `src/` não faz parte do build. A branch `main` continua sendo o FeFin.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Executar
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm ci
+npm run dev -- --host 127.0.0.1
+npm test
+npm run build
 ```
 
-**Edit a file directly in GitHub**
+Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no ambiente ou em `.env.local`. Ambas são variáveis públicas de cliente. Nunca use uma service-role key no frontend. O login é e-mail e senha da mesma conta do FeFin. Consultas e alterações filtram `user_id` e usam as políticas RLS existentes.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Regras
 
-**Use GitHub Codespaces**
+- O orçamento usa a data da compra, deslocando a parcela N em N−1 meses; exclui receitas, Aportes e lançamentos reembolsados dos Pais.
+- A fatura usa o próximo fechamento, incluindo o dia atual. O pagamento acontece no primeiro vencimento estritamente posterior ao fechamento.
+- A memória compara descrições sem acentos/caixa e conta cada parcelamento uma única vez. Frequência vence; empate usa o registro mais recente.
+- Categorias são fixas. Pais mantém macro conhecida e usa `subcategoria_pais='Pais'`. Correções atualizam todas as parcelas do grupo.
+- O lançamento é salvo antes da classificação adicional. Falha da IA mantém o registro e permite escolher categoria. Desfazer exclui somente os IDs da última inclusão desta sessão.
+- A revisão semanal é armazenada neste aparelho por usuário e por semana (segunda-feira como início).
+- A PWA guarda apenas o shell público; dados financeiros e respostas de autenticação não são armazenados no service worker. Sem conexão, não é possível gravar gastos.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Edge Functions
 
-## What technologies are used for this project?
+Fontes em `supabase/functions/`, compartilhando calendário, memória e parsing de SMS em `_shared/`.
 
-This project is built with:
+- `norte-ai`: `verify_jwt=true`, valida usuário com `getUser`, tarefas `parse` e `classify`, categorias fixas e `ANTHROPIC_API_KEY` no servidor.
+- `sms-lancamento`: `verify_jwt=false` exclusivamente porque o webhook autentica por `x-sms-key` com `SMS_SECRET`. Preserva o usuário e os cartões existentes, `dry_run`, os formatos Master/pais/Visa e a divisão de centavos na última parcela. A deduplicação compara estabelecimento, cartão, data, valor e quantidade de parcelas dos últimos dez minutos. Mensagens irrelevantes são ignoradas.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+As chaves privadas ficam nos secrets já existentes do Supabase. Não há migração de schema nem alteração de dados históricos.
 
-## How can I deploy this project?
+## Vercel
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Deploy de **preview** a partir da branch `norte`, no projeto Vercel já ligado ao repositório. Não promover o preview sobre a produção do FeFin. O build usa `npm run build`, saída `dist`, com as duas variáveis públicas do Supabase. `vercel.json` configura o fallback de navegação e impede cache longo do service worker.
 
-## Can I connect a custom domain to my Lovable project?
+No iPhone: abrir a URL no Safari, Compartilhar → Adicionar à Tela de Início. A instalação usa o nome Norte, ícone de bússola e modo standalone.
 
-Yes, you can!
+## Validação
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+21 testes automatizados cobrem calendário, limites de mês, orçamento e parcelas, memória e empates, regras dos pais, quatro formatos de SMS, arredondamento, login sem sessão, anotação com IA indisponível, desfazer, edição de categoria e revisão semanal. Os testes de interface usam Supabase simulado e não alteram dados reais. A validação autenticada com dados reais depende da sessão pessoal da usuária.

@@ -21,6 +21,7 @@ import {
   isInstallmentCount,
   normalize,
   parseDate,
+  navigateMonth,
 } from "./domain";
 import type { Entry, Card, Category } from "./domain";
 import CategorySelect from "./CategorySelect";
@@ -621,6 +622,9 @@ export default function App() {
         selected={selectedMonth}
         now={now}
         onChange={setSelectedMonth}
+        onStep={(step) =>
+          setSelectedMonth((current) => navigateMonth(current, step, now))
+        }
       />
       {error && (
         <div className="alert" role="alert">

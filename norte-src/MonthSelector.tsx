@@ -3,10 +3,12 @@ export default function MonthSelector({
   selected,
   now,
   onChange,
+  onStep,
 }: {
   selected: Date;
   now: Date;
   onChange: (date: Date) => void;
+  onStep: (step: -1 | 1) => void;
 }) {
   const previous = navigateMonth(selected, -1, now),
     next = navigateMonth(selected, 1, now);
@@ -15,7 +17,7 @@ export default function MonthSelector({
       <button
         aria-label="Mês anterior"
         disabled={monthKey(previous) === monthKey(selected)}
-        onClick={() => onChange(previous)}
+        onClick={() => onStep(-1)}
       >
         ‹
       </button>
@@ -28,7 +30,7 @@ export default function MonthSelector({
       <button
         aria-label="Próximo mês"
         disabled={monthKey(next) === monthKey(selected)}
-        onClick={() => onChange(next)}
+        onClick={() => onStep(1)}
       >
         ›
       </button>

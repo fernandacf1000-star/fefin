@@ -14,6 +14,10 @@ import {
   parseMoney,
   cardDates,
   monthPeriod,
+  installmentRows,
+  recurringRows,
+  groupScope,
+  splitInstallments,
 } from "./domain";
 import type { Entry, Card, Category } from "./domain";
 import CategorySelect from "./CategorySelect";
@@ -37,7 +41,7 @@ type Draft = {
   edited?: boolean;
 };
 const fields =
-  "id,user_id,descricao,valor,tipo,categoria,categoria_macro,subcategoria,subcategoria_pais,data,mes_referencia,forma_pagamento,cartao_id,pago,pago_por,is_parcelado,parcela_atual,parcela_total,parcelamento_id,created_at";
+  "id,user_id,descricao,valor,tipo,categoria,categoria_macro,subcategoria,subcategoria_pais,data,mes_referencia,forma_pagamento,cartao_id,pago,pago_por,is_parcelado,parcela_atual,parcela_total,parcelamento_id,recorrencia_id,created_at";
 async function historyFor(uid: string) {
   const all: Entry[] = [];
   for (let offset = 0; ; offset += 1000) {
@@ -106,6 +110,10 @@ export default function App() {
     [label, setLabel] = useState(""),
     [drafts, setDrafts] = useState<Draft[]>([]),
     [payment, setPayment] = useState("dinheiro"),
+    [plan, setPlan] = useState<"uma" | "parcelado" | "recorrente">("uma"),
+    [installments, setInstallments] = useState("2"),
+    [recDay, setRecDay] = useState(String(new Date().getDate())),
+    [recMonths, setRecMonths] = useState("12"),
     [busy, setBusy] = useState(false),
     [sheetError, setSheetError] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(
@@ -185,22 +193,24 @@ export default function App() {
     .filter((c) => c.ativo)
     .map((c) => ({ ...c, ...cardDates(c, now) }))
     .sort((a, b) => b.days - a.days || a.nome.localeCompare(b.nome));
-  async function deleteEntry(row: Entry) {
+  async function deleteEntry(row: Entry, scope: "one" | "next" | "all" = "one") {
     if (!uid) throw new Error("Sessão encerrada");
-    cancelled.current.add(row.id);
+    const targets = groupScope(rows, row, scope);
+    const ids = targets.map((r) => r.id);
+    ids.forEach((id) => cancelled.current.add(id));
     const { data, error } = await sb!
       .from("norte_lancamentos")
       .delete()
       .eq("user_id", uid)
-      .eq("id", row.id)
+      .in("id", ids)
       .select("id");
-    if (error || data?.length !== 1) {
-      cancelled.current.delete(row.id);
+    if (error || data?.length !== ids.length) {
+      ids.forEach((id) => cancelled.current.delete(id));
       throw error ?? new Error("Exclusão não confirmada");
     }
-    setRows((old) => old.filter((r) => r.id !== row.id));
-    setUndo((old) => old.filter((id) => id !== row.id));
-    setNotice("Lançamento apagado.");
+    setRows((old) => old.filter((r) => !ids.includes(r.id)));
+    setUndo((old) => old.filter((id) => !ids.includes(id)));
+    setNotice(ids.length > 1 ? `${ids.length} lançamentos apagados.` : "Lançamento apagado.");
   }
   async function changeCategory(row: Entry, cat: Category) {
     if (!uid) return;
@@ -212,7 +222,8 @@ export default function App() {
     const related = rows.filter(
       (r) =>
         r.id === row.id ||
-        (row.parcelamento_id && r.parcelamento_id === row.parcelamento_id),
+        (row.parcelamento_id && r.parcelamento_id === row.parcelamento_id) ||
+        (row.recorrencia_id && r.recorrencia_id === row.recorrencia_id),
     );
     const ids = related.map((r) => r.id);
     setChanging((s) => new Set([...s, ...ids]));
@@ -245,6 +256,10 @@ export default function App() {
     setAmount("");
     setLabel("");
     setPayment("dinheiro");
+    setPlan("uma");
+    setInstallments("2");
+    setRecDay(String(new Date().getDate()));
+    setRecMonths("12");
     dialog.current?.showModal();
   }
   function closeSheet() {
@@ -372,7 +387,34 @@ export default function App() {
       )
         throw new Error("Preencha uma descrição e um valor maior que zero.");
       const before = rows;
-      const payload = items.map((d) => {
+      let payload: Record<string, unknown>[];
+      if (mode === "Valor" && plan !== "uma") {
+        const d = items[0];
+        const cat = parentRule(d.label) ? "Pais" : (memory(d.label, before) ?? null);
+        const base = {
+          user_id: uid,
+          descricao: d.label,
+          tipo: kind,
+          categoria: kind === "receita" && cat === "Pais" ? "reembolso_pais" : kind,
+          categoria_macro: cat === "Pais" ? knownMacro(d.label, before) : cat,
+          subcategoria_pais: cat === "Pais" ? "Pais" : null,
+        };
+        const group = crypto.randomUUID();
+        if (plan === "parcelado") {
+          const n = Number(installments);
+          if (!Number.isInteger(n) || n < 2 || n > 48)
+            throw new Error("Preencha parcelas entre 2 e 48.");
+          const card = kind === "despesa" ? (cards.find((c) => c.id === payment) ?? null) : null;
+          payload = installmentRows(base, d.amount, n, now, card, group);
+        } else {
+          const day = Number(recDay), months = Number(recMonths);
+          if (!Number.isInteger(day) || day < 1 || day > 31 || !Number.isInteger(months) || months < 2 || months > 36)
+            throw new Error("Preencha dia (1 a 31) e meses (2 a 36).");
+          payload = recurringRows(base, d.amount, now, day, months, group);
+        }
+        if (!payload.length) throw new Error("Preencha uma descrição e um valor maior que zero.");
+      } else
+      payload = items.map((d) => {
         const day = new Date(
           now.getFullYear(),
           now.getMonth(),
@@ -414,7 +456,11 @@ export default function App() {
       const inserted = data as Entry[];
       setRows((old) => [...inserted, ...old]);
       setUndo(inserted.map((r) => r.id));
-      setNotice(kind === "receita"
+      setNotice(mode === "Valor" && plan === "parcelado"
+        ? `Compra anotada em ${inserted.length} parcelas.`
+        : mode === "Valor" && plan === "recorrente"
+        ? `Lançamento anotado por ${inserted.length} meses.`
+        : kind === "receita"
         ? inserted.length > 1 ? "Receitas anotadas." : "Receita anotada."
         : inserted.length > 1 ? "Gastos anotados." : "Gasto anotado.");
       dialog.current?.close();
@@ -695,7 +741,49 @@ export default function App() {
                 />
               </>
             )}
-            {kind === "despesa" && <details className="payment">
+            {mode === "Valor" && (
+              <>
+                <div className="sheet-tabs" role="group" aria-label="Frequência">
+                  {([["uma", "Uma vez"], ["parcelado", "Parcelado"], ["recorrente", "Todo mês"]] as const).map(([v, t]) => (
+                    <button type="button" key={v} aria-pressed={plan === v} disabled={busy}
+                      onClick={() => { setPlan(v); setSheetError(""); }}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+                {plan === "parcelado" && (
+                  <>
+                    <label htmlFor="installments">Em quantas parcelas? (informe o valor total acima)</label>
+                    <input id="installments" inputMode="numeric" value={installments}
+                      onChange={(e) => setInstallments(e.target.value)} disabled={busy} />
+                    {(() => {
+                      const parts = splitInstallments(parseMoney(amount), Number(installments));
+                      return parts.length > 1 && Number(installments) <= 48 ? (
+                        <p className="muted">
+                          {parts.length}x de {money(parts[0])}
+                          {parts[parts.length - 1] !== parts[0] ? ` (última ${money(parts[parts.length - 1])})` : ""}
+                          {" · total "}{money(parseMoney(amount))}
+                        </p>
+                      ) : null;
+                    })()}
+                  </>
+                )}
+                {plan === "recorrente" && (
+                  <>
+                    <label htmlFor="rec-day">Dia do mês (1 a 31)</label>
+                    <input id="rec-day" inputMode="numeric" value={recDay}
+                      onChange={(e) => setRecDay(e.target.value)} disabled={busy} />
+                    <label htmlFor="rec-months">Por quantos meses? (2 a 36)</label>
+                    <input id="rec-months" inputMode="numeric" value={recMonths}
+                      onChange={(e) => setRecMonths(e.target.value)} disabled={busy} />
+                    <p className="muted">
+                      {kind === "receita" ? "Entra" : "Sai"} {money(parseMoney(amount) || 0)} todo mês, a partir deste mês.
+                    </p>
+                  </>
+                )}
+              </>
+            )}
+            {kind === "despesa" && !(mode === "Valor" && plan === "recorrente") && <details className="payment">
               <summary>
                 Pago com{" "}
                 <span>
@@ -729,7 +817,11 @@ export default function App() {
                 ? "Um instante…"
                 : mode === "Texto com IA" && !drafts.length
                   ? "Entender texto"
-                  : "Salvar " + (kind === "receita" ? "receita" : "gasto") + (drafts.length > 1 ? "s" : "")}
+                  : mode === "Valor" && plan === "parcelado"
+                  ? "Salvar parcelas"
+                  : mode === "Valor" && plan === "recorrente"
+                    ? "Salvar todo mês"
+                    : "Salvar " + (kind === "receita" ? "receita" : "gasto") + (drafts.length > 1 ? "s" : "")}
             </button>
           </form>
         </div>

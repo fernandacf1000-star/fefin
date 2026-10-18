@@ -28,6 +28,7 @@ export type Entry = {
   parcela_atual: number | null;
   parcela_total: number | null;
   parcelamento_id: string | null;
+  recorrencia_id?: string | null;
   created_at?: string;
 };
 export type Card = {
@@ -389,4 +390,109 @@ export function sixMonthChartData(rows: Entry[], selected: Date) {
       selected: i === 5,
     };
   });
+}
+
+// ---- Parcelados e recorrentes ----
+// Divide em centavos: parcelas iguais, a última absorve a diferença.
+export function splitInstallments(total: number, n: number): number[] {
+  const cents = Math.round(total * 100);
+  if (!Number.isInteger(n) || n < 1 || !Number.isFinite(cents) || cents <= 0)
+    return [];
+  const base = Math.floor(cents / n);
+  return Array.from(
+    { length: n },
+    (_, i) => (i === n - 1 ? cents - base * (n - 1) : base) / 100,
+  );
+}
+export type PlanBase = {
+  user_id: string;
+  descricao: string;
+  tipo: "despesa" | "receita";
+  categoria: string;
+  categoria_macro: string | null;
+  subcategoria_pais: string | null;
+};
+export function installmentRows(
+  base: PlanBase,
+  total: number,
+  n: number,
+  purchase: Date,
+  card: Card | null,
+  groupId: string,
+) {
+  const parts = splitInstallments(total, n);
+  const first = card ? cardDates(card, purchase).reference : monthKey(purchase);
+  return parts.map((valor, i) => ({
+    ...base,
+    valor,
+    subcategoria: null,
+    data: dateKey(purchase),
+    mes_referencia: monthKey(
+      addMonths(parseDate(first + "-01"), i),
+    ),
+    forma_pagamento: card ? "credito" : "dinheiro",
+    cartao_id: card?.id ?? null,
+    pago: !card,
+    pago_por: "voce",
+    is_parcelado: n > 1,
+    parcela_atual: n > 1 ? i + 1 : null,
+    parcela_total: n > 1 ? n : null,
+    parcelamento_id: n > 1 ? groupId : null,
+  }));
+}
+// Dia do mês pedido; em meses curtos usa o último dia.
+export function recurringDates(start: Date, day: number, months: number) {
+  const first = new Date(start.getFullYear(), start.getMonth(), 1, 12);
+  return Array.from({ length: months }, (_, i) => {
+    const m = addMonths(first, i);
+    const last = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+    return new Date(m.getFullYear(), m.getMonth(), Math.min(day, last), 12);
+  });
+}
+export function recurringRows(
+  base: PlanBase,
+  valor: number,
+  start: Date,
+  day: number,
+  months: number,
+  groupId: string,
+) {
+  const amount = Math.round(valor * 100) / 100;
+  if (!(amount > 0)) return [];
+  return recurringDates(start, day, months).map((d) => ({
+    ...base,
+    valor: amount,
+    subcategoria: null,
+    data: dateKey(d),
+    mes_referencia: monthKey(d),
+    forma_pagamento: "dinheiro",
+    cartao_id: null,
+    pago: false,
+    pago_por: "voce",
+    is_parcelado: false,
+    parcela_atual: null,
+    parcela_total: null,
+    parcelamento_id: null,
+    recorrencia_id: groupId,
+  }));
+}
+// Linhas afetadas ao apagar: só esta, esta e as próximas, ou todas do grupo.
+export function groupScope(
+  rows: Entry[],
+  row: Entry,
+  scope: "one" | "next" | "all",
+) {
+  const key = row.parcelamento_id
+    ? (r: Entry) => r.parcelamento_id === row.parcelamento_id
+    : row.recorrencia_id
+      ? (r: Entry) => r.recorrencia_id === row.recorrencia_id
+      : null;
+  if (!key || scope === "one") return rows.filter((r) => r.id === row.id);
+  const group = rows.filter(key);
+  if (scope === "all") return group;
+  const at = (r: Entry) =>
+    row.parcelamento_id
+      ? String(r.parcela_atual ?? 0).padStart(3, "0")
+      : r.data;
+  return group.filter((r) => at(r) >= at(row));
 }

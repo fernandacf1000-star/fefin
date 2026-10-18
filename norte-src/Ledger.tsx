@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  groupScope,
   categoryOf,
   countsAsIncome,
   filterEntries,
@@ -31,7 +32,7 @@ export default function Ledger({
   pending: Set<string>;
   changing: Set<string>;
   onCategory: (r: Entry, c: Category) => Promise<void>;
-  onDelete: (r: Entry) => Promise<void>;
+  onDelete: (r: Entry, scope: "one" | "next" | "all") => Promise<void>;
   categoryFilter: Category | null;
   onClearCategory: () => void;
 }) {
@@ -40,6 +41,7 @@ export default function Ledger({
     [detailId, setDetailId] = useState<string | null>(null),
     [confirm, setConfirm] = useState(false),
     [deleting, setDeleting] = useState(false),
+    [scope, setScope] = useState<"one" | "next" | "all">("one"),
     [error, setError] = useState("");
   const sheet = useRef<HTMLDialogElement>(null),
     lastOpener = useRef<HTMLButtonElement | null>(null);
@@ -80,7 +82,7 @@ export default function Ledger({
     setDeleting(true);
     setError("");
     try {
-      await onDelete(detail);
+      await onDelete(detail, scope);
       sheet.current?.close();
       setDetailId(null);
       lastOpener.current?.focus();
@@ -161,6 +163,7 @@ export default function Ledger({
                         {row.parcela_total ?? 1}
                       </span>
                     )}
+                    {row.recorrencia_id && <span>Todo mês</span>}
                   </div>
                 </button>
                 <div className="entry-bottom">
@@ -264,7 +267,7 @@ export default function Ledger({
               {!confirm ? (
                 <button
                   className="delete-button"
-                  onClick={() => setConfirm(true)}
+                  onClick={() => { setScope("one"); setConfirm(true); }}
                 >
                   Apagar
                 </button>
@@ -275,11 +278,23 @@ export default function Ledger({
                   aria-label="Confirmar exclusão"
                 >
                   <p>Apagar este lançamento?</p>
-                  <small>
-                    {detail.is_parcelado
-                      ? "Somente esta parcela será apagada."
-                      : "Esta ação não pode ser desfeita."}
-                  </small>
+                  {detail.parcelamento_id || detail.recorrencia_id ? (
+                    <>
+                      <div role="group" aria-label="O que apagar">
+                        {([["one", "Só este"], ["next", "Este e os próximos"], ["all", "Todos"]] as const).map(([v, t]) => (
+                          <button type="button" key={v} aria-pressed={scope === v}
+                            disabled={deleting} onClick={() => setScope(v)}>
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                      <small>
+                        Serão apagados {groupScope(rows, detail, scope).length} lançamento(s).
+                      </small>
+                    </>
+                  ) : (
+                    <small>Esta ação não pode ser desfeita.</small>
+                  )}
                   <div>
                     <button
                       disabled={deleting}

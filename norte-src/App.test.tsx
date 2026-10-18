@@ -448,8 +448,9 @@ it("lista 80 itens, carrega mais, filtra e confirma exclusão de uma só parcela
   fireEvent.click(within(detail).getByRole("button", { name: "Apagar" }));
   expect(state.rows).toHaveLength(83);
   expect(
-    within(detail).getByText("Somente esta parcela será apagada."),
+    within(detail).getByText("Serão apagados 1 lançamento(s)."),
   ).toBeTruthy();
+  expect(within(detail).getByRole("button", { name: "Só este" }).getAttribute("aria-pressed")).toBe("true");
   fireEvent.click(
     within(detail).getByRole("button", { name: "Confirmar exclusão" }),
   );
@@ -503,6 +504,38 @@ it("anota receita por valor, soma só em Ganhou e permite desfazer", async () =>
   expect(within(summary).getByText("Gastou").nextElementSibling?.textContent).toMatch(/0,00/);
   fireEvent.click(screen.getByRole("button", { name: "Desfazer" }));
   await waitFor(() => expect(state.rows).toHaveLength(0));
+});
+
+it("parcelado: valor cheio dividido em centavos, prévia e uma linha por parcela", async () => {
+  await open();
+  fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "100" } });
+  fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Geladeira" } });
+  fireEvent.click(screen.getByRole("button", { name: "Parcelado" }));
+  fireEvent.change(screen.getByLabelText(/Em quantas parcelas/), { target: { value: "3" } });
+  expect(screen.getByText(/3x de R\$\s*33,33 \(última R\$\s*33,34\)/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Salvar parcelas" }));
+  await screen.findByText("Compra anotada em 3 parcelas.");
+  const parts = state.rows.filter((r) => r.descricao === "Geladeira");
+  expect(parts.map((r) => r.valor).sort()).toEqual([33.33, 33.33, 33.34]);
+  expect(parts.every((r) => r.is_parcelado && r.parcela_total === 3 && r.parcelamento_id === parts[0].parcelamento_id)).toBe(true);
+});
+
+it("todo mês: cria uma linha por mês com o mesmo recorrencia_id", async () => {
+  await open();
+  fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "89,90" } });
+  fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Streaming" } });
+  fireEvent.click(screen.getByRole("button", { name: "Todo mês" }));
+  fireEvent.change(screen.getByLabelText(/Dia do mês/), { target: { value: "5" } });
+  fireEvent.change(screen.getByLabelText(/Por quantos meses/), { target: { value: "4" } });
+  expect(screen.queryByText("Pago com")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Salvar todo mês" }));
+  await screen.findByText("Lançamento anotado por 4 meses.");
+  const rec = state.rows.filter((r) => r.descricao === "Streaming");
+  expect(rec).toHaveLength(4);
+  expect(new Set(rec.map((r) => r.recorrencia_id)).size).toBe(1);
+  expect(rec.every((r) => r.valor === 89.9 && !r.is_parcelado)).toBe(true);
 });
 
 it("receita com IA mantém categorias ajustáveis e memória, sem cartão", async () => {

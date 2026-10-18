@@ -1,5 +1,5 @@
 // Cache only the public shell. Financial data, auth and API requests never enter Cache Storage.
-const CACHE = "norte-shell-v4";
+const CACHE = "norte-shell-v5";
 const SHELL = [
   "/",
   "/norte-compass-v4.svg",
@@ -9,7 +9,12 @@ const SHELL = [
   "/manifest.webmanifest",
 ];
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(SHELL))
+      .then(() => self.skipWaiting()),
+  );
 });
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -43,16 +48,14 @@ self.addEventListener("fetch", (event) => {
         return response;
       })
       .catch(() =>
-        caches
-          .match(event.request)
-          .then(
-            (cached) =>
-              cached ||
-              new Response("Sem conexão. Conecte-se para abrir o Norte.", {
-                status: 503,
-                headers: { "Content-Type": "text/plain; charset=utf-8" },
-              }),
-          ),
+        caches.match(event.request).then(
+          (cached) =>
+            cached ||
+            new Response("Sem conexão. Conecte-se para abrir o Norte.", {
+              status: 503,
+              headers: { "Content-Type": "text/plain; charset=utf-8" },
+            }),
+        ),
       ),
   );
 });

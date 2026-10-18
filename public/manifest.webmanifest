@@ -11,13 +11,13 @@
   "theme_color": "#EDF1F1",
   "icons": [
     {
-      "src": "/norte-icon-192-v4.png",
+      "src": "https://raw.githubusercontent.com/fernandacf1000-star/fefin/26f1abd7aac6b2e5969779ac3122093325bb97a4/public/norte-icon-192-v4.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/norte-icon-512-v4.png",
+      "src": "https://raw.githubusercontent.com/fernandacf1000-star/fefin/26f1abd7aac6b2e5969779ac3122093325bb97a4/public/norte-icon-512-v4.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

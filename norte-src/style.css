@@ -1057,3 +1057,15 @@ progress.care-progress::-moz-progress-bar {
     font-size: 11px;
   }
 }
+
+.brand-dot {
+  color: #6d536f;
+}
+@media (prefers-color-scheme: dark) {
+  .brand-dot {
+    color: #b9a2c1;
+  }
+  .brand img {
+    background: transparent;
+  }
+}

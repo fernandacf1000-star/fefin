@@ -42,7 +42,7 @@ async function historyFor(uid: string) {
   const all: Entry[] = [];
   for (let offset = 0; ; offset += 1000) {
     const { data, error } = await sb!
-      .from("lancamentos")
+      .from("norte_lancamentos")
       .select(fields)
       .eq("user_id", uid)
       .order("created_at", { ascending: false })
@@ -134,7 +134,7 @@ export default function App() {
       const [entries, c] = await Promise.all([
         historyFor(uid),
         sb!
-          .from("cartoes")
+          .from("norte_cartoes")
           .select("id,nome,dia_fechamento,dia_vencimento,ativo")
           .eq("user_id", uid),
       ]);
@@ -178,7 +178,7 @@ export default function App() {
     if (!uid) throw new Error("Sessão encerrada");
     cancelled.current.add(row.id);
     const { data, error } = await sb!
-      .from("lancamentos")
+      .from("norte_lancamentos")
       .delete()
       .eq("user_id", uid)
       .eq("id", row.id)
@@ -208,7 +208,7 @@ export default function App() {
     try {
       const patch = categoryPatch(cat, row);
       const { data, error } = await sb!
-        .from("lancamentos")
+        .from("norte_lancamentos")
         .update(patch)
         .eq("user_id", uid)
         .in("id", ids)
@@ -315,7 +315,7 @@ export default function App() {
         if (!cat) continue;
         const patch = categoryPatch(cat, r);
         const { error } = await sb!
-          .from("lancamentos")
+          .from("norte_lancamentos")
           .update(patch)
           .eq("id", r.id)
           .eq("user_id", r.user_id);
@@ -393,7 +393,7 @@ export default function App() {
         };
       });
       const { data, error } = await sb!
-        .from("lancamentos")
+        .from("norte_lancamentos")
         .insert(payload)
         .select(fields);
       if (error) throw error;
@@ -421,7 +421,7 @@ export default function App() {
     ids.forEach((id) => cancelled.current.add(id));
     try {
       const { data, error } = await sb!
-        .from("lancamentos")
+        .from("norte_lancamentos")
         .delete()
         .eq("user_id", uid)
         .in("id", ids)

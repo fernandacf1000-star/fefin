@@ -11,7 +11,7 @@ npm test
 npm run build
 ```
 
-Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no ambiente ou em `.env.local`. Ambas são variáveis públicas de cliente. Nunca use uma service-role key no frontend. O login é e-mail e senha da mesma conta do FeFin. Consultas e alterações filtram `user_id` e usam as políticas RLS existentes.
+Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no ambiente ou em `.env.local`. Ambas são variáveis públicas de cliente. Nunca use uma service-role key no frontend. O login é e-mail e senha da mesma conta do FeFin. Os dados são independentes: o aplicativo consulta e altera somente `norte_lancamentos` e `norte_cartoes`, com RLS própria por `user_id`. Não há importação, sincronização nem fallback para as tabelas do FeFin. O histórico e a memória de categorias começam vazios. Apenas a configuração dos dois cartões explicitamente fornecidos para o Norte foi cadastrada, de forma independente.
 
 ## Regras
 
@@ -32,9 +32,10 @@ Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no ambiente ou e
 Fontes em `supabase/functions/`, compartilhando calendário, memória e parsing de SMS em `_shared/`.
 
 - `norte-ai`: `verify_jwt=true`, valida usuário com `getUser`, tarefas `parse` e `classify`, categorias fixas e `ANTHROPIC_API_KEY` no servidor.
-- `sms-lancamento`: `verify_jwt=false` exclusivamente porque o webhook autentica por `x-sms-key` com `SMS_SECRET`. Preserva o usuário e os cartões existentes, `dry_run`, os formatos Master/pais/Visa e a divisão de centavos na última parcela. A deduplicação compara estabelecimento, cartão, data, valor e quantidade de parcelas dos últimos dez minutos. Mensagens irrelevantes são ignoradas.
+- `norte-sms-lancamento`: novo endpoint exclusivo do Norte, gravando e classificando somente `norte_lancamentos`. O atalho do iPhone precisa apontar para `/functions/v1/norte-sms-lancamento` para alimentar o Norte. O endpoint antigo `sms-lancamento` continua inalterado e exclusivo do FeFin.
+- `sms-lancamento` (legado do FeFin): `verify_jwt=false` exclusivamente porque o webhook autentica por `x-sms-key` com `SMS_SECRET`. Preserva o usuário e os cartões existentes, `dry_run`, os formatos Master/pais/Visa e a divisão de centavos na última parcela. A deduplicação compara estabelecimento, cartão, data, valor e quantidade de parcelas dos últimos dez minutos. Mensagens irrelevantes são ignoradas.
 
-As chaves privadas ficam nos secrets já existentes do Supabase. Não há migração de schema nem alteração de dados históricos.
+As chaves privadas ficam nos secrets já existentes do Supabase. A migração `isolate_norte_data` cria apenas as duas tabelas do Norte, com políticas de acesso e índices próprios; as tabelas e os dados históricos do FeFin permanecem intactos. A nova tabela de lançamentos não recebe cópia de qualquer histórico anterior.
 
 ## Vercel
 
@@ -44,4 +45,4 @@ No iPhone: abrir a URL no Safari, Compartilhar → Adicionar à Tela de Início.
 
 ## Validação
 
-45 testes automatizados cobrem calendário, limites de mês, orçamento e parcelas, memória e empates, regras dos pais, quatro formatos de SMS, arredondamento, login sem sessão, anotação com IA indisponível, desfazer, edição de categoria, navegação mensal com virada de ano e limites, datas efetivas, agrupamento, filtros, paginação, exclusão confirmada, resumo simplificado, categorias e série de seis meses, filtro a partir do gráfico e Anotar nas três abas. Os testes de interface usam Supabase simulado e não alteram dados reais. A validação autenticada com dados reais depende da sessão pessoal da usuária.
+46 testes automatizados cobrem calendário, limites de mês, orçamento e parcelas, memória e empates, regras dos pais, quatro formatos de SMS, arredondamento, login sem sessão, anotação com IA indisponível, desfazer, edição de categoria, navegação mensal com virada de ano e limites, datas efetivas, agrupamento, filtros, paginação, exclusão confirmada, resumo simplificado, categorias e série de seis meses, filtro a partir do gráfico e Anotar nas três abas, início vazio e memória exclusiva do Norte. Os testes rejeitam qualquer consulta às tabelas legadas. Os testes de interface usam Supabase simulado e não alteram dados reais. A validação autenticada com dados reais depende da sessão pessoal da usuária.

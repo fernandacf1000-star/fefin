@@ -61,7 +61,7 @@ vi.mock("./supabase", () => {
       return this;
     }
     then(resolve: (r: unknown) => void) {
-      if (this.table === "cartoes")
+      if (this.table === "norte_cartoes")
         return Promise.resolve({
           data: [
             {
@@ -107,8 +107,8 @@ vi.mock("./supabase", () => {
     configured: true,
     supabase: {
       from: (t: string) => {
-        if (t === "profiles")
-          throw new Error("Norte must never access profiles");
+        if (!["norte_lancamentos", "norte_cartoes"].includes(t))
+          throw new Error("Norte must only access its own tables");
         return new Query(t);
       },
       functions: { invoke: state.ai },
@@ -456,4 +456,32 @@ it("lista 80 itens, carrega mais, filtra e confirma exclusão de uma só parcela
   await waitFor(() => expect(state.rows).toHaveLength(82));
   expect(state.rows.find((r) => r.id === "r9")).toBeUndefined();
   expect(state.rows.find((r) => r.id === "r8")).toBeTruthy();
+});
+
+it("Norte inicia vazio e envia à IA somente seu próprio histórico", async () => {
+  render(<App />);
+  const month = await screen.findByRole("region", { name: "Resumo do mês" });
+  expect(month.querySelector(".big-number")?.textContent).toMatch(/0,00/);
+  expect(
+    within(month)
+      .getAllByRole("definition")
+      .every((el) => /0,00/.test(el.textContent ?? "")),
+  ).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  expect(screen.getByText(/Nada lançado em/)).toBeTruthy();
+  state.ai.mockResolvedValue({
+    data: {
+      items: [
+        { label: "Mercado", amount: 10, category: "Alimentação", dayOffset: 0 },
+      ],
+    },
+    error: null,
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Anotar" }));
+  fireEvent.change(screen.getByLabelText("O que você gastou?"), {
+    target: { value: "10 mercado" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
+  await screen.findByText("Confira antes de anotar.");
+  expect(state.ai.mock.calls[0][1].body.examples).toEqual([]);
 });

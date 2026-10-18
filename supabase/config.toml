@@ -6,3 +6,7 @@ verify_jwt = true
 # This webhook authenticates through x-sms-key / SMS_SECRET.
 [functions.sms-lancamento]
 verify_jwt = false
+
+# Independent Norte SMS ingestion; same x-sms-key authentication, separate records.
+[functions.norte-sms-lancamento]
+verify_jwt = false

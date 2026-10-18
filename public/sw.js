@@ -1,11 +1,11 @@
 // Cache only the public shell. Financial data, auth and API requests never enter Cache Storage.
-const CACHE = "norte-shell-v1";
+const CACHE = "norte-shell-v2";
 const SHELL = [
   "/",
-  "/compass.svg",
-  "/apple-touch-icon.png",
-  "/icon-192.png",
-  "/icon-512.png",
+  "/norte-compass-color.svg",
+  "/norte-apple-touch-v2.png",
+  "/norte-icon-192-v2.png",
+  "/norte-icon-512-v2.png",
   "/manifest.webmanifest",
 ];
 self.addEventListener("install", (event) => {

@@ -66,7 +66,7 @@ async function askAI(body: Record<string, unknown>) {
 function Logo() {
   return (
     <span className="brand">
-      <img src="/compass.svg" alt="" />
+      <img src="/norte-compass-color.svg" alt="" />
       norte<span className="brand-dot">.</span>
     </span>
   );

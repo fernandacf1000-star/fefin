@@ -319,3 +319,108 @@ it("mostra saldo negativo, aviso de atenção e nenhuma configuração mensal", 
   expect(screen.queryByLabelText("Valor mensal (R$)")).toBeNull();
   expect(screen.queryByText(/Defina/)).toBeNull();
 });
+
+it("compartilha mês entre telas e só exibe ritmo no mês atual", async () => {
+  render(<App />);
+  await screen.findByText("Anotado hoje");
+  fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
+  expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(
+    /Previsto para/,
+  );
+  expect(screen.getByText("Só o que já está lançado")).toBeTruthy();
+  expect(screen.queryByText(/Ritmo diário/)).toBeNull();
+  const selected = within(
+    screen.getByRole("group", { name: "Mês selecionado" }),
+  ).getByText(/de \d{4}/).textContent;
+  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  expect(
+    within(screen.getByRole("group", { name: "Mês selecionado" })).getByText(
+      selected!,
+    ),
+  ).toBeTruthy();
+  expect(screen.getByText(/Nada lançado em/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Semana" }));
+  expect(screen.queryByText("Dá para gastar por semana")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  fireEvent.click(
+    within(screen.getByRole("group", { name: "Mês selecionado" })).getByRole(
+      "button",
+      { name: "Hoje" },
+    ),
+  );
+  fireEvent.click(
+    within(screen.getByRole("navigation")).getByRole("button", {
+      name: "Hoje",
+    }),
+  );
+  expect(screen.getByText(/Ritmo diário/)).toBeTruthy();
+});
+it("lista 80 itens, carrega mais, filtra e confirma exclusão de uma só parcela", async () => {
+  state.rows = Array.from({ length: 81 }, (_, i) =>
+    entry({
+      id: `r${i}`,
+      descricao: `Gasto ${i}`,
+      valor: 10,
+      is_parcelado: true,
+      parcela_atual: 1,
+      parcela_total: 5,
+      parcelamento_id: `g${i}`,
+    }),
+  );
+  state.rows.push(
+    entry({
+      id: "pais",
+      descricao: "Mercado Pais",
+      subcategoria_pais: "Pais",
+      valor: 500,
+    }),
+  );
+  state.rows.push(
+    entry({
+      id: "receipt",
+      tipo: "receita",
+      descricao: "Entrada",
+      valor: 1000,
+    }),
+  );
+  render(<App />);
+  await screen.findByText("Anotado hoje");
+  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  expect(
+    screen.getAllByRole("button", { name: /Ver detalhes de/ }),
+  ).toHaveLength(80);
+  fireEvent.click(screen.getByRole("button", { name: "Ver mais" }));
+  expect(
+    screen.getAllByRole("button", { name: /Ver detalhes de/ }),
+  ).toHaveLength(83);
+  expect(screen.getByText("Pais · fora da conta")).toBeTruthy();
+  fireEvent.click(
+    within(
+      screen.getByRole("group", { name: "Filtrar lançamentos" }),
+    ).getByRole("button", { name: "Pais" }),
+  );
+  expect(
+    screen.getAllByRole("button", { name: /Ver detalhes de/ }),
+  ).toHaveLength(1);
+  fireEvent.click(
+    within(
+      screen.getByRole("group", { name: "Filtrar lançamentos" }),
+    ).getByRole("button", { name: "Gastos" }),
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Ver detalhes de Gasto 9" }),
+  );
+  const detail = screen.getByRole("dialog", { name: "Detalhes do lançamento" });
+  expect(within(detail).getByText("Data da compra")).toBeTruthy();
+  fireEvent.click(within(detail).getByRole("button", { name: "Apagar" }));
+  expect(state.rows).toHaveLength(83);
+  expect(
+    within(detail).getByText("Somente esta parcela será apagada."),
+  ).toBeTruthy();
+  fireEvent.click(
+    within(detail).getByRole("button", { name: "Confirmar exclusão" }),
+  );
+  await waitFor(() => expect(state.rows).toHaveLength(82));
+  expect(state.rows.find((r) => r.id === "r9")).toBeUndefined();
+  expect(state.rows.find((r) => r.id === "r8")).toBeTruthy();
+});

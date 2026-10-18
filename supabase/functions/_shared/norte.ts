@@ -253,3 +253,67 @@ export function parseMoney(value: string): number {
     : text;
   return /^\d+(\.\d{1,2})?$/.test(normalized) ? Number(normalized) : NaN;
 }
+
+export type EntryFilter = "Todos" | "Gastos" | "Receitas" | "Pais";
+export function navigateMonth(selected: Date, step: number, now: Date): Date {
+  const origin = new Date(now.getFullYear(), now.getMonth(), 1, 12);
+  const offset =
+    (selected.getFullYear() - origin.getFullYear()) * 12 +
+    selected.getMonth() -
+    origin.getMonth() +
+    step;
+  return addMonths(origin, Math.max(-24, Math.min(24, offset)));
+}
+export const entryDate = (r: Entry) =>
+  r.tipo === "receita" || r.categoria === "salario"
+    ? parseDate(r.data)
+    : effectiveDate(r);
+export function monthEntries(rows: Entry[], selected: Date) {
+  return rows
+    .filter((r) => monthKey(entryDate(r)) === monthKey(selected))
+    .sort(
+      (a, b) =>
+        dateKey(entryDate(b)).localeCompare(dateKey(entryDate(a))) ||
+        (b.created_at ?? "").localeCompare(a.created_at ?? "") ||
+        b.id.localeCompare(a.id),
+    );
+}
+export function filterEntries(rows: Entry[], filter: EntryFilter) {
+  return rows.filter(
+    (r) =>
+      filter === "Todos" ||
+      (filter === "Pais"
+        ? !!r.subcategoria_pais
+        : filter === "Receitas"
+          ? countsAsIncome(r)
+          : countsAsSpending(r)),
+  );
+}
+export function groupEntriesByDay(rows: Entry[]) {
+  const groups = new Map<string, Entry[]>();
+  for (const row of [...rows].sort(
+    (a, b) =>
+      dateKey(entryDate(b)).localeCompare(dateKey(entryDate(a))) ||
+      (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+  )) {
+    const key = dateKey(entryDate(row));
+    groups.set(key, [...(groups.get(key) ?? []), row]);
+  }
+  return [...groups].map(([date, entries]) => ({ date, entries }));
+}
+export function monthPeriod(selected: Date, now: Date) {
+  return monthKey(selected) === monthKey(now)
+    ? "current"
+    : monthKey(selected) < monthKey(now)
+      ? "past"
+      : "future";
+}
+export function monthHeading(selected: Date, now: Date, balance: number) {
+  const name = selected.toLocaleDateString("pt-BR", { month: "long" });
+  const period = monthPeriod(selected, now);
+  return period === "current"
+    ? "Ainda dá para gastar neste mês"
+    : period === "future"
+      ? `Previsto para ${name}`
+      : `${balance < 0 ? "Passou" : "Sobrou"} em ${name}`;
+}

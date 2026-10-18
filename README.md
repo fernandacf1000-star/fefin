@@ -1,6 +1,6 @@
 # Norte
 
-Aplicativo pessoal com três abas: Hoje, Semana e Tudo. React 18, TypeScript estrito, Vite, CSS simples e Supabase. O código ativo está em `norte-src/`; `index.html` aponta exclusivamente para ele. O código legado de `src/` não faz parte do build. A branch `main` continua sendo o FeFin.
+Aplicativo pessoal com quatro abas: Hoje, Semana, Lançamentos e Tudo. React 18, TypeScript estrito, Vite, CSS simples e Supabase. O código ativo está em `norte-src/`; `index.html` aponta exclusivamente para ele. O código legado de `src/` não faz parte do build. A branch `main` continua sendo o FeFin.
 
 ## Executar
 
@@ -22,6 +22,8 @@ Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no ambiente ou e
 - A memória compara descrições sem acentos/caixa e conta cada parcelamento uma única vez. Frequência vence; empate usa o registro mais recente.
 - Categorias são fixas. Pais mantém macro conhecida e usa `subcategoria_pais='Pais'`. Correções atualizam todas as parcelas do grupo.
 - O lançamento é salvo antes da classificação adicional. Falha da IA mantém o registro e permite escolher categoria. Desfazer exclui somente os IDs da última inclusão desta sessão.
+- Hoje e Lançamentos compartilham um seletor de mês com janela de ±24 meses. Meses futuros mostram somente os registros existentes, sem projetar novas recorrências. Ritmos diário e semanal só aparecem ao selecionar o mês atual.
+- Lançamentos usa a data efetiva das parcelas, agrupa por dia, filtra Todos/Gastos/Receitas/Pais e carrega 80 itens por vez. Os totais consideram o mês inteiro, independentemente de filtro ou paginação, com a mesma função do painel. Detalhes mostram data da compra e mês da fatura. Exclusão exige confirmação e apaga somente o ID selecionado (uma parcela, quando aplicável); não altera as demais parcelas.
 - A revisão semanal é armazenada neste aparelho por usuário e por semana (segunda-feira como início).
 - A PWA guarda apenas o shell público; dados financeiros e respostas de autenticação não são armazenados no service worker. Sem conexão, não é possível gravar gastos.
 
@@ -42,4 +44,4 @@ No iPhone: abrir a URL no Safari, Compartilhar → Adicionar à Tela de Início.
 
 ## Validação
 
-31 testes automatizados cobrem calendário, limites de mês, orçamento e parcelas, memória e empates, regras dos pais, quatro formatos de SMS, arredondamento, login sem sessão, anotação com IA indisponível, desfazer, edição de categoria e revisão semanal. Os testes de interface usam Supabase simulado e não alteram dados reais. A validação autenticada com dados reais depende da sessão pessoal da usuária.
+39 testes automatizados cobrem calendário, limites de mês, orçamento e parcelas, memória e empates, regras dos pais, quatro formatos de SMS, arredondamento, login sem sessão, anotação com IA indisponível, desfazer, edição de categoria, revisão semanal, navegação mensal com virada de ano e limites, datas efetivas, agrupamento, filtros, paginação e exclusão confirmada. Os testes de interface usam Supabase simulado e não alteram dados reais. A validação autenticada com dados reais depende da sessão pessoal da usuária.

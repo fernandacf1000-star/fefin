@@ -16,8 +16,13 @@ import {
   countsAsSpending,
   monthSummary,
   cardDates,
+  monthHeading,
+  monthPeriod,
 } from "./domain";
 import type { Entry, Card, Category } from "./domain";
+import CategorySelect from "./CategorySelect";
+import MonthSelector from "./MonthSelector";
+import Ledger from "./Ledger";
 const money = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     n,
@@ -70,33 +75,6 @@ function Logo() {
     </span>
   );
 }
-function CategorySelect({
-  value,
-  onChange,
-  disabled = false,
-}: {
-  value: Category | null;
-  onChange: (v: Category) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <select
-      aria-label="Categoria do gasto"
-      value={value ?? ""}
-      disabled={disabled}
-      onChange={(e) => {
-        if (isCategory(e.target.value)) onChange(e.target.value);
-      }}
-    >
-      <option value="" disabled>
-        Escolher categoria
-      </option>
-      {CATEGORIES.map((c) => (
-        <option key={c}>{c}</option>
-      ))}
-    </select>
-  );
-}
 export default function App() {
   const [session, setSession] = useState<Session | null>(null),
     [authReady, setAuthReady] = useState(false);
@@ -124,6 +102,11 @@ export default function App() {
     [payment, setPayment] = useState("dinheiro"),
     [busy, setBusy] = useState(false),
     [sheetError, setSheetError] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(
+    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12),
+  );
+  const period = monthPeriod(selectedMonth, now);
+  const selectedDate = period === "current" ? now : selectedMonth;
   const uid = session?.user.id;
   useEffect(() => {
     if (!sb) {
@@ -157,8 +140,7 @@ export default function App() {
         sb!
           .from("cartoes")
           .select("id,nome,dia_fechamento,dia_vencimento,ativo")
-          .eq("user_id", uid)
-          .eq("ativo", true),
+          .eq("user_id", uid),
       ]);
       if (c.error) throw c.error;
       setRows(entries);
@@ -209,6 +191,7 @@ export default function App() {
     }
   }, [uid]);
   const ranked = cards
+    .filter((c) => c.ativo)
     .map((c) => ({ ...c, ...cardDates(c, now) }))
     .sort((a, b) => b.days - a.days || a.nome.localeCompare(b.nome));
   const {
@@ -217,7 +200,7 @@ export default function App() {
     daily,
     weekly: weeklyAvailable,
     progress,
-  } = monthSummary(rows, now);
+  } = monthSummary(rows, selectedDate);
   const weekAgo = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -247,6 +230,23 @@ export default function App() {
         : r.data === dateKey(now)) &&
       (!r.is_parcelado || (r.parcela_atual ?? 1) === 1),
   );
+  async function deleteEntry(row: Entry) {
+    if (!uid) throw new Error("Sessão encerrada");
+    cancelled.current.add(row.id);
+    const { data, error } = await sb!
+      .from("lancamentos")
+      .delete()
+      .eq("user_id", uid)
+      .eq("id", row.id)
+      .select("id");
+    if (error || data?.length !== 1) {
+      cancelled.current.delete(row.id);
+      throw error ?? new Error("Exclusão não confirmada");
+    }
+    setRows((old) => old.filter((r) => r.id !== row.id));
+    setUndo((old) => old.filter((id) => id !== row.id));
+    setNotice("Lançamento apagado.");
+  }
   async function changeCategory(row: Entry, cat: Category) {
     if (!uid) return;
     if (parentRule(row.descricao) && cat !== "Pais") {
@@ -522,7 +522,7 @@ export default function App() {
         </span>
       </header>
       <nav aria-label="Navegação principal">
-        {["Hoje", "Semana", "Tudo"].map((t) => (
+        {["Hoje", "Semana", "Lançamentos", "Tudo"].map((t) => (
           <button
             key={t}
             aria-current={t === tab ? "page" : undefined}
@@ -536,6 +536,13 @@ export default function App() {
           </button>
         ))}
       </nav>
+      {(tab === "Hoje" || tab === "Lançamentos") && (
+        <MonthSelector
+          selected={selectedMonth}
+          now={now}
+          onChange={setSelectedMonth}
+        />
+      )}
       {error && (
         <div className="alert" role="alert">
           {error}
@@ -563,12 +570,8 @@ export default function App() {
           {tab === "Hoje" && (
             <>
               <section className="balance">
-                <p className="eyebrow">Seu espaço neste mês</p>
-                <h1>
-                  Ainda dá para gastar
-                  <br />
-                  neste mês
-                </h1>
+                <p className="eyebrow">Seu espaço no mês</p>
+                <h1>{monthHeading(selectedMonth, now, left)}</h1>
                 <div
                   className={`big-number${left < 0 ? " attention-text" : ""}`}
                 >
@@ -580,16 +583,28 @@ export default function App() {
                   value={progress}
                 />
                 <p className="income-line">
-                  de {money(income)} que entraram neste mês
+                  de {money(income)} que{" "}
+                  {period === "future"
+                    ? "estão lançados como receita"
+                    : period === "current"
+                      ? "entraram neste mês"
+                      : "entraram no mês"}
                 </p>
                 {left < 0 && (
                   <p className="attention-text">
-                    Passou do que entrou neste mês em {money(Math.abs(left))}
+                    Passou do que entrou{" "}
+                    {period === "current" ? "neste mês" : "no mês"} em{" "}
+                    {money(Math.abs(left))}
                   </p>
                 )}
-                <p className="pace">
-                  Ritmo diário: {money(daily)} por dia até o fim do mês.
-                </p>
+                {period === "future" && (
+                  <p className="muted">Só o que já está lançado</p>
+                )}
+                {period === "current" && (
+                  <p className="pace">
+                    Ritmo diário: {money(daily)} por dia até o fim do mês.
+                  </p>
+                )}
                 <button
                   className="primary add"
                   ref={opener}
@@ -598,53 +613,59 @@ export default function App() {
                   <span aria-hidden="true">＋</span> Anotar gasto
                 </button>
               </section>
-              {ranked[0] ? (
-                <section className="best">
-                  <div className="compass-mini" aria-hidden="true">
-                    ↗
-                  </div>
-                  <div>
-                    <p className="eyebrow">Melhor cartão hoje</p>
-                    <h2>{ranked[0].nome}</h2>
-                    <p>Compra hoje, paga em {shortDate(ranked[0].due)}.</p>
-                  </div>
-                </section>
-              ) : (
-                <p className="muted">Seus cartões ativos aparecerão aqui.</p>
+              {period === "current" && (
+                <>
+                  {ranked[0] ? (
+                    <section className="best">
+                      <div className="compass-mini" aria-hidden="true">
+                        ↗
+                      </div>
+                      <div>
+                        <p className="eyebrow">Melhor cartão hoje</p>
+                        <h2>{ranked[0].nome}</h2>
+                        <p>Compra hoje, paga em {shortDate(ranked[0].due)}.</p>
+                      </div>
+                    </section>
+                  ) : (
+                    <p className="muted">
+                      Seus cartões ativos aparecerão aqui.
+                    </p>
+                  )}
+                  <section className="entries">
+                    <div className="section-title">
+                      <h2>Anotado hoje</h2>
+                      <span>{todayRows.length}</span>
+                    </div>
+                    {!todayRows.length ? (
+                      <div className="empty">
+                        <span aria-hidden="true">✓</span>
+                        <p>Tudo tranquilo por aqui.</p>
+                        <small>O que você anotar hoje aparece aqui.</small>
+                      </div>
+                    ) : (
+                      todayRows.map((r) => (
+                        <article className="entry" key={r.id}>
+                          <div className="entry-top">
+                            <strong>{r.descricao}</strong>
+                            <span>{money(Number(r.valor))}</span>
+                          </div>
+                          <div className="entry-bottom">
+                            <CategorySelect
+                              value={categoryOf(r)}
+                              disabled={pending.has(r.id) || changing.has(r.id)}
+                              onChange={(c) => void changeCategory(r, c)}
+                            />
+                            {pending.has(r.id) && (
+                              <small role="status">classificando…</small>
+                            )}
+                            {r.subcategoria_pais && <small>Reembolsado</small>}
+                          </div>
+                        </article>
+                      ))
+                    )}
+                  </section>
+                </>
               )}
-              <section className="entries">
-                <div className="section-title">
-                  <h2>Anotado hoje</h2>
-                  <span>{todayRows.length}</span>
-                </div>
-                {!todayRows.length ? (
-                  <div className="empty">
-                    <span aria-hidden="true">✓</span>
-                    <p>Tudo tranquilo por aqui.</p>
-                    <small>O que você anotar hoje aparece aqui.</small>
-                  </div>
-                ) : (
-                  todayRows.map((r) => (
-                    <article className="entry" key={r.id}>
-                      <div className="entry-top">
-                        <strong>{r.descricao}</strong>
-                        <span>{money(Number(r.valor))}</span>
-                      </div>
-                      <div className="entry-bottom">
-                        <CategorySelect
-                          value={categoryOf(r)}
-                          disabled={pending.has(r.id) || changing.has(r.id)}
-                          onChange={(c) => void changeCategory(r, c)}
-                        />
-                        {pending.has(r.id) && (
-                          <small role="status">classificando…</small>
-                        )}
-                        {r.subcategoria_pais && <small>Reembolsado</small>}
-                      </div>
-                    </article>
-                  ))
-                )}
-              </section>
             </>
           )}
           {tab === "Semana" && (
@@ -665,10 +686,12 @@ export default function App() {
                 <span>Onde você mais gastou</span>
                 <strong>{top}</strong>
               </div>
-              <div className="week-line">
-                <span>Dá para gastar por semana</span>
-                <strong>{money(weeklyAvailable)}</strong>
-              </div>
+              {period === "current" && (
+                <div className="week-line">
+                  <span>Dá para gastar por semana</span>
+                  <strong>{money(weeklyAvailable)}</strong>
+                </div>
+              )}
               <button
                 className="primary"
                 disabled={review === weekKey}
@@ -689,6 +712,17 @@ export default function App() {
                   : "Só isso. Você já tem uma visão do caminho."}
               </p>
             </section>
+          )}
+          {tab === "Lançamentos" && (
+            <Ledger
+              rows={rows}
+              cards={cards}
+              selected={selectedDate}
+              pending={pending}
+              changing={changing}
+              onCategory={changeCategory}
+              onDelete={deleteEntry}
+            />
           )}
           {tab === "Tudo" && (
             <section className="all">

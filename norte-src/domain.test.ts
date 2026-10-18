@@ -5,6 +5,11 @@ import {
   monthSpending,
   monthIncome,
   monthSummary,
+  navigateMonth,
+  monthEntries,
+  filterEntries,
+  groupEntriesByDay,
+  monthHeading,
   memory,
   categoryPatch,
   parentRule,
@@ -335,5 +340,113 @@ describe("receitas menos gastos", () => {
     expect(summary.daysLeft).toBe(2);
     expect(summary.daily).toBe(300);
     expect(summary.weekly).toBe(2100);
+  });
+});
+
+describe("navegação e conferência mensal", () => {
+  const now = new Date(2026, 9, 17);
+  it("navega entre dezembro e janeiro e respeita os limites de 24 meses", () => {
+    expect(dateKey(navigateMonth(new Date(2026, 11, 1), 1, now))).toBe(
+      "2027-01-01",
+    );
+    expect(dateKey(navigateMonth(new Date(2027, 0, 1), -1, now))).toBe(
+      "2026-12-01",
+    );
+    expect(dateKey(navigateMonth(new Date(2024, 9, 1), -1, now))).toBe(
+      "2024-10-01",
+    );
+    expect(dateKey(navigateMonth(new Date(2028, 9, 1), 1, now))).toBe(
+      "2028-10-01",
+    );
+  });
+  it("a parcela aparece no mês futuro correspondente com sua data efetiva", () => {
+    const rows = [
+      entry({
+        id: "p1",
+        data: "2026-10-31",
+        is_parcelado: true,
+        parcela_atual: 1,
+      }),
+      entry({
+        id: "p2",
+        data: "2026-10-31",
+        is_parcelado: true,
+        parcela_atual: 2,
+      }),
+    ];
+    const november = monthEntries(rows, new Date(2026, 10, 1));
+    expect(november.map((r) => r.id)).toEqual(["p2"]);
+    expect(groupEntriesByDay(november)[0].date).toBe("2026-11-30");
+    expect(monthSummary(november, new Date(2026, 10, 1)).spent).toBe(100);
+  });
+  it("mês passado negativo mostra Passou e preserva o saldo", () => {
+    const selected = new Date(2026, 8, 1);
+    const balance = monthSummary(
+      [entry({ data: "2026-09-17", valor: 150 })],
+      selected,
+    ).balance;
+    expect(balance).toBe(-150);
+    expect(monthHeading(selected, now, balance)).toBe("Passou em setembro");
+    expect(monthHeading(selected, now, 150)).toBe("Sobrou em setembro");
+    expect(monthHeading(new Date(2026, 10, 1), now, -150)).toBe(
+      "Previsto para novembro",
+    );
+  });
+  it("filtro Pais inclui só os itens com subcategoria_pais preenchida", () => {
+    const rows = [
+      entry({ id: "pais", subcategoria_pais: "Pais" }),
+      entry({ id: "pessoal" }),
+      entry({ id: "aporte", categoria_macro: "Aportes" }),
+      entry({ id: "salario", categoria: "salario" }),
+    ];
+    expect(filterEntries(rows, "Pais").map((r) => r.id)).toEqual(["pais"]);
+    expect(filterEntries(rows, "Gastos").map((r) => r.id)).toEqual(["pessoal"]);
+    expect(filterEntries(rows, "Receitas").map((r) => r.id)).toEqual([
+      "salario",
+    ]);
+    expect(filterEntries(rows, "Todos")).toHaveLength(4);
+  });
+  it("agrupa por dia mais recente primeiro usando a data efetiva", () => {
+    const rows = [
+      entry({ id: "old", data: "2026-10-01" }),
+      entry({
+        id: "p",
+        data: "2026-09-17",
+        is_parcelado: true,
+        parcela_atual: 2,
+      }),
+      entry({ id: "same", data: "2026-10-17" }),
+      entry({ id: "new", data: "2026-10-20" }),
+    ];
+    const groups = groupEntriesByDay(rows);
+    expect(groups.map((g) => g.date)).toEqual([
+      "2026-10-20",
+      "2026-10-17",
+      "2026-10-01",
+    ]);
+    expect(groups[1].entries.map((r) => r.id).sort()).toEqual(["p", "same"]);
+  });
+  it("receita parcelada mantém data original na lista e o total bate com o painel", () => {
+    const rows = [
+      entry({
+        tipo: "receita",
+        data: "2026-10-13",
+        valor: 64691.96,
+        is_parcelado: true,
+        parcela_atual: 3,
+      }),
+      entry({ valor: 27553.225 }),
+      entry({ id: "pais", subcategoria_pais: "Pais", valor: 300 }),
+      entry({ id: "aporte", categoria_macro: "Aportes", valor: 1000 }),
+      entry({ id: "futuro", data: "2026-11-01", valor: 100 }),
+    ];
+    const listed = monthEntries(rows, now);
+    expect(groupEntriesByDay(listed)).toHaveLength(1);
+    expect(monthSummary(listed, now)).toEqual(monthSummary(rows, now));
+    expect(monthSummary(listed, now)).toMatchObject({
+      income: 64691.96,
+      spent: 27553.23,
+      balance: 37138.73,
+    });
   });
 });

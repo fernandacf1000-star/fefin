@@ -11,6 +11,8 @@ import {
 } from "./domain";
 import type { Entry, Card, Category, EntryFilter } from "./domain";
 import CategorySelect from "./CategorySelect";
+import SwipeRow from "./SwipeRow";
+import { parseMoney } from "./domain";
 const money = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     n,
@@ -23,6 +25,7 @@ export default function Ledger({
   changing,
   onCategory,
   onDelete,
+  onEdit,
   categoryFilter,
   onClearCategory,
 }: {
@@ -33,6 +36,11 @@ export default function Ledger({
   changing: Set<string>;
   onCategory: (r: Entry, c: Category) => Promise<void>;
   onDelete: (r: Entry, scope: "one" | "next" | "all") => Promise<void>;
+  onEdit: (
+    r: Entry,
+    edits: { descricao: string; valor: number; data?: string },
+    scope: "one" | "next" | "all",
+  ) => Promise<void>;
   categoryFilter: Category | null;
   onClearCategory: () => void;
 }) {
@@ -43,6 +51,14 @@ export default function Ledger({
     [deleting, setDeleting] = useState(false),
     [scope, setScope] = useState<"one" | "next" | "all">("one"),
     [error, setError] = useState("");
+  const [editId, setEditId] = useState<string | null>(null),
+    [eDesc, setEDesc] = useState(""),
+    [eValue, setEValue] = useState(""),
+    [eDate, setEDate] = useState(""),
+    [eScope, setEScope] = useState<"one" | "next" | "all">("one"),
+    [eBusy, setEBusy] = useState(false),
+    [eError, setEError] = useState("");
+  const editSheet = useRef<HTMLDialogElement>(null);
   const sheet = useRef<HTMLDialogElement>(null),
     lastOpener = useRef<HTMLButtonElement | null>(null);
   const detail = rows.find((r) => r.id === detailId);
@@ -64,12 +80,48 @@ export default function Ledger({
       ? (cards.find((c) => c.id === row.cartao_id)?.nome ?? "Cartão")
       : "Pix/dinheiro";
   }
-  function open(row: Entry, button: HTMLButtonElement) {
+  function open(row: Entry, button: HTMLButtonElement | null, askDelete = false) {
     lastOpener.current = button;
     setDetailId(row.id);
-    setConfirm(false);
+    setScope("one");
+    setConfirm(askDelete);
     setError("");
     sheet.current?.showModal();
+  }
+  function openEdit(row: Entry) {
+    setEditId(row.id);
+    setEDesc(row.descricao);
+    setEValue(String(Number(row.valor)).replace(".", ","));
+    setEDate(row.data);
+    setEScope("one");
+    setEError("");
+    editSheet.current?.showModal();
+  }
+  const editing = rows.find((r) => r.id === editId);
+  const grouped = !!(editing?.parcelamento_id || editing?.recorrencia_id);
+  async function saveEdit() {
+    if (!editing) return;
+    const valor = parseMoney(eValue);
+    if (!eDesc.trim() || !Number.isFinite(valor) || valor <= 0) {
+      setEError("Preencha uma descrição e um valor maior que zero.");
+      return;
+    }
+    const withDate = !grouped && /^\d{4}-\d{2}-\d{2}$/.test(eDate);
+    setEBusy(true);
+    setEError("");
+    try {
+      await onEdit(
+        editing,
+        { descricao: eDesc.trim(), valor, ...(withDate ? { data: eDate } : {}) },
+        eScope,
+      );
+      editSheet.current?.close();
+      setEditId(null);
+    } catch {
+      setEError("Não consegui salvar a edição. Tente novamente.");
+    } finally {
+      setEBusy(false);
+    }
   }
   function close() {
     if (deleting) return;
@@ -142,7 +194,13 @@ export default function Ledger({
                 .replaceAll(".", "")}
             </h2>
             {group.entries.map((row) => (
-              <article className="entry ledger-entry" key={row.id}>
+              <SwipeRow
+                key={row.id}
+                label={row.descricao}
+                onEdit={() => openEdit(row)}
+                onDelete={() => open(row, null, true)}
+              >
+              <article className="entry ledger-entry">
                 <button
                   className="ledger-open"
                   aria-label={`Ver detalhes de ${row.descricao}`}
@@ -186,6 +244,7 @@ export default function Ledger({
                   </small>
                 ) : null}
               </article>
+              </SwipeRow>
             ))}
           </section>
         ))
@@ -195,6 +254,74 @@ export default function Ledger({
           Ver mais
         </button>
       )}
+      <dialog
+        className="detail-dialog"
+        ref={editSheet}
+        aria-labelledby="edit-title"
+        onCancel={(e) => {
+          if (eBusy) e.preventDefault();
+          else setEditId(null);
+        }}
+      >
+        <div className="sheet">
+          <div className="sheet-top">
+            <h2 id="edit-title">Editar lançamento</h2>
+            <button
+              className="icon-button"
+              aria-label="Fechar edição"
+              disabled={eBusy}
+              onClick={() => {
+                editSheet.current?.close();
+                setEditId(null);
+              }}
+            >
+              ×
+            </button>
+          </div>
+          {editing && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void saveEdit();
+              }}
+            >
+              <label htmlFor="edit-desc">Descrição</label>
+              <input id="edit-desc" maxLength={120} value={eDesc}
+                onChange={(e) => setEDesc(e.target.value)} disabled={eBusy} />
+              <label htmlFor="edit-value">
+                {grouped && editing.is_parcelado ? "Valor de cada parcela (R$)" : "Valor (R$)"}
+              </label>
+              <input id="edit-value" inputMode="decimal" value={eValue}
+                onChange={(e) => setEValue(e.target.value)} disabled={eBusy} />
+              {!grouped ? (
+                <>
+                  <label htmlFor="edit-date">Data</label>
+                  <input id="edit-date" type="date" value={eDate}
+                    onChange={(e) => setEDate(e.target.value)} disabled={eBusy} />
+                </>
+              ) : (
+                <>
+                  <div role="group" aria-label="Aplicar a">
+                    {([["one", "Só este"], ["next", "Este e os próximos"], ["all", "Todos"]] as const).map(([v, t]) => (
+                      <button type="button" key={v} aria-pressed={eScope === v}
+                        disabled={eBusy} onClick={() => setEScope(v)}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                  <small>
+                    Serão alterados {groupScope(rows, editing, eScope).length} lançamento(s). A data não muda aqui.
+                  </small>
+                </>
+              )}
+              {eError && <p className="alert" role="alert">{eError}</p>}
+              <button className="primary" disabled={eBusy}>
+                {eBusy ? "Salvando…" : "Salvar edição"}
+              </button>
+            </form>
+          )}
+        </div>
+      </dialog>
       <dialog
         className="detail-dialog"
         ref={sheet}
@@ -265,12 +392,25 @@ export default function Ledger({
                 )}
               </dl>
               {!confirm ? (
+                <>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => {
+                    sheet.current?.close();
+                    setDetailId(null);
+                    openEdit(detail);
+                  }}
+                >
+                  Editar
+                </button>
                 <button
                   className="delete-button"
                   onClick={() => { setScope("one"); setConfirm(true); }}
                 >
                   Apagar
                 </button>
+                </>
               ) : (
                 <div
                   className="delete-confirm"

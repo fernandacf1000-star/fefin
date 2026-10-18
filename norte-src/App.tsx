@@ -18,6 +18,7 @@ import {
   recurringRows,
   groupScope,
   splitInstallments,
+  parseDate,
 } from "./domain";
 import type { Entry, Card, Category } from "./domain";
 import CategorySelect from "./CategorySelect";
@@ -211,6 +212,38 @@ export default function App() {
     setRows((old) => old.filter((r) => !ids.includes(r.id)));
     setUndo((old) => old.filter((id) => !ids.includes(id)));
     setNotice(ids.length > 1 ? `${ids.length} lançamentos apagados.` : "Lançamento apagado.");
+  }
+  async function editEntry(
+    row: Entry,
+    edits: { descricao: string; valor: number; data?: string },
+    scope: "one" | "next" | "all",
+  ) {
+    if (!uid) throw new Error("Sessão encerrada");
+    const targets = groupScope(rows, row, scope);
+    const ids = targets.map((r) => r.id);
+    const patch: Record<string, unknown> = {
+      descricao: edits.descricao,
+      valor: Math.round(edits.valor * 100) / 100,
+    };
+    if (edits.data && targets.length === 1 && !row.parcelamento_id && !row.recorrencia_id) {
+      const d = parseDate(edits.data);
+      if (Number.isNaN(d.getTime()) || dateKey(d) !== edits.data) throw new Error("Data inválida");
+      patch.data = edits.data;
+      const card = row.cartao_id ? cards.find((c) => c.id === row.cartao_id) : undefined;
+      patch.mes_referencia = card ? cardDates(card, d).reference : monthKey(d);
+    }
+    if (parentRule(edits.descricao) && categoryOf(row) !== "Pais")
+      Object.assign(patch, categoryPatch("Pais", row));
+    const { data, error } = await sb!
+      .from("norte_lancamentos")
+      .update(patch)
+      .eq("user_id", uid)
+      .in("id", ids)
+      .select("id");
+    if (error || data?.length !== ids.length)
+      throw error ?? new Error("Alteração não confirmada");
+    setRows((old) => old.map((r) => (ids.includes(r.id) ? { ...r, ...patch } as Entry : r)));
+    setNotice(ids.length > 1 ? `${ids.length} lançamentos atualizados.` : "Lançamento atualizado.");
   }
   async function changeCategory(row: Entry, cat: Category) {
     if (!uid) return;
@@ -589,6 +622,7 @@ export default function App() {
               changing={changing}
               onCategory={changeCategory}
               onDelete={deleteEntry}
+              onEdit={editEntry}
               categoryFilter={categoryFilter}
               onClearCategory={() => setCategoryFilter(null)}
             />

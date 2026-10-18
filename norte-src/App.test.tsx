@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
+import { beforeAll, beforeEach, afterEach, describe, it, expect, vi } from "vitest";
 import {
   render,
   screen,
@@ -597,4 +597,93 @@ it.each([
   fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Café" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
   await waitFor(() => expect(state.rows).toHaveLength(1));
+});
+
+class TestPointerEvent extends MouseEvent {
+  pointerId: number;
+  constructor(type: string, init: PointerEventInit = {}) {
+    super(type, init);
+    this.pointerId = init.pointerId ?? 1;
+  }
+}
+describe("swipe, editar e excluir", () => {
+  beforeAll(() => {
+    (globalThis as unknown as { PointerEvent: unknown }).PointerEvent = TestPointerEvent;
+    (window as unknown as { PointerEvent: unknown }).PointerEvent = TestPointerEvent;
+  });
+  const swipeLeft = (el: Element) => {
+    fireEvent.pointerDown(el, { clientX: 300, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(el, { clientX: 200, clientY: 102, pointerId: 1 });
+    fireEvent.pointerUp(el, { clientX: 200, clientY: 102, pointerId: 1 });
+  };
+  const content = (name: string) =>
+    screen.getByRole("button", { name: `Ver detalhes de ${name}` }).closest(".swipe-content") as HTMLElement;
+
+  it("arrastar para a esquerda revela Editar/Excluir; edita descrição, valor e data", async () => {
+    state.rows = [entry({ id: "s1", descricao: "Padaria", valor: 20, data: dateKey(new Date()) })];
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    const c = content("Padaria");
+    expect(c.getAttribute("data-open")).toBe("false");
+    swipeLeft(c);
+    expect(c.getAttribute("data-open")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "Editar Padaria" }));
+    const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+    fireEvent.change(within(dlg).getByLabelText("Descrição"), { target: { value: "Padaria nova" } });
+    fireEvent.change(within(dlg).getByLabelText("Valor (R$)"), { target: { value: "35,90" } });
+    fireEvent.change(within(dlg).getByLabelText("Data"), { target: { value: "2026-10-02" } });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
+    await screen.findByText("Lançamento atualizado.");
+    expect(state.rows[0]).toMatchObject({ descricao: "Padaria nova", valor: 35.9, data: "2026-10-02", mes_referencia: "2026-10" });
+  });
+
+  it("Excluir pelo swipe abre a confirmação e apaga", async () => {
+    state.rows = [entry({ id: "s2", descricao: "Cinema", valor: 40, data: dateKey(new Date()) })];
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    swipeLeft(content("Cinema"));
+    fireEvent.click(screen.getByRole("button", { name: "Excluir Cinema" }));
+    const dlg = await screen.findByRole("dialog", { name: "Detalhes do lançamento" });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Confirmar exclusão" }));
+    await waitFor(() => expect(state.rows).toHaveLength(0));
+  });
+
+  it("rolar na vertical não abre as ações; valor inválido é recusado", async () => {
+    state.rows = [entry({ id: "s3", descricao: "Café", valor: 8, data: dateKey(new Date()) })];
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    const c = content("Café");
+    fireEvent.pointerDown(c, { clientX: 300, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(c, { clientX: 295, clientY: 220, pointerId: 1 });
+    fireEvent.pointerUp(c, { clientX: 295, clientY: 220, pointerId: 1 });
+    expect(c.getAttribute("data-open")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "Ver detalhes de Café" }));
+    const det = screen.getByRole("dialog", { name: "Detalhes do lançamento" });
+    fireEvent.click(within(det).getByRole("button", { name: "Editar" }));
+    const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+    fireEvent.change(within(dlg).getByLabelText("Valor (R$)"), { target: { value: "0" } });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
+    expect(await within(dlg).findByRole("alert")).toBeTruthy();
+    expect(state.rows[0].valor).toBe(8);
+  });
+
+  it("editar parcela com 'Todos' atualiza o grupo inteiro sem mexer na data", async () => {
+    const d = dateKey(new Date());
+    state.rows = [1, 2, 3].map((n) => entry({ id: `p${n}`, descricao: "Sofá", valor: 100, data: d, is_parcelado: true, parcela_atual: n, parcela_total: 3, parcelamento_id: "G" }));
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    swipeLeft(content("Sofá"));
+    fireEvent.click(screen.getByRole("button", { name: "Editar Sofá" }));
+    const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+    expect(within(dlg).queryByLabelText("Data")).toBeNull();
+    fireEvent.click(within(dlg).getByRole("button", { name: "Todos" }));
+    fireEvent.change(within(dlg).getByLabelText("Valor de cada parcela (R$)"), { target: { value: "120" } });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
+    await screen.findByText("3 lançamentos atualizados.");
+    expect(state.rows.every((r) => r.valor === 120)).toBe(true);
+  });
 });

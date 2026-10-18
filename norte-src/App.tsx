@@ -18,6 +18,8 @@ import {
   recurringRows,
   groupScope,
   splitInstallments,
+  isInstallmentCount,
+  normalize,
   parseDate,
 } from "./domain";
 import type { Entry, Card, Category } from "./domain";
@@ -205,6 +207,14 @@ export default function App() {
     .filter((c) => c.ativo)
     .map((c) => ({ ...c, ...cardDates(c, now) }))
     .sort((a, b) => b.days - a.days || a.nome.localeCompare(b.nome));
+  const canChoosePlan =
+    mode === "Valor" ||
+    (mode === "Texto com IA" && kind === "despesa" && drafts.length === 1);
+  const planAmount = mode === "Valor" ? parseMoney(amount) : drafts[0]?.amount ?? NaN;
+  const installmentCount = Number(installments);
+  const installmentPreview = isInstallmentCount(installmentCount)
+    ? splitInstallments(planAmount, installmentCount)
+    : [];
   async function deleteEntry(row: Entry, scope: "one" | "next" | "all" = "one") {
     if (!uid) throw new Error("Sessão encerrada");
     const targets = groupScope(rows, row, scope);
@@ -358,13 +368,21 @@ export default function App() {
       const unknown = inserted.filter(
         (r) => !categoryOf(r) && !memory(r.descricao, before),
       );
-      let guesses: unknown[] = [];
-      if (unknown.length) {
+      // A compra parcelada cria várias linhas iguais. A IA recebe cada
+      // descrição uma vez, mantendo a chamada dentro do limite de 10 itens.
+      const uniqueUnknown = unknown.filter(
+        (row, index) =>
+          unknown.findIndex(
+            (other) => normalize(other.descricao) === normalize(row.descricao),
+          ) === index,
+      );
+      const guesses = new Map<string, Category>();
+      if (uniqueUnknown.length) {
         try {
           const data = await askAI({
             task: "classify",
             kind: inserted[0]?.tipo,
-            items: unknown.map((r) => ({
+            items: uniqueUnknown.map((r) => ({
               label: r.descricao,
               amount: r.valor,
             })),
@@ -373,18 +391,23 @@ export default function App() {
               .slice(0, 60)
               .map((r) => `${r.descricao} → ${categoryOf(r)}`),
           });
-          guesses = Array.isArray(data.categories) ? data.categories : [];
+          const categories = Array.isArray(data.categories) ? data.categories : [];
+          uniqueUnknown.forEach((row, index) => {
+            const category = categories[index];
+            if (isCategory(category))
+              guesses.set(normalize(row.descricao), category);
+          });
         } catch (e) {
           setNotice(`${message(e)}. Lançamento salvo; escolha a categoria na lista.`);
         }
       }
       for (const r of inserted) {
         if (cancelled.current.has(r.id)) continue;
-        const guess = guesses[unknown.findIndex((x) => x.id === r.id)];
         const cat =
           categoryOf(r) ??
           memory(r.descricao, before) ??
-          (isCategory(guess) ? guess : null);
+          guesses.get(normalize(r.descricao)) ??
+          null;
         if (!cat) continue;
         const patch = categoryPatch(cat, r);
         const { error } = await sb!
@@ -431,10 +454,18 @@ export default function App() {
       )
         throw new Error("Preencha uma descrição e um valor maior que zero.");
       const before = rows;
+      const supportsPlan =
+        mode === "Valor" ||
+        (mode === "Texto com IA" && kind === "despesa" && items.length === 1);
+      const isPlanned = supportsPlan && plan !== "uma" && items.length === 1;
       let payload: Record<string, unknown>[];
-      if (mode === "Valor" && plan !== "uma") {
+      if (isPlanned) {
         const d = items[0];
-        const cat = parentRule(d.label) ? "Pais" : (memory(d.label, before) ?? null);
+        const cat = parentRule(d.label)
+          ? "Pais"
+          : d.edited
+            ? d.category
+            : (memory(d.label, before) ?? d.category);
         const base = {
           user_id: uid,
           descricao: d.label,
@@ -446,8 +477,8 @@ export default function App() {
         const group = crypto.randomUUID();
         if (plan === "parcelado") {
           const n = Number(installments);
-          if (!Number.isInteger(n) || n < 2 || n > 48)
-            throw new Error("Preencha parcelas entre 2 e 48.");
+          if (!isInstallmentCount(n))
+            throw new Error("Preencha parcelas entre 2 e 360.");
           const card = kind === "despesa" ? (cards.find((c) => c.id === payment) ?? null) : null;
           payload = installmentRows(base, d.amount, n, now, card, group);
         } else {
@@ -500,9 +531,9 @@ export default function App() {
       const inserted = data as Entry[];
       setRows((old) => [...inserted, ...old]);
       setUndo(inserted.map((r) => r.id));
-      setNotice(mode === "Valor" && plan === "parcelado"
+      setNotice(isPlanned && plan === "parcelado"
         ? `Compra anotada em ${inserted.length} parcelas.`
-        : mode === "Valor" && plan === "recorrente"
+        : isPlanned && plan === "recorrente"
         ? `Lançamento anotado por ${inserted.length} meses.`
         : kind === "receita"
         ? inserted.length > 1 ? "Receitas anotadas." : "Receita anotada."
@@ -681,6 +712,7 @@ export default function App() {
                 onClick={() => {
                   setKind(value);
                   setDrafts([]);
+                  setPlan("uma");
                   setPayment("dinheiro");
                   setSheetError("");
                 }}>
@@ -698,6 +730,7 @@ export default function App() {
                 onClick={() => {
                   setMode(m);
                   setDrafts([]);
+                  setPlan("uma");
                   setSheetError("");
                 }}
               >
@@ -763,7 +796,7 @@ export default function App() {
                       type="button"
                       className="text-button"
                       disabled={busy}
-                      onClick={() => setDrafts([])}
+                      onClick={() => { setDrafts([]); setPlan("uma"); }}
                     >
                       Editar texto
                     </button>
@@ -794,34 +827,38 @@ export default function App() {
                 />
               </>
             )}
-            {mode === "Valor" && (
+            {canChoosePlan && (
               <>
                 <div className="sheet-tabs" role="group" aria-label="Frequência">
-                  {([["uma", "Uma vez"], ["parcelado", "Parcelado"], ["recorrente", "Todo mês"]] as const).map(([v, t]) => (
+                  {(mode === "Valor"
+                    ? [["uma", "Uma vez"], ["parcelado", "Parcelado"], ["recorrente", "Todo mês"]]
+                    : [["uma", "Uma vez"], ["parcelado", "Parcelado"]]
+                  ).map(([v, t]) => (
                     <button type="button" key={v} aria-pressed={plan === v} disabled={busy}
-                      onClick={() => { setPlan(v); setSheetError(""); }}>
+                      onClick={() => { setPlan(v as "uma" | "parcelado" | "recorrente"); setSheetError(""); }}>
                       {t}
                     </button>
                   ))}
                 </div>
                 {plan === "parcelado" && (
                   <>
-                    <label htmlFor="installments">Em quantas parcelas? (informe o valor total acima)</label>
+                    <label htmlFor="installments">
+                      Em quantas parcelas? {mode === "Valor"
+                        ? "(informe o valor total acima)"
+                        : `(total ${money(planAmount)})`}
+                    </label>
                     <input id="installments" inputMode="numeric" value={installments}
                       onChange={(e) => setInstallments(e.target.value)} disabled={busy} />
-                    {(() => {
-                      const parts = splitInstallments(parseMoney(amount), Number(installments));
-                      return parts.length > 1 && Number(installments) <= 48 ? (
-                        <p className="muted">
-                          {parts.length}x de {money(parts[0])}
-                          {parts[parts.length - 1] !== parts[0] ? ` (última ${money(parts[parts.length - 1])})` : ""}
-                          {" · total "}{money(parseMoney(amount))}
-                        </p>
-                      ) : null;
-                    })()}
+                    {installmentPreview.length > 1 ? (
+                      <p className="muted">
+                        {installmentPreview.length}x de {money(installmentPreview[0])}
+                        {installmentPreview[installmentPreview.length - 1] !== installmentPreview[0] ? ` (última ${money(installmentPreview[installmentPreview.length - 1])})` : ""}
+                        {" · total "}{money(planAmount)}
+                      </p>
+                    ) : null}
                   </>
                 )}
-                {plan === "recorrente" && (
+                {mode === "Valor" && plan === "recorrente" && (
                   <>
                     <label htmlFor="rec-day">Dia do mês (1 a 31)</label>
                     <input id="rec-day" inputMode="numeric" value={recDay}
@@ -836,7 +873,7 @@ export default function App() {
                 )}
               </>
             )}
-            {kind === "despesa" && !(mode === "Valor" && plan === "recorrente") && <details className="payment">
+            {kind === "despesa" && !(canChoosePlan && mode === "Valor" && plan === "recorrente") && <details className="payment">
               <summary>
                 Pago com{" "}
                 <span>
@@ -870,9 +907,9 @@ export default function App() {
                 ? "Um instante…"
                 : mode === "Texto com IA" && !drafts.length
                   ? "Entender texto"
-                  : mode === "Valor" && plan === "parcelado"
+                  : canChoosePlan && plan === "parcelado"
                   ? "Salvar parcelas"
-                  : mode === "Valor" && plan === "recorrente"
+                  : canChoosePlan && mode === "Valor" && plan === "recorrente"
                     ? "Salvar todo mês"
                     : "Salvar " + (kind === "receita" ? "receita" : "gasto") + (drafts.length > 1 ? "s" : "")}
             </button>

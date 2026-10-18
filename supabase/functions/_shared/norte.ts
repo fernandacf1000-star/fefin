@@ -393,10 +393,21 @@ export function sixMonthChartData(rows: Entry[], selected: Date) {
 }
 
 // ---- Parcelados e recorrentes ----
+// Até 30 anos de parcelas: atende compras e financiamentos sem permitir uma
+// entrada acidental que congelaria a interface ao criar milhares de linhas.
+export const MAX_INSTALLMENTS = 360;
+export const isInstallmentCount = (n: number) =>
+  Number.isInteger(n) && n >= 2 && n <= MAX_INSTALLMENTS;
 // Divide em centavos: parcelas iguais, a última absorve a diferença.
 export function splitInstallments(total: number, n: number): number[] {
   const cents = Math.round(total * 100);
-  if (!Number.isInteger(n) || n < 1 || !Number.isFinite(cents) || cents <= 0)
+  if (
+    !Number.isInteger(n) ||
+    n < 1 ||
+    n > MAX_INSTALLMENTS ||
+    !Number.isFinite(cents) ||
+    cents <= 0
+  )
     return [];
   const base = Math.floor(cents / n);
   return Array.from(

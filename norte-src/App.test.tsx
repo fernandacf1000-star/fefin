@@ -512,6 +512,7 @@ it("parcelado: valor cheio dividido em centavos, prévia e uma linha por parcela
   fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "100" } });
   fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Geladeira" } });
   fireEvent.click(screen.getByRole("button", { name: "Parcelado" }));
+  expect(state.rows).toHaveLength(0);
   fireEvent.change(screen.getByLabelText(/Em quantas parcelas/), { target: { value: "3" } });
   expect(screen.getByText(/3x de R\$\s*33,33 \(última R\$\s*33,34\)/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Salvar parcelas" }));
@@ -519,6 +520,35 @@ it("parcelado: valor cheio dividido em centavos, prévia e uma linha por parcela
   const parts = state.rows.filter((r) => r.descricao === "Geladeira");
   expect(parts.map((r) => r.valor).sort()).toEqual([33.33, 33.33, 33.34]);
   expect(parts.every((r) => r.is_parcelado && r.parcela_total === 3 && r.parcelamento_id === parts[0].parcelamento_id)).toBe(true);
+  await waitFor(() => expect(state.ai).toHaveBeenCalledTimes(1));
+  expect(state.ai.mock.calls[0][1].body.items).toHaveLength(1);
+});
+
+it("uma compra extraída do texto pode ser parcelada", async () => {
+  state.ai
+    .mockResolvedValueOnce({
+      data: { items: [{ amount: 1200, label: "Notebook", category: "Pessoal", dayOffset: 0 }] },
+      error: null,
+    })
+    .mockResolvedValueOnce({ data: { categories: ["Pessoal"] }, error: null });
+  await open();
+  fireEvent.change(screen.getByLabelText("O que você gastou?"), {
+    target: { value: "Notebook 1200 em 3x" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
+  await screen.findByText("Notebook");
+  fireEvent.click(screen.getByRole("button", { name: "Parcelado" }));
+  fireEvent.change(screen.getByLabelText(/Em quantas parcelas/), { target: { value: "3" } });
+  fireEvent.change(screen.getByLabelText("Forma de pagamento"), {
+    target: { value: "master" },
+  });
+  expect(screen.getByText(/3x de R\$\s*400,00/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Salvar parcelas" }));
+  await screen.findByText("Compra anotada em 3 parcelas.");
+  const parts = state.rows.filter((r) => r.descricao === "Notebook");
+  expect(parts).toHaveLength(3);
+  expect(parts.every((r) => r.cartao_id === "master" && r.forma_pagamento === "credito")).toBe(true);
+  expect(state.ai).toHaveBeenCalledTimes(1);
 });
 
 it("todo mês: cria uma linha por mês com o mesmo recorrencia_id", async () => {

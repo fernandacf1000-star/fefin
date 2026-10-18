@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   splitInstallments,
+  isInstallmentCount,
+  MAX_INSTALLMENTS,
   installmentRows,
   recurringRows,
   recurringDates,
@@ -40,6 +42,12 @@ describe("splitInstallments", () => {
     expect(splitInstallments(-5, 3)).toEqual([]);
     expect(splitInstallments(100, 0)).toEqual([]);
     expect(splitInstallments(NaN, 3)).toEqual([]);
+  });
+  it("aceita compras longas sem tentar criar listas ilimitadas", () => {
+    expect(isInstallmentCount(60)).toBe(true);
+    expect(splitInstallments(360, MAX_INSTALLMENTS)).toHaveLength(MAX_INSTALLMENTS);
+    expect(isInstallmentCount(MAX_INSTALLMENTS + 1)).toBe(false);
+    expect(splitInstallments(100, MAX_INSTALLMENTS + 1)).toEqual([]);
   });
 });
 

@@ -687,3 +687,31 @@ describe("swipe, editar e excluir", () => {
     expect(state.rows.every((r) => r.valor === 120)).toBe(true);
   });
 });
+
+describe("aviso de lançamento apagado", () => {
+  it("some sozinho depois de alguns segundos e pode ser fechado", async () => {
+    state.rows = [entry({ id: "n1", descricao: "Lanche", valor: 10, data: dateKey(new Date()) })];
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver detalhes de Lanche" }));
+    const dlg = screen.getByRole("dialog", { name: "Detalhes do lançamento" });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Apagar" }));
+    fireEvent.click(within(dlg).getByRole("button", { name: "Confirmar exclusão" }));
+    await screen.findByText("Lançamento apagado.");
+    await waitFor(() => expect(screen.queryByText("Lançamento apagado.")).toBeNull(), { timeout: 6000 });
+  }, 10000);
+  it("o botão × fecha o aviso na hora", async () => {
+    state.rows = [entry({ id: "n2", descricao: "Lanche", valor: 10, data: dateKey(new Date()) })];
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver detalhes de Lanche" }));
+    const dlg = screen.getByRole("dialog", { name: "Detalhes do lançamento" });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Apagar" }));
+    fireEvent.click(within(dlg).getByRole("button", { name: "Confirmar exclusão" }));
+    await screen.findByText("Lançamento apagado.");
+    fireEvent.click(screen.getByRole("button", { name: "Fechar aviso" }));
+    expect(screen.queryByText("Lançamento apagado.")).toBeNull();
+  });
+});

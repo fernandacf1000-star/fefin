@@ -125,6 +125,17 @@ export default function App() {
   const [categoryFilter, setCategoryFilter] = useState<Category | null>(null);
   const uid = session?.user.id;
   useEffect(() => {
+    if (!notice) return;
+    const t = window.setTimeout(
+      () => {
+        setNotice("");
+        setUndo([]);
+      },
+      undo.length ? 8000 : 4000,
+    );
+    return () => window.clearTimeout(t);
+  }, [notice, undo]);
+  useEffect(() => {
     if (!sb) {
       setAuthReady(true);
       return;
@@ -590,6 +601,14 @@ export default function App() {
               {undoBusy ? "Desfazendo…" : "Desfazer"}
             </button>
           )}
+          <button
+            type="button"
+            className="notice-close"
+            aria-label="Fechar aviso"
+            onClick={() => { setNotice(""); setUndo([]); }}
+          >
+            ×
+          </button>
         </div>
       )}
       {loading ? (

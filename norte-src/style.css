@@ -1059,11 +1059,11 @@ progress.care-progress::-moz-progress-bar {
 }
 
 .brand-dot {
-  color: #6d536f;
+  color: #3478b8;
 }
 @media (prefers-color-scheme: dark) {
   .brand-dot {
-    color: #b9a2c1;
+    color: #8db5dc;
   }
   .brand img {
     background: transparent;

@@ -353,7 +353,8 @@ it("compartilha mês nas três abas e mantém Anotar com IA primeiro", async () 
   fireEvent.click(
     within(screen.getByRole("navigation")).getByRole("button", { name: "Mês" }),
   );
-  expect(within(selector).getByText(/dezembro de \d{4}/)).toBeTruthy();
+  expect(within(selector).queryByRole("button", { name: "Hoje" })).toBeNull();
+  expect(screen.getByRole("heading", { name: "Falta gastar" })).toBeTruthy();
 });
 it("tocar categoria do gráfico abre só esses gastos e permite limpar o filtro", async () => {
   state.rows = [

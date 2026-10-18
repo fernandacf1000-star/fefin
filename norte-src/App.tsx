@@ -469,7 +469,7 @@ export default function App() {
         <Logo />
       </header>
       <nav aria-label="Navegação principal">
-        {["Mês", "Gráfico", "Lançamentos"].map((t) => (
+        {["Mês", "Lançamentos", "Gráfico"].map((t) => (
           <button
             key={t}
             aria-current={t === tab ? "page" : undefined}

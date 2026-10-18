@@ -171,8 +171,8 @@ beforeEach(() => {
 afterEach(cleanup);
 async function open() {
   render(<App />);
-  await screen.findByText("Anotado hoje");
-  fireEvent.click(screen.getByRole("button", { name: /Anotar gasto/ }));
+  await screen.findByRole("region", { name: "Resumo do mês" });
+  fireEvent.click(screen.getByRole("button", { name: "Anotar" }));
 }
 describe("fluxos do Norte", () => {
   it("salva antes de classificar, mantém gasto se IA falha e desfaz", async () => {
@@ -185,6 +185,8 @@ describe("fluxos do Norte", () => {
       target: { value: "Café novo" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
+    await screen.findByText("Gasto anotado.");
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     await screen.findByText("Café novo");
     expect(state.calls[0].kind).toBe("insert");
     await waitFor(() =>
@@ -255,7 +257,8 @@ describe("fluxos do Norte", () => {
       }),
     ];
     render(<App />);
-    await screen.findByText("Anotado hoje");
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     fireEvent.change(
       screen.getByRole("combobox", { name: "Categoria do gasto" }),
       { target: { value: "Pais" } },
@@ -266,94 +269,124 @@ describe("fluxos do Norte", () => {
       ),
     );
     expect(state.calls[0].body.ids).toEqual(["p1", "p2"]);
-    await screen.findByText("Reembolsado");
+    await screen.findByText("Pais · fora da conta");
     expect(state.rows.every((r) => r.categoria_macro === "Alimentação")).toBe(
       true,
-    );
-  });
-  it("revisão semanal persiste no aparelho e reaparece", async () => {
-    render(<App />);
-    await screen.findByText("Anotado hoje");
-    fireEvent.click(screen.getByRole("button", { name: "Semana" }));
-    fireEvent.click(screen.getByRole("button", { name: "Já olhei" }));
-    expect(
-      screen
-        .getByRole("button", { name: "✓ Semana revisada" })
-        .hasAttribute("disabled"),
-    ).toBe(true);
-    expect(localStorage.getItem("norte-review-u")).toMatch(
-      /^\d{4}-\d{2}-\d{2}$/,
     );
   });
   it("sem sessão mostra apenas o login", async () => {
     state.session = false;
     render(<App />);
     await screen.findByRole("button", { name: "Entrar" });
-    expect(screen.queryByText("Anotado hoje")).toBeNull();
+    expect(screen.queryByRole("region", { name: "Resumo do mês" })).toBeNull();
     expect(screen.getByLabelText("Senha").getAttribute("type")).toBe(
       "password",
     );
   });
 });
 
-it("mostra saldo negativo, aviso de atenção e nenhuma configuração mensal", async () => {
+it("mostra orçamento estourado com valor positivo e só os três totais", async () => {
   state.rows = [entry({ tipo: "receita", valor: 100 }), entry({ valor: 250 })];
   const { container } = render(<App />);
-  await screen.findByText("Anotado hoje");
-  expect(container.querySelector(".big-number")?.textContent).toMatch(
-    /-.*150,00/,
-  );
+  const month = await screen.findByRole("region", { name: "Resumo do mês" });
+  expect(
+    within(month).getByRole("heading", { name: "Orçamento estourado em" }),
+  ).toBeTruthy();
+  expect(container.querySelector(".big-number")?.textContent).toMatch(/150,00/);
+  expect(container.querySelector(".big-number")?.textContent).not.toMatch(/-/);
   expect(
     container
       .querySelector(".big-number")
       ?.classList.contains("attention-text"),
   ).toBe(true);
   expect(
-    screen.getByText(/Passou do que entrou neste mês em/).textContent,
-  ).toMatch(/150,00/);
-  expect(screen.getByText(/que entraram neste mês/).textContent).toMatch(
-    /100,00/,
-  );
-  expect(screen.getByRole("progressbar").getAttribute("value")).toBe("100");
-  fireEvent.click(screen.getByRole("button", { name: "Tudo" }));
-  expect(screen.queryByLabelText("Valor mensal (R$)")).toBeNull();
-  expect(screen.queryByText(/Defina/)).toBeNull();
-});
-
-it("compartilha mês entre telas e só exibe ritmo no mês atual", async () => {
-  render(<App />);
-  await screen.findByText("Anotado hoje");
-  fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
-  expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(
-    /Previsto para/,
-  );
-  expect(screen.getByText("Só o que já está lançado")).toBeTruthy();
+    screen.getByRole("progressbar").classList.contains("care-progress"),
+  ).toBe(true);
+  expect(within(month).getAllByRole("definition")).toHaveLength(2);
   expect(screen.queryByText(/Ritmo diário/)).toBeNull();
-  const selected = within(
-    screen.getByRole("group", { name: "Mês selecionado" }),
-  ).getByText(/de \d{4}/).textContent;
-  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
-  expect(
-    within(screen.getByRole("group", { name: "Mês selecionado" })).getByText(
-      selected!,
-    ),
-  ).toBeTruthy();
-  expect(screen.getByText(/Nada lançado em/)).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Semana" }));
-  expect(screen.queryByText("Dá para gastar por semana")).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  expect(screen.queryByText(/cartão hoje/)).toBeNull();
+  expect(screen.queryByLabelText("Valor mensal (R$)")).toBeNull();
+  const tabs = within(screen.getByRole("navigation")).getAllByRole("button");
+  expect(tabs.map((b) => b.textContent)).toEqual([
+    "Mês",
+    "Gráfico",
+    "Lançamentos",
+  ]);
+});
+it("compartilha mês nas três abas e mantém Anotar com IA primeiro", async () => {
+  render(<App />);
+  await screen.findByRole("region", { name: "Resumo do mês" });
+  const selector = screen.getByRole("group", { name: "Mês selecionado" });
+  expect(within(selector).queryByRole("button", { name: "Hoje" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
+  expect(screen.getByRole("heading", { name: "Previsto" })).toBeTruthy();
+  expect(screen.getByText("Só o que já está lançado")).toBeTruthy();
+  const selected = within(selector).getByText(/de \d{4}/).textContent;
+  for (const tab of ["Gráfico", "Lançamentos", "Mês"]) {
+    fireEvent.click(
+      within(screen.getByRole("navigation")).getByRole("button", { name: tab }),
+    );
+    expect(
+      within(screen.getByRole("group", { name: "Mês selecionado" })).getByText(
+        selected!,
+      ),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Anotar" }));
+    expect(
+      screen
+        .getByRole("tab", { name: "Texto com IA" })
+        .getAttribute("aria-selected"),
+    ).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: /^Fechar$/ }));
+  }
   fireEvent.click(
     within(screen.getByRole("group", { name: "Mês selecionado" })).getByRole(
       "button",
       { name: "Hoje" },
     ),
   );
-  fireEvent.click(
-    within(screen.getByRole("navigation")).getByRole("button", {
-      name: "Hoje",
+  expect(screen.getByRole("heading", { name: "Falta gastar" })).toBeTruthy();
+});
+it("tocar categoria do gráfico abre só esses gastos e permite limpar o filtro", async () => {
+  state.rows = [
+    entry({ id: "a", descricao: "Supermercado", valor: 60 }),
+    entry({
+      id: "b",
+      descricao: "Cinema",
+      categoria_macro: "Lazer",
+      valor: 40,
     }),
+  ];
+  const { container } = render(<App />);
+  await screen.findByRole("region", { name: "Resumo do mês" });
+  fireEvent.click(screen.getByRole("button", { name: "Gráfico" }));
+  expect(
+    screen.getByRole("img", { name: "Ganhou e gastou nos últimos seis meses" }),
+  ).toBeTruthy();
+  expect(container.querySelectorAll(".selected-month-bg")).toHaveLength(1);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Ver gastos de Alimentação" }),
   );
-  expect(screen.getByText(/Ritmo diário/)).toBeTruthy();
+  expect(
+    screen
+      .getByRole("button", { name: "Lançamentos" })
+      .getAttribute("aria-current"),
+  ).toBe("page");
+  expect(
+    screen.getByRole("button", { name: "Ver detalhes de Supermercado" }),
+  ).toBeTruthy();
+  expect(
+    screen.queryByRole("button", { name: "Ver detalhes de Cinema" }),
+  ).toBeNull();
+  expect(container.querySelector(".ledger-total")?.textContent).toMatch(
+    /100,00/,
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Remover filtro Alimentação" }),
+  );
+  expect(
+    screen.getByRole("button", { name: "Ver detalhes de Cinema" }),
+  ).toBeTruthy();
 });
 it("lista 80 itens, carrega mais, filtra e confirma exclusão de uma só parcela", async () => {
   state.rows = Array.from({ length: 81 }, (_, i) =>
@@ -384,7 +417,7 @@ it("lista 80 itens, carrega mais, filtra e confirma exclusão de uma só parcela
     }),
   );
   render(<App />);
-  await screen.findByText("Anotado hoje");
+  await screen.findByRole("region", { name: "Resumo do mês" });
   fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
   expect(
     screen.getAllByRole("button", { name: /Ver detalhes de/ }),

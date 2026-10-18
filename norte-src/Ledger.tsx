@@ -22,6 +22,8 @@ export default function Ledger({
   changing,
   onCategory,
   onDelete,
+  categoryFilter,
+  onClearCategory,
 }: {
   rows: Entry[];
   cards: Card[];
@@ -30,6 +32,8 @@ export default function Ledger({
   changing: Set<string>;
   onCategory: (r: Entry, c: Category) => Promise<void>;
   onDelete: (r: Entry) => Promise<void>;
+  categoryFilter: Category | null;
+  onClearCategory: () => void;
 }) {
   const [filter, setFilter] = useState<EntryFilter>("Todos"),
     [limit, setLimit] = useState(80),
@@ -41,13 +45,18 @@ export default function Ledger({
     lastOpener = useRef<HTMLButtonElement | null>(null);
   const detail = rows.find((r) => r.id === detailId);
   const month = monthEntries(rows, selected),
-    filtered = filterEntries(month, filter),
+    filtered = filterEntries(month, filter).filter(
+      (r) => !categoryFilter || categoryOf(r) === categoryFilter,
+    ),
     groups = groupEntriesByDay(filtered.slice(0, limit)),
     totals = monthSummary(month, selected);
   const monthName = selected.toLocaleDateString("pt-BR", { month: "long" });
   useEffect(() => {
     setLimit(80);
-  }, [selected, filter]);
+  }, [selected, filter, categoryFilter]);
+  useEffect(() => {
+    if (categoryFilter) setFilter("Gastos");
+  }, [categoryFilter]);
   function cardName(row: Entry) {
     return row.cartao_id
       ? (cards.find((c) => c.id === row.cartao_id)?.nome ?? "Cartão")
@@ -84,24 +93,8 @@ export default function Ledger({
   return (
     <section className="ledger">
       <h1>Lançamentos</h1>
-      <dl className="month-totals">
-        <div>
-          <dt>Entrou</dt>
-          <dd>{money(totals.income)}</dd>
-        </div>
-        <div>
-          <dt>Gastou</dt>
-          <dd>{money(totals.spent)}</dd>
-        </div>
-        <div>
-          <dt>Resta</dt>
-          <dd className={totals.balance < 0 ? "attention-text" : ""}>
-            {money(totals.balance)}
-          </dd>
-        </div>
-      </dl>
-      <p className="muted reconciliation">
-        Gastou = soma dos gastos desta lista, sem Pais e aportes
+      <p className="ledger-total">
+        Gastou <strong>{money(totals.spent)}</strong>
       </p>
       <div
         className="filter-chips"
@@ -112,12 +105,24 @@ export default function Ledger({
           <button
             key={f}
             aria-pressed={f === filter}
-            onClick={() => setFilter(f)}
+            onClick={() => {
+              setFilter(f);
+              if (f !== "Gastos") onClearCategory();
+            }}
           >
             {f}
           </button>
         ))}
       </div>
+      {categoryFilter && (
+        <button
+          className="category-filter"
+          onClick={onClearCategory}
+          aria-label={`Remover filtro ${categoryFilter}`}
+        >
+          {categoryFilter} <span aria-hidden="true">×</span>
+        </button>
+      )}
       {!month.length ? (
         <p className="empty">Nada lançado em {monthName}.</p>
       ) : !filtered.length ? (

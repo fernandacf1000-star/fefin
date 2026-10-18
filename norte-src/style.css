@@ -822,3 +822,238 @@ nav button {
     color: var(--accent);
   }
 }
+.app {
+  padding-bottom: calc(108px + env(safe-area-inset-bottom));
+}
+.month-selector:not(:has(.month-today)) {
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+}
+.month-view {
+  padding-top: 18px;
+}
+.month-view h1 {
+  font-size: 25px;
+  letter-spacing: -0.5px;
+  margin: 0 0 20px;
+  line-height: 1.25;
+}
+.month-view .big-number {
+  margin-bottom: 30px;
+}
+.month-summary {
+  margin: 0 0 22px;
+}
+.month-summary > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 15px;
+}
+.month-summary dt {
+  color: var(--muted);
+}
+.month-summary dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+progress.care-progress {
+  color: var(--attention);
+}
+progress.care-progress::-webkit-progress-value {
+  background: var(--attention);
+}
+progress.care-progress::-moz-progress-bar {
+  background: var(--attention);
+}
+.future-note {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 15px;
+}
+.floating-add {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  right: max(20px, calc((100vw - 480px) / 2 + 24px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: auto;
+  min-width: 142px;
+  z-index: 5;
+  border-radius: 99px;
+  box-shadow: 0 5px 22px #1d2b3326;
+  padding: 14px 22px;
+}
+.floating-add > span {
+  font-size: 23px;
+  line-height: 1;
+}
+.ledger-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+.ledger-total strong {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 500;
+}
+.category-filter {
+  background: var(--soft);
+  border-color: var(--soft);
+  color: var(--accent);
+  font-size: 13px;
+  border-radius: 99px;
+  margin: -12px 0 12px;
+}
+.category-filter span {
+  margin-left: 10px;
+  font-size: 18px;
+}
+.charts h1 {
+  font-size: 24px;
+  letter-spacing: -0.5px;
+  margin: 0 0 20px;
+}
+.category-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.category-bar {
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 400;
+}
+.category-bar > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.category-bar strong {
+  font-weight: 500;
+}
+.category-bar > div > span {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.category-bar small {
+  font-size: 12px;
+}
+.category-bar svg {
+  display: block;
+  width: 100%;
+  height: 8px;
+}
+.chart-track {
+  fill: var(--line);
+}
+.six-months {
+  border-top: 1px solid var(--line);
+  padding-top: 28px;
+  margin-top: 30px;
+}
+.six-months h2 {
+  font-size: 21px;
+}
+.chart-legend {
+  display: flex;
+  gap: 18px;
+  margin: 16px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.chart-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chart-legend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+.income-key {
+  background: var(--accent);
+}
+.spent-key {
+  background: #7d9499;
+}
+.history-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.history-chart text {
+  fill: var(--muted);
+  font:
+    12px Figtree,
+    sans-serif;
+}
+.history-income {
+  fill: var(--accent);
+}
+.history-spent {
+  fill: #7d9499;
+}
+.chart-axis {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.selected-month-bg {
+  fill: var(--soft);
+}
+.history-chart .selected-month-label {
+  fill: var(--accent);
+  font-weight: 600;
+}
+.chart-values {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 16px;
+}
+.chart-values summary {
+  padding: 12px 0;
+}
+.chart-values table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.chart-values th,
+.chart-values td {
+  border-bottom: 1px solid var(--line);
+  padding: 11px 2px;
+  text-align: right;
+  font-weight: 400;
+}
+.chart-values tr > :first-child {
+  text-align: left;
+}
+.chart-values caption {
+  text-align: left;
+  margin: 10px 0;
+}
+@media (max-width: 360px) {
+  .category-bar {
+    font-size: 13px;
+  }
+  .category-bar small {
+    font-size: 11px;
+  }
+}

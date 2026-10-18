@@ -308,12 +308,74 @@ export function monthPeriod(selected: Date, now: Date) {
       ? "past"
       : "future";
 }
-export function monthHeading(selected: Date, now: Date, balance: number) {
-  const name = selected.toLocaleDateString("pt-BR", { month: "long" });
+export function monthPresentation(rows: Entry[], selected: Date, now: Date) {
+  const totals = monthSummary(rows, selected);
   const period = monthPeriod(selected, now);
-  return period === "current"
-    ? "Ainda dá para gastar neste mês"
-    : period === "future"
-      ? `Previsto para ${name}`
-      : `${balance < 0 ? "Passou" : "Sobrou"} em ${name}`;
+  const over = totals.balance < 0;
+  const monthName = selected.toLocaleDateString("pt-BR", { month: "long" });
+  const label =
+    period === "future"
+      ? "Previsto"
+      : period === "past"
+        ? over
+          ? `Estourou em ${monthName}`
+          : "Sobrou"
+        : over
+          ? "Orçamento estourado em"
+          : "Falta gastar";
+  return {
+    ...totals,
+    period,
+    over,
+    label,
+    displayAmount:
+      period === "future" ? totals.balance : Math.abs(totals.balance),
+  };
+}
+export const SPENDING_CATEGORIES = CATEGORIES.filter(
+  (c): c is Exclude<Category, "Pais"> => c !== "Pais",
+);
+export type SpendingCategory = (typeof SPENDING_CATEGORIES)[number];
+export function categoryChartData(rows: Entry[], selected: Date) {
+  const expenses = monthEntries(rows, selected).filter(countsAsSpending);
+  const spent = monthSpending(rows, selected);
+  const categories = SPENDING_CATEGORIES.map((category) => {
+    const amount = sumMoney(
+      expenses
+        .filter((r) => categoryOf(r) === category)
+        .map((r) => Number(r.valor)),
+    );
+    return {
+      category,
+      amount,
+      percent: spent > 0 ? (amount / spent) * 100 : 0,
+    };
+  }).sort(
+    (a, b) =>
+      b.amount - a.amount || a.category.localeCompare(b.category, "pt-BR"),
+  );
+  const unclassified = sumMoney(
+    expenses
+      .filter(
+        (r) => !SPENDING_CATEGORIES.includes(categoryOf(r) as SpendingCategory),
+      )
+      .map((r) => Number(r.valor)),
+  );
+  return { categories, spent, unclassified };
+}
+export function sixMonthChartData(rows: Entry[], selected: Date) {
+  const start = new Date(selected.getFullYear(), selected.getMonth(), 1, 12);
+  return Array.from({ length: 6 }, (_, i) => {
+    const date = addMonths(start, i - 5);
+    const totals = monthSummary(rows, date);
+    return {
+      month: monthKey(date),
+      label: date
+        .toLocaleDateString("pt-BR", { month: "short" })
+        .replaceAll(".", ""),
+      income: totals.income,
+      spent: totals.spent,
+      selected: i === 5,
+    };
+  });
 }

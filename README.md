@@ -1,6 +1,6 @@
 # Norte
 
-Aplicativo pessoal com quatro abas: Hoje, Semana, Lançamentos e Tudo. React 18, TypeScript estrito, Vite, CSS simples e Supabase. O código ativo está em `norte-src/`; `index.html` aponta exclusivamente para ele. O código legado de `src/` não faz parte do build. A branch `main` continua sendo o FeFin.
+Aplicativo pessoal com três abas: Mês, Gráfico e Lançamentos. React 18, TypeScript estrito, Vite, CSS simples e Supabase. O código ativo está em `norte-src/`; `index.html` aponta exclusivamente para ele. O código legado de `src/` não faz parte do build. A branch `main` continua sendo o FeFin.
 
 ## Executar
 
@@ -17,14 +17,14 @@ Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` no ambiente ou e
 
 - O saldo principal é receitas menos gastos do mês, sem ler ou gravar `profiles.meta_mensal`. Receitas incluem `tipo=receita` e `categoria=salario` (mesmo com tipo despesa), excluindo `reembolso_pais`. Outros reembolsos permanecem. Receitas usam o mês da data, sem deslocamento de parcelas.
 - Gastos usam a data da compra, deslocando a parcela N em N−1 meses; excluem salário, Aportes e lançamentos reembolsados dos Pais. Os totais mensais são somados com a precisão original e arredondados para centavos antes da subtração.
-- Saldos negativos são exibidos sem corte em zero, na cor de atenção. Ritmo diário = saldo / dias restantes (incluindo hoje); semanal = max(0, saldo / dias restantes × 7).
+- Mês mostra Falta gastar ou Orçamento estourado em (valor absoluto do estouro, na cor de atenção), Ganhou, Gastou e uma barra fina. Passado usa Sobrou/Estourou; futuro usa Previsto e somente registros existentes. Não há ritmos diário/semanal nem recomendação de cartão na tela.
 - A fatura usa o próximo fechamento, incluindo o dia atual. O pagamento acontece no primeiro vencimento estritamente posterior ao fechamento.
 - A memória compara descrições sem acentos/caixa e conta cada parcelamento uma única vez. Frequência vence; empate usa o registro mais recente.
 - Categorias são fixas. Pais mantém macro conhecida e usa `subcategoria_pais='Pais'`. Correções atualizam todas as parcelas do grupo.
 - O lançamento é salvo antes da classificação adicional. Falha da IA mantém o registro e permite escolher categoria. Desfazer exclui somente os IDs da última inclusão desta sessão.
-- Hoje e Lançamentos compartilham um seletor de mês com janela de ±24 meses. Meses futuros mostram somente os registros existentes, sem projetar novas recorrências. Ritmos diário e semanal só aparecem ao selecionar o mês atual.
+- As três abas compartilham um seletor de mês com janela de ±24 meses. Hoje aparece apenas para voltar ao mês atual. O botão Anotar flutua nas três abas e abre primeiro Texto com IA, com a categoria ajustável por item antes de salvar.
+- Gráfico usa SVG próprio: barras horizontais de gastos por categoria, ordenadas por valor, e seis meses de Ganhou × Gastou, terminando no mês escolhido. Tocar uma categoria abre Lançamentos filtrado nela. Gastos sem categoria permanecem nos totais e são indicados separadamente, sem inventar categorias ou alterar dados.
 - Lançamentos usa a data efetiva das parcelas, agrupa por dia, filtra Todos/Gastos/Receitas/Pais e carrega 80 itens por vez. Os totais consideram o mês inteiro, independentemente de filtro ou paginação, com a mesma função do painel. Detalhes mostram data da compra e mês da fatura. Exclusão exige confirmação e apaga somente o ID selecionado (uma parcela, quando aplicável); não altera as demais parcelas.
-- A revisão semanal é armazenada neste aparelho por usuário e por semana (segunda-feira como início).
 - A PWA guarda apenas o shell público; dados financeiros e respostas de autenticação não são armazenados no service worker. Sem conexão, não é possível gravar gastos.
 
 ## Edge Functions
@@ -44,4 +44,4 @@ No iPhone: abrir a URL no Safari, Compartilhar → Adicionar à Tela de Início.
 
 ## Validação
 
-39 testes automatizados cobrem calendário, limites de mês, orçamento e parcelas, memória e empates, regras dos pais, quatro formatos de SMS, arredondamento, login sem sessão, anotação com IA indisponível, desfazer, edição de categoria, revisão semanal, navegação mensal com virada de ano e limites, datas efetivas, agrupamento, filtros, paginação e exclusão confirmada. Os testes de interface usam Supabase simulado e não alteram dados reais. A validação autenticada com dados reais depende da sessão pessoal da usuária.
+45 testes automatizados cobrem calendário, limites de mês, orçamento e parcelas, memória e empates, regras dos pais, quatro formatos de SMS, arredondamento, login sem sessão, anotação com IA indisponível, desfazer, edição de categoria, navegação mensal com virada de ano e limites, datas efetivas, agrupamento, filtros, paginação, exclusão confirmada, resumo simplificado, categorias e série de seis meses, filtro a partir do gráfico e Anotar nas três abas. Os testes de interface usam Supabase simulado e não alteram dados reais. A validação autenticada com dados reais depende da sessão pessoal da usuária.

@@ -9,7 +9,9 @@ import {
   monthEntries,
   filterEntries,
   groupEntriesByDay,
-  monthHeading,
+  monthPresentation,
+  categoryChartData,
+  sixMonthChartData,
   memory,
   categoryPatch,
   parentRule,
@@ -386,10 +388,22 @@ describe("navegação e conferência mensal", () => {
       selected,
     ).balance;
     expect(balance).toBe(-150);
-    expect(monthHeading(selected, now, balance)).toBe("Passou em setembro");
-    expect(monthHeading(selected, now, 150)).toBe("Sobrou em setembro");
-    expect(monthHeading(new Date(2026, 10, 1), now, -150)).toBe(
-      "Previsto para novembro",
+    expect(
+      monthPresentation(
+        [entry({ data: "2026-09-17", valor: 150 })],
+        selected,
+        now,
+      ).label,
+    ).toBe("Estourou em setembro");
+    expect(
+      monthPresentation(
+        [entry({ data: "2026-09-17", tipo: "receita", valor: 150 })],
+        selected,
+        now,
+      ).label,
+    ).toBe("Sobrou");
+    expect(monthPresentation([], new Date(2026, 10, 1), now).label).toBe(
+      "Previsto",
     );
   });
   it("filtro Pais inclui só os itens com subcategoria_pais preenchida", () => {
@@ -447,6 +461,180 @@ describe("navegação e conferência mensal", () => {
       income: 64691.96,
       spent: 27553.23,
       balance: 37138.73,
+    });
+  });
+});
+
+describe("resumo simples e gráficos", () => {
+  const now = new Date(2026, 9, 18);
+  it("Falta gastar e orçamento estourado usam o mesmo saldo, com estouro positivo", () => {
+    const income = entry({
+      id: "salary",
+      tipo: "despesa",
+      categoria: "salario",
+      valor: 100,
+    });
+    expect(
+      monthPresentation([income, entry({ valor: 30 })], now, now),
+    ).toMatchObject({
+      balance: 70,
+      displayAmount: 70,
+      label: "Falta gastar",
+      over: false,
+    });
+    expect(
+      monthPresentation([income, entry({ valor: 150 })], now, now),
+    ).toMatchObject({
+      balance: -50,
+      displayAmount: 50,
+      label: "Orçamento estourado em",
+      over: true,
+      progress: 100,
+    });
+    expect(monthPresentation([], now, now)).toMatchObject({
+      balance: 0,
+      label: "Falta gastar",
+      displayAmount: 0,
+      progress: 0,
+    });
+  });
+  it("mês passado usa Sobrou ou Estourou e futuro só mostra o que já foi lançado", () => {
+    const past = new Date(2026, 8, 1),
+      future = new Date(2026, 10, 1);
+    expect(
+      monthPresentation([entry({ data: "2026-09-01", valor: 200 })], past, now),
+    ).toMatchObject({
+      label: "Estourou em setembro",
+      displayAmount: 200,
+      period: "past",
+    });
+    expect(
+      monthPresentation(
+        [entry({ data: "2026-09-01", tipo: "receita", valor: 200 })],
+        past,
+        now,
+      ),
+    ).toMatchObject({ label: "Sobrou", displayAmount: 200 });
+    const rows = [
+      entry({
+        data: "2026-10-13",
+        valor: 50,
+        is_parcelado: true,
+        parcela_atual: 2,
+      }),
+      entry({ data: "2026-10-13", valor: 100, tipo: "receita" }),
+    ];
+    expect(monthPresentation(rows, future, now)).toMatchObject({
+      label: "Previsto",
+      period: "future",
+      income: 0,
+      spent: 50,
+      balance: -50,
+    });
+  });
+  it("categorias ordenadas usam as mesmas exclusões e percentuais do mês", () => {
+    const rows = [
+      entry({ valor: 60 }),
+      entry({ id: "leisure", valor: 40, categoria_macro: "Lazer" }),
+      entry({ id: "parents", valor: 500, subcategoria_pais: "Pais" }),
+      entry({ id: "investment", valor: 500, categoria_macro: "Aportes" }),
+      entry({ id: "salary", categoria: "salario", valor: 1000 }),
+      entry({ id: "receipt", tipo: "receita", valor: 200 }),
+    ];
+    const result = categoryChartData(rows, now);
+    expect(result.spent).toBe(100);
+    expect(result.categories).toHaveLength(6);
+    expect(result.categories[0]).toMatchObject({
+      category: "Alimentação",
+      amount: 60,
+      percent: 60,
+    });
+    expect(result.categories[1]).toMatchObject({
+      category: "Lazer",
+      amount: 40,
+      percent: 40,
+    });
+    expect(
+      result.categories.some((c) => (c.category as string) === "Pais"),
+    ).toBe(false);
+    expect(result.unclassified).toBe(0);
+  });
+  it("parcelas são deslocadas no gráfico e valores sem categoria não ganham categoria inventada", () => {
+    const rows = [
+      entry({ valor: 20.005 }),
+      entry({ id: "half", valor: 0.005 }),
+      entry({ id: "unknown", valor: 10, categoria_macro: null }),
+      entry({
+        id: "installment",
+        data: "2026-09-13",
+        parcela_atual: 2,
+        is_parcelado: true,
+        valor: 30,
+        categoria_macro: "Lazer",
+      }),
+      entry({
+        id: "future",
+        data: "2026-10-13",
+        parcela_atual: 2,
+        is_parcelado: true,
+        valor: 100,
+      }),
+    ];
+    const result = categoryChartData(rows, now);
+    expect(result.spent).toBe(60.01);
+    expect(result.unclassified).toBe(10);
+    expect(
+      result.categories.find((c) => c.category === "Alimentação")?.amount,
+    ).toBe(20.01);
+    expect(result.categories[0]).toMatchObject({
+      category: "Lazer",
+      amount: 30,
+    });
+  });
+  it("histórico tem seis meses com virada do ano e mês escolhido destacado", () => {
+    const selected = new Date(2027, 0, 1);
+    const rows = [
+      entry({ data: "2026-08-15", valor: 100 }),
+      entry({
+        data: "2026-12-15",
+        is_parcelado: true,
+        parcela_atual: 2,
+        valor: 40,
+      }),
+      entry({ data: "2027-01-01", categoria: "salario", valor: 200 }),
+      entry({ data: "2027-02-01", tipo: "receita", valor: 999 }),
+      entry({ data: "2026-07-01", tipo: "receita", valor: 999 }),
+    ];
+    const months = sixMonthChartData(rows, selected);
+    expect(months.map((m) => m.month)).toEqual([
+      "2026-08",
+      "2026-09",
+      "2026-10",
+      "2026-11",
+      "2026-12",
+      "2027-01",
+    ]);
+    expect(months[0]).toMatchObject({ income: 0, spent: 100, selected: false });
+    expect(months[1]).toMatchObject({ income: 0, spent: 0 });
+    expect(months[5]).toMatchObject({ income: 200, spent: 40, selected: true });
+    expect(months.filter((m) => m.selected)).toHaveLength(1);
+  });
+  it("referência de outubro permanece 64.691,96 menos 27.553,23", () => {
+    const rows = [
+      entry({ categoria: "salario", valor: 22110.46 }),
+      entry({ id: "income", tipo: "receita", valor: 42581.5 }),
+      entry({ id: "expense", valor: 27553.225 }),
+    ];
+    expect(monthPresentation(rows, now, now)).toMatchObject({
+      income: 64691.96,
+      spent: 27553.23,
+      displayAmount: 37138.73,
+      label: "Falta gastar",
+    });
+    expect(categoryChartData(rows, now).spent).toBe(27553.23);
+    expect(sixMonthChartData(rows, now)[5]).toMatchObject({
+      income: 64691.96,
+      spent: 27553.23,
     });
   });
 });

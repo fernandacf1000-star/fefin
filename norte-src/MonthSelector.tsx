@@ -32,14 +32,16 @@ export default function MonthSelector({
       >
         ›
       </button>
-      <button
-        className="month-today"
-        onClick={() =>
-          onChange(new Date(now.getFullYear(), now.getMonth(), 1, 12))
-        }
-      >
-        Hoje
-      </button>
+      {monthKey(selected) !== monthKey(now) && (
+        <button
+          className="month-today"
+          onClick={() =>
+            onChange(new Date(now.getFullYear(), now.getMonth(), 1, 12))
+          }
+        >
+          Hoje
+        </button>
+      )}
     </div>
   );
 }

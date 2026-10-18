@@ -1083,13 +1083,44 @@ progress.care-progress::-moz-progress-bar {
 .best-card > span, .best-card > small { color: var(--muted); font-size: 14px; }
 .best-card > strong { color: var(--accent); font-size: 22px; }
 
-.swipe{position:relative;overflow:hidden;border-radius:14px}
-.swipe-actions{position:absolute;inset:0 0 0 auto;display:flex;width:132px}
-.swipe-action{flex:1;border:0;font:inherit;font-weight:600;cursor:pointer;color:#fff}
-.swipe-edit{background:var(--accent)}
-.swipe-delete{background:var(--attention)}
-.swipe-content{position:relative;background:var(--bg);touch-action:pan-y;transition:transform .18s ease;will-change:transform}
-.swipe-content.dragging{transition:none}
-@media (prefers-reduced-motion:reduce){.swipe-content{transition:none}}
+.swipe {
+  --swipe-actions-width: 168px;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+}
+.swipe-actions {
+  position: absolute;
+  inset: 0 0 0 auto;
+  display: flex;
+  width: var(--swipe-actions-width);
+}
+.swipe-action {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 10px 4px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  white-space: nowrap;
+}
+.swipe-edit { background: var(--accent); }
+.swipe-delete { background: var(--attention); }
+.swipe-content {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  background: var(--bg);
+  touch-action: pan-y;
+  transition: transform .18s ease;
+  will-change: transform;
+}
+.swipe-content.dragging { transition: none; }
+@media (prefers-reduced-motion: reduce) { .swipe-content { transition: none; } }
 
 .notice .notice-close{border:0;padding:0 6px;font-size:18px;line-height:1;margin-left:auto}

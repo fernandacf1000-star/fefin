@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
-const OPEN = 132; // largura dos dois botões
+const ACTION_WIDTH = 84;
+const OPEN = ACTION_WIDTH * 2; // largura dos dois botões
 const THRESHOLD = 56;
 
 export default function SwipeRow({
@@ -69,7 +70,11 @@ export default function SwipeRow({
     fn();
   }
   return (
-    <div className="swipe" ref={root}>
+    <div
+      className="swipe"
+      ref={root}
+      style={{ "--swipe-actions-width": `${OPEN}px` } as CSSProperties}
+    >
       <div className="swipe-actions">
         <button
           type="button"

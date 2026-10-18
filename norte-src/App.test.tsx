@@ -628,6 +628,8 @@ describe("swipe, editar e excluir", () => {
     expect(c.getAttribute("data-open")).toBe("false");
     swipeLeft(c);
     expect(c.getAttribute("data-open")).toBe("true");
+    expect(c.style.transform).toBe("translateX(-168px)");
+    expect(c.closest(".swipe")?.getAttribute("style")).toContain("--swipe-actions-width: 168px");
     fireEvent.click(screen.getByRole("button", { name: "Editar Padaria" }));
     const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
     fireEvent.change(within(dlg).getByLabelText("Descrição"), { target: { value: "Padaria nova" } });

@@ -545,3 +545,23 @@ it("mostra melhor cartão hoje e leva compra no crédito para o mês da fatura",
     expect(screen.getByRole("region", { name: "Resumo do mês" }).querySelector(".month-summary")?.textContent).toMatch(/GastouR\$\s*0,00/);
   }
 });
+
+it.each([
+  ["config", 503, "A IA ainda não está configurada"],
+  ["provider_auth", 503, "A IA ainda não está configurada"],
+  ["model", 503, "A IA ainda não está configurada"],
+  ["provider_unavailable", 503, "A IA está fora do ar agora, tente de novo"],
+  ["auth", 401, "Entre de novo para usar a IA"],
+])("mostra erro %s do SDK e mantém lançamento manual", async (code, status, expected) => {
+  state.ai.mockResolvedValue({ data: null, error: { context: new Response(JSON.stringify({ code }), { status: Number(status) }) } });
+  await open();
+  fireEvent.change(screen.getByLabelText("O que você gastou?"), { target: { value: "45 café" } });
+  fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
+  await screen.findByText(String(expected));
+  expect((screen.getByLabelText("O que você gastou?") as HTMLTextAreaElement).value).toBe("45 café");
+  fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "45" } });
+  fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Café" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
+  await waitFor(() => expect(state.rows).toHaveLength(1));
+});

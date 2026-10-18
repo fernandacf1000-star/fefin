@@ -57,10 +57,20 @@ async function askAI(body: Record<string, unknown>) {
   const { data, error } = await sb!.functions.invoke("norte-ai", {
     body: { ...body, categories: CATEGORIES },
   });
-  if (error)
-    throw new Error("A IA está indisponível. Você pode anotar pelo valor.");
-  if (data?.error)
-    throw new Error("A IA está indisponível. Você pode anotar pelo valor.");
+  if (error || data?.error || data?.code) {
+    let details = data;
+    const response = error?.context;
+    if (response instanceof Response) {
+      try { details = await response.clone().json(); } catch { /* Gateway responses can be non-JSON. */ }
+    }
+    const code = response?.status === 401 ? "auth" : details?.code;
+    const text = ["config", "provider_auth", "model"].includes(code)
+      ? "A IA ainda não está configurada"
+      : code === "auth" ? "Entre de novo para usar a IA"
+      : code === "input" ? "Confira o texto e tente de novo"
+      : "A IA está fora do ar agora, tente de novo";
+    throw new Error(text);
+  }
   return data;
 }
 function Logo() {
@@ -305,8 +315,8 @@ export default function App() {
               .map((r) => `${r.descricao} → ${categoryOf(r)}`),
           });
           guesses = Array.isArray(data.categories) ? data.categories : [];
-        } catch {
-          /* The row remains saved and can be classified manually. */
+        } catch (e) {
+          setNotice(`${message(e)}. Lançamento salvo; escolha a categoria na lista.`);
         }
       }
       for (const r of inserted) {

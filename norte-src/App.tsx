@@ -512,7 +512,7 @@ export default function App() {
       ) : (
         <>
           {tab === "Mês" && (
-            <MonthView rows={rows} selected={selectedDate} now={now} />
+            <MonthView rows={rows} selected={selectedDate} now={now} cards={cards} />
           )}
           {tab === "Gráfico" && (
             <Charts
@@ -707,6 +707,7 @@ export default function App() {
                   </option>
                 ))}
               </select>
+              {payment !== "dinheiro" && <p className="muted">Entra no mês de vencimento da fatura.</p>}
             </details>}
             {sheetError && (
               <p className="alert" role="alert">

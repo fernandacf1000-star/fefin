@@ -304,13 +304,13 @@ it("mostra orçamento estourado com valor positivo e só os três totais", async
   ).toBe(true);
   expect(within(month).getAllByRole("definition")).toHaveLength(2);
   expect(screen.queryByText(/Ritmo diário/)).toBeNull();
-  expect(screen.queryByText(/cartão hoje/)).toBeNull();
+  expect(screen.getByText("Melhor cartão hoje")).toBeTruthy();
   expect(screen.queryByLabelText("Valor mensal (R$)")).toBeNull();
   const tabs = within(screen.getByRole("navigation")).getAllByRole("button");
   expect(tabs.map((b) => b.textContent)).toEqual([
     "Mês",
-    "Gráfico",
     "Lançamentos",
+    "Gráfico",
   ]);
 });
 it("compartilha mês nas três abas e mantém Anotar com IA primeiro", async () => {
@@ -525,4 +525,23 @@ it("receita com IA mantém categorias ajustáveis e memória, sem cartão", asyn
   expect(state.rows[0]).toMatchObject({ tipo: "receita", categoria_macro: "Moradia", cartao_id: null });
   expect(state.rows[1]).toMatchObject({ tipo: "receita", categoria: "reembolso_pais", subcategoria_pais: "Pais" });
   expect(screen.getByRole("region", { name: "Resumo do mês" }).querySelector(".big-number")?.textContent).toMatch(/300,00/);
+});
+
+it("mostra melhor cartão hoje e leva compra no crédito para o mês da fatura", async () => {
+  await open();
+  expect(screen.getByRole("complementary", { name: "Melhor cartão hoje" }).textContent).toContain("Master");
+  fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "90" } });
+  fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Compra cartão" } });
+  fireEvent.change(screen.getByLabelText("Forma de pagamento"), { target: { value: "master" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
+  await screen.findByText("Gasto anotado.");
+  const today = new Date();
+  const card = { id: "master", nome: "Master", ativo: true, dia_fechamento: 22, dia_vencimento: 1 };
+  const { cardDates, monthKey, monthSummary } = await import("./domain");
+  expect(state.rows[0]).toMatchObject({ forma_pagamento: "credito", cartao_id: "master", mes_referencia: cardDates(card, today).reference });
+  if (cardDates(card, today).reference !== monthKey(today)) {
+    expect(monthSummary(state.rows as Entry[], today).spent).toBe(0);
+    expect(screen.getByRole("region", { name: "Resumo do mês" }).querySelector(".month-summary")?.textContent).toMatch(/GastouR\$\s*0,00/);
+  }
 });

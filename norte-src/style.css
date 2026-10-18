@@ -1070,3 +1070,15 @@ progress.care-progress::-moz-progress-bar {
     background: transparent;
   }
 }
+
+.best-card {
+  margin-top: 28px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  display: grid;
+  gap: 6px;
+}
+.best-card > span, .best-card > small { color: var(--muted); font-size: 14px; }
+.best-card > strong { color: var(--accent); font-size: 22px; }

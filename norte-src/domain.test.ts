@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   cardDates,
+  bestCard,
+  entryDate,
   dateKey,
   monthSpending,
   monthIncome,
@@ -34,8 +36,8 @@ const entry = (overrides: Partial<Entry> = {}): Entry => ({
   subcategoria_pais: null,
   data: "2026-10-13",
   mes_referencia: "2026-11",
-  forma_pagamento: "credito",
-  cartao_id: SMS_CARDS.master.id,
+  forma_pagamento: "dinheiro",
+  cartao_id: null,
   pago: false,
   pago_por: "voce",
   is_parcelado: false,
@@ -649,4 +651,38 @@ it("trocar receita para Pais exclui reembolso e desfazer categoria volta a somar
   expect(corrected.categoria).toBe("receita");
   expect(monthIncome([corrected], new Date(2026, 9, 18))).toBe(500);
   expect(categoryPatch("Pessoal", entry({ tipo: "receita", categoria: "reembolso_adriano" })).categoria).toBe("reembolso_adriano");
+});
+
+it("recomenda o cartão ativo que dá mais dias até pagar hoje", () => {
+  const cards = [SMS_CARDS.master, SMS_CARDS.visa].map(c => ({ ...c, ativo: true }));
+  expect(bestCard(cards, new Date(2026, 9, 13))?.id).toBe(SMS_CARDS.visa.id);
+  expect(bestCard(cards, new Date(2026, 9, 10))?.id).toBe(SMS_CARDS.master.id);
+  expect(bestCard(cards.map(c => ({ ...c, ativo: false })), new Date(2026, 9, 13))).toBeNull();
+});
+
+it("compra Master em outubro entra só em novembro, mês de vencimento", () => {
+  const row = entry({ forma_pagamento: "credito", cartao_id: SMS_CARDS.master.id, mes_referencia: "2026-11" });
+  expect(monthSummary([row], new Date(2026, 9, 1)).spent).toBe(0);
+  expect(monthSummary([row], new Date(2026, 10, 1)).spent).toBe(100);
+  expect(monthEntries([row], new Date(2026, 9, 1))).toHaveLength(0);
+  expect(monthEntries([row], new Date(2026, 10, 1))).toHaveLength(1);
+  expect(categoryChartData([row], new Date(2026, 10, 1)).spent).toBe(100);
+  expect(sixMonthChartData([row], new Date(2026, 10, 1))[5].spent).toBe(100);
+});
+
+it("parcelas no cartão usam cada mês de fatura sem somar parcela_atual novamente", () => {
+  const parsed = parseSms("Compra aprovada de R$ 2.298,90 em 6x em CLARA ARTE, 12/10 as 11:20 no seu Itau final 9827.", new Date(2026, 9, 18))!;
+  const rows = smsRows(parsed, "u", "Lazer", "group").map((r, i) => ({ ...r, id: String(i) })) as Entry[];
+  expect(rows[0].mes_referencia).toBe("2026-11");
+  expect(rows[1].mes_referencia).toBe("2026-12");
+  expect(monthSpending(rows, new Date(2026, 9, 1))).toBe(0);
+  expect(monthSpending(rows, new Date(2026, 10, 1))).toBe(383.15);
+  expect(monthSpending(rows, new Date(2026, 11, 1))).toBe(383.15);
+  expect(dateKey(entryDate(rows[1]))).toBe("2026-12-12");
+});
+
+it("receita e salário mantêm mês da data mesmo com cartão e referência futura", () => {
+  const rows = [entry({ tipo: "receita", forma_pagamento: "credito" }), entry({ categoria: "salario", forma_pagamento: "credito" })];
+  expect(monthEntries(rows, new Date(2026, 9, 1))).toHaveLength(2);
+  expect(monthSummary(rows, new Date(2026, 9, 1))).toMatchObject({ income: 200, spent: 0 });
 });

@@ -130,16 +130,23 @@ export function cardDates(card: Card, today: Date) {
       Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())) /
       86400000,
   );
-  const reference = monthKey(
-    card.dia_vencimento < card.dia_fechamento ? addMonths(closing, 1) : closing,
-  );
+  const reference = monthKey(due);
   return { closing, due, days, reference };
 }
-export const effectiveDate = (r: Entry) =>
-  addMonths(
-    parseDate(r.data),
-    r.is_parcelado ? Math.max(0, (r.parcela_atual ?? 1) - 1) : 0,
-  );
+export function bestCard(cards: Card[], today: Date) {
+  return cards.filter((card) => card.ativo)
+    .map((card) => ({ ...card, ...cardDates(card, today) }))
+    .sort((a, b) => b.days - a.days || a.nome.localeCompare(b.nome))[0] ?? null;
+}
+export const effectiveDate = (r: Entry) => {
+  // Each credit installment already stores its own invoice month; never shift it twice.
+  if ((r.forma_pagamento === "credito" || r.cartao_id) && /^\d{4}-(0[1-9]|1[0-2])$/.test(r.mes_referencia)) {
+    const purchase = parseDate(r.data);
+    const invoice = parseDate(r.mes_referencia + "-01");
+    return new Date(invoice.getFullYear(), invoice.getMonth(), Math.min(purchase.getDate(), new Date(invoice.getFullYear(), invoice.getMonth() + 1, 0).getDate()), 12);
+  }
+  return addMonths(parseDate(r.data), r.is_parcelado ? Math.max(0, (r.parcela_atual ?? 1) - 1) : 0);
+};
 export const countsAsSpending = (r: Entry) =>
   r.tipo === "despesa" &&
   !r.subcategoria_pais &&

@@ -274,6 +274,23 @@ describe("fluxos do Norte", () => {
       true,
     );
   });
+  it("permite apenas subcategorias fixas do FeFin e grava a escolha", async () => {
+    state.rows = [entry()];
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    const select = screen.getByRole("combobox", {
+      name: "Subcategoria do lançamento",
+    }) as HTMLSelectElement;
+    expect(Array.from(select.options).map((option) => option.value)).toEqual([
+      "", "Supermercado", "Restaurantes", "Delivery",
+    ]);
+    fireEvent.change(select, { target: { value: "Supermercado" } });
+    await waitFor(() => expect(state.rows[0]).toMatchObject({
+      categoria_macro: "Alimentação",
+      subcategoria: "Supermercado",
+    }));
+  });
   it("sem sessão mostra apenas o login", async () => {
     state.session = false;
     render(<App />);

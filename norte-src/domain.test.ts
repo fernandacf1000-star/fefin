@@ -15,9 +15,13 @@ import {
   categoryChartData,
   sixMonthChartData,
   memory,
+  memorySubcategory,
   categoryPatch,
   parentRule,
   Entry,
+  CATEGORIES,
+  EXPENSE_SUBCATEGORIES,
+  isSubcategoryOf,
 } from "./domain";
 import {
   parseSms,
@@ -46,6 +50,24 @@ const entry = (overrides: Partial<Entry> = {}): Entry => ({
   parcelamento_id: null,
   created_at: "2026-10-13T10:00:00Z",
   ...overrides,
+});
+
+describe("classificações fechadas de despesas", () => {
+  it("usa apenas os grupos e subcategorias definidos no FeFin", () => {
+    expect(CATEGORIES).toEqual([
+      "Moradia", "Alimentação", "Transporte", "Saúde", "Pessoal", "Lazer", "Aportes", "Pais",
+    ]);
+    expect(EXPENSE_SUBCATEGORIES.Alimentação).toEqual(["Supermercado", "Restaurantes", "Delivery"]);
+    expect(EXPENSE_SUBCATEGORIES.Moradia).toEqual(["Condomínio/IPTU", "Contas", "Internet/Celular", "Casa", "Seguro"]);
+    expect(EXPENSE_SUBCATEGORIES.Transporte).toEqual(["Combustível", "Uber/Taxi", "Estacionamento", "Seguro auto"]);
+    expect(EXPENSE_SUBCATEGORIES.Saúde).toEqual(["Plano de saúde", "Consultas", "Farmácia"]);
+    expect(EXPENSE_SUBCATEGORIES.Pessoal).toEqual(["Beleza", "Roupas", "Academia", "Educação", "Presentes"]);
+    expect(EXPENSE_SUBCATEGORIES.Lazer).toEqual(["Assinaturas", "Entretenimento", "Viagens"]);
+    expect(EXPENSE_SUBCATEGORIES.Aportes).toEqual(["Aportes"]);
+    expect(isSubcategoryOf("Supermercado", "Alimentação")).toBe(true);
+    expect(isSubcategoryOf("Supermercado", "Moradia")).toBe(false);
+    expect(isSubcategoryOf("Outro", "Alimentação")).toBe(false);
+  });
 });
 describe("calendário e orçamento", () => {
   it("Master 13/10 fecha 22/10, paga 01/11 e referência novembro", () => {
@@ -130,6 +152,14 @@ describe("memória", () => {
       }),
     );
     expect(memory("loja", rows)).toBe("Saúde");
+  });
+  it("reusa a subcategoria mais frequente e ignora valores fora da lista", () => {
+    expect(memorySubcategory("mercado", [
+      entry({ descricao: "Mercado", subcategoria: "Supermercado" }),
+      entry({ id: "b", descricao: "MERCADO", subcategoria: "Supermercado" }),
+      entry({ id: "c", descricao: "Mercado", subcategoria: "Delivery" }),
+      entry({ id: "d", descricao: "Mercado", subcategoria: "Outra" }),
+    ])).toBe("Supermercado");
   });
   it("regra dos pais respeita palavras completas", () => {
     expect(parentRule("presente da mãe")).toBe(true);

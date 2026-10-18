@@ -3,11 +3,15 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase as sb, configured } from "./supabase";
 import {
   CATEGORIES,
+  isSubcategory,
+  isSubcategoryOf,
+  subcategoryCategory,
   knownMacro,
   isCategory,
   categoryOf,
   categoryPatch,
   memory,
+  memorySubcategory,
   parentRule,
   dateKey,
   monthKey,
@@ -25,6 +29,7 @@ import {
 } from "./domain";
 import type { Entry, Card, Category } from "./domain";
 import CategorySelect from "./CategorySelect";
+import SubcategorySelect from "./SubcategorySelect";
 import MonthSelector from "./MonthSelector";
 import Ledger from "./Ledger";
 import MonthView from "./MonthView";
@@ -41,6 +46,7 @@ type Draft = {
   amount: number;
   label: string;
   category: Category | null;
+  subcategory: string | null;
   dayOffset: number;
   edited?: boolean;
 };
@@ -302,6 +308,37 @@ export default function App() {
       setChanging((s) => new Set([...s].filter((id) => !ids.includes(id))));
     }
   }
+  async function changeSubcategory(row: Entry, subcategory: string) {
+    if (!uid || !isSubcategory(subcategory)) return;
+    const macro = subcategoryCategory(subcategory);
+    if (!macro || (row.categoria_macro && row.categoria_macro !== "Pais" && row.categoria_macro !== macro)) {
+      setNotice("Escolha uma subcategoria da categoria selecionada.");
+      return;
+    }
+    const related = rows.filter(
+      (r) => r.id === row.id ||
+        (row.parcelamento_id && r.parcelamento_id === row.parcelamento_id) ||
+        (row.recorrencia_id && r.recorrencia_id === row.recorrencia_id),
+    );
+    const ids = related.map((r) => r.id);
+    setChanging((s) => new Set([...s, ...ids]));
+    try {
+      const patch = { subcategoria: subcategory, categoria_macro: macro };
+      const { data, error } = await sb!
+        .from("norte_lancamentos")
+        .update(patch)
+        .eq("user_id", uid)
+        .in("id", ids)
+        .select("id");
+      if (error) throw error;
+      if (data.length !== ids.length) throw new Error("Alteração não confirmada.");
+      setRows((old) => old.map((r) => ids.includes(r.id) ? { ...r, ...patch } : r));
+    } catch {
+      setError("Não consegui mudar a subcategoria. Tente novamente.");
+    } finally {
+      setChanging((s) => new Set([...s].filter((id) => !ids.includes(id))));
+    }
+  }
   function openSheet() {
     setSheetError("");
     setDrafts([]);
@@ -339,18 +376,25 @@ export default function App() {
       });
       const items: Draft[] = (Array.isArray(data.items) ? data.items : [])
         .slice(0, 10)
-        .map((v: Record<string, unknown>) => ({
-          amount: Number(v.amount),
-          label: String(v.label ?? "")
-            .trim()
-            .slice(0, 120),
-          category:
-            memory(String(v.label ?? ""), rows) ??
-            (isCategory(v.category) ? v.category : null),
-          dayOffset: Number.isInteger(v.dayOffset)
-            ? Math.max(-30, Math.min(0, Number(v.dayOffset)))
-            : 0,
-        }))
+        .map((v: Record<string, unknown>) => {
+          const label = String(v.label ?? "").trim().slice(0, 120);
+          const category = memory(label, rows) ?? (isCategory(v.category) ? v.category : null);
+          const remembered = memorySubcategory(label, rows);
+          const subcategory = isSubcategoryOf(remembered, category)
+            ? remembered
+            : isSubcategoryOf(v.subcategory, category)
+              ? v.subcategory
+              : null;
+          return {
+            amount: Number(v.amount),
+            label,
+            category,
+            subcategory,
+            dayOffset: Number.isInteger(v.dayOffset)
+              ? Math.max(-30, Math.min(0, Number(v.dayOffset)))
+              : 0,
+          };
+        })
         .filter(
           (v: Draft) => Number.isFinite(v.amount) && v.amount > 0 && v.label,
         );
@@ -410,7 +454,11 @@ export default function App() {
           guesses.get(normalize(r.descricao)) ??
           null;
         if (!cat) continue;
-        const patch = categoryPatch(cat, r);
+        const remembered = memorySubcategory(r.descricao, before);
+        const patch = {
+          ...categoryPatch(cat, r),
+          ...(isSubcategoryOf(remembered, cat) ? { subcategoria: remembered } : {}),
+        };
         const { error } = await sb!
           .from("norte_lancamentos")
           .update(patch)
@@ -443,6 +491,7 @@ export default function App() {
                 amount: parseMoney(amount),
                 label: label.trim(),
                 category: null,
+                subcategory: null,
                 dayOffset: 0,
               } as Draft,
             ]
@@ -473,6 +522,7 @@ export default function App() {
           tipo: kind,
           categoria: kind === "receita" && cat === "Pais" ? "reembolso_pais" : kind,
           categoria_macro: cat === "Pais" ? knownMacro(d.label, before) : cat,
+          subcategoria: kind === "despesa" && isSubcategoryOf(d.subcategory, isCategory(cat) ? cat : null) ? d.subcategory : null,
           subcategoria_pais: cat === "Pais" ? "Pais" : null,
         };
         const group = crypto.randomUUID();
@@ -510,7 +560,7 @@ export default function App() {
           tipo: kind,
           categoria: kind === "receita" && cat === "Pais" ? "reembolso_pais" : kind,
           categoria_macro: cat === "Pais" ? knownMacro(d.label, before) : cat,
-          subcategoria: null,
+          subcategoria: kind === "despesa" && isSubcategoryOf(d.subcategory, isCategory(cat) ? cat : null) ? d.subcategory : null,
           subcategoria_pais: cat === "Pais" ? "Pais" : null,
           data: dateKey(day),
           mes_referencia: card ? cardDates(card, day).reference : monthKey(day),
@@ -679,6 +729,7 @@ export default function App() {
               pending={pending}
               changing={changing}
               onCategory={changeCategory}
+              onSubcategory={changeSubcategory}
               onDelete={deleteEntry}
               onEdit={editEntry}
               categoryFilter={categoryFilter}
@@ -792,12 +843,24 @@ export default function App() {
                             setDrafts((old) =>
                               old.map((x, j) =>
                                 j === i
-                                  ? { ...x, category: cat, edited: true }
+                                  ? { ...x, category: cat, subcategory: null, edited: true }
                                   : x,
                               ),
                             )
                           }
                         />
+                        {kind === "despesa" && (
+                          <SubcategorySelect
+                            category={d.category}
+                            value={d.subcategory}
+                            disabled={busy || parentRule(d.label)}
+                            onChange={(subcategory) =>
+                              setDrafts((old) => old.map((x, j) =>
+                                j === i ? { ...x, subcategory } : x,
+                              ))
+                            }
+                          />
+                        )}
                       </article>
                     ))}
                     <button

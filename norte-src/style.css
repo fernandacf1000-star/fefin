@@ -298,6 +298,8 @@ progress::-moz-progress-bar {
 }
 .entry-bottom {
   margin-top: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 .entry-bottom select {
   max-width: 210px;
@@ -586,6 +588,7 @@ body:has(dialog[open]) {
 }
 .draft select {
   font-size: 15px;
+  width: 100%;
 }
 .text-button {
   border: 0;

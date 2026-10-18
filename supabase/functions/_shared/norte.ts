@@ -1,13 +1,34 @@
 export const CATEGORIES = [
-  "Alimentação",
   "Moradia",
+  "Alimentação",
   "Transporte",
   "Saúde",
-  "Lazer",
   "Pessoal",
+  "Lazer",
+  "Aportes",
   "Pais",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
+export const EXPENSE_SUBCATEGORIES: Readonly<Record<Exclude<Category, "Pais">, readonly string[]>> = {
+  Moradia: ["Condomínio/IPTU", "Contas", "Internet/Celular", "Casa", "Seguro"],
+  Alimentação: ["Supermercado", "Restaurantes", "Delivery"],
+  Transporte: ["Combustível", "Uber/Taxi", "Estacionamento", "Seguro auto"],
+  Saúde: ["Plano de saúde", "Consultas", "Farmácia"],
+  Pessoal: ["Beleza", "Roupas", "Academia", "Educação", "Presentes"],
+  Lazer: ["Assinaturas", "Entretenimento", "Viagens"],
+  Aportes: ["Aportes"],
+};
+export const isSubcategory = (value: unknown): value is string =>
+  Object.values(EXPENSE_SUBCATEGORIES).some((items) => items.includes(value as string));
+export const subcategoryCategory = (value: string): Exclude<Category, "Pais"> | null =>
+  (Object.entries(EXPENSE_SUBCATEGORIES).find(([, items]) => items.includes(value))?.[0] as Exclude<Category, "Pais"> | undefined) ?? null;
+export const isSubcategoryOf = (value: unknown, category: Category | null): value is string =>
+  typeof value === "string" && isSubcategory(value) &&
+  (category === "Pais" || subcategoryCategory(value) === category);
+export const subcategoriesFor = (category: Category | null): readonly string[] =>
+  category === "Pais" || !category
+    ? Object.values(EXPENSE_SUBCATEGORIES).flat()
+    : EXPENSE_SUBCATEGORIES[category];
 export type Entry = {
   id: string;
   user_id: string;
@@ -83,6 +104,22 @@ export function memory(label: string, history: Entry[]): Category | null {
       (a, b) => b[1].count - a[1].count || a[1].rank - b[1].rank,
     )[0]?.[0] ?? null
   );
+}
+export function memorySubcategory(label: string, history: Entry[]): string | null {
+  const rows = history
+    .filter((r) => normalize(r.descricao) === normalize(label))
+    .sort((a, b) => (b.created_at ?? b.data).localeCompare(a.created_at ?? a.data));
+  const seen = new Set<string>();
+  const counts = new Map<string, { count: number; rank: number }>();
+  rows.forEach((r, rank) => {
+    const key = r.parcelamento_id || r.id;
+    if (seen.has(key)) return;
+    seen.add(key);
+    if (!isSubcategory(r.subcategoria)) return;
+    const prior = counts.get(r.subcategoria);
+    counts.set(r.subcategoria, { count: (prior?.count ?? 0) + 1, rank: prior?.rank ?? rank });
+  });
+  return [...counts].sort((a, b) => b[1].count - a[1].count || a[1].rank - b[1].rank)[0]?.[0] ?? null;
 }
 export const pad = (n: number) => String(n).padStart(2, "0");
 export const dateKey = (d: Date) =>
@@ -345,7 +382,7 @@ export function monthPresentation(rows: Entry[], selected: Date, now: Date) {
   };
 }
 export const SPENDING_CATEGORIES = CATEGORIES.filter(
-  (c): c is Exclude<Category, "Pais"> => c !== "Pais",
+  (c): c is Exclude<Category, "Pais" | "Aportes"> => c !== "Pais" && c !== "Aportes",
 );
 export type SpendingCategory = (typeof SPENDING_CATEGORIES)[number];
 export function categoryChartData(rows: Entry[], selected: Date) {

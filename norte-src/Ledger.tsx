@@ -11,6 +11,7 @@ import {
 } from "./domain";
 import type { Entry, Card, Category, EntryFilter } from "./domain";
 import CategorySelect from "./CategorySelect";
+import SubcategorySelect from "./SubcategorySelect";
 import SwipeRow from "./SwipeRow";
 import { parseMoney } from "./domain";
 const money = (n: number) =>
@@ -24,6 +25,7 @@ export default function Ledger({
   pending,
   changing,
   onCategory,
+  onSubcategory,
   onDelete,
   onEdit,
   categoryFilter,
@@ -35,6 +37,7 @@ export default function Ledger({
   pending: Set<string>;
   changing: Set<string>;
   onCategory: (r: Entry, c: Category) => Promise<void>;
+  onSubcategory: (r: Entry, subcategory: string) => Promise<void>;
   onDelete: (r: Entry, scope: "one" | "next" | "all") => Promise<void>;
   onEdit: (
     r: Entry,
@@ -230,6 +233,14 @@ export default function Ledger({
                     disabled={pending.has(row.id) || changing.has(row.id)}
                     onChange={(cat) => void onCategory(row, cat)}
                   />
+                  {row.tipo === "despesa" && (
+                    <SubcategorySelect
+                      category={isMacro(row.categoria_macro) ? row.categoria_macro : categoryOf(row)}
+                      value={row.subcategoria}
+                      disabled={pending.has(row.id) || changing.has(row.id)}
+                      onChange={(subcategory) => void onSubcategory(row, subcategory)}
+                    />
+                  )}
                   {pending.has(row.id) && (
                     <small role="status">classificando…</small>
                   )}
@@ -463,4 +474,8 @@ export default function Ledger({
       </dialog>
     </section>
   );
+}
+
+function isMacro(value: string | null): value is Exclude<Category, "Pais"> {
+  return value !== null && value !== "Pais" && ["Moradia", "Alimentação", "Transporte", "Saúde", "Pessoal", "Lazer", "Aportes"].includes(value);
 }

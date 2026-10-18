@@ -89,6 +89,7 @@ export default function App() {
   const dialog = useRef<HTMLDialogElement>(null),
     opener = useRef<HTMLButtonElement>(null),
     cancelled = useRef(new Set<string>());
+  const [kind, setKind] = useState<"despesa" | "receita">("despesa");
   const [mode, setMode] = useState("Texto com IA"),
     [text, setText] = useState(""),
     [amount, setAmount] = useState(""),
@@ -229,6 +230,7 @@ export default function App() {
     setSheetError("");
     setDrafts([]);
     setMode("Texto com IA");
+    setKind("despesa");
     setText("");
     setAmount("");
     setLabel("");
@@ -250,6 +252,7 @@ export default function App() {
         .map((r) => `${r.descricao} → ${categoryOf(r)}`);
       const data = await askAI({
         task: "parse",
+        kind,
         text,
         today: dateKey(now),
         examples,
@@ -272,7 +275,7 @@ export default function App() {
           (v: Draft) => Number.isFinite(v.amount) && v.amount > 0 && v.label,
         );
       if (!items.length)
-        throw new Error("Não identifiquei um gasto. Inclua valor e descrição.");
+        throw new Error("Não identifiquei um lançamento. Inclua valor e descrição.");
       setDrafts(items);
     } catch (e) {
       setSheetError(message(e));
@@ -291,6 +294,7 @@ export default function App() {
         try {
           const data = await askAI({
             task: "classify",
+            kind: inserted[0]?.tipo,
             items: unknown.map((r) => ({
               label: r.descricao,
               amount: r.valor,
@@ -326,7 +330,7 @@ export default function App() {
           );
       }
     } catch {
-      setNotice("Gasto salvo. Confira a categoria na lista.");
+      setNotice("Lançamento salvo. Confira a categoria na lista.");
     } finally {
       setPending(
         (s) =>
@@ -365,7 +369,7 @@ export default function App() {
           now.getDate() + d.dayOffset,
           12,
         );
-        const card = cards.find((c) => c.id === payment);
+        const card = kind === "despesa" ? cards.find((c) => c.id === payment) : undefined;
         const cat = parentRule(d.label)
           ? "Pais"
           : d.edited
@@ -375,8 +379,8 @@ export default function App() {
           user_id: uid,
           descricao: d.label,
           valor: Math.round(d.amount * 100) / 100,
-          tipo: "despesa",
-          categoria: "despesa",
+          tipo: kind,
+          categoria: kind === "receita" && cat === "Pais" ? "reembolso_pais" : kind,
           categoria_macro: cat === "Pais" ? knownMacro(d.label, before) : cat,
           subcategoria: null,
           subcategoria_pais: cat === "Pais" ? "Pais" : null,
@@ -400,7 +404,9 @@ export default function App() {
       const inserted = data as Entry[];
       setRows((old) => [...inserted, ...old]);
       setUndo(inserted.map((r) => r.id));
-      setNotice(inserted.length > 1 ? "Gastos anotados." : "Gasto anotado.");
+      setNotice(kind === "receita"
+        ? inserted.length > 1 ? "Receitas anotadas." : "Receita anotada."
+        : inserted.length > 1 ? "Gastos anotados." : "Gasto anotado.");
       dialog.current?.close();
       opener.current?.focus();
       void classify(inserted, before);
@@ -550,7 +556,7 @@ export default function App() {
       >
         <div className="sheet">
           <div className="sheet-top">
-            <h2 id="sheet-title">Anotar gasto</h2>
+            <h2 id="sheet-title">Anotar {kind === "receita" ? "receita" : "gasto"}</h2>
             <button
               className="icon-button"
               aria-label="Fechar"
@@ -559,6 +565,19 @@ export default function App() {
             >
               ×
             </button>
+          </div>
+          <div className="sheet-tabs" role="group" aria-label="Tipo de lançamento">
+            {(["despesa", "receita"] as const).map((value) => (
+              <button key={value} aria-pressed={kind === value} disabled={busy}
+                onClick={() => {
+                  setKind(value);
+                  setDrafts([]);
+                  setPayment("dinheiro");
+                  setSheetError("");
+                }}>
+                {value === "receita" ? "Receita" : "Gasto"}
+              </button>
+            ))}
           </div>
           <div className="sheet-tabs" role="tablist" aria-label="Como anotar">
             {["Texto com IA", "Valor"].map((m) => (
@@ -588,13 +607,13 @@ export default function App() {
               <>
                 {!drafts.length ? (
                   <>
-                    <label htmlFor="ai-text">O que você gastou?</label>
+                    <label htmlFor="ai-text">{kind === "receita" ? "O que você recebeu?" : "O que você gastou?"}</label>
                     <textarea
                       id="ai-text"
                       maxLength={500}
                       value={text}
                       onChange={(e) => setText(e.target.value)}
-                      placeholder="45 no mercado e cinema ontem 30"
+                      placeholder={kind === "receita" ? "Recebi 500 de reembolso e 300 de uma venda" : "45 no mercado e cinema ontem 30"}
                       required
                       disabled={busy}
                     />
@@ -644,7 +663,7 @@ export default function App() {
               </>
             ) : (
               <>
-                <label htmlFor="amount">Quanto foi? (R$)</label>
+                <label htmlFor="amount">{kind === "receita" ? "Quanto entrou? (R$)" : "Quanto foi? (R$)"}</label>
                 <input
                   id="amount"
                   inputMode="decimal"
@@ -654,19 +673,19 @@ export default function App() {
                   required
                   disabled={busy}
                 />
-                <label htmlFor="label">Com o quê?</label>
+                <label htmlFor="label">{kind === "receita" ? "De onde veio?" : "Com o quê?"}</label>
                 <input
                   id="label"
                   maxLength={120}
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
-                  placeholder="Mercado, café, cinema…"
+                  placeholder={kind === "receita" ? "Salário, venda, reembolso…" : "Mercado, café, cinema…"}
                   required
                   disabled={busy}
                 />
               </>
             )}
-            <details className="payment">
+            {kind === "despesa" && <details className="payment">
               <summary>
                 Pago com{" "}
                 <span>
@@ -688,7 +707,7 @@ export default function App() {
                   </option>
                 ))}
               </select>
-            </details>
+            </details>}
             {sheetError && (
               <p className="alert" role="alert">
                 {sheetError}
@@ -699,7 +718,7 @@ export default function App() {
                 ? "Um instante…"
                 : mode === "Texto com IA" && !drafts.length
                   ? "Entender texto"
-                  : "Salvar gasto" + (drafts.length > 1 ? "s" : "")}
+                  : "Salvar " + (kind === "receita" ? "receita" : "gasto") + (drafts.length > 1 ? "s" : "")}
             </button>
           </form>
         </div>

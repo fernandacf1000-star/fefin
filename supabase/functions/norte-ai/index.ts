@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
     );
     if (authError || !user.user) return json({ error: "unauthorized" }, 401);
     const b = await req.json();
+    const kind = b.kind === "receita" ? "receitas pessoais recebidas" : "gastos pessoais";
     const cats: string[] = [...CATEGORIES];
     const ex: string[] = Array.isArray(b.examples)
       ? b.examples.map(String)
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
     if (b.task === "parse") {
       const text = String(b.text ?? "").slice(0, 500);
       const today = String(b.today ?? new Date().toISOString().slice(0, 10));
-      const system = `Você lê textos de gastos pessoais em português do Brasil e responde APENAS JSON válido.
+      const system = `Você lê textos de ${kind} em português do Brasil e responde APENAS JSON válido.
 Formato: {"items":[{"amount":número,"label":"descrição curta com até 3 palavras","category":"uma das permitidas","dayOffset":0}]}
 dayOffset: 0 para hoje, -1 ontem, -2 anteontem, e assim por diante, no mínimo -30. Hoje é ${today}.
 ${RULES(cats, ex)}`;
@@ -98,7 +99,7 @@ ${RULES(cats, ex)}`;
       const items: { label: string; amount: number }[] = Array.isArray(b.items)
         ? b.items.slice(0, 10)
         : [];
-      const system = `Você classifica gastos e responde APENAS JSON válido no formato {"categories":["Categoria1","Categoria2"]}, uma categoria por gasto, na mesma ordem.
+      const system = `Você classifica ${kind} e responde APENAS JSON válido no formato {"categories":["Categoria1","Categoria2"]}, uma categoria por lançamento, na mesma ordem.
 ${RULES(cats, ex)}`;
       const user = items
         .map(

@@ -192,12 +192,12 @@ describe("fluxos do Norte", () => {
     await waitFor(() =>
       expect(
         screen
-          .getByRole("combobox", { name: "Categoria do gasto" })
+          .getByRole("combobox", { name: "Categoria do lançamento" })
           .hasAttribute("disabled"),
       ).toBe(false),
     );
     expect(
-      screen.getByRole("combobox", { name: "Categoria do gasto" }).textContent,
+      screen.getByRole("combobox", { name: "Categoria do lançamento" }).textContent,
     ).toContain("Escolher categoria");
     expect(state.rows[0].valor).toBe(45.5);
     fireEvent.click(screen.getByRole("button", { name: "Desfazer" }));
@@ -224,7 +224,7 @@ describe("fluxos do Norte", () => {
     const dialog = screen.getByRole("dialog");
     await within(dialog).findByText("Confira antes de anotar.");
     const select = within(dialog).getByRole("combobox", {
-      name: "Categoria do gasto",
+      name: "Categoria do lançamento",
     }) as HTMLSelectElement;
     expect(select.value).toBe("Alimentação");
     fireEvent.change(select, { target: { value: "Pessoal" } });
@@ -260,7 +260,7 @@ describe("fluxos do Norte", () => {
     await screen.findByRole("region", { name: "Resumo do mês" });
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     fireEvent.change(
-      screen.getByRole("combobox", { name: "Categoria do gasto" }),
+      screen.getByRole("combobox", { name: "Categoria do lançamento" }),
       { target: { value: "Pais" } },
     );
     await waitFor(() =>
@@ -484,4 +484,45 @@ it("Norte inicia vazio e envia à IA somente seu próprio histórico", async () 
   fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
   await screen.findByText("Confira antes de anotar.");
   expect(state.ai.mock.calls[0][1].body.examples).toEqual([]);
+});
+
+
+it("anota receita por valor, soma só em Ganhou e permite desfazer", async () => {
+  await open();
+  fireEvent.click(screen.getByRole("button", { name: "Receita" }));
+  expect(screen.getByRole("tab", { name: "Texto com IA" }).getAttribute("aria-selected")).toBe("true");
+  fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+  expect(screen.queryByText("Pago com")).toBeNull();
+  fireEvent.change(screen.getByLabelText("Quanto entrou? (R$)"), { target: { value: "1500,50" } });
+  fireEvent.change(screen.getByLabelText("De onde veio?"), { target: { value: "Salário" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar receita" }));
+  await screen.findByText("Receita anotada.");
+  expect(state.rows[0]).toMatchObject({ tipo: "receita", categoria: "receita", valor: 1500.5, cartao_id: null, forma_pagamento: "dinheiro", pago: true });
+  const summary = screen.getByRole("region", { name: "Resumo do mês" });
+  expect(summary.querySelector(".big-number")?.textContent).toMatch(/1\.500,50/);
+  expect(within(summary).getByText("Gastou").nextElementSibling?.textContent).toMatch(/0,00/);
+  fireEvent.click(screen.getByRole("button", { name: "Desfazer" }));
+  await waitFor(() => expect(state.rows).toHaveLength(0));
+});
+
+it("receita com IA mantém categorias ajustáveis e memória, sem cartão", async () => {
+  state.rows = [entry({ descricao: "Venda", categoria_macro: "Pessoal", data: "2026-01-01" })];
+  state.ai.mockResolvedValue({ data: { items: [
+    { amount: 300, label: "Venda", category: "Lazer", dayOffset: 0 },
+    { amount: 100, label: "Reembolso mãe", category: "Pessoal", dayOffset: 0 },
+  ] }, error: null });
+  await open();
+  fireEvent.click(screen.getByRole("button", { name: "Receita" }));
+  fireEvent.change(screen.getByLabelText("O que você recebeu?"), { target: { value: "300 venda e 100 reembolso mãe" } });
+  fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
+  await screen.findByText("Confira antes de anotar.");
+  expect(state.ai.mock.calls[0][1].body.kind).toBe("receita");
+  const selects = within(screen.getByRole("dialog")).getAllByRole("combobox", { name: "Categoria do lançamento" });
+  expect((selects[0] as HTMLSelectElement).value).toBe("Pessoal");
+  fireEvent.change(selects[0], { target: { value: "Moradia" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar receitas" }));
+  await screen.findByText("Receitas anotadas.");
+  expect(state.rows[0]).toMatchObject({ tipo: "receita", categoria_macro: "Moradia", cartao_id: null });
+  expect(state.rows[1]).toMatchObject({ tipo: "receita", categoria: "reembolso_pais", subcategoria_pais: "Pais" });
+  expect(screen.getByRole("region", { name: "Resumo do mês" }).querySelector(".big-number")?.textContent).toMatch(/300,00/);
 });

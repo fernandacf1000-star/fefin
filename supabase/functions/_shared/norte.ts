@@ -219,6 +219,10 @@ export function monthSummary(rows: Entry[], today: Date) {
 }
 export function categoryPatch(cat: Category, old: Entry) {
   return {
+    ...(old.tipo === "receita" ? {
+      categoria: cat === "Pais" ? "reembolso_pais"
+        : old.categoria === "reembolso_pais" ? "receita" : old.categoria,
+    } : {}),
     categoria_macro:
       cat === "Pais"
         ? old.categoria_macro === "Pais"

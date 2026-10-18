@@ -11,7 +11,7 @@ export default function CategorySelect({
 }) {
   return (
     <select
-      aria-label="Categoria do gasto"
+      aria-label="Categoria do lançamento"
       value={value ?? ""}
       disabled={disabled}
       onChange={(e) => {

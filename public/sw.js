@@ -1,5 +1,5 @@
 // Cache only the public shell. Financial data, auth and API requests never enter Cache Storage.
-const CACHE = "norte-shell-v5";
+const CACHE = "norte-shell-v6";
 const SHELL = [
   "/",
   "/norte-compass-v4.svg",

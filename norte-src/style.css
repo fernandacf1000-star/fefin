@@ -138,7 +138,8 @@ nav button,
   font-size: 15px;
 }
 nav button[aria-current],
-.sheet-tabs button[aria-selected="true"] {
+.sheet-tabs button[aria-selected="true"],
+.sheet-tabs button[aria-pressed="true"] {
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 2px 6px #1d2b3308;

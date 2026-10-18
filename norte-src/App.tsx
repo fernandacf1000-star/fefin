@@ -605,6 +605,10 @@ export default function App() {
             key={t}
             aria-current={t === tab ? "page" : undefined}
             onClick={() => {
+              if (t === "Mês")
+                setSelectedMonth(
+                  new Date(now.getFullYear(), now.getMonth(), 1, 12),
+                );
               setTab(t);
               setError("");
             }}

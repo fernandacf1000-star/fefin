@@ -322,7 +322,7 @@ it("compartilha mês nas três abas e mantém Anotar com IA primeiro", async () 
   expect(screen.getByRole("heading", { name: "Previsto" })).toBeTruthy();
   expect(screen.getByText("Só o que já está lançado")).toBeTruthy();
   const selected = within(selector).getByText(/de \d{4}/).textContent;
-  for (const tab of ["Gráfico", "Lançamentos", "Mês"]) {
+  for (const tab of ["Gráfico", "Lançamentos"]) {
     fireEvent.click(
       within(screen.getByRole("navigation")).getByRole("button", { name: tab }),
     );
@@ -340,11 +340,9 @@ it("compartilha mês nas três abas e mantém Anotar com IA primeiro", async () 
     fireEvent.click(screen.getByRole("button", { name: /^Fechar$/ }));
   }
   fireEvent.click(
-    within(screen.getByRole("group", { name: "Mês selecionado" })).getByRole(
-      "button",
-      { name: "Hoje" },
-    ),
+    within(screen.getByRole("navigation")).getByRole("button", { name: "Mês" }),
   );
+  expect(within(selector).queryByRole("button", { name: "Hoje" })).toBeNull();
   expect(screen.getByRole("heading", { name: "Falta gastar" })).toBeTruthy();
 });
 it("tocar categoria do gráfico abre só esses gastos e permite limpar o filtro", async () => {

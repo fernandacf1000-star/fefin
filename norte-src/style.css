@@ -868,19 +868,6 @@ nav button {
 .ledger-entry-pais {
   border-left: 3px solid #d9a64f;
 }
-.ledger-entry .entry-bottom {
-  margin: 0 14px 0 68px;
-  gap: 6px;
-  padding-bottom: 10px;
-}
-.ledger-entry .entry-bottom select {
-  min-height: 36px;
-  max-width: 165px;
-  padding: 5px 24px 5px 9px;
-  font-size: 12px;
-  border-radius: 11px;
-  background-color: var(--surface);
-}
 .ledger-entry .entry-tag {
   margin: 0 14px 10px 68px;
 }
@@ -889,7 +876,6 @@ nav button {
   .ledger-icon { flex-basis: 38px; width: 38px; height: 38px; }
   .ledger-amount { font-size: 12px; }
   .ledger-title strong { font-size: 13px; }
-  .ledger-entry .entry-bottom { margin-left: 57px; }
 }
 .entry-tag {
   display: inline-block;

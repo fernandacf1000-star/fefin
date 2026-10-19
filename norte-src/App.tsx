@@ -3,7 +3,6 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase as sb, configured } from "./supabase";
 import {
   CATEGORIES,
-  isSubcategory,
   isSubcategoryOf,
   subcategoryCategory,
   knownMacro,
@@ -108,8 +107,7 @@ export default function App() {
   const [tab, setTab] = useState("Mês"),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
-    [pending, setPending] = useState<Set<string>>(new Set()),
-    [changing, setChanging] = useState<Set<string>>(new Set());
+    [pending, setPending] = useState<Set<string>>(new Set());
   const [now, setNow] = useState(new Date()),
     [undo, setUndo] = useState<string[]>([]),
     [undoBusy, setUndoBusy] = useState(false);
@@ -246,7 +244,7 @@ export default function App() {
   }
   async function editEntry(
     row: Entry,
-    edits: { descricao: string; valor: number; data?: string },
+    edits: { descricao: string; valor: number; data?: string; category: Category | null; subcategory: string | null },
     scope: "one" | "next" | "all",
   ) {
     if (!uid) throw new Error("Sessão encerrada");
@@ -263,8 +261,15 @@ export default function App() {
       const card = row.cartao_id ? cards.find((c) => c.id === row.cartao_id) : undefined;
       patch.mes_referencia = card ? cardDates(card, d).reference : monthKey(d);
     }
-    if (parentRule(edits.descricao) && categoryOf(row) !== "Pais")
-      Object.assign(patch, categoryPatch("Pais", row));
+    const category = parentRule(edits.descricao) ? "Pais" : edits.category;
+    const subcategory = row.tipo === "despesa" && isSubcategoryOf(edits.subcategory, category)
+      ? edits.subcategory : null;
+    const categoryChanged = category !== categoryOf(row) || subcategory !== (row.subcategoria ?? null);
+    const categoryUpdate = category ? {
+      ...categoryPatch(category, row),
+      subcategoria: subcategory,
+      ...(category === "Pais" && subcategory ? { categoria_macro: subcategoryCategory(subcategory) } : {}),
+    } : null;
     const { data, error } = await sb!
       .from("norte_lancamentos")
       .update(patch)
@@ -274,73 +279,15 @@ export default function App() {
     if (error || data?.length !== ids.length)
       throw error ?? new Error("Alteração não confirmada");
     setRows((old) => old.map((r) => (ids.includes(r.id) ? { ...r, ...patch } as Entry : r)));
+    if (categoryChanged && categoryUpdate) {
+      const related = groupScope(rows, row, "all").map((r) => r.id);
+      const result = await sb!.from("norte_lancamentos")
+        .update(categoryUpdate).eq("user_id", uid).in("id", related).select("id");
+      if (result.error || result.data?.length !== related.length)
+        throw result.error ?? new Error("Categoria não confirmada");
+      setRows((old) => old.map((r) => related.includes(r.id) ? { ...r, ...categoryUpdate } as Entry : r));
+    }
     setNotice(ids.length > 1 ? `${ids.length} lançamentos atualizados.` : "Lançamento atualizado.");
-  }
-  async function changeCategory(row: Entry, cat: Category) {
-    if (!uid) return;
-    if (parentRule(row.descricao) && cat !== "Pais") {
-      setNotice("Esse gasto é dos Pais pela descrição.");
-      return;
-    }
-    setError("");
-    const related = rows.filter(
-      (r) =>
-        r.id === row.id ||
-        (row.parcelamento_id && r.parcelamento_id === row.parcelamento_id) ||
-        (row.recorrencia_id && r.recorrencia_id === row.recorrencia_id),
-    );
-    const ids = related.map((r) => r.id);
-    setChanging((s) => new Set([...s, ...ids]));
-    try {
-      const patch = categoryPatch(cat, row);
-      const { data, error } = await sb!
-        .from("norte_lancamentos")
-        .update(patch)
-        .eq("user_id", uid)
-        .in("id", ids)
-        .select("id");
-      if (error) throw error;
-      if (data.length !== ids.length)
-        throw new Error("Alteração não confirmada.");
-      setRows((old) =>
-        old.map((r) => (ids.includes(r.id) ? { ...r, ...patch } : r)),
-      );
-    } catch {
-      setError("Não consegui mudar a categoria. Tente novamente.");
-    } finally {
-      setChanging((s) => new Set([...s].filter((id) => !ids.includes(id))));
-    }
-  }
-  async function changeSubcategory(row: Entry, subcategory: string) {
-    if (!uid || !isSubcategory(subcategory)) return;
-    const macro = subcategoryCategory(subcategory);
-    if (!macro || (row.categoria_macro && row.categoria_macro !== "Pais" && row.categoria_macro !== macro)) {
-      setNotice("Escolha uma subcategoria da categoria selecionada.");
-      return;
-    }
-    const related = rows.filter(
-      (r) => r.id === row.id ||
-        (row.parcelamento_id && r.parcelamento_id === row.parcelamento_id) ||
-        (row.recorrencia_id && r.recorrencia_id === row.recorrencia_id),
-    );
-    const ids = related.map((r) => r.id);
-    setChanging((s) => new Set([...s, ...ids]));
-    try {
-      const patch = { subcategoria: subcategory, categoria_macro: macro };
-      const { data, error } = await sb!
-        .from("norte_lancamentos")
-        .update(patch)
-        .eq("user_id", uid)
-        .in("id", ids)
-        .select("id");
-      if (error) throw error;
-      if (data.length !== ids.length) throw new Error("Alteração não confirmada.");
-      setRows((old) => old.map((r) => ids.includes(r.id) ? { ...r, ...patch } : r));
-    } catch {
-      setError("Não consegui mudar a subcategoria. Tente novamente.");
-    } finally {
-      setChanging((s) => new Set([...s].filter((id) => !ids.includes(id))));
-    }
   }
   function openSheet() {
     setSheetError("");
@@ -417,9 +364,12 @@ export default function App() {
   async function classify(inserted: Entry[], before: Entry[]) {
     setPending((s) => new Set([...s, ...inserted.map((r) => r.id)]));
     try {
-      const unknown = inserted.filter(
-        (r) => !categoryOf(r) && !memory(r.descricao, before),
-      );
+      const unknown = inserted.filter((r) => {
+        const cat = categoryOf(r) ?? memory(r.descricao, before);
+        return !cat || (r.tipo === "despesa" &&
+          !isSubcategoryOf(r.subcategoria, cat) &&
+          !isSubcategoryOf(memorySubcategory(r.descricao, before), cat));
+      });
       // A compra parcelada cria várias linhas iguais. A IA recebe cada
       // descrição uma vez, mantendo a chamada dentro do limite de 10 itens.
       const guesses = new Map<string, { category: Category; subcategory: string | null }>();
@@ -439,6 +389,9 @@ export default function App() {
             items: group.map((r) => ({
               label: r.descricao,
               amount: r.valor,
+              ...(categoryOf(r) ?? memory(r.descricao, before)
+                ? { category: categoryOf(r) ?? memory(r.descricao, before) }
+                : {}),
             })),
             examples: memoryExamples(before)
               .map((r) => `${r.descricao}${r.recorrencia_id ? " (recorrente)" : ""} → ${categoryOf(r)}${r.subcategoria ? ` / ${r.subcategoria}` : ""}`),
@@ -456,7 +409,7 @@ export default function App() {
               });
           });
         } catch (e) {
-          setNotice(`${message(e)}. Lançamento salvo; escolha a categoria na lista.`);
+          setNotice(`${message(e)}. Lançamento salvo; corrija pelo swipe se precisar.`);
         }
       }
       for (const r of inserted) {
@@ -472,7 +425,9 @@ export default function App() {
         const aiSubcategory = guess?.category === cat ? guess.subcategory : null;
         const patch = {
           ...categoryPatch(cat, r),
-          ...(r.tipo === "despesa" && isSubcategoryOf(remembered, cat)
+          ...(r.tipo === "despesa" && isSubcategoryOf(r.subcategoria, cat)
+            ? { subcategoria: r.subcategoria }
+            : r.tipo === "despesa" && isSubcategoryOf(remembered, cat)
             ? { subcategoria: remembered }
             : r.tipo === "despesa" && isSubcategoryOf(aiSubcategory, cat)
               ? { subcategoria: aiSubcategory }
@@ -490,7 +445,7 @@ export default function App() {
           );
       }
     } catch {
-      setNotice("Lançamento salvo. Confira a categoria na lista.");
+      setNotice("Lançamento salvo. Confira a categoria pelo swipe se precisar.");
     } finally {
       setPending(
         (s) =>
@@ -752,9 +707,6 @@ export default function App() {
               cards={cards}
               selected={selectedDate}
               pending={pending}
-              changing={changing}
-              onCategory={changeCategory}
-              onSubcategory={changeSubcategory}
               onDelete={deleteEntry}
               onEdit={editEntry}
               categoryFilter={categoryFilter}

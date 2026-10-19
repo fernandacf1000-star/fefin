@@ -83,4 +83,14 @@ describe("norte-ai: contrato e erros sem dados sensíveis", () => {
     const classified = setup(200, { categories: ["Alimentação"], subcategories: ["Inventada"] });
     expect((await classified.call({ task: "classify", kind: "despesa", items: [{ label: "Mercado", amount: 45 }] })).status).toBe(503);
   });
+  it("classify respeita categoria conhecida e só aceita subcategoria compatível", async () => {
+    const service = setup(200, { categories: ["Pessoal"], subcategories: ["Supermercado"] });
+    const body = { task: "classify", kind: "despesa", items: [{ label: "Mercado", amount: 45, category: "Alimentação" }] };
+    const response = await service.call(body);
+    expect(await response.json()).toEqual({ categories: ["Alimentação"], subcategories: ["Supermercado"] });
+    const request = JSON.parse(String(service.deps.fetch.mock.calls[0][1]?.body));
+    expect(request.messages[0].content).toContain("categoria: Alimentação");
+    const invalid = setup();
+    expect((await invalid.call({ ...body, items: [{ ...body.items[0], category: "Outro" }] })).status).toBe(400);
+  });
 });

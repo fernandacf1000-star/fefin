@@ -4,6 +4,7 @@ import {
   categoryOf,
   filterEntries,
   groupEntriesByDay,
+  isSubcategoryOf,
   monthEntries,
   monthSummary,
   parseDate,
@@ -23,7 +24,7 @@ function CategoryIcon({ category, parent, income }: { category: string | null; p
     Moradia: "🏘️", Alimentação: "🥗", Transporte: "🚗", Saúde: "💊",
     Pessoal: "💅", Lazer: "🎮", Aportes: "📈",
   };
-  const icon = parent ? "🧓" : income ? "🤑" : icons[category ?? ""] ?? "🔴";
+  const icon = parent ? "🧓" : income ? "🤑" : icons[category ?? ""] ?? "🧾";
   return <span className="ledger-category-icon" aria-hidden="true">{icon}</span>;
 }
 export default function Ledger({
@@ -31,9 +32,6 @@ export default function Ledger({
   cards,
   selected,
   pending,
-  changing,
-  onCategory,
-  onSubcategory,
   onDelete,
   onEdit,
   categoryFilter,
@@ -43,13 +41,10 @@ export default function Ledger({
   cards: Card[];
   selected: Date;
   pending: Set<string>;
-  changing: Set<string>;
-  onCategory: (r: Entry, c: Category) => Promise<void>;
-  onSubcategory: (r: Entry, subcategory: string) => Promise<void>;
   onDelete: (r: Entry, scope: "one" | "next" | "all") => Promise<void>;
   onEdit: (
     r: Entry,
-    edits: { descricao: string; valor: number; data?: string },
+    edits: { descricao: string; valor: number; data?: string; category: Category | null; subcategory: string | null },
     scope: "one" | "next" | "all",
   ) => Promise<void>;
   categoryFilter: Category | null;
@@ -66,6 +61,8 @@ export default function Ledger({
     [eDesc, setEDesc] = useState(""),
     [eValue, setEValue] = useState(""),
     [eDate, setEDate] = useState(""),
+    [eCategory, setECategory] = useState<Category | null>(null),
+    [eSubcategory, setESubcategory] = useState<string | null>(null),
     [eScope, setEScope] = useState<"one" | "next" | "all">("one"),
     [eBusy, setEBusy] = useState(false),
     [eError, setEError] = useState("");
@@ -104,6 +101,8 @@ export default function Ledger({
     setEDesc(row.descricao);
     setEValue(String(Number(row.valor)).replace(".", ","));
     setEDate(row.data);
+    setECategory(categoryOf(row));
+    setESubcategory(row.subcategoria);
     setEScope("one");
     setEError("");
     editSheet.current?.showModal();
@@ -123,7 +122,7 @@ export default function Ledger({
     try {
       await onEdit(
         editing,
-        { descricao: eDesc.trim(), valor, ...(withDate ? { data: eDate } : {}) },
+        { descricao: eDesc.trim(), valor, category: eCategory, subcategory: eSubcategory, ...(withDate ? { data: eDate } : {}) },
         eScope,
       );
       editSheet.current?.close();
@@ -245,24 +244,7 @@ export default function Ledger({
                     {displayAsIncome(row) ? "+" : "-"}{money(Math.abs(Number(row.valor)))}
                   </span>
                 </button>
-                <div className="entry-bottom">
-                  <CategorySelect
-                    value={categoryOf(row)}
-                    disabled={pending.has(row.id) || changing.has(row.id)}
-                    onChange={(cat) => void onCategory(row, cat)}
-                  />
-                  {row.tipo === "despesa" && (
-                    <SubcategorySelect
-                      category={isMacro(row.categoria_macro) ? row.categoria_macro : categoryOf(row)}
-                      value={row.subcategoria}
-                      disabled={pending.has(row.id) || changing.has(row.id)}
-                      onChange={(subcategory) => void onSubcategory(row, subcategory)}
-                    />
-                  )}
-                  {pending.has(row.id) && (
-                    <small role="status">classificando…</small>
-                  )}
-                </div>
+                {pending.has(row.id) && <small className="entry-tag" role="status">classificando…</small>}
                 {row.subcategoria_pais ? (
                   <small className="entry-tag">Pais · fora da conta</small>
                 ) : row.categoria_macro === "Aportes" ? (
@@ -322,6 +304,18 @@ export default function Ledger({
               </label>
               <input id="edit-value" inputMode="decimal" value={eValue}
                 onChange={(e) => setEValue(e.target.value)} disabled={eBusy} />
+              <label htmlFor="edit-category">Categoria</label>
+              <CategorySelect id="edit-category" value={eCategory} disabled={eBusy}
+                onChange={(cat) => {
+                  setECategory(cat);
+                  if (!isSubcategoryOf(eSubcategory, cat)) setESubcategory(null);
+                }} />
+              {editing.tipo === "despesa" && <>
+                <label htmlFor="edit-subcategory">Subcategoria</label>
+                <SubcategorySelect id="edit-subcategory" category={eCategory} value={eSubcategory} disabled={eBusy}
+                  onChange={setESubcategory} />
+              </>}
+              {editing.tipo === "despesa" && <small>Para corrigir outra parcela, a categoria será atualizada na série toda.</small>}
               {!grouped ? (
                 <>
                   <label htmlFor="edit-date">Data</label>

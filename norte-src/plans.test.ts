@@ -52,6 +52,10 @@ describe("splitInstallments", () => {
 });
 
 describe("installmentRows", () => {
+  it("mantém a subcategoria sugerida em todas as parcelas", () => {
+    const rows = installmentRows({ ...base, subcategoria: "Casa" }, 120, 3, at(2026, 10, 18), master, "g");
+    expect(rows.map((r) => r.subcategoria)).toEqual(["Casa", "Casa", "Casa"]);
+  });
   it("cartão: mesma data, fatura avança um mês por parcela, virando o ano", () => {
     const rows = installmentRows(base, 1200, 4, at(2026, 11, 10), master, "g");
     expect(rows.map((r) => r.valor)).toEqual([300, 300, 300, 300]);

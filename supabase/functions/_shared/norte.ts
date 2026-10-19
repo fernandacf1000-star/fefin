@@ -474,6 +474,7 @@ export type PlanBase = {
   tipo: "despesa" | "receita";
   categoria: string;
   categoria_macro: string | null;
+  subcategoria?: string | null;
   subcategoria_pais: string | null;
 };
 export function installmentRows(
@@ -489,7 +490,7 @@ export function installmentRows(
   return parts.map((valor, i) => ({
     ...base,
     valor,
-    subcategoria: null,
+    subcategoria: base.subcategoria ?? null,
     data: dateKey(purchase),
     mes_referencia: monthKey(
       addMonths(parseDate(first + "-01"), i),
@@ -526,7 +527,7 @@ export function recurringRows(
   return recurringDates(start, day, months).map((d) => ({
     ...base,
     valor: amount,
-    subcategoria: null,
+    subcategoria: base.subcategoria ?? null,
     data: dateKey(d),
     mes_referencia: monthKey(d),
     forma_pagamento: "dinheiro",

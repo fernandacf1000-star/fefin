@@ -66,7 +66,7 @@ export function createHandler(deps: Dependencies) {
       const availableCards = (b.cards ?? []) as { id: string; name: string }[];
       if (b.defaultCardId !== undefined && b.defaultCardId !== null && !availableCards.some((c) => c.id === b.defaultCardId)) throw new Failure("input");
       if (task === "parse" && (typeof b.text !== "string" || !b.text.trim() || b.text.length > 500 || (b.today !== undefined && (typeof b.today !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(b.today))))) throw new Failure("input");
-      if (task === "classify" && (!Array.isArray(b.items) || b.items.length === 0 || b.items.length > 10 || b.items.some((it: { label?: unknown; amount?: unknown } | null) => !it || typeof it.label !== "string" || !it.label.trim() || typeof it.amount !== "number" || !Number.isFinite(it.amount) || it.amount <= 0))) throw new Failure("input");
+      if (task === "classify" && (!Array.isArray(b.items) || b.items.length === 0 || b.items.length > 10 || b.items.some((it: { label?: unknown; amount?: unknown; category?: unknown } | null) => !it || typeof it.label !== "string" || !it.label.trim() || typeof it.amount !== "number" || !Number.isFinite(it.amount) || it.amount <= 0 || (it.category !== undefined && !isCategory(it.category))))) throw new Failure("input");
       const key = deps.env("ANTHROPIC_API_KEY")?.trim();
       if (!key) throw new Failure("config");
       const model = deps.env("ANTHROPIC_MODEL")?.trim() || "claude-haiku-4-5-20251001";
@@ -81,9 +81,9 @@ Subcategorias fixas: ${JSON.stringify(SUBCATEGORIES)}. Use uma que combine com a
 dayOffset: 0 para hoje, -1 ontem, -2 anteontem, até -30. Hoje é ${b.today ?? new Date().toISOString().slice(0, 10)}.
 ${rules}`
         : `Você classifica ${kind ?? "lançamentos"} e responde APENAS JSON válido no formato {"categories":["Categoria1","Categoria2"],"subcategories":["Subcategoria1",null]}, uma categoria e uma subcategoria por lançamento, na mesma ordem. Para receitas, use null nas subcategorias. Para despesas, selecione uma subcategoria fixa compatível com a categoria.
-Subcategorias fixas: ${JSON.stringify(SUBCATEGORIES)}. Nunca invente subcategoria.
+Se um item já trouxer categoria, mantenha essa categoria e escolha uma subcategoria compatível. Subcategorias fixas: ${JSON.stringify(SUBCATEGORIES)}. Nunca invente subcategoria.
 ${rules}`;
-      const user = task === "parse" ? `"""${b.text}"""` : b.items.map((it: { label: string; amount: number }, i: number) => `${i + 1}. """${it.label.slice(0, 120)}""" (R$ ${it.amount})`).join("\n");
+      const user = task === "parse" ? `"""${b.text}"""` : b.items.map((it: { label: string; amount: number; category?: Category }, i: number) => `${i + 1}. """${it.label.slice(0, 120)}""" (R$ ${it.amount})${it.category ? ` categoria: ${it.category}` : ""}`).join("\n");
       const response = await deps.fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", signal: AbortSignal.timeout(25000),
         headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
@@ -105,7 +105,7 @@ ${rules}`;
         }) });
       }
       if (!Array.isArray(out?.categories) || out.categories.length !== b.items.length || out.categories.some((cat: unknown) => !isCategory(cat)) || !Array.isArray(out?.subcategories) || out.subcategories.length !== b.items.length || out.subcategories.some((sub: unknown) => sub != null && !isSubcategory(sub))) throw new Failure("provider_unavailable");
-      const categories = out.categories.map((cat: Category, i: number): Category => parentRule(b.items[i].label) ? "Pais" : cat);
+      const categories = out.categories.map((cat: Category, i: number): Category => parentRule(b.items[i].label) ? "Pais" : b.items[i].category ?? cat);
       const subcategories = out.subcategories.map((sub: string | null, i: number) => b.kind === "despesa" && isSubcategoryOf(sub, categories[i]) ? sub : null);
       return json({ categories, subcategories });
     } catch (error) {

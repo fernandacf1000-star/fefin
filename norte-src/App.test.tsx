@@ -189,13 +189,9 @@ describe("fluxos do Norte", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     await screen.findByText("Café novo");
     expect(state.calls[0].kind).toBe("insert");
-    await waitFor(() =>
-      expect(
-        screen
-          .getByRole("combobox", { name: "Categoria do lançamento" })
-          .hasAttribute("disabled"),
-      ).toBe(false),
-    );
+    await waitFor(() => expect(screen.queryByText("classificando…")).toBeNull());
+    expect(screen.queryByRole("combobox", { name: "Categoria do lançamento" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Editar Café novo" }));
     expect(
       screen.getByRole("combobox", { name: "Categoria do lançamento" }).textContent,
     ).toContain("Escolher categoria");
@@ -237,7 +233,7 @@ describe("fluxos do Norte", () => {
         "Pessoal",
       ),
     );
-    expect(state.ai).toHaveBeenCalledTimes(1);
+    expect(state.ai).toHaveBeenCalledTimes(2);
   });
   it("usa lançamentos recorrentes como uma única referência de categoria e subcategoria", async () => {
     state.rows = [1, 2, 3].map((n) => entry({
@@ -276,16 +272,17 @@ describe("fluxos do Norte", () => {
     render(<App />);
     await screen.findByRole("region", { name: "Resumo do mês" });
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
-    fireEvent.change(
-      screen.getByRole("combobox", { name: "Categoria do lançamento" }),
-      { target: { value: "Pais" } },
-    );
+    expect(screen.queryByRole("combobox", { name: "Categoria do lançamento" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Editar .*/ }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Categoria do lançamento" }),
+      { target: { value: "Pais" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar edição" }));
     await waitFor(() =>
       expect(state.rows.every((r) => r.subcategoria_pais === "Pais")).toBe(
         true,
       ),
     );
-    expect(state.calls[0].body.ids).toEqual(["p1", "p2"]);
+    expect(state.calls.find((call) => call.body.subcategoria_pais === "Pais")?.body.ids).toEqual(["p1", "p2"]);
     await screen.findByText("Pais · fora da conta");
     expect(state.rows.every((r) => r.categoria_macro === "Alimentação")).toBe(
       true,
@@ -296,6 +293,8 @@ describe("fluxos do Norte", () => {
     render(<App />);
     await screen.findByRole("region", { name: "Resumo do mês" });
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    expect(screen.queryByRole("combobox", { name: "Subcategoria do lançamento" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Editar .*/ }));
     const select = screen.getByRole("combobox", {
       name: "Subcategoria do lançamento",
     }) as HTMLSelectElement;
@@ -303,6 +302,7 @@ describe("fluxos do Norte", () => {
       "", "Supermercado", "Restaurantes", "Delivery",
     ]);
     fireEvent.change(select, { target: { value: "Supermercado" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar edição" }));
     await waitFor(() => expect(state.rows[0]).toMatchObject({
       categoria_macro: "Alimentação",
       subcategoria: "Supermercado",
@@ -330,6 +330,36 @@ it("classifica categoria e subcategoria sugeridas pela IA ao salvar manualmente"
   fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Bistrô novo" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
   await waitFor(() => expect(state.rows[0]).toMatchObject({ categoria_macro: "Alimentação", subcategoria: "Restaurantes" }));
+});
+
+it("preserva subcategoria do parse sem chamar classify e mostra no card limpo", async () => {
+  state.ai.mockResolvedValueOnce({ data: { items: [
+    { kind: "despesa", amount: 45, label: "Mercado novo", category: "Alimentação", subcategory: "Supermercado", dayOffset: 0 },
+  ] }, error: null });
+  await open();
+  fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "45 mercado novo" } });
+  fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
+  await screen.findByText("Confira antes de anotar.");
+  fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
+  await waitFor(() => expect(state.rows[0]?.subcategoria).toBe("Supermercado"));
+  expect(state.ai).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
+  expect(screen.getByText(/Supermercado · Master/)).toBeTruthy();
+  expect(screen.queryByRole("combobox", { name: "Categoria do lançamento" })).toBeNull();
+});
+
+it("pede à IA a subcategoria quando a categoria já foi reconhecida", async () => {
+  state.ai.mockResolvedValueOnce({ data: { items: [
+    { kind: "despesa", amount: 45, label: "Mercado novo", category: "Alimentação", subcategory: null, dayOffset: 0 },
+  ] }, error: null }).mockResolvedValueOnce({ data: { categories: ["Alimentação"], subcategories: ["Supermercado"] }, error: null });
+  await open();
+  fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "45 mercado novo" } });
+  fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
+  await screen.findByText("Confira antes de anotar.");
+  fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
+  await waitFor(() => expect(state.rows[0]?.subcategoria).toBe("Supermercado"));
+  expect(state.ai.mock.calls[1][1].body.items[0].category).toBe("Alimentação");
 });
 
 it("mostra orçamento estourado com valor positivo e só os três totais", async () => {
@@ -618,7 +648,7 @@ it("uma compra extraída do texto pode ser parcelada", async () => {
   const parts = state.rows.filter((r) => r.descricao === "Notebook");
   expect(parts).toHaveLength(3);
   expect(parts.every((r) => r.cartao_id === "master" && r.forma_pagamento === "credito")).toBe(true);
-  expect(state.ai).toHaveBeenCalledTimes(1);
+  expect(state.ai).toHaveBeenCalledTimes(2);
 });
 
 it("todo mês: cria uma linha por mês com o mesmo recorrencia_id", async () => {

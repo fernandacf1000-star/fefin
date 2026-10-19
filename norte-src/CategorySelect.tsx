@@ -4,13 +4,16 @@ export default function CategorySelect({
   value,
   onChange,
   disabled = false,
+  id,
 }: {
   value: Category | null;
   onChange: (v: Category) => void;
   disabled?: boolean;
+  id?: string;
 }) {
   return (
     <select
+      id={id}
       aria-label="Categoria do lançamento"
       value={value ?? ""}
       disabled={disabled}

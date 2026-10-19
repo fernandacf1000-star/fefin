@@ -6,15 +6,18 @@ export default function SubcategorySelect({
   value,
   onChange,
   disabled = false,
+  id,
 }: {
   category: Category | null;
   value: string | null;
   onChange: (value: string) => void;
   disabled?: boolean;
+  id?: string;
 }) {
   const choices = subcategoriesFor(category);
   return (
     <select
+      id={id}
       aria-label="Subcategoria do lançamento"
       value={choices.includes(value ?? "") ? value ?? "" : ""}
       disabled={disabled || !category}

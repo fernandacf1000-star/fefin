@@ -99,6 +99,33 @@ function Logo() {
     </span>
   );
 }
+function PaymentChoices({ cards, value, onChange, disabled, label, group }: {
+  cards: Card[];
+  value: string | null;
+  onChange: (id: string | null) => void;
+  disabled: boolean;
+  label: string;
+  group: string;
+}) {
+  return (
+    <fieldset className="payment-choices" disabled={disabled}>
+      <legend>{label}</legend>
+      <div className="payment-options">
+        <label>
+          <input type="radio" name={group} checked={value === null} onChange={() => onChange(null)} />
+          <span>Pix/dinheiro</span>
+        </label>
+        {cards.map((card) => (
+          <label key={card.id}>
+            <input type="radio" name={group} checked={value === card.id} onChange={() => onChange(card.id)} />
+            <span>{card.nome}</span>
+          </label>
+        ))}
+      </div>
+      {value && <small>Entra no mês de vencimento da fatura.</small>}
+    </fieldset>
+  );
+}
 export default function App() {
   const [session, setSession] = useState<Session | null>(null),
     [authReady, setAuthReady] = useState(false);
@@ -491,6 +518,8 @@ export default function App() {
         mode === "Valor" ||
         (mode === "Texto com IA" && items.length === 1 && items[0].kind === "despesa");
       const isPlanned = supportsPlan && plan !== "uma" && items.length === 1;
+      if (items.some((d) => d.kind === "despesa" && d.cardId && !cards.some((c) => c.id === d.cardId && c.ativo)))
+        throw new Error("Cartão indisponível. Escolha outra forma de pagamento.");
       let payload: Record<string, unknown>[];
       if (isPlanned) {
         const d = items[0];
@@ -521,7 +550,8 @@ export default function App() {
           const day = Number(recDay), months = Number(recMonths);
           if (!Number.isInteger(day) || day < 1 || day > 31 || !Number.isInteger(months) || months < 2 || months > 36)
             throw new Error("Preencha dia (1 a 31) e meses (2 a 36).");
-          payload = recurringRows(base, d.amount, now, day, months, group);
+          const card = d.kind === "despesa" ? cards.find((c) => c.id === payment) ?? null : null;
+          payload = recurringRows(base, d.amount, now, day, months, group, card);
         }
         if (!payload.length) throw new Error("Preencha uma descrição e um valor maior que zero.");
       } else
@@ -532,7 +562,7 @@ export default function App() {
           now.getDate() + d.dayOffset,
           12,
         );
-        const card = d.kind === "despesa" ? cards.find((c) => c.id === (mode === "Texto com IA" ? d.cardId : payment)) : undefined;
+        const card = d.kind === "despesa" ? cards.find((c) => c.id === d.cardId) : undefined;
         const cat = parentRule(d.label)
           ? "Pais"
           : d.edited
@@ -589,7 +619,7 @@ export default function App() {
       void classify(inserted, before);
     } catch (e) {
       setSheetError(
-        e instanceof Error && /Preencha/.test(e.message)
+        e instanceof Error && /Preencha|Cartão indisponível/.test(e.message)
           ? e.message
           : "Não consegui salvar. Seu texto continua aqui para tentar novamente.",
       );
@@ -839,7 +869,7 @@ export default function App() {
                             : d.dayOffset === -1
                               ? "Ontem"
                               : `${Math.abs(d.dayOffset)} dias atrás`}
-                          {d.kind === "despesa" && ` · ${cards.find((c) => c.id === d.cardId)?.nome ?? "Pix ou dinheiro"}`}
+          {d.kind === "despesa" && ` · ${cards.find((c) => c.id === d.cardId)?.nome ?? "Pix ou dinheiro"}`}
                         </small>
                         <CategorySelect
                           value={d.category}
@@ -863,6 +893,18 @@ export default function App() {
                           <option value="despesa">Gasto</option>
                           <option value="receita">Receita</option>
                         </select>
+                        {d.kind === "despesa" && (
+                          <PaymentChoices
+                            cards={ranked}
+                            value={d.cardId}
+                            label={`Pago com: ${d.label}`}
+                            group={`draft-payment-${i}`}
+                            disabled={busy}
+                            onChange={(cardId) => setDrafts((old) => old.map((x, j) =>
+                              j === i ? { ...x, cardId } : x,
+                            ))}
+                          />
+                        )}
                         {d.kind === "despesa" && (
                           <SubcategorySelect
                             category={d.category}
@@ -910,6 +952,16 @@ export default function App() {
                   required
                   disabled={busy}
                 />
+                {kind === "despesa" && (
+                  <PaymentChoices
+                    cards={ranked}
+                    value={payment === "dinheiro" ? null : payment}
+                    label="Pago com"
+                    group="manual-payment"
+                    disabled={busy}
+                    onChange={(cardId) => setPayment(cardId ?? "dinheiro")}
+                  />
+                )}
               </>
             )}
             {canChoosePlan && (
@@ -958,30 +1010,6 @@ export default function App() {
                 )}
               </>
             )}
-            {mode === "Valor" && kind === "despesa" && !(canChoosePlan && plan === "recorrente") && <details className="payment" open>
-              <summary>
-                Pago com{" "}
-                <span>
-                  {cards.find((c) => c.id === payment)?.nome ??
-                    "Pix ou dinheiro"}
-                </span>
-              </summary>
-              <label htmlFor="payment">Forma de pagamento</label>
-              <select
-                id="payment"
-                value={payment}
-                onChange={(e) => setPayment(e.target.value)}
-                disabled={busy}
-              >
-                <option value="dinheiro">Pix ou dinheiro</option>
-                {ranked.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
-              {payment !== "dinheiro" && <p className="muted">Entra no mês de vencimento da fatura.</p>}
-            </details>}
             {sheetError && (
               <p className="alert" role="alert">
                 {sheetError}

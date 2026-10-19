@@ -71,6 +71,13 @@ vi.mock("./supabase", () => {
               dia_vencimento: 1,
               ativo: true,
             },
+            {
+              id: "visa",
+              nome: "Visa",
+              dia_fechamento: 10,
+              dia_vencimento: 17,
+              ativo: true,
+            },
           ],
           error: null,
         }).then(resolve);
@@ -340,6 +347,7 @@ it("preserva subcategoria do parse sem chamar classify e mostra no card limpo", 
   fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "45 mercado novo" } });
   fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
   await screen.findByText("Confira antes de anotar.");
+  fireEvent.click(within(screen.getByRole("group", { name: "Pago com: Mercado novo" })).getByRole("radio", { name: "Master" }));
   fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
   await waitFor(() => expect(state.rows[0]?.subcategoria).toBe("Supermercado"));
   expect(state.ai).toHaveBeenCalledTimes(1);
@@ -672,7 +680,7 @@ it("uma compra extraída do texto pode ser parcelada", async () => {
   await screen.findByText("Notebook");
   fireEvent.click(screen.getByRole("button", { name: "Parcelado" }));
   fireEvent.change(screen.getByLabelText(/Em quantas parcelas/), { target: { value: "3" } });
-  expect(screen.queryByLabelText("Forma de pagamento")).toBeNull();
+  fireEvent.click(within(screen.getByRole("group", { name: "Pago com: Notebook" })).getByRole("radio", { name: "Master" }));
   expect(screen.getByText(/3x de R\$\s*400,00/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Salvar parcelas" }));
   await screen.findByText("Compra anotada em 3 parcelas.");
@@ -690,13 +698,29 @@ it("todo mês: cria uma linha por mês com o mesmo recorrencia_id", async () => 
   fireEvent.click(screen.getByRole("button", { name: "Todo mês" }));
   fireEvent.change(screen.getByLabelText(/Dia do mês/), { target: { value: "5" } });
   fireEvent.change(screen.getByLabelText(/Por quantos meses/), { target: { value: "4" } });
-  expect(screen.queryByText("Pago com")).toBeNull();
+  expect(within(screen.getByRole("group", { name: "Pago com" })).getByRole("radio", { name: "Pix/dinheiro" })).toHaveProperty("checked", true);
   fireEvent.click(screen.getByRole("button", { name: "Salvar todo mês" }));
   await screen.findByText("Lançamento anotado por 4 meses.");
   const rec = state.rows.filter((r) => r.descricao === "Streaming");
   expect(rec).toHaveLength(4);
   expect(new Set(rec.map((r) => r.recorrencia_id)).size).toBe(1);
   expect(rec.every((r) => r.valor === 89.9 && !r.is_parcelado)).toBe(true);
+});
+
+it("gasto recorrente manual permite escolher Master e usa a fatura", async () => {
+  await open();
+  fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "89,90" } });
+  fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Assinatura" } });
+  fireEvent.click(screen.getByRole("button", { name: "Todo mês" }));
+  fireEvent.change(screen.getByLabelText(/Por quantos meses/), { target: { value: "2" } });
+  fireEvent.click(within(screen.getByRole("group", { name: "Pago com" })).getByRole("radio", { name: "Master" }));
+  fireEvent.click(screen.getByRole("button", { name: "Salvar todo mês" }));
+  await screen.findByText("Lançamento anotado por 2 meses.");
+  const rows = state.rows.filter((r) => r.descricao === "Assinatura");
+  expect(rows).toHaveLength(2);
+  expect(rows.every((r) => r.forma_pagamento === "credito" && r.cartao_id === "master")).toBe(true);
+  expect(new Set(rows.map((r) => r.mes_referencia)).size).toBe(2);
 });
 
 it("receita com IA mantém categorias ajustáveis e memória, sem cartão", async () => {
@@ -741,12 +765,14 @@ it("IA detecta receita e gasto no mesmo comando, com pagamento só no gasto", as
 
 it("mostra melhor cartão hoje e leva compra no crédito para o mês da fatura", async () => {
   await open();
-  expect(screen.getByRole("complementary", { name: "Melhor cartão hoje" }).textContent).toContain("Master");
+  expect(screen.getByRole("complementary", { name: "Melhor cartão hoje" }).textContent).toMatch(/Master|Visa/);
   fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
   fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "90" } });
   fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Compra cartão" } });
-  expect(screen.getByLabelText("Forma de pagamento").closest("details")?.open).toBe(true);
-  fireEvent.change(screen.getByLabelText("Forma de pagamento"), { target: { value: "master" } });
+  const payment = screen.getByRole("group", { name: "Pago com" });
+  expect(within(payment).getByRole("radio", { name: "Pix/dinheiro" })).toHaveProperty("checked", true);
+  expect(within(payment).getByRole("radio", { name: "Visa" })).toBeTruthy();
+  fireEvent.click(within(payment).getByRole("radio", { name: "Master" }));
   fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
   await screen.findByText("Gasto anotado.");
   const today = new Date();
@@ -755,11 +781,41 @@ it("mostra melhor cartão hoje e leva compra no crédito para o mês da fatura",
   expect(state.rows[0]).toMatchObject({ forma_pagamento: "credito", cartao_id: "master", mes_referencia: cardDates(card, today).reference });
   fireEvent.click(screen.getByRole("button", { name: "Anotar" }));
   fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
-  expect(screen.getByLabelText("Forma de pagamento")).toHaveProperty("value", "master");
+  expect(within(screen.getByRole("group", { name: "Pago com" })).getByRole("radio", { name: "Master" })).toHaveProperty("checked", true);
   if (cardDates(card, today).reference !== monthKey(today)) {
     expect(monthSummary(state.rows as Entry[], today).spent).toBe(0);
     expect(screen.getByRole("region", { name: "Resumo do mês" }).querySelector(".month-summary")?.textContent).toMatch(/GastouR\$\s*0,00/);
   }
+});
+
+it("permite escolher Visa em gasto manual e salva na fatura correta", async () => {
+  await open();
+  fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "191,57" } });
+  fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Compra Visa" } });
+  fireEvent.click(within(screen.getByRole("group", { name: "Pago com" })).getByRole("radio", { name: "Visa" }));
+  fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
+  await screen.findByText("Gasto anotado.");
+  const { cardDates } = await import("./domain");
+  expect(state.rows[0]).toMatchObject({
+    forma_pagamento: "credito",
+    cartao_id: "visa",
+    mes_referencia: cardDates({ id: "visa", nome: "Visa", dia_fechamento: 10, dia_vencimento: 17, ativo: true }, new Date()).reference,
+  });
+});
+
+it("permite corrigir o cartão da IA antes de salvar", async () => {
+  state.ai.mockResolvedValueOnce({ data: { items: [
+    { kind: "despesa", amount: 60, label: "Cinema", category: "Lazer", dayOffset: 0, cardId: null },
+  ] }, error: null });
+  await open();
+  fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "Cinema 60 no Visa" } });
+  fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
+  const payment = await screen.findByRole("group", { name: "Pago com: Cinema" });
+  fireEvent.click(within(payment).getByRole("radio", { name: "Visa" }));
+  fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
+  await screen.findByText("Gasto anotado.");
+  expect(state.rows[0]).toMatchObject({ forma_pagamento: "credito", cartao_id: "visa" });
 });
 
 it.each([

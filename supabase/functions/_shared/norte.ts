@@ -528,6 +528,7 @@ export function recurringRows(
   day: number,
   months: number,
   groupId: string,
+  card: Card | null = null,
 ) {
   const amount = Math.round(valor * 100) / 100;
   if (!(amount > 0)) return [];
@@ -536,9 +537,9 @@ export function recurringRows(
     valor: amount,
     subcategoria: base.subcategoria ?? null,
     data: dateKey(d),
-    mes_referencia: monthKey(d),
-    forma_pagamento: "dinheiro",
-    cartao_id: null,
+    mes_referencia: card ? cardDates(card, d).reference : monthKey(d),
+    forma_pagamento: card ? "credito" : "dinheiro",
+    cartao_id: card?.id ?? null,
     pago: false,
     pago_por: "voce",
     is_parcelado: false,

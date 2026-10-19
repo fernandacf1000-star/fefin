@@ -95,6 +95,11 @@ describe("recorrentes", () => {
     expect(rows.every((r) => r.recorrencia_id === "r" && !r.is_parcelado)).toBe(true);
     expect(rows.map((r) => r.mes_referencia)).toEqual(["2026-11", "2026-12", "2027-01"]);
   });
+  it("recorrência no cartão cai no vencimento de cada fatura", () => {
+    const rows = recurringRows(base, 90, at(2026, 10, 3), 10, 3, "r", master);
+    expect(rows.map((r) => r.mes_referencia)).toEqual(["2026-11", "2026-12", "2027-01"]);
+    expect(rows.every((r) => r.forma_pagamento === "credito" && r.cartao_id === master.id)).toBe(true);
+  });
   it("conta uma vez por mês nos gastos; receita recorrente conta como receita", () => {
     const exp = asEntries(recurringRows(base, 150, at(2026, 10, 3), 10, 3, "r"));
     expect(monthSpending(exp, at(2026, 11, 1))).toBe(150);

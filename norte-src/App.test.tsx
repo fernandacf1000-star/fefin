@@ -669,6 +669,7 @@ it("mostra melhor cartão hoje e leva compra no crédito para o mês da fatura",
   fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
   fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "90" } });
   fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Compra cartão" } });
+  expect(screen.getByLabelText("Forma de pagamento").closest("details")?.open).toBe(true);
   fireEvent.change(screen.getByLabelText("Forma de pagamento"), { target: { value: "master" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
   await screen.findByText("Gasto anotado.");
@@ -676,6 +677,8 @@ it("mostra melhor cartão hoje e leva compra no crédito para o mês da fatura",
   const card = { id: "master", nome: "Master", ativo: true, dia_fechamento: 22, dia_vencimento: 1 };
   const { cardDates, monthKey, monthSummary } = await import("./domain");
   expect(state.rows[0]).toMatchObject({ forma_pagamento: "credito", cartao_id: "master", mes_referencia: cardDates(card, today).reference });
+  fireEvent.click(screen.getByRole("button", { name: "Anotar" }));
+  expect(screen.getByLabelText("Forma de pagamento")).toHaveProperty("value", "master");
   if (cardDates(card, today).reference !== monthKey(today)) {
     expect(monthSummary(state.rows as Entry[], today).spent).toBe(0);
     expect(screen.getByRole("region", { name: "Resumo do mês" }).querySelector(".month-summary")?.textContent).toMatch(/GastouR\$\s*0,00/);

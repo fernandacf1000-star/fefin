@@ -348,7 +348,6 @@ export default function App() {
     setText("");
     setAmount("");
     setLabel("");
-    setPayment("dinheiro");
     setPlan("uma");
     setInstallments("2");
     setRecDay(String(new Date().getDate()));
@@ -976,7 +975,7 @@ export default function App() {
                 )}
               </>
             )}
-            {(mode === "Valor" ? kind === "despesa" : !drafts.length || drafts.some((d) => d.kind === "despesa")) && !(canChoosePlan && mode === "Valor" && plan === "recorrente") && <details className="payment">
+            {(mode === "Valor" ? kind === "despesa" : !drafts.length || drafts.some((d) => d.kind === "despesa")) && !(canChoosePlan && mode === "Valor" && plan === "recorrente") && <details className="payment" open>
               <summary>
                 Pago com{" "}
                 <span>

@@ -15,6 +15,7 @@ import {
   parentRule,
   dateKey,
   monthKey,
+  effectiveDate,
   parseMoney,
   cardDates,
   monthPeriod,
@@ -107,6 +108,7 @@ export default function App() {
   const [tab, setTab] = useState("Mês"),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
+    [noticeMonth, setNoticeMonth] = useState<string | null>(null),
     [pending, setPending] = useState<Set<string>>(new Set());
   const [now, setNow] = useState(new Date()),
     [undo, setUndo] = useState<string[]>([]),
@@ -140,6 +142,7 @@ export default function App() {
       () => {
         setNotice("");
         setUndo([]);
+        setNoticeMonth(null);
       },
       undo.length ? 8000 : 4000,
     );
@@ -423,15 +426,17 @@ export default function App() {
         if (!cat) continue;
         const remembered = memorySubcategory(r.descricao, before);
         const aiSubcategory = guess?.category === cat ? guess.subcategory : null;
+        const subcategory = r.tipo === "despesa"
+          ? isSubcategoryOf(r.subcategoria, cat) ? r.subcategoria
+            : isSubcategoryOf(remembered, cat) ? remembered
+              : isSubcategoryOf(aiSubcategory, cat) ? aiSubcategory : null
+          : null;
         const patch = {
           ...categoryPatch(cat, r),
-          ...(r.tipo === "despesa" && isSubcategoryOf(r.subcategoria, cat)
-            ? { subcategoria: r.subcategoria }
-            : r.tipo === "despesa" && isSubcategoryOf(remembered, cat)
-            ? { subcategoria: remembered }
-            : r.tipo === "despesa" && isSubcategoryOf(aiSubcategory, cat)
-              ? { subcategoria: aiSubcategory }
-              : {}),
+          ...(subcategory ? {
+            subcategoria: subcategory,
+            ...(cat === "Pais" ? { categoria_macro: subcategoryCategory(subcategory) } : {}),
+          } : {}),
         };
         const { error } = await sb!
           .from("norte_lancamentos")
@@ -497,7 +502,9 @@ export default function App() {
           descricao: d.label,
           tipo: d.kind,
           categoria: d.kind === "receita" && cat === "Pais" ? "reembolso_pais" : d.kind,
-          categoria_macro: cat === "Pais" ? knownMacro(d.label, before) : cat,
+          categoria_macro: cat === "Pais"
+            ? (isSubcategoryOf(d.subcategory, cat) ? subcategoryCategory(d.subcategory) : knownMacro(d.label, before))
+            : cat,
           subcategoria: d.kind === "despesa" && isSubcategoryOf(d.subcategory, isCategory(cat) ? cat : null) ? d.subcategory : null,
           subcategoria_pais: cat === "Pais" ? "Pais" : null,
         };
@@ -535,7 +542,9 @@ export default function App() {
           valor: Math.round(d.amount * 100) / 100,
           tipo: d.kind,
           categoria: d.kind === "receita" && cat === "Pais" ? "reembolso_pais" : d.kind,
-          categoria_macro: cat === "Pais" ? knownMacro(d.label, before) : cat,
+          categoria_macro: cat === "Pais"
+            ? (isSubcategoryOf(d.subcategory, cat) ? subcategoryCategory(d.subcategory) : knownMacro(d.label, before))
+            : cat,
           subcategoria: d.kind === "despesa" && isSubcategoryOf(d.subcategory, isCategory(cat) ? cat : null) ? d.subcategory : null,
           subcategoria_pais: cat === "Pais" ? "Pais" : null,
           data: dateKey(day),
@@ -560,6 +569,10 @@ export default function App() {
       setUndo(inserted.map((r) => r.id));
       const incomeCount = inserted.filter((r) => r.tipo === "receita").length;
       const expenseCount = inserted.length - incomeCount;
+      const invoiceMonth = inserted.length === 1 && inserted[0].forma_pagamento === "credito"
+        && monthKey(effectiveDate(inserted[0])) !== monthKey(now)
+        ? monthKey(effectiveDate(inserted[0])) : null;
+      setNoticeMonth(invoiceMonth);
       setNotice(isPlanned && plan === "parcelado"
         ? `Compra anotada em ${inserted.length} parcelas.`
         : isPlanned && plan === "recorrente"
@@ -599,6 +612,7 @@ export default function App() {
       setRows((old) => old.filter((r) => !ids.includes(r.id)));
       setUndo([]);
       setNotice("Anotação desfeita.");
+      setNoticeMonth(null);
     } catch {
       ids.forEach((id) => cancelled.current.delete(id));
       setError("Não consegui desfazer. Tente novamente.");
@@ -670,11 +684,21 @@ export default function App() {
               {undoBusy ? "Desfazendo…" : "Desfazer"}
             </button>
           )}
+          {noticeMonth && undo.length > 0 && (
+            <button type="button" onClick={() => {
+              setSelectedMonth(parseDate(noticeMonth + "-01"));
+              setTab("Mês");
+              setNotice("");
+              setNoticeMonth(null);
+            }}>
+              Ver fatura de {parseDate(noticeMonth + "-01").toLocaleDateString("pt-BR", { month: "long" })}
+            </button>
+          )}
           <button
             type="button"
             className="notice-close"
             aria-label="Fechar aviso"
-            onClick={() => { setNotice(""); setUndo([]); }}
+            onClick={() => { setNotice(""); setUndo([]); setNoticeMonth(null); }}
           >
             ×
           </button>

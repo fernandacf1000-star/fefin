@@ -349,6 +349,39 @@ it("preserva subcategoria do parse sem chamar classify e mostra no card limpo", 
   expect(screen.queryByRole("combobox", { name: "Categoria do lançamento" })).toBeNull();
 });
 
+it("mostra mercado dos Pais na fatura do cartão sem somar ao gasto pessoal", async () => {
+  state.rows = [entry({
+    id: "parent-market", descricao: "Pão de Açúcar", valor: 711.07,
+    categoria_macro: "Alimentação", subcategoria: "Supermercado", subcategoria_pais: "Pais",
+    data: "2026-10-18", mes_referencia: "2026-11", forma_pagamento: "credito", cartao_id: "master",
+  })];
+  render(<App />);
+  const month = await screen.findByRole("region", { name: "Resumo do mês" });
+  expect(within(month).queryByText("Pais · fora do saldo")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
+  expect(within(month).getByText("Pais · fora do saldo")).toBeTruthy();
+  expect(within(month).getByText(/711,07/)).toBeTruthy();
+  expect(within(month).getByText("Gastou").nextElementSibling?.textContent).toMatch(/0,00/);
+  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  expect(screen.getByText(/Supermercado · Master/)).toBeTruthy();
+});
+
+it("classifica mercado dos Pais e oferece atalho para o mês da fatura", async () => {
+  state.ai.mockResolvedValueOnce({ data: { items: [
+    { kind: "despesa", amount: 711.07, label: "Mercado dos Pais", category: "Pais", subcategory: "Supermercado", dayOffset: -1, cardId: "master" },
+  ] }, error: null });
+  await open();
+  fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "711,07 mercado dos meus pais ontem no Master" } });
+  fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
+  await screen.findByText("Confira antes de anotar.");
+  fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
+  await waitFor(() => expect(state.rows[0]).toMatchObject({
+    categoria_macro: "Alimentação", subcategoria: "Supermercado", subcategoria_pais: "Pais", mes_referencia: "2026-11",
+  }));
+  fireEvent.click(screen.getByRole("button", { name: "Ver fatura de novembro" }));
+  expect(within(screen.getByRole("region", { name: "Resumo do mês" })).getByText("Pais · fora do saldo")).toBeTruthy();
+});
+
 it("pede à IA a subcategoria quando a categoria já foi reconhecida", async () => {
   state.ai.mockResolvedValueOnce({ data: { items: [
     { kind: "despesa", amount: 45, label: "Mercado novo", category: "Alimentação", subcategory: null, dayOffset: 0 },

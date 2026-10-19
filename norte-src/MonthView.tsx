@@ -1,4 +1,4 @@
-import { monthPresentation, bestCard } from "./domain";
+import { monthPresentation, bestCard, monthEntries, sumMoney } from "./domain";
 import type { Entry, Card } from "./domain";
 const money = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -16,6 +16,9 @@ export default function MonthView({
   cards: Card[];
 }) {
   const month = monthPresentation(rows, selected, now);
+  const parents = sumMoney(monthEntries(rows, selected)
+    .filter((r) => r.tipo === "despesa" && !!r.subcategoria_pais)
+    .map((r) => Number(r.valor)));
   const recommended = bestCard(cards, now);
   return (
     <section className="month-view" aria-label="Resumo do mês">
@@ -32,6 +35,10 @@ export default function MonthView({
           <dt>Gastou</dt>
           <dd>{money(month.spent)}</dd>
         </div>
+        {parents > 0 && <div className="parents-summary">
+          <dt>Pais · fora do saldo</dt>
+          <dd>{money(parents)}</dd>
+        </div>}
       </dl>
       <progress
         className={month.spent > month.income ? "care-progress" : ""}

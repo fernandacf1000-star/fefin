@@ -463,6 +463,7 @@ textarea {
 .notice {
   padding: 8px 0 14px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -974,6 +975,10 @@ nav button {
 .month-summary dd {
   margin: 0;
   font-variant-numeric: tabular-nums;
+}
+.month-summary .parents-summary {
+  color: var(--muted);
+  font-size: 13px;
 }
 progress.care-progress {
   color: var(--attention);

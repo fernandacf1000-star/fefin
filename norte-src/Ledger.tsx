@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   groupScope,
   categoryOf,
-  countsAsIncome,
   filterEntries,
   groupEntriesByDay,
   monthEntries,
@@ -18,6 +17,17 @@ const money = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     n,
   );
+const displayAsIncome = (row: Entry) => row.tipo === "receita" || row.categoria === "salario";
+const CATEGORY_EMOJI: Record<string, string> = {
+  Moradia: "🏘️",
+  Alimentação: "🥗",
+  Transporte: "🚗",
+  Saúde: "💊",
+  Pessoal: "💅",
+  Lazer: "🎮",
+  Aportes: "📈",
+  Pais: "🧓",
+};
 export default function Ledger({
   rows,
   cards,
@@ -203,29 +213,41 @@ export default function Ledger({
                 onEdit={() => openEdit(row)}
                 onDelete={() => open(row, null, true)}
               >
-              <article className="entry ledger-entry">
+              <article className={`entry ledger-entry${row.subcategoria_pais ? " ledger-entry-pais" : ""}`}>
                 <button
                   className="ledger-open"
                   aria-label={`Ver detalhes de ${row.descricao}`}
                   onClick={(e) => open(row, e.currentTarget)}
                 >
-                  <div className="entry-top">
-                    <strong>{row.descricao}</strong>
-                    <span className={countsAsIncome(row) ? "income-value" : ""}>
-                      {countsAsIncome(row) ? "+ " : ""}
-                      {money(Number(row.valor))}
+                  <span className={`ledger-icon${row.subcategoria_pais ? " ledger-icon-pais" : ""}`} aria-hidden="true">
+                    {row.subcategoria_pais ? "🧓" :
+                      CATEGORY_EMOJI[categoryOf(row) ?? row.categoria_macro ?? ""] ??
+                      (displayAsIncome(row) ? "🤑" : "🧾")}
+                  </span>
+                  <span className="ledger-copy">
+                    <span className="ledger-title">
+                      <strong>{row.descricao}</strong>
+                      {row.subcategoria_pais && <span className="ledger-pais-label">PAIS</span>}
                     </span>
-                  </div>
-                  <div className="entry-meta">
-                    <span>{cardName(row)}</span>
-                    {row.is_parcelado && (
-                      <span>
-                        parcela {row.parcela_atual ?? 1}/
-                        {row.parcela_total ?? 1}
-                      </span>
-                    )}
-                    {row.recorrencia_id && <span>Todo mês</span>}
-                  </div>
+                    <span className="entry-meta">
+                      <span>{parseDate(group.date).toLocaleDateString("pt-BR")}</span>
+                      {row.is_parcelado && (
+                        <span className="entry-pill">
+                          {row.parcela_atual ?? 1}/{row.parcela_total ?? 1}x
+                        </span>
+                      )}
+                      {row.is_parcelado && row.parcela_atual === row.parcela_total && (
+                        <span className="entry-pill entry-pill-last">🏁 última</span>
+                      )}
+                      {row.recorrencia_id && !row.is_parcelado && <span className="entry-pill">recorrente</span>}
+                    </span>
+                    <span className="ledger-category-line">
+                      {row.subcategoria ?? categoryOf(row) ?? "Escolher categoria"} · {cardName(row)}
+                    </span>
+                  </span>
+                  <span className={displayAsIncome(row) ? "ledger-amount income-value" : row.subcategoria_pais ? "ledger-amount parent-value" : "ledger-amount"}>
+                    {displayAsIncome(row) ? "+" : "-"}{money(Math.abs(Number(row.valor)))}
+                  </span>
                 </button>
                 <div className="entry-bottom">
                   <CategorySelect

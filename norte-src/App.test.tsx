@@ -484,6 +484,22 @@ it("lista 80 itens, carrega mais, filtra e confirma exclusão de uma só parcela
   expect(state.rows.find((r) => r.id === "r9")).toBeUndefined();
   expect(state.rows.find((r) => r.id === "r8")).toBeTruthy();
 });
+it("mostra ícone de idoso para Pais e selo na última parcela", async () => {
+  state.rows = [
+    entry({ id: "pais", descricao: "Farmácia dos Pais", categoria_macro: "Saúde", subcategoria: "Farmácia", subcategoria_pais: "Pais" }),
+    entry({ id: "fim", descricao: "Sofá", categoria_macro: "Moradia", data: dateKey(new Date(new Date().getFullYear(), new Date().getMonth() - 2, 15, 12)), is_parcelado: true, parcela_atual: 3, parcela_total: 3, parcelamento_id: "parcelas" }),
+  ];
+  render(<App />);
+  await screen.findByRole("region", { name: "Resumo do mês" });
+  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  const pais = screen.getByRole("button", { name: "Ver detalhes de Farmácia dos Pais" });
+  expect(within(pais).getByText("🧓")).toBeTruthy();
+  expect(within(pais).getByText("PAIS")).toBeTruthy();
+  expect(pais.querySelector(".ledger-amount")?.textContent?.replace(/\s/g, "")).toBe("-R$100,00");
+  const fim = screen.getByRole("button", { name: "Ver detalhes de Sofá" });
+  expect(within(fim).getByText("3/3x")).toBeTruthy();
+  expect(within(fim).getByText("🏁 última")).toBeTruthy();
+});
 
 it("Norte inicia vazio e envia à IA somente seu próprio histórico", async () => {
   render(<App />);

@@ -520,6 +520,8 @@ dialog {
   background: var(--surface);
   color: var(--text);
   overscroll-behavior: contain;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 dialog::backdrop {
   background: #1d2b3366;
@@ -894,7 +896,13 @@ nav button {
   inset: auto 0 0;
   margin: auto auto 0;
   border-radius: 26px 26px 0 0;
-  max-height: calc(100dvh - env(safe-area-inset-top));
+  max-height: calc(100dvh - env(safe-area-inset-top) - 12px);
+}
+.detail-dialog form > .primary {
+  position: sticky;
+  bottom: 0;
+  width: 100%;
+  margin-top: 16px;
 }
 .entry-details {
   margin: 0 0 24px;

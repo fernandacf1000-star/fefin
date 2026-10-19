@@ -855,7 +855,7 @@ describe("swipe, editar e excluir", () => {
     expect(state.rows[0].valor).toBe(8);
   });
 
-  it("editar parcela com 'Todos' atualiza o grupo inteiro sem mexer na data", async () => {
+  it("editar parcela com 'Todos' distribui o total pelo grupo sem mexer na data", async () => {
     const d = dateKey(new Date());
     state.rows = [1, 2, 3].map((n) => entry({ id: `p${n}`, descricao: "Sofá", valor: 100, data: d, is_parcelado: true, parcela_atual: n, parcela_total: 3, parcelamento_id: "G" }));
     render(<App />);
@@ -866,10 +866,64 @@ describe("swipe, editar e excluir", () => {
     const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
     expect(within(dlg).queryByLabelText("Data")).toBeNull();
     fireEvent.click(within(dlg).getByRole("button", { name: "Todos" }));
-    fireEvent.change(within(dlg).getByLabelText("Valor de cada parcela (R$)"), { target: { value: "120" } });
+    expect(within(dlg).getByLabelText("Valor total das parcelas selecionadas (R$)")).toHaveProperty("value", "300,00");
+    fireEvent.change(within(dlg).getByLabelText("Valor total das parcelas selecionadas (R$)"), { target: { value: "120" } });
     fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
     await screen.findByText("3 lançamentos atualizados.");
-    expect(state.rows.every((r) => r.valor === 120)).toBe(true);
+    expect(state.rows.every((r) => r.valor === 40)).toBe(true);
+  });
+
+  it("corrige uma compra de seis parcelas distribuindo os centavos do total", async () => {
+    state.rows = [191.57, 31.92, 31.92, 31.92, 31.92, 31.97].map((valor, index) => entry({
+      id: `clara-${index + 1}`, descricao: "Clara Artebrum", valor,
+      is_parcelado: true, parcela_atual: index + 1, parcela_total: 6, parcelamento_id: "clara",
+    }));
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Editar Clara Artebrum" }));
+    const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+    expect(within(dlg).getByLabelText("Valor desta parcela (R$)")).toHaveProperty("value", "191,57");
+    fireEvent.click(within(dlg).getByRole("button", { name: "Todos" }));
+    fireEvent.change(within(dlg).getByLabelText("Valor total das parcelas selecionadas (R$)"), { target: { value: "191,57" } });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
+    await screen.findByText("6 lançamentos atualizados.");
+    expect(state.rows.map((r) => r.valor)).toEqual([31.92, 31.92, 31.92, 31.92, 31.92, 31.97]);
+  });
+
+  it("Só este altera apenas uma parcela", async () => {
+    state.rows = [1, 2].map((n) => entry({
+      id: `single-${n}`, descricao: "Assinatura", valor: 50,
+      is_parcelado: true, parcela_atual: n, parcela_total: 2, parcelamento_id: "single",
+    }));
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Editar Assinatura" }));
+    const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+    fireEvent.change(within(dlg).getByLabelText("Valor desta parcela (R$)"), { target: { value: "45" } });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
+    await screen.findByText("Lançamento atualizado.");
+    expect(state.rows.map((r) => r.valor)).toEqual([45, 50]);
+  });
+
+  it("Este e os próximos distribui o total apenas nas parcelas restantes", async () => {
+    state.rows = [1, 2, 3].map((n) => entry({
+      id: `next-${n}`, descricao: "Sofá", valor: 50,
+      is_parcelado: true, parcela_atual: n, parcela_total: 3, parcelamento_id: "next",
+    }));
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
+    fireEvent.click(screen.getByRole("button", { name: "Editar Sofá" }));
+    const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Este e os próximos" }));
+    expect(within(dlg).getByLabelText("Valor total das parcelas selecionadas (R$)")).toHaveProperty("value", "100,00");
+    fireEvent.change(within(dlg).getByLabelText("Valor total das parcelas selecionadas (R$)"), { target: { value: "90" } });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
+    await screen.findByText("2 lançamentos atualizados.");
+    expect(state.rows.map((r) => r.valor)).toEqual([50, 45, 45]);
   });
 });
 

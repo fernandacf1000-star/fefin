@@ -270,15 +270,26 @@ export default function App() {
       ? edits.subcategory : null;
     const categoryChanged = category !== categoryOf(row) || subcategory !== (row.subcategoria ?? null);
     const categoryUpdate = category ? categoryPatchWithSubcategory(category, row, subcategory) : null;
-    const { data, error } = await sb!
-      .from("norte_lancamentos")
-      .update(patch)
-      .eq("user_id", uid)
-      .in("id", ids)
-      .select("id");
-    if (error || data?.length !== ids.length)
-      throw error ?? new Error("Alteração não confirmada");
-    setRows((old) => old.map((r) => (ids.includes(r.id) ? { ...r, ...patch } as Entry : r)));
+    const editTotal = !!(row.is_parcelado && row.parcelamento_id && scope !== "one");
+    const ordered = [...targets].sort((a, b) => (a.parcela_atual ?? 0) - (b.parcela_atual ?? 0));
+    const parts = editTotal ? splitInstallments(edits.valor, ordered.length) : [];
+    if (editTotal && (parts.length !== ordered.length || parts.some((value) => value <= 0)))
+      throw new Error("Total insuficiente para as parcelas");
+    const updates = editTotal && ordered.length > 1 ? [
+      { ids: ordered.slice(0, -1).map((r) => r.id), patch: { ...patch, valor: parts[0] } },
+      { ids: [ordered[ordered.length - 1].id], patch: { ...patch, valor: parts[parts.length - 1] } },
+    ] : [{ ids, patch: editTotal ? { ...patch, valor: parts[0] } : patch }];
+    for (const update of updates) {
+      const { data, error } = await sb!
+        .from("norte_lancamentos")
+        .update(update.patch)
+        .eq("user_id", uid)
+        .in("id", update.ids)
+        .select("id");
+      if (error || data?.length !== update.ids.length)
+        throw error ?? new Error("Alteração não confirmada");
+      setRows((old) => old.map((r) => update.ids.includes(r.id) ? { ...r, ...update.patch } as Entry : r));
+    }
     if (categoryChanged && categoryUpdate) {
       const related = groupScope(rows, row, "all").map((r) => r.id);
       const result = await sb!.from("norte_lancamentos")

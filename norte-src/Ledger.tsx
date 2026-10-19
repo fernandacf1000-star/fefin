@@ -8,6 +8,7 @@ import {
   monthEntries,
   monthSummary,
   parseDate,
+  sumMoney,
 } from "./domain";
 import type { Entry, Card, Category, EntryFilter } from "./domain";
 import CategorySelect from "./CategorySelect";
@@ -109,6 +110,16 @@ export default function Ledger({
   }
   const editing = rows.find((r) => r.id === editId);
   const grouped = !!(editing?.parcelamento_id || editing?.recorrencia_id);
+  const totalInstallments = !!(editing?.is_parcelado && editing.parcelamento_id && eScope !== "one");
+  function chooseEditScope(next: "one" | "next" | "all") {
+    if (!editing) return;
+    setEScope(next);
+    const targets = groupScope(rows, editing, next);
+    const value = editing.is_parcelado && editing.parcelamento_id && next !== "one"
+      ? sumMoney(targets.map((r) => Number(r.valor)))
+      : Number(editing.valor);
+    setEValue(value.toFixed(2).replace(".", ","));
+  }
   async function saveEdit() {
     if (!editing) return;
     const valor = parseMoney(eValue);
@@ -300,7 +311,8 @@ export default function Ledger({
               <input id="edit-desc" maxLength={120} value={eDesc}
                 onChange={(e) => setEDesc(e.target.value)} disabled={eBusy} />
               <label htmlFor="edit-value">
-                {grouped && editing.is_parcelado ? "Valor de cada parcela (R$)" : "Valor (R$)"}
+                {totalInstallments ? "Valor total das parcelas selecionadas (R$)"
+                  : grouped && editing.is_parcelado ? "Valor desta parcela (R$)" : "Valor (R$)"}
               </label>
               <input id="edit-value" inputMode="decimal" value={eValue}
                 onChange={(e) => setEValue(e.target.value)} disabled={eBusy} />
@@ -327,13 +339,15 @@ export default function Ledger({
                   <div role="group" aria-label="Aplicar a">
                     {([["one", "Só este"], ["next", "Este e os próximos"], ["all", "Todos"]] as const).map(([v, t]) => (
                       <button type="button" key={v} aria-pressed={eScope === v}
-                        disabled={eBusy} onClick={() => setEScope(v)}>
+                        disabled={eBusy} onClick={() => chooseEditScope(v)}>
                         {t}
                       </button>
                     ))}
                   </div>
                   <small>
-                    Serão alterados {groupScope(rows, editing, eScope).length} lançamento(s). A data não muda aqui.
+                    {totalInstallments
+                      ? `O total será dividido entre ${groupScope(rows, editing, eScope).length} parcelas. A data não muda aqui.`
+                      : `Serão alterados ${groupScope(rows, editing, eScope).length} lançamento(s). A data não muda aqui.`}
                   </small>
                 </>
               )}

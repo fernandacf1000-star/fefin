@@ -78,6 +78,22 @@ export const categoryOf = (
     : isCategory(r.categoria_macro)
       ? r.categoria_macro
       : null;
+const historyUnit = (r: Entry) =>
+  r.parcelamento_id ? `parcelamento:${r.parcelamento_id}`
+    : r.recorrencia_id ? `recorrencia:${r.recorrencia_id}`
+      : `lancamento:${r.id}`;
+export function memoryExamples(history: Entry[], limit = 60): Entry[] {
+  const seen = new Set<string>();
+  return [...history].sort((a, b) =>
+    (b.created_at ?? b.data).localeCompare(a.created_at ?? a.data),
+  ).filter((r) => {
+    if (!categoryOf(r)) return false;
+    const key = historyUnit(r);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, limit);
+}
 export function memory(label: string, history: Entry[]): Category | null {
   if (parentRule(label)) return "Pais";
   const rows = history
@@ -88,7 +104,7 @@ export function memory(label: string, history: Entry[]): Category | null {
   const seen = new Set<string>(),
     counts = new Map<Category, { count: number; rank: number }>();
   rows.forEach((r, rank) => {
-    const key = r.parcelamento_id || r.id;
+    const key = historyUnit(r);
     if (seen.has(key)) return;
     seen.add(key);
     const cat = categoryOf(r);
@@ -112,7 +128,7 @@ export function memorySubcategory(label: string, history: Entry[]): string | nul
   const seen = new Set<string>();
   const counts = new Map<string, { count: number; rank: number }>();
   rows.forEach((r, rank) => {
-    const key = r.parcelamento_id || r.id;
+    const key = historyUnit(r);
     if (seen.has(key)) return;
     seen.add(key);
     if (!isSubcategory(r.subcategoria)) return;

@@ -12,6 +12,7 @@ import {
   categoryPatch,
   memory,
   memorySubcategory,
+  memoryExamples,
   parentRule,
   dateKey,
   monthKey,
@@ -363,10 +364,8 @@ export default function App() {
     setBusy(true);
     setSheetError("");
     try {
-      const examples = rows
-        .filter((r) => categoryOf(r))
-        .slice(0, 60)
-        .map((r) => `${r.descricao} → ${categoryOf(r)}${r.subcategoria ? ` / ${r.subcategoria}` : ""}`);
+      const examples = memoryExamples(rows)
+        .map((r) => `${r.descricao}${r.recorrencia_id ? " (recorrente)" : ""} → ${categoryOf(r)}${r.subcategoria ? ` / ${r.subcategoria}` : ""}`);
       const data = await askAI({
         task: "parse",
         text,
@@ -435,10 +434,8 @@ export default function App() {
               label: r.descricao,
               amount: r.valor,
             })),
-            examples: before
-              .filter((r) => categoryOf(r))
-              .slice(0, 60)
-              .map((r) => `${r.descricao} → ${categoryOf(r)}${r.subcategoria ? ` / ${r.subcategoria}` : ""}`),
+            examples: memoryExamples(before)
+              .map((r) => `${r.descricao}${r.recorrencia_id ? " (recorrente)" : ""} → ${categoryOf(r)}${r.subcategoria ? ` / ${r.subcategoria}` : ""}`),
           });
           const categories = Array.isArray(data.categories) ? data.categories : [];
           const subcategories = Array.isArray(data.subcategories) ? data.subcategories : [];

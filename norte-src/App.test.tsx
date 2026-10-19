@@ -239,6 +239,23 @@ describe("fluxos do Norte", () => {
     );
     expect(state.ai).toHaveBeenCalledTimes(1);
   });
+  it("usa lançamentos recorrentes como uma única referência de categoria e subcategoria", async () => {
+    state.rows = [1, 2, 3].map((n) => entry({
+      id: `rec-${n}`, descricao: "Streaming", categoria_macro: "Lazer",
+      subcategoria: "Assinaturas", recorrencia_id: "serie-streaming",
+      created_at: `2026-0${n}-01T12:00:00Z`,
+    }));
+    state.ai.mockResolvedValueOnce({ data: { items: [
+      { kind: "despesa", amount: 50, label: "Streaming", category: "Pessoal", subcategory: "Presentes", dayOffset: 0 },
+    ] }, error: null });
+    await open();
+    fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "50 streaming" } });
+    fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
+    await screen.findByText("Confira antes de anotar.");
+    expect(screen.getByLabelText("Categoria do lançamento")).toHaveProperty("value", "Lazer");
+    expect(screen.getByLabelText("Subcategoria do lançamento")).toHaveProperty("value", "Assinaturas");
+    expect(state.ai.mock.calls[0][1].body.examples).toEqual(["Streaming (recorrente) → Lazer / Assinaturas"]);
+  });
   it("trocar categoria atualiza todas as parcelas e altera o orçamento", async () => {
     state.rows = [
       entry({

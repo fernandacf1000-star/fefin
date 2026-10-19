@@ -16,6 +16,7 @@ import {
   sixMonthChartData,
   memory,
   memorySubcategory,
+  memoryExamples,
   categoryPatch,
   parentRule,
   Entry,
@@ -152,6 +153,17 @@ describe("memória", () => {
       }),
     );
     expect(memory("loja", rows)).toBe("Saúde");
+  });
+  it("cada série recorrente conta uma vez e entra nos exemplos da IA", () => {
+    const recurring = [1, 2, 3].map((n) => entry({
+      id: `rec-${n}`, descricao: "Streaming", recorrencia_id: "series-streaming",
+      categoria_macro: "Lazer", subcategoria: "Assinaturas",
+      created_at: `2026-0${n}-01`,
+    }));
+    recurring.push(entry({ id: "single", descricao: "Streaming", categoria_macro: "Pessoal", subcategoria: "Presentes", created_at: "2026-04-01" }));
+    expect(memory("streaming", recurring)).toBe("Pessoal");
+    expect(memorySubcategory("streaming", recurring)).toBe("Presentes");
+    expect(memoryExamples(recurring).map((r) => r.id)).toEqual(["single", "rec-3"]);
   });
   it("reusa a subcategoria mais frequente e ignora valores fora da lista", () => {
     expect(memorySubcategory("mercado", [

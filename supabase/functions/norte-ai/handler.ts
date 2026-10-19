@@ -65,14 +65,15 @@ export function createHandler(deps: Dependencies) {
       const key = deps.env("ANTHROPIC_API_KEY")?.trim();
       if (!key) throw new Failure("config");
       const model = deps.env("ANTHROPIC_MODEL")?.trim() || "claude-haiku-4-5-20251001";
-      const kind = b.kind === "receita" ? "receitas pessoais recebidas" : "gastos pessoais";
+      const kind = b.kind === "receita" ? "receitas pessoais recebidas" : b.kind === "despesa" ? "gastos pessoais" : null;
       const rules = RULES([...CATEGORIES], (b.examples ?? []).slice(0, 60));
       const system = task === "parse"
-        ? `Você lê textos de ${kind} em português do Brasil e responde APENAS JSON válido.
-Formato: {"items":[{"amount":número,"label":"descrição curta com até 3 palavras","category":"uma das permitidas","dayOffset":0}]}
+        ? `Você lê textos em português do Brasil e responde APENAS JSON válido.
+${kind ? `Os itens são ${kind}; use kind="${b.kind}" em cada um.` : "Identifique automaticamente, em cada item, se é gasto (kind=\"despesa\") ou receita recebida (kind=\"receita\"). O comando pode conter os dois tipos; separe-os item por item. Verbos como recebi, entrou e ganhei indicam receita; paguei, comprei e gastei indicam despesa. Salário e reembolso são receita somente quando a pessoa os recebe; se ela paga salário ou reembolso, é despesa. Compras, pagamentos e contas nunca são receita. Se não houver indicação de entrada de dinheiro, classifique como despesa."}
+Formato: {"items":[{"kind":"despesa ou receita","amount":número,"label":"descrição curta com até 3 palavras","category":"uma das permitidas","dayOffset":0}]}
 dayOffset: 0 para hoje, -1 ontem, -2 anteontem, até -30. Hoje é ${b.today ?? new Date().toISOString().slice(0, 10)}.
 ${rules}`
-        : `Você classifica ${kind} e responde APENAS JSON válido no formato {"categories":["Categoria1","Categoria2"]}, uma categoria por lançamento, na mesma ordem.
+        : `Você classifica ${kind ?? "lançamentos"} e responde APENAS JSON válido no formato {"categories":["Categoria1","Categoria2"]}, uma categoria por lançamento, na mesma ordem.
 ${rules}`;
       const user = task === "parse" ? `"""${b.text}"""` : b.items.map((it: { label: string; amount: number }, i: number) => `${i + 1}. """${it.label.slice(0, 120)}""" (R$ ${it.amount})`).join("\n");
       const response = await deps.fetch("https://api.anthropic.com/v1/messages", {
@@ -88,8 +89,8 @@ ${rules}`;
       const data = await response.json();
       const out = extractJson(data.content?.filter((part: { type: string }) => part.type === "text").map((part: { text: string }) => part.text).join("\n") ?? "");
       if (task === "parse") {
-        if (!Array.isArray(out?.items) || out.items.length > 10 || out.items.some((it: { amount: number; label: string; category: unknown; dayOffset: number } | null) => !it || !Number.isFinite(it.amount) || it.amount <= 0 || typeof it.label !== "string" || !it.label.trim() || !isCategory(it.category) || !Number.isInteger(it.dayOffset) || it.dayOffset < -30 || it.dayOffset > 0)) throw new Failure("provider_unavailable");
-        return json({ items: out.items.map((it: { amount: number; label: string; category: string; dayOffset: number }) => ({ amount: it.amount, label: it.label, category: parentRule(it.label) ? "Pais" : it.category, dayOffset: it.dayOffset })) });
+        if (!Array.isArray(out?.items) || out.items.length > 10 || out.items.some((it: { kind?: unknown; amount: number; label: string; category: unknown; dayOffset: number } | null) => !it || (it.kind !== undefined && it.kind !== "despesa" && it.kind !== "receita") || (!b.kind && it.kind !== "despesa" && it.kind !== "receita") || !Number.isFinite(it.amount) || it.amount <= 0 || typeof it.label !== "string" || !it.label.trim() || !isCategory(it.category) || !Number.isInteger(it.dayOffset) || it.dayOffset < -30 || it.dayOffset > 0)) throw new Failure("provider_unavailable");
+        return json({ items: out.items.map((it: { kind?: "despesa" | "receita"; amount: number; label: string; category: string; dayOffset: number }) => ({ kind: b.kind ?? it.kind, amount: it.amount, label: it.label, category: parentRule(it.label) ? "Pais" : it.category, dayOffset: it.dayOffset })) });
       }
       if (!Array.isArray(out?.categories) || out.categories.length !== b.items.length || out.categories.some((cat: unknown) => !isCategory(cat))) throw new Failure("provider_unavailable");
       return json({ categories: out.categories.map((cat: string, i: number) => parentRule(b.items[i].label) ? "Pais" : cat) });

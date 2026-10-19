@@ -211,13 +211,13 @@ describe("fluxos do Norte", () => {
     state.ai.mockResolvedValue({
       data: {
         items: [
-          { label: "Mercado", amount: 45, category: "Lazer", dayOffset: 0 },
+          { kind: "despesa", label: "Mercado", amount: 45, category: "Lazer", dayOffset: 0 },
         ],
       },
       error: null,
     });
     await open();
-    fireEvent.change(screen.getByLabelText("O que você gastou?"), {
+    fireEvent.change(screen.getByLabelText("O que aconteceu?"), {
       target: { value: "45 mercado" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
@@ -499,13 +499,13 @@ it("Norte inicia vazio e envia à IA somente seu próprio histórico", async () 
   state.ai.mockResolvedValue({
     data: {
       items: [
-        { label: "Mercado", amount: 10, category: "Alimentação", dayOffset: 0 },
+        { kind: "despesa", label: "Mercado", amount: 10, category: "Alimentação", dayOffset: 0 },
       ],
     },
     error: null,
   });
   fireEvent.click(screen.getByRole("button", { name: "Anotar" }));
-  fireEvent.change(screen.getByLabelText("O que você gastou?"), {
+  fireEvent.change(screen.getByLabelText("O que aconteceu?"), {
     target: { value: "10 mercado" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
@@ -516,9 +516,9 @@ it("Norte inicia vazio e envia à IA somente seu próprio histórico", async () 
 
 it("anota receita por valor, soma só em Ganhou e permite desfazer", async () => {
   await open();
-  fireEvent.click(screen.getByRole("button", { name: "Receita" }));
   expect(screen.getByRole("tab", { name: "Texto com IA" }).getAttribute("aria-selected")).toBe("true");
   fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+  fireEvent.click(screen.getByRole("button", { name: "Receita" }));
   expect(screen.queryByText("Pago com")).toBeNull();
   fireEvent.change(screen.getByLabelText("Quanto entrou? (R$)"), { target: { value: "1500,50" } });
   fireEvent.change(screen.getByLabelText("De onde veio?"), { target: { value: "Salário" } });
@@ -553,12 +553,12 @@ it("parcelado: valor cheio dividido em centavos, prévia e uma linha por parcela
 it("uma compra extraída do texto pode ser parcelada", async () => {
   state.ai
     .mockResolvedValueOnce({
-      data: { items: [{ amount: 1200, label: "Notebook", category: "Pessoal", dayOffset: 0 }] },
+      data: { items: [{ kind: "despesa", amount: 1200, label: "Notebook", category: "Pessoal", dayOffset: 0 }] },
       error: null,
     })
     .mockResolvedValueOnce({ data: { categories: ["Pessoal"] }, error: null });
   await open();
-  fireEvent.change(screen.getByLabelText("O que você gastou?"), {
+  fireEvent.change(screen.getByLabelText("O que aconteceu?"), {
     target: { value: "Notebook 1200 em 3x" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
@@ -597,15 +597,14 @@ it("todo mês: cria uma linha por mês com o mesmo recorrencia_id", async () => 
 it("receita com IA mantém categorias ajustáveis e memória, sem cartão", async () => {
   state.rows = [entry({ descricao: "Venda", categoria_macro: "Pessoal", data: "2026-01-01" })];
   state.ai.mockResolvedValue({ data: { items: [
-    { amount: 300, label: "Venda", category: "Lazer", dayOffset: 0 },
-    { amount: 100, label: "Reembolso mãe", category: "Pessoal", dayOffset: 0 },
+    { kind: "receita", amount: 300, label: "Venda", category: "Lazer", dayOffset: 0 },
+    { kind: "receita", amount: 100, label: "Reembolso mãe", category: "Pessoal", dayOffset: 0 },
   ] }, error: null });
   await open();
-  fireEvent.click(screen.getByRole("button", { name: "Receita" }));
-  fireEvent.change(screen.getByLabelText("O que você recebeu?"), { target: { value: "300 venda e 100 reembolso mãe" } });
+  fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "Recebi 300 da venda e 100 de reembolso da minha mãe" } });
   fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
   await screen.findByText("Confira antes de anotar.");
-  expect(state.ai.mock.calls[0][1].body.kind).toBe("receita");
+  expect(state.ai.mock.calls[0][1].body.kind).toBeUndefined();
   const selects = within(screen.getByRole("dialog")).getAllByRole("combobox", { name: "Categoria do lançamento" });
   expect((selects[0] as HTMLSelectElement).value).toBe("Pessoal");
   fireEvent.change(selects[0], { target: { value: "Moradia" } });
@@ -614,6 +613,25 @@ it("receita com IA mantém categorias ajustáveis e memória, sem cartão", asyn
   expect(state.rows[0]).toMatchObject({ tipo: "receita", categoria_macro: "Moradia", cartao_id: null });
   expect(state.rows[1]).toMatchObject({ tipo: "receita", categoria: "reembolso_pais", subcategoria_pais: "Pais" });
   expect(screen.getByRole("region", { name: "Resumo do mês" }).querySelector(".big-number")?.textContent).toMatch(/300,00/);
+});
+
+it("IA detecta receita e gasto no mesmo comando, com pagamento só no gasto", async () => {
+  state.ai.mockResolvedValue({ data: { items: [
+    { kind: "receita", amount: 500, label: "Venda", category: "Pessoal", dayOffset: 0 },
+    { kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", dayOffset: 0 },
+  ] }, error: null });
+  await open();
+  expect(screen.queryByRole("button", { name: "Receita" })).toBeNull();
+  fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "Recebi 500 da venda e gastei 45 no mercado" } });
+  fireEvent.change(screen.getByLabelText("Forma de pagamento"), { target: { value: "master" } });
+  fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
+  await screen.findByText("Confira antes de anotar.");
+  expect(screen.getByLabelText("Tipo do lançamento: Venda")).toHaveProperty("value", "receita");
+  expect(screen.getByLabelText("Tipo do lançamento: Mercado")).toHaveProperty("value", "despesa");
+  fireEvent.click(screen.getByRole("button", { name: "Salvar lançamentos" }));
+  await screen.findByText("Lançamentos anotados.");
+  expect(state.rows.find((r) => r.descricao === "Venda")).toMatchObject({ tipo: "receita", cartao_id: null });
+  expect(state.rows.find((r) => r.descricao === "Mercado")).toMatchObject({ tipo: "despesa", cartao_id: "master" });
 });
 
 it("mostra melhor cartão hoje e leva compra no crédito para o mês da fatura", async () => {
@@ -644,10 +662,10 @@ it.each([
 ])("mostra erro %s do SDK e mantém lançamento manual", async (code, status, expected) => {
   state.ai.mockResolvedValue({ data: null, error: { context: new Response(JSON.stringify({ code }), { status: Number(status) }) } });
   await open();
-  fireEvent.change(screen.getByLabelText("O que você gastou?"), { target: { value: "45 café" } });
+  fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "45 café" } });
   fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
   await screen.findByText(String(expected));
-  expect((screen.getByLabelText("O que você gastou?") as HTMLTextAreaElement).value).toBe("45 café");
+  expect((screen.getByLabelText("O que aconteceu?") as HTMLTextAreaElement).value).toBe("45 café");
   fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
   fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "45" } });
   fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Café" } });

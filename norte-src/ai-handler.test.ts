@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createHandler } from "../supabase/functions/norte-ai/handler";
-function setup(status = 200, result: unknown = { items: [{ amount: 45, label: "Mercado", category: "Alimentação", dayOffset: 0 }] }) {
+function setup(status = 200, result: unknown = { items: [{ kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", dayOffset: 0 }] }) {
   const deps = {
     authenticate: vi.fn().mockResolvedValue(true),
     env: vi.fn((name: string) => name === "ANTHROPIC_API_KEY" ? "test-placeholder" : undefined),
@@ -49,6 +49,18 @@ describe("norte-ai: contrato e erros sem dados sensíveis", () => {
     const classify = setup(200, { categories: ["Pessoal"] });
     const c = await classify.call({ task: "classify", kind, items: [{ label: "Amélia", amount: 50 }] });
     expect(c.status).toBe(200); expect(await c.json()).toEqual({ categories: ["Pais"] });
+  });
+  it("detecta automaticamente receita e despesa no mesmo texto", async () => {
+    const { call } = setup(200, { items: [
+      { kind: "receita", amount: 300, label: "Venda", category: "Pessoal", dayOffset: 0 },
+      { kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", dayOffset: -1 },
+    ] });
+    const r = await call({ task: "parse", text: "Recebi 300 da venda e gastei 45 no mercado ontem" });
+    expect(r.status).toBe(200);
+    expect(await r.json()).toMatchObject({ items: [
+      { kind: "receita", amount: 300, label: "Venda" },
+      { kind: "despesa", amount: 45, label: "Mercado" },
+    ] });
   });
   it("resposta inválida ou categoria inventada não é sucesso", async () => {
     const { call } = setup(200, { items: [{ amount: 40, label: "Loja", category: "Outro", dayOffset: 0 }] });

@@ -367,7 +367,7 @@ export default function App() {
       const examples = rows
         .filter((r) => categoryOf(r))
         .slice(0, 60)
-        .map((r) => `${r.descricao} → ${categoryOf(r)}`);
+        .map((r) => `${r.descricao} → ${categoryOf(r)}${r.subcategoria ? ` / ${r.subcategoria}` : ""}`);
       const data = await askAI({
         task: "parse",
         text,
@@ -418,7 +418,7 @@ export default function App() {
       );
       // A compra parcelada cria várias linhas iguais. A IA recebe cada
       // descrição uma vez, mantendo a chamada dentro do limite de 10 itens.
-      const guesses = new Map<string, Category>();
+      const guesses = new Map<string, { category: Category; subcategory: string | null }>();
       const guessKey = (type: string, label: string) => `${type}|${normalize(label)}`;
       const uniqueUnknown = unknown.filter(
         (row, index) => unknown.findIndex(
@@ -439,13 +439,19 @@ export default function App() {
             examples: before
               .filter((r) => categoryOf(r))
               .slice(0, 60)
-              .map((r) => `${r.descricao} → ${categoryOf(r)}`),
+              .map((r) => `${r.descricao} → ${categoryOf(r)}${r.subcategoria ? ` / ${r.subcategoria}` : ""}`),
           });
           const categories = Array.isArray(data.categories) ? data.categories : [];
+          const subcategories = Array.isArray(data.subcategories) ? data.subcategories : [];
           group.forEach((row, index) => {
             const category = categories[index];
             if (isCategory(category))
-              guesses.set(guessKey(row.tipo, row.descricao), category);
+              guesses.set(guessKey(row.tipo, row.descricao), {
+                category,
+                subcategory: isSubcategoryOf(subcategories[index], category)
+                  ? subcategories[index]
+                  : null,
+              });
           });
         } catch (e) {
           setNotice(`${message(e)}. Lançamento salvo; escolha a categoria na lista.`);
@@ -453,16 +459,22 @@ export default function App() {
       }
       for (const r of inserted) {
         if (cancelled.current.has(r.id)) continue;
+        const guess = guesses.get(guessKey(r.tipo, r.descricao));
         const cat =
           categoryOf(r) ??
           memory(r.descricao, before) ??
-          guesses.get(guessKey(r.tipo, r.descricao)) ??
+          guess?.category ??
           null;
         if (!cat) continue;
         const remembered = memorySubcategory(r.descricao, before);
+        const aiSubcategory = guess?.category === cat ? guess.subcategory : null;
         const patch = {
           ...categoryPatch(cat, r),
-          ...(isSubcategoryOf(remembered, cat) ? { subcategoria: remembered } : {}),
+          ...(r.tipo === "despesa" && isSubcategoryOf(remembered, cat)
+            ? { subcategoria: remembered }
+            : r.tipo === "despesa" && isSubcategoryOf(aiSubcategory, cat)
+              ? { subcategoria: aiSubcategory }
+              : {}),
         };
         const { error } = await sb!
           .from("norte_lancamentos")

@@ -302,6 +302,19 @@ describe("fluxos do Norte", () => {
   });
 });
 
+it("classifica categoria e subcategoria sugeridas pela IA ao salvar manualmente", async () => {
+  state.ai.mockResolvedValueOnce({
+    data: { categories: ["Alimentação"], subcategories: ["Restaurantes"] },
+    error: null,
+  });
+  await open();
+  fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "48" } });
+  fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Bistrô novo" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
+  await waitFor(() => expect(state.rows[0]).toMatchObject({ categoria_macro: "Alimentação", subcategoria: "Restaurantes" }));
+});
+
 it("mostra orçamento estourado com valor positivo e só os três totais", async () => {
   state.rows = [entry({ tipo: "receita", valor: 100 }), entry({ valor: 250 })];
   const { container } = render(<App />);
@@ -493,12 +506,12 @@ it("mostra ícone de idoso para Pais e selo na última parcela", async () => {
   await screen.findByRole("region", { name: "Resumo do mês" });
   fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
   const pais = screen.getByRole("button", { name: "Ver detalhes de Farmácia dos Pais" });
-  expect(within(pais).getByText("🧓")).toBeTruthy();
+  expect(pais.querySelector(".ledger-category-icon")).toBeTruthy();
   expect(within(pais).getByText("PAIS")).toBeTruthy();
   expect(pais.querySelector(".ledger-amount")?.textContent?.replace(/\s/g, "")).toBe("-R$100,00");
   const fim = screen.getByRole("button", { name: "Ver detalhes de Sofá" });
   expect(within(fim).getByText("3/3x")).toBeTruthy();
-  expect(within(fim).getByText("🏁 última")).toBeTruthy();
+  expect(within(fim).getByText("última")).toBeTruthy();
 });
 
 it("Norte inicia vazio e envia à IA somente seu próprio histórico", async () => {

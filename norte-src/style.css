@@ -759,7 +759,11 @@ nav button {
   height: 42px;
   border-radius: 16px;
   background: #edecfa;
-  font-size: 21px;
+}
+.ledger-category-icon {
+  display: block;
+  width: 28px;
+  height: 28px;
 }
 .ledger-icon-pais {
   background: var(--attention-bg);
@@ -826,6 +830,11 @@ nav button {
   background: var(--soft);
   color: var(--accent);
   font-weight: 650;
+}
+.entry-pill-last svg {
+  width: 13px;
+  height: 13px;
+  margin-right: 4px;
 }
 .ledger-category-line {
   color: var(--muted);

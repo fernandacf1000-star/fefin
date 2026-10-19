@@ -761,9 +761,12 @@ nav button {
   background: #edecfa;
 }
 .ledger-category-icon {
-  display: block;
+  display: grid;
+  place-items: center;
   width: 28px;
   height: 28px;
+  font-size: 27px;
+  line-height: 1;
 }
 .ledger-icon-pais {
   background: var(--attention-bg);

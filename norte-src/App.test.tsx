@@ -611,9 +611,7 @@ it("uma compra extraída do texto pode ser parcelada", async () => {
   await screen.findByText("Notebook");
   fireEvent.click(screen.getByRole("button", { name: "Parcelado" }));
   fireEvent.change(screen.getByLabelText(/Em quantas parcelas/), { target: { value: "3" } });
-  fireEvent.change(screen.getByLabelText("Forma de pagamento"), {
-    target: { value: "master" },
-  });
+  expect(screen.queryByLabelText("Forma de pagamento")).toBeNull();
   expect(screen.getByText(/3x de R\$\s*400,00/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Salvar parcelas" }));
   await screen.findByText("Compra anotada em 3 parcelas.");
@@ -664,16 +662,16 @@ it("receita com IA mantém categorias ajustáveis e memória, sem cartão", asyn
 it("IA detecta receita e gasto no mesmo comando, com pagamento só no gasto", async () => {
   state.ai.mockResolvedValue({ data: { items: [
     { kind: "receita", amount: 500, label: "Venda", category: "Pessoal", dayOffset: 0 },
-    { kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", dayOffset: 0 },
+    { kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", dayOffset: 0, cardId: "master" },
   ] }, error: null });
   await open();
   expect(screen.queryByRole("button", { name: "Receita" })).toBeNull();
   fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "Recebi 500 da venda e gastei 45 no mercado" } });
-  fireEvent.change(screen.getByLabelText("Forma de pagamento"), { target: { value: "master" } });
   fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
   await screen.findByText("Confira antes de anotar.");
   expect(screen.getByLabelText("Tipo do lançamento: Venda")).toHaveProperty("value", "receita");
   expect(screen.getByLabelText("Tipo do lançamento: Mercado")).toHaveProperty("value", "despesa");
+  expect(screen.getByText(/· Master/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Salvar lançamentos" }));
   await screen.findByText("Lançamentos anotados.");
   expect(state.rows.find((r) => r.descricao === "Venda")).toMatchObject({ tipo: "receita", cartao_id: null });
@@ -695,6 +693,7 @@ it("mostra melhor cartão hoje e leva compra no crédito para o mês da fatura",
   const { cardDates, monthKey, monthSummary } = await import("./domain");
   expect(state.rows[0]).toMatchObject({ forma_pagamento: "credito", cartao_id: "master", mes_referencia: cardDates(card, today).reference });
   fireEvent.click(screen.getByRole("button", { name: "Anotar" }));
+  fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
   expect(screen.getByLabelText("Forma de pagamento")).toHaveProperty("value", "master");
   if (cardDates(card, today).reference !== monthKey(today)) {
     expect(monthSummary(state.rows as Entry[], today).spent).toBe(0);

@@ -62,6 +62,9 @@ export function createHandler(deps: Dependencies) {
       task = b.task;
       if (b.kind !== undefined && b.kind !== "receita" && b.kind !== "despesa") throw new Failure("input");
       if (b.examples !== undefined && (!Array.isArray(b.examples) || b.examples.some((x: unknown) => typeof x !== "string"))) throw new Failure("input");
+      if (b.cards !== undefined && (!Array.isArray(b.cards) || b.cards.length > 10 || b.cards.some((c: { id?: unknown; name?: unknown } | null) => !c || typeof c.id !== "string" || !c.id || typeof c.name !== "string" || !c.name.trim()))) throw new Failure("input");
+      const availableCards = (b.cards ?? []) as { id: string; name: string }[];
+      if (b.defaultCardId !== undefined && b.defaultCardId !== null && !availableCards.some((c) => c.id === b.defaultCardId)) throw new Failure("input");
       if (task === "parse" && (typeof b.text !== "string" || !b.text.trim() || b.text.length > 500 || (b.today !== undefined && (typeof b.today !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(b.today))))) throw new Failure("input");
       if (task === "classify" && (!Array.isArray(b.items) || b.items.length === 0 || b.items.length > 10 || b.items.some((it: { label?: unknown; amount?: unknown } | null) => !it || typeof it.label !== "string" || !it.label.trim() || typeof it.amount !== "number" || !Number.isFinite(it.amount) || it.amount <= 0))) throw new Failure("input");
       const key = deps.env("ANTHROPIC_API_KEY")?.trim();
@@ -72,7 +75,8 @@ export function createHandler(deps: Dependencies) {
       const system = task === "parse"
         ? `Você lê textos em português do Brasil e responde APENAS JSON válido.
 ${kind ? `Os itens são ${kind}; use kind="${b.kind}" em cada um.` : "Identifique automaticamente, em cada item, se é gasto (kind=\"despesa\") ou receita recebida (kind=\"receita\"). O comando pode conter os dois tipos; separe-os item por item. Verbos como recebi, entrou e ganhei indicam receita; paguei, comprei e gastei indicam despesa. Salário e reembolso são receita somente quando a pessoa os recebe; se ela paga salário ou reembolso, é despesa. Compras, pagamentos e contas nunca são receita. Se não houver indicação de entrada de dinheiro, classifique como despesa."}
-Formato: {"items":[{"kind":"despesa ou receita","amount":número,"label":"descrição curta com até 3 palavras","category":"uma das permitidas","subcategory":"uma subcategoria permitida ou null","dayOffset":0}]}
+Pagamento: cartões disponíveis ${JSON.stringify(availableCards.map((c) => ({ id: c.id, name: c.name })))}. Cartão recomendado para texto sem forma de pagamento explícita: ${JSON.stringify(b.defaultCardId ?? null)}. Identifique o pagamento item por item. Se o texto disser Pix, dinheiro ou débito, use cardId=null. Se disser cartão ou o nome de um cartão, escolha o ID correspondente. Se não disser como pagou, use o cartão recomendado. Nunca pergunte a forma de pagamento.
+Formato: {"items":[{"kind":"despesa ou receita","amount":número,"label":"descrição curta com até 3 palavras","category":"uma das permitidas","subcategory":"uma subcategoria permitida ou null","dayOffset":0,"cardId":"id de cartão disponível ou null"}]}
 Subcategorias fixas: ${JSON.stringify(SUBCATEGORIES)}. Use uma que combine com a categoria; para receita use null. Nunca invente subcategoria.
 dayOffset: 0 para hoje, -1 ontem, -2 anteontem, até -30. Hoje é ${b.today ?? new Date().toISOString().slice(0, 10)}.
 ${rules}`
@@ -93,11 +97,11 @@ ${rules}`;
       const data = await response.json();
       const out = extractJson(data.content?.filter((part: { type: string }) => part.type === "text").map((part: { text: string }) => part.text).join("\n") ?? "");
       if (task === "parse") {
-        if (!Array.isArray(out?.items) || out.items.length > 10 || out.items.some((it: { kind?: unknown; amount: number; label: string; category: unknown; subcategory?: unknown; dayOffset: number } | null) => !it || (it.kind !== undefined && it.kind !== "despesa" && it.kind !== "receita") || (!b.kind && it.kind !== "despesa" && it.kind !== "receita") || !Number.isFinite(it.amount) || it.amount <= 0 || typeof it.label !== "string" || !it.label.trim() || !isCategory(it.category) || (it.subcategory != null && !isSubcategory(it.subcategory)) || !Number.isInteger(it.dayOffset) || it.dayOffset < -30 || it.dayOffset > 0)) throw new Failure("provider_unavailable");
-        return json({ items: out.items.map((it: { kind?: "despesa" | "receita"; amount: number; label: string; category: string; subcategory?: string | null; dayOffset: number }) => {
+        if (!Array.isArray(out?.items) || out.items.length > 10 || out.items.some((it: { kind?: unknown; amount: number; label: string; category: unknown; subcategory?: unknown; dayOffset: number; cardId?: unknown } | null) => !it || (it.kind !== undefined && it.kind !== "despesa" && it.kind !== "receita") || (!b.kind && it.kind !== "despesa" && it.kind !== "receita") || !Number.isFinite(it.amount) || it.amount <= 0 || typeof it.label !== "string" || !it.label.trim() || !isCategory(it.category) || (it.subcategory != null && !isSubcategory(it.subcategory)) || !Number.isInteger(it.dayOffset) || it.dayOffset < -30 || it.dayOffset > 0 || (it.cardId !== undefined && it.cardId !== null && !availableCards.some((c) => c.id === it.cardId)))) throw new Failure("provider_unavailable");
+        return json({ items: out.items.map((it: { kind?: "despesa" | "receita"; amount: number; label: string; category: string; subcategory?: string | null; dayOffset: number; cardId?: string | null }) => {
           const category: Category = parentRule(it.label) ? "Pais" : it.category as Category;
           const kind = b.kind ?? it.kind;
-          return { kind, amount: it.amount, label: it.label, category, subcategory: kind === "despesa" && isSubcategoryOf(it.subcategory, category) ? it.subcategory : null, dayOffset: it.dayOffset };
+          return { kind, amount: it.amount, label: it.label, category, subcategory: kind === "despesa" && isSubcategoryOf(it.subcategory, category) ? it.subcategory : null, dayOffset: it.dayOffset, cardId: kind === "despesa" ? (it.cardId === undefined ? b.defaultCardId ?? null : it.cardId) : null };
         }) });
       }
       if (!Array.isArray(out?.categories) || out.categories.length !== b.items.length || out.categories.some((cat: unknown) => !isCategory(cat)) || !Array.isArray(out?.subcategories) || out.subcategories.length !== b.items.length || out.subcategories.some((sub: unknown) => sub != null && !isSubcategory(sub))) throw new Failure("provider_unavailable");

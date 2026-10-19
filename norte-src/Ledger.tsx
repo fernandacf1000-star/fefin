@@ -19,26 +19,12 @@ const money = (n: number) =>
   );
 const displayAsIncome = (row: Entry) => row.tipo === "receita" || row.categoria === "salario";
 function CategoryIcon({ category, parent, income }: { category: string | null; parent: boolean; income: boolean }) {
-  const stroke = parent ? "#8a4f08" : income ? "#2e7c70" : "#435d9b";
-  return (
-    <svg className="ledger-category-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-      {parent ? <>
-        <path d="M15 39c1-7 5-11 11-11s10 4 11 11" fill="#f4c997" stroke={stroke} strokeWidth="2.5" strokeLinecap="round" />
-        <circle cx="26" cy="18" r="10" fill="#f4c997" stroke={stroke} strokeWidth="2.5" />
-        <path d="M17 17c1-9 15-13 19-3M18 19h3m11 0h3m-13 5c2 2 6 2 8 0m5 4 5 7m0 0v8m-3-1h6" stroke={stroke} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      </> : income ? <>
-        <path d="M10 31h28M14 31V19l10-7 10 7v12" stroke={stroke} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M24 29V18m-5 5 5-5 5 5" stroke="#54a38f" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      </> : category === "Alimentação" ? <><path d="M15 9v14m-5-14v8c0 4 10 4 10 0V9m-5 14v16M31 9c-6 8-5 16 1 16v14m0-30v16" stroke={stroke} strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" /></>
-        : category === "Moradia" ? <><path d="m8 23 16-13 16 13v15H10V23m9 15V25h10v13" stroke={stroke} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" /><path d="M19 19h.1M29 19h.1" stroke="#54a38f" strokeWidth="4" strokeLinecap="round" /></>
-        : category === "Transporte" ? <><path d="m10 28 3-11h22l3 11v10h-4v-4H14v4h-4V28Z" stroke={stroke} strokeWidth="2.8" strokeLinejoin="round" /><path d="M14 27h20m-18-5h4m8 0h4m-16 11h.1m16 0h.1" stroke="#54a38f" strokeWidth="2.8" strokeLinecap="round" /></>
-        : category === "Saúde" ? <><path d="M24 40S9 31 9 20c0-8 10-12 15-4 5-8 15-4 15 4 0 11-15 20-15 20Z" stroke={stroke} strokeWidth="2.8" strokeLinejoin="round" /><path d="M24 17v14m-7-7h14" stroke="#54a38f" strokeWidth="3" strokeLinecap="round" /></>
-        : category === "Pessoal" ? <><circle cx="24" cy="17" r="8" stroke={stroke} strokeWidth="2.8" /><path d="M10 40c1-8 6-13 14-13s13 5 14 13" stroke={stroke} strokeWidth="2.8" strokeLinecap="round" /><path d="m20 19 4 3 4-3" stroke="#54a38f" strokeWidth="2.5" strokeLinecap="round" /></>
-        : category === "Lazer" ? <><rect x="9" y="12" width="30" height="24" rx="6" stroke={stroke} strokeWidth="2.8" /><path d="M17 20v8m-4-4h8m11-2h.1m4 5h.1" stroke="#54a38f" strokeWidth="3.5" strokeLinecap="round" /></>
-        : category === "Aportes" ? <><path d="M11 36 22 25l7 6 10-14m-9 0h9v9" stroke={stroke} strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" /><path d="M11 40h28" stroke="#54a38f" strokeWidth="2.8" strokeLinecap="round" /></>
-        : <><rect x="11" y="10" width="26" height="28" rx="8" stroke={stroke} strokeWidth="2.8" /><path d="M18 21h.1m12 0h.1m-11 8c3 3 7 3 10 0" stroke="#54a38f" strokeWidth="3" strokeLinecap="round" /></>}
-    </svg>
-  );
+  const icons: Record<string, string> = {
+    Moradia: "🏘️", Alimentação: "🥗", Transporte: "🚗", Saúde: "💊",
+    Pessoal: "💅", Lazer: "🎮", Aportes: "📈",
+  };
+  const icon = parent ? "🧓" : income ? "🤑" : icons[category ?? ""] ?? "🔴";
+  return <span className="ledger-category-icon" aria-hidden="true">{icon}</span>;
 }
 export default function Ledger({
   rows,

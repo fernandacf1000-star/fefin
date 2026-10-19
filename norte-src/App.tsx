@@ -50,6 +50,7 @@ type Draft = {
   category: Category | null;
   subcategory: string | null;
   dayOffset: number;
+  cardId: string | null;
   edited?: boolean;
 };
 const fields =
@@ -371,6 +372,8 @@ export default function App() {
         text,
         today: dateKey(now),
         examples,
+        cards: ranked.map(({ id, nome }) => ({ id, name: nome })),
+        defaultCardId: ranked[0]?.id ?? null,
       });
       const items: Draft[] = (Array.isArray(data.items) ? data.items : [])
         .slice(0, 10)
@@ -391,6 +394,9 @@ export default function App() {
             kind: v.kind,
             category,
             subcategory,
+            cardId: v.cardId === null || typeof v.cardId === "string" && cards.some((c) => c.id === v.cardId)
+              ? v.cardId as string | null
+              : ranked[0]?.id ?? null,
             dayOffset: Number.isInteger(v.dayOffset)
               ? Math.max(-30, Math.min(0, Number(v.dayOffset)))
               : 0,
@@ -507,6 +513,7 @@ export default function App() {
                 category: null,
                 subcategory: null,
                 dayOffset: 0,
+                cardId: payment === "dinheiro" ? null : payment,
               } as Draft,
             ]
           : drafts;
@@ -544,7 +551,7 @@ export default function App() {
           const n = Number(installments);
           if (!isInstallmentCount(n))
             throw new Error("Preencha parcelas entre 2 e 360.");
-          const card = d.kind === "despesa" ? (cards.find((c) => c.id === payment) ?? null) : null;
+          const card = d.kind === "despesa" ? (cards.find((c) => c.id === (mode === "Texto com IA" ? d.cardId : payment)) ?? null) : null;
           payload = installmentRows(base, d.amount, n, now, card, group);
         } else {
           const day = Number(recDay), months = Number(recMonths);
@@ -561,7 +568,7 @@ export default function App() {
           now.getDate() + d.dayOffset,
           12,
         );
-        const card = d.kind === "despesa" ? cards.find((c) => c.id === payment) : undefined;
+        const card = d.kind === "despesa" ? cards.find((c) => c.id === (mode === "Texto com IA" ? d.cardId : payment)) : undefined;
         const cat = parentRule(d.label)
           ? "Pais"
           : d.edited
@@ -572,458 +579,7 @@ export default function App() {
           descricao: d.label,
           valor: Math.round(d.amount * 100) / 100,
           tipo: d.kind,
-          categoria: d.kind === "receita" && cat === "Pais" ? "reembolso_pais" : d.kind,
-          categoria_macro: cat === "Pais" ? knownMacro(d.label, before) : cat,
-          subcategoria: d.kind === "despesa" && isSubcategoryOf(d.subcategory, isCategory(cat) ? cat : null) ? d.subcategory : null,
-          subcategoria_pais: cat === "Pais" ? "Pais" : null,
-          data: dateKey(day),
-          mes_referencia: card ? cardDates(card, day).reference : monthKey(day),
-          forma_pagamento: card ? "credito" : "dinheiro",
-          cartao_id: card?.id ?? null,
-          pago: !card,
-          pago_por: "voce",
-          is_parcelado: false,
-          parcela_atual: null,
-          parcela_total: null,
-          parcelamento_id: null,
-        };
-      });
-      const { data, error } = await sb!
-        .from("norte_lancamentos")
-        .insert(payload)
-        .select(fields);
-      if (error) throw error;
-      const inserted = data as Entry[];
-      setRows((old) => [...inserted, ...old]);
-      setUndo(inserted.map((r) => r.id));
-      const incomeCount = inserted.filter((r) => r.tipo === "receita").length;
-      const expenseCount = inserted.length - incomeCount;
-      setNotice(isPlanned && plan === "parcelado"
-        ? `Compra anotada em ${inserted.length} parcelas.`
-        : isPlanned && plan === "recorrente"
-        ? `Lançamento anotado por ${inserted.length} meses.`
-        : incomeCount && expenseCount
-        ? "Lançamentos anotados."
-        : incomeCount
-        ? incomeCount > 1 ? "Receitas anotadas." : "Receita anotada."
-        : expenseCount > 1 ? "Gastos anotados." : "Gasto anotado.");
-      dialog.current?.close();
-      opener.current?.focus();
-      void classify(inserted, before);
-    } catch (e) {
-      setSheetError(
-        e instanceof Error && /Preencha/.test(e.message)
-          ? e.message
-          : "Não consegui salvar. Seu texto continua aqui para tentar novamente.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function undoSave() {
-    if (!uid || !undo.length) return;
-    setUndoBusy(true);
-    const ids = [...undo];
-    ids.forEach((id) => cancelled.current.add(id));
-    try {
-      const { data, error } = await sb!
-        .from("norte_lancamentos")
-        .delete()
-        .eq("user_id", uid)
-        .in("id", ids)
-        .select("id");
-      if (error || data?.length !== ids.length)
-        throw error ?? new Error("Exclusão não confirmada");
-      setRows((old) => old.filter((r) => !ids.includes(r.id)));
-      setUndo([]);
-      setNotice("Anotação desfeita.");
-    } catch {
-      ids.forEach((id) => cancelled.current.delete(id));
-      setError("Não consegui desfazer. Tente novamente.");
-    } finally {
-      setUndoBusy(false);
-    }
-  }
-  if (!authReady)
-    return (
-      <main className="app">
-        <Logo />
-        <p role="status">Abrindo seu Norte…</p>
-      </main>
-    );
-  if (!configured)
-    return (
-      <main className="app">
-        <Logo />
-        <h1>Falta conectar o Norte.</h1>
-        <p>
-          Configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY no
-          ambiente.
-        </p>
-      </main>
-    );
-  if (!session) return <Login />;
-  return (
-    <main className="app">
-      <header>
-        <Logo />
-      </header>
-      <nav aria-label="Navegação principal">
-        {["Mês", "Lançamentos", "Gráfico"].map((t) => (
-          <button
-            key={t}
-            aria-current={t === tab ? "page" : undefined}
-            onClick={() => {
-              if (t === "Mês")
-                setSelectedMonth(
-                  new Date(now.getFullYear(), now.getMonth(), 1, 12),
-                );
-              setTab(t);
-              setError("");
-            }}
-          >
-            {t}
-          </button>
-        ))}
-      </nav>
-      <MonthSelector
-        selected={selectedMonth}
-        now={now}
-        onChange={setSelectedMonth}
-        onStep={(step) =>
-          setSelectedMonth((current) => navigateMonth(current, step, now))
-        }
-      />
-      {error && (
-        <div className="alert" role="alert">
-          {error}
-          {loadFailed && <button onClick={() => void load()}>Atualizar</button>}
-        </div>
-      )}
-      {notice && (
-        <div className="notice" role="status">
-          {notice}
-          {undo.length > 0 && (
-            <button disabled={undoBusy} onClick={() => void undoSave()}>
-              {undoBusy ? "Desfazendo…" : "Desfazer"}
-            </button>
-          )}
-          <button
-            type="button"
-            className="notice-close"
-            aria-label="Fechar aviso"
-            onClick={() => { setNotice(""); setUndo([]); }}
-          >
-            ×
-          </button>
-        </div>
-      )}
-      {loading ? (
-        <div className="loading" role="status">
-          Encontrando seu Norte…
-        </div>
-      ) : loadFailed ? (
-        <p>Seus valores aparecerão após atualizar.</p>
-      ) : (
-        <>
-          {tab === "Mês" && (
-            <MonthView rows={rows} selected={selectedDate} now={now} cards={cards} />
-          )}
-          {tab === "Gráfico" && (
-            <Charts
-              rows={rows}
-              selected={selectedDate}
-              onCategory={(category) => {
-                setCategoryFilter(category);
-                setTab("Lançamentos");
-              }}
-            />
-          )}
-          {tab === "Lançamentos" && (
-            <Ledger
-              rows={rows}
-              cards={cards}
-              selected={selectedDate}
-              pending={pending}
-              changing={changing}
-              onCategory={changeCategory}
-              onSubcategory={changeSubcategory}
-              onDelete={deleteEntry}
-              onEdit={editEntry}
-              categoryFilter={categoryFilter}
-              onClearCategory={() => setCategoryFilter(null)}
-            />
-          )}
-        </>
-      )}
-      <button
-        className="primary floating-add"
-        ref={opener}
-        onClick={openSheet}
-        disabled={loading || loadFailed}
-      >
-        <span aria-hidden="true">＋</span> Anotar
-      </button>
-      <dialog
-        ref={dialog}
-        onCancel={(e) => {
-          if (busy) e.preventDefault();
-        }}
-        aria-labelledby="sheet-title"
-      >
-        <div className="sheet">
-          <div className="sheet-top">
-            <h2 id="sheet-title">{mode === "Texto com IA" ? "Anotar com IA" : `Anotar ${kind === "receita" ? "receita" : "gasto"}`}</h2>
-            <button
-              className="icon-button"
-              aria-label="Fechar"
-              disabled={busy}
-              onClick={closeSheet}
-            >
-              ×
-            </button>
-          </div>
-          {mode === "Valor" && <div className="sheet-tabs" role="group" aria-label="Tipo de lançamento">
-            {(["despesa", "receita"] as const).map((value) => (
-              <button key={value} aria-pressed={kind === value} disabled={busy}
-                onClick={() => {
-                  setKind(value);
-                  setDrafts([]);
-                  setPlan("uma");
-                  setPayment("dinheiro");
-                  setSheetError("");
-                }}>
-                {value === "receita" ? "Receita" : "Gasto"}
-              </button>
-            ))}
-          </div>}
-          <div className="sheet-tabs" role="tablist" aria-label="Como anotar">
-            {["Texto com IA", "Valor"].map((m) => (
-              <button
-                role="tab"
-                aria-selected={mode === m}
-                key={m}
-                disabled={busy}
-                onClick={() => {
-                  setMode(m);
-                  setDrafts([]);
-                  setPlan("uma");
-                  setSheetError("");
-                }}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (mode === "Texto com IA" && !drafts.length) void parseText();
-              else void save();
-            }}
-          >
-            {mode === "Texto com IA" ? (
-              <>
-                {!drafts.length ? (
-                  <>
-                    <label htmlFor="ai-text">O que aconteceu?</label>
-                    <textarea
-                      id="ai-text"
-                      maxLength={500}
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                      placeholder="Gastei 45 no mercado e recebi 300 de uma venda"
-                      required
-                      disabled={busy}
-                    />
-                    <p className="muted">Pode escrever do seu jeito.</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="muted">Confira antes de anotar.</p>
-                    {drafts.map((d, i) => (
-                      <article className="draft" key={i}>
-                        <div>
-                          <strong>{d.label}</strong>
-                          <span>{money(d.amount)}</span>
-                        </div>
-                        <small>
-                          {d.kind === "receita" ? "Receita · " : "Gasto · "}
-                          {d.dayOffset === 0
-                            ? "Hoje"
-                            : d.dayOffset === -1
-                              ? "Ontem"
-                              : `${Math.abs(d.dayOffset)} dias atrás`}
-                        </small>
-                        <CategorySelect
-                          value={d.category}
-                          disabled={busy || parentRule(d.label)}
-                          onChange={(cat) =>
-                            setDrafts((old) =>
-                              old.map((x, j) =>
-                                j === i
-                                  ? { ...x, category: cat, subcategory: null, edited: true }
-                                  : x,
-                              ),
-                            )
-                          }
-                        />
-                        <select aria-label={`Tipo do lançamento: ${d.label}`} value={d.kind} disabled={busy}
-                          onChange={(e) => {
-                            const nextKind = e.target.value as "despesa" | "receita";
-                            setDrafts((old) => old.map((x, j) => j === i ? { ...x, kind: nextKind } : x));
-                            if (nextKind === "receita") setPlan("uma");
-                          }}>
-                          <option value="despesa">Gasto</option>
-                          <option value="receita">Receita</option>
-                        </select>
-                        {d.kind === "despesa" && (
-                          <SubcategorySelect
-                            category={d.category}
-                            value={d.subcategory}
-                            disabled={busy || parentRule(d.label)}
-                            onChange={(subcategory) =>
-                              setDrafts((old) => old.map((x, j) =>
-                                j === i ? { ...x, subcategory } : x,
-                              ))
-                            }
-                          />
-                        )}
-                      </article>
-                    ))}
-                    <button
-                      type="button"
-                      className="text-button"
-                      disabled={busy}
-                      onClick={() => { setDrafts([]); setPlan("uma"); }}
-                    >
-                      Editar texto
-                    </button>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <label htmlFor="amount">{kind === "receita" ? "Quanto entrou? (R$)" : "Quanto foi? (R$)"}</label>
-                <input
-                  id="amount"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  required
-                  disabled={busy}
-                />
-                <label htmlFor="label">{kind === "receita" ? "De onde veio?" : "Com o quê?"}</label>
-                <input
-                  id="label"
-                  maxLength={120}
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  placeholder={kind === "receita" ? "Salário, venda, reembolso…" : "Mercado, café, cinema…"}
-                  required
-                  disabled={busy}
-                />
-              </>
-            )}
-            {canChoosePlan && (
-              <>
-                <div className="sheet-tabs" role="group" aria-label="Frequência">
-                  {(mode === "Valor"
-                    ? [["uma", "Uma vez"], ["parcelado", "Parcelado"], ["recorrente", "Todo mês"]]
-                    : [["uma", "Uma vez"], ["parcelado", "Parcelado"]]
-                  ).map(([v, t]) => (
-                    <button type="button" key={v} aria-pressed={plan === v} disabled={busy}
-                      onClick={() => { setPlan(v as "uma" | "parcelado" | "recorrente"); setSheetError(""); }}>
-                      {t}
-                    </button>
-                  ))}
-                </div>
-                {plan === "parcelado" && (
-                  <>
-                    <label htmlFor="installments">
-                      Em quantas parcelas? {mode === "Valor"
-                        ? "(informe o valor total acima)"
-                        : `(total ${money(planAmount)})`}
-                    </label>
-                    <input id="installments" inputMode="numeric" value={installments}
-                      onChange={(e) => setInstallments(e.target.value)} disabled={busy} />
-                    {installmentPreview.length > 1 ? (
-                      <p className="muted">
-                        {installmentPreview.length}x de {money(installmentPreview[0])}
-                        {installmentPreview[installmentPreview.length - 1] !== installmentPreview[0] ? ` (última ${money(installmentPreview[installmentPreview.length - 1])})` : ""}
-                        {" · total "}{money(planAmount)}
-                      </p>
-                    ) : null}
-                  </>
-                )}
-                {mode === "Valor" && plan === "recorrente" && (
-                  <>
-                    <label htmlFor="rec-day">Dia do mês (1 a 31)</label>
-                    <input id="rec-day" inputMode="numeric" value={recDay}
-                      onChange={(e) => setRecDay(e.target.value)} disabled={busy} />
-                    <label htmlFor="rec-months">Por quantos meses? (2 a 36)</label>
-                    <input id="rec-months" inputMode="numeric" value={recMonths}
-                      onChange={(e) => setRecMonths(e.target.value)} disabled={busy} />
-                    <p className="muted">
-                      {kind === "receita" ? "Entra" : "Sai"} {money(parseMoney(amount) || 0)} todo mês, a partir deste mês.
-                    </p>
-                  </>
-                )}
-              </>
-            )}
-            {(mode === "Valor" ? kind === "despesa" : !drafts.length || drafts.some((d) => d.kind === "despesa")) && !(canChoosePlan && mode === "Valor" && plan === "recorrente") && <details className="payment" open>
-              <summary>
-                Pago com{" "}
-                <span>
-                  {cards.find((c) => c.id === payment)?.nome ??
-                    "Pix ou dinheiro"}
-                </span>
-              </summary>
-              <label htmlFor="payment">Forma de pagamento</label>
-              <select
-                id="payment"
-                value={payment}
-                onChange={(e) => setPayment(e.target.value)}
-                disabled={busy}
-              >
-                <option value="dinheiro">Pix ou dinheiro</option>
-                {ranked.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome}
-                  </option>
-                ))}
-              </select>
-              {payment !== "dinheiro" && <p className="muted">Entra no mês de vencimento da fatura.</p>}
-            </details>}
-            {sheetError && (
-              <p className="alert" role="alert">
-                {sheetError}
-              </p>
-            )}
-            <button className="primary" disabled={busy}>
-              {busy
-                ? "Um instante…"
-                : mode === "Texto com IA" && !drafts.length
-                  ? "Entender texto"
-                  : canChoosePlan && plan === "parcelado"
-                  ? "Salvar parcelas"
-                  : canChoosePlan && mode === "Valor" && plan === "recorrente"
-                    ? "Salvar todo mês"
-                    : mode === "Texto com IA" && drafts.some((d) => d.kind === "receita") && drafts.some((d) => d.kind === "despesa")
-                      ? "Salvar lançamentos"
-                      : "Salvar " + ((mode === "Valor" ? kind : drafts[0]?.kind) === "receita" ? "receita" : "gasto") + (drafts.length > 1 ? "s" : "")}
-            </button>
-          </form>
-        </div>
-      </dialog>
-    </main>
-  );
-}
-function Login() {
-  const [email, setEmail] = useState(""),
-    [password, setPassword] = useState(""),
-    [busy, setBusy] = useState(false),
+          categoria: d.kind === "receita" && cat …4368 tokens truncated…,
     [error, setError] = useState("");
   return (
     <main className="app login">

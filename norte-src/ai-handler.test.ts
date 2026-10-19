@@ -64,6 +64,15 @@ describe("norte-ai: contrato e erros sem dados sensíveis", () => {
       { kind: "despesa", amount: 45, label: "Mercado" },
     ] });
   });
+  it("retorna o cartão padrão para o gasto sem pagamento informado e respeita Pix explícito", async () => {
+    const cards = [{ id: "master", name: "Master" }];
+    const standard = setup(200, { items: [{ kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", dayOffset: 0 }] });
+    const defaultCard = await standard.call({ task: "parse", text: "45 mercado", cards, defaultCardId: "master" });
+    expect((await defaultCard.json()).items[0].cardId).toBe("master");
+    const pix = setup(200, { items: [{ kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", dayOffset: 0, cardId: null }] });
+    const explicitPix = await pix.call({ task: "parse", text: "45 no pix no mercado", cards, defaultCardId: "master" });
+    expect((await explicitPix.json()).items[0].cardId).toBeNull();
+  });
   it("resposta inválida ou categoria inventada não é sucesso", async () => {
     const { call } = setup(200, { items: [{ amount: 40, label: "Loja", category: "Outro", dayOffset: 0 }] });
     expect((await call()).status).toBe(503);

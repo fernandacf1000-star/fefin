@@ -14,6 +14,7 @@ const COLORS = [
   "#94B6AF",
   "#566870",
   "#7D9499",
+  "#A0B8B3",
 ];
 export default function Charts({
   rows,

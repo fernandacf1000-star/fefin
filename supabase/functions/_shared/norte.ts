@@ -203,9 +203,9 @@ export const effectiveDate = (r: Entry) => {
 };
 export const countsAsSpending = (r: Entry) =>
   r.tipo === "despesa" &&
-  !r.subcategoria_pais &&
-  r.categoria_macro !== "Aportes" &&
-  r.categoria !== "salario";
+  (r.categoria_macro !== "Aportes" || !!r.subcategoria_pais) &&
+  r.categoria !== "salario" &&
+  r.categoria !== "reembolso_pais";
 // Sum the stored decimal precision first, then round each monthly total to cents.
 // Historical shared expenses include half-cent amounts; rounding each row changes totals.
 export function sumMoney(values: number[]): number {
@@ -234,8 +234,7 @@ export function sumMoney(values: number[]): number {
   return Number(total < 0n ? -cents : cents) / 100;
 }
 export const countsAsIncome = (r: Entry) =>
-  (r.tipo === "receita" || r.categoria === "salario") &&
-  r.categoria !== "reembolso_pais";
+  r.tipo === "receita" || r.categoria === "salario" || r.categoria === "reembolso_pais";
 export function monthIncome(rows: Entry[], today: Date) {
   return sumMoney(
     rows
@@ -294,6 +293,14 @@ export function categoryPatch(cat: Category, old: Entry) {
     subcategoria: cat === "Pais" ? old.subcategoria : null,
   };
 }
+export function categoryPatchWithSubcategory(cat: Category, old: Entry, subcategory: string | null) {
+  const valid = isSubcategoryOf(subcategory, cat) ? subcategory : null;
+  return {
+    ...categoryPatch(cat, old),
+    subcategoria: valid,
+    ...(cat === "Pais" && valid ? { categoria_macro: subcategoryCategory(valid) } : {}),
+  };
+}
 
 export function knownMacro(label: string, history: Entry[]): string | null {
   return (
@@ -330,7 +337,7 @@ export function navigateMonth(selected: Date, step: number, now: Date): Date {
   return addMonths(origin, Math.max(-24, Math.min(24, offset)));
 }
 export const entryDate = (r: Entry) =>
-  r.tipo === "receita" || r.categoria === "salario"
+  r.tipo === "receita" || r.categoria === "salario" || r.categoria === "reembolso_pais"
     ? parseDate(r.data)
     : effectiveDate(r);
 export function monthEntries(rows: Entry[], selected: Date) {
@@ -398,7 +405,7 @@ export function monthPresentation(rows: Entry[], selected: Date, now: Date) {
   };
 }
 export const SPENDING_CATEGORIES = CATEGORIES.filter(
-  (c): c is Exclude<Category, "Pais" | "Aportes"> => c !== "Pais" && c !== "Aportes",
+  (c): c is Exclude<Category, "Aportes"> => c !== "Aportes",
 );
 export type SpendingCategory = (typeof SPENDING_CATEGORIES)[number];
 export function categoryChartData(rows: Entry[], selected: Date) {

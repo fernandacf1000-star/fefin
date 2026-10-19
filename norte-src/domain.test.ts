@@ -18,6 +18,7 @@ import {
   memorySubcategory,
   memoryExamples,
   categoryPatch,
+  categoryPatchWithSubcategory,
   parentRule,
   Entry,
   CATEGORIES,
@@ -103,7 +104,7 @@ describe("calendário e orçamento", () => {
       "2027-02-28",
     );
   });
-  it("exclui pais, aportes e receitas; usa data e desloca cada parcela", () => {
+  it("inclui Pais e exclui aportes e receitas; usa data e desloca cada parcela", () => {
     const rows = [
       entry(),
       entry({ id: "b", subcategoria_pais: "Pais" }),
@@ -111,7 +112,7 @@ describe("calendário e orçamento", () => {
       entry({ id: "d", tipo: "receita" }),
       entry({ id: "e", is_parcelado: true, parcela_atual: 2, valor: 50 }),
     ];
-    expect(monthSpending(rows, new Date(2026, 9, 17))).toBe(100);
+    expect(monthSpending(rows, new Date(2026, 9, 17))).toBe(200);
     expect(monthSpending(rows, new Date(2026, 10, 17))).toBe(50);
   });
   it("mantém parcelas de 31 de janeiro no último dia de fevereiro", () => {
@@ -191,6 +192,11 @@ describe("memória", () => {
     expect(
       categoryPatch("Saúde", entry({ subcategoria_pais: "Pais" })),
     ).toMatchObject({ categoria_macro: "Saúde", subcategoria_pais: null });
+  });
+  it("Pais recebe Alimentação quando o mercado foi classificado como Supermercado", () => {
+    expect(categoryPatchWithSubcategory("Pais", entry({ categoria_macro: null }), "Supermercado"))
+      .toMatchObject({ categoria_macro: "Alimentação", subcategoria: "Supermercado", subcategoria_pais: "Pais" });
+    expect(categoryPatchWithSubcategory("Pais", entry({ categoria_macro: null }), "Inventada").subcategoria).toBeNull();
   });
 });
 describe("SMS", () => {
@@ -304,15 +310,15 @@ describe("receitas menos gastos", () => {
       ),
     ).toBe(1000);
   });
-  it("exclui reembolso dos pais e mantém reembolsos de Adriano e Luísa", () => {
+  it("inclui reembolso dos pais, Adriano e Luísa", () => {
     const rows = [
       entry({ tipo: "receita", categoria: "reembolso_pais", valor: 900 }),
       entry({ tipo: "receita", categoria: "reembolso_adriano", valor: 200 }),
       entry({ tipo: "receita", categoria: "reembolso_luisa", valor: 100 }),
     ];
-    expect(monthIncome(rows, october)).toBe(300);
+    expect(monthIncome(rows, october)).toBe(1200);
   });
-  it("gastos dos Pais não reduzem o saldo", () => {
+  it("gastos dos Pais reduzem o saldo", () => {
     const summary = monthSummary(
       [
         entry({ tipo: "receita", valor: 1000 }),
@@ -321,9 +327,10 @@ describe("receitas menos gastos", () => {
       ],
       october,
     );
-    expect(summary.balance).toBe(900);
-    expect(summary.spent).toBe(100);
-    expect(summary.progress).toBe(10);
+    expect(summary.balance).toBe(400);
+    expect(summary.spent).toBe(600);
+    expect(summary.progress).toBe(60);
+    expect(monthSpending([entry({ categoria_macro: "Aportes", subcategoria_pais: "Pais", valor: 75 })], october)).toBe(75);
   });
   it("saldo negativo continua negativo e limite semanal fica zero", () => {
     const summary = monthSummary(
@@ -458,7 +465,7 @@ describe("navegação e conferência mensal", () => {
       entry({ id: "salario", categoria: "salario" }),
     ];
     expect(filterEntries(rows, "Pais").map((r) => r.id)).toEqual(["pais"]);
-    expect(filterEntries(rows, "Gastos").map((r) => r.id)).toEqual(["pessoal"]);
+    expect(filterEntries(rows, "Gastos").map((r) => r.id)).toEqual(["pais", "pessoal"]);
     expect(filterEntries(rows, "Receitas").map((r) => r.id)).toEqual([
       "salario",
     ]);
@@ -503,8 +510,8 @@ describe("navegação e conferência mensal", () => {
     expect(monthSummary(listed, now)).toEqual(monthSummary(rows, now));
     expect(monthSummary(listed, now)).toMatchObject({
       income: 64691.96,
-      spent: 27553.23,
-      balance: 37138.73,
+      spent: 27853.23,
+      balance: 36838.73,
     });
   });
 });
@@ -576,7 +583,7 @@ describe("resumo simples e gráficos", () => {
       balance: -50,
     });
   });
-  it("categorias ordenadas usam as mesmas exclusões e percentuais do mês", () => {
+  it("categorias incluem Pais e excluem aportes", () => {
     const rows = [
       entry({ valor: 60 }),
       entry({ id: "leisure", valor: 40, categoria_macro: "Lazer" }),
@@ -586,21 +593,19 @@ describe("resumo simples e gráficos", () => {
       entry({ id: "receipt", tipo: "receita", valor: 200 }),
     ];
     const result = categoryChartData(rows, now);
-    expect(result.spent).toBe(100);
-    expect(result.categories).toHaveLength(6);
+    expect(result.spent).toBe(600);
+    expect(result.categories).toHaveLength(7);
     expect(result.categories[0]).toMatchObject({
-      category: "Alimentação",
-      amount: 60,
-      percent: 60,
+      category: "Pais",
+      amount: 500,
+      percent: 500 / 600 * 100,
     });
     expect(result.categories[1]).toMatchObject({
-      category: "Lazer",
-      amount: 40,
-      percent: 40,
+      category: "Alimentação",
+      amount: 60,
+      percent: 10,
     });
-    expect(
-      result.categories.some((c) => (c.category as string) === "Pais"),
-    ).toBe(false);
+    expect(result.categories[2]).toMatchObject({ category: "Lazer", amount: 40 });
     expect(result.unclassified).toBe(0);
   });
   it("parcelas são deslocadas no gráfico e valores sem categoria não ganham categoria inventada", () => {
@@ -684,11 +689,11 @@ describe("resumo simples e gráficos", () => {
 });
 
 
-it("trocar receita para Pais exclui reembolso e desfazer categoria volta a somar", () => {
+it("trocar receita para Pais mantém reembolso no saldo", () => {
   const received = entry({ tipo: "receita", categoria: "receita", valor: 500 });
   const parents = { ...received, ...categoryPatch("Pais", received) };
   expect(parents.categoria).toBe("reembolso_pais");
-  expect(monthIncome([parents], new Date(2026, 9, 18))).toBe(0);
+  expect(monthIncome([parents], new Date(2026, 9, 18))).toBe(500);
   const corrected = { ...parents, ...categoryPatch("Pessoal", parents) };
   expect(corrected.categoria).toBe("receita");
   expect(monthIncome([corrected], new Date(2026, 9, 18))).toBe(500);

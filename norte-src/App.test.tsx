@@ -252,7 +252,7 @@ describe("fluxos do Norte", () => {
     expect(screen.getByLabelText("Subcategoria do lançamento")).toHaveProperty("value", "Assinaturas");
     expect(state.ai.mock.calls[0][1].body.examples).toEqual(["Streaming (recorrente) → Lazer / Assinaturas"]);
   });
-  it("trocar categoria atualiza todas as parcelas e altera o orçamento", async () => {
+  it("trocar categoria atualiza todas as parcelas sem retirar gastos dos Pais do saldo", async () => {
     state.rows = [
       entry({
         id: "p1",
@@ -283,7 +283,7 @@ describe("fluxos do Norte", () => {
       ),
     );
     expect(state.calls.find((call) => call.body.subcategoria_pais === "Pais")?.body.ids).toEqual(["p1", "p2"]);
-    await screen.findByText("Pais · fora da conta");
+    expect(screen.getAllByText("Pais").length).toBeGreaterThan(1);
     expect(state.rows.every((r) => r.categoria_macro === "Alimentação")).toBe(
       true,
     );
@@ -349,7 +349,7 @@ it("preserva subcategoria do parse sem chamar classify e mostra no card limpo", 
   expect(screen.queryByRole("combobox", { name: "Categoria do lançamento" })).toBeNull();
 });
 
-it("mostra mercado dos Pais na fatura do cartão sem somar ao gasto pessoal", async () => {
+it("soma mercado dos Pais ao gasto do mês de vencimento do cartão", async () => {
   state.rows = [entry({
     id: "parent-market", descricao: "Pão de Açúcar", valor: 711.07,
     categoria_macro: "Alimentação", subcategoria: "Supermercado", subcategoria_pais: "Pais",
@@ -357,11 +357,9 @@ it("mostra mercado dos Pais na fatura do cartão sem somar ao gasto pessoal", as
   })];
   render(<App />);
   const month = await screen.findByRole("region", { name: "Resumo do mês" });
-  expect(within(month).queryByText("Pais · fora do saldo")).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
-  expect(within(month).getByText("Pais · fora do saldo")).toBeTruthy();
-  expect(within(month).getByText(/711,07/)).toBeTruthy();
   expect(within(month).getByText("Gastou").nextElementSibling?.textContent).toMatch(/0,00/);
+  fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
+  expect(within(month).getByText("Gastou").nextElementSibling?.textContent).toMatch(/711,07/);
   fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
   expect(screen.getByText(/Supermercado · Master/)).toBeTruthy();
 });
@@ -379,7 +377,7 @@ it("classifica mercado dos Pais e oferece atalho para o mês da fatura", async (
     categoria_macro: "Alimentação", subcategoria: "Supermercado", subcategoria_pais: "Pais", mes_referencia: "2026-11",
   }));
   fireEvent.click(screen.getByRole("button", { name: "Ver fatura de novembro" }));
-  expect(within(screen.getByRole("region", { name: "Resumo do mês" })).getByText("Pais · fora do saldo")).toBeTruthy();
+  expect(within(screen.getByRole("region", { name: "Resumo do mês" })).getByText("Gastou").nextElementSibling?.textContent).toMatch(/711,07/);
 });
 
 it("pede à IA a subcategoria quando a categoria já foi reconhecida", async () => {
@@ -545,7 +543,7 @@ it("lista 80 itens, carrega mais, filtra e confirma exclusão de uma só parcela
   expect(
     screen.getAllByRole("button", { name: /Ver detalhes de/ }),
   ).toHaveLength(83);
-  expect(screen.getByText("Pais · fora da conta")).toBeTruthy();
+  expect(screen.getAllByText("Pais").length).toBeGreaterThan(1);
   fireEvent.click(
     within(
       screen.getByRole("group", { name: "Filtrar lançamentos" }),
@@ -719,7 +717,7 @@ it("receita com IA mantém categorias ajustáveis e memória, sem cartão", asyn
   await screen.findByText("Receitas anotadas.");
   expect(state.rows[0]).toMatchObject({ tipo: "receita", categoria_macro: "Moradia", cartao_id: null });
   expect(state.rows[1]).toMatchObject({ tipo: "receita", categoria: "reembolso_pais", subcategoria_pais: "Pais" });
-  expect(screen.getByRole("region", { name: "Resumo do mês" }).querySelector(".big-number")?.textContent).toMatch(/300,00/);
+  expect(screen.getByRole("region", { name: "Resumo do mês" }).querySelector(".big-number")?.textContent).toMatch(/400,00/);
 });
 
 it("IA detecta receita e gasto no mesmo comando, com pagamento só no gasto", async () => {

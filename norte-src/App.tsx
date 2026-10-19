@@ -9,6 +9,7 @@ import {
   isCategory,
   categoryOf,
   categoryPatch,
+  categoryPatchWithSubcategory,
   memory,
   memorySubcategory,
   memoryExamples,
@@ -268,11 +269,7 @@ export default function App() {
     const subcategory = row.tipo === "despesa" && isSubcategoryOf(edits.subcategory, category)
       ? edits.subcategory : null;
     const categoryChanged = category !== categoryOf(row) || subcategory !== (row.subcategoria ?? null);
-    const categoryUpdate = category ? {
-      ...categoryPatch(category, row),
-      subcategoria: subcategory,
-      ...(category === "Pais" && subcategory ? { categoria_macro: subcategoryCategory(subcategory) } : {}),
-    } : null;
+    const categoryUpdate = category ? categoryPatchWithSubcategory(category, row, subcategory) : null;
     const { data, error } = await sb!
       .from("norte_lancamentos")
       .update(patch)
@@ -431,13 +428,7 @@ export default function App() {
             : isSubcategoryOf(remembered, cat) ? remembered
               : isSubcategoryOf(aiSubcategory, cat) ? aiSubcategory : null
           : null;
-        const patch = {
-          ...categoryPatch(cat, r),
-          ...(subcategory ? {
-            subcategoria: subcategory,
-            ...(cat === "Pais" ? { categoria_macro: subcategoryCategory(subcategory) } : {}),
-          } : {}),
-        };
+        const patch = categoryPatchWithSubcategory(cat, r, subcategory);
         const { error } = await sb!
           .from("norte_lancamentos")
           .update(patch)

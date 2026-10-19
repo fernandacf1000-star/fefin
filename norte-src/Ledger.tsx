@@ -18,7 +18,7 @@ const money = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     n,
   );
-const displayAsIncome = (row: Entry) => row.tipo === "receita" || row.categoria === "salario";
+const displayAsIncome = (row: Entry) => row.tipo === "receita" || row.categoria === "salario" || row.categoria === "reembolso_pais";
 function CategoryIcon({ category, parent, income }: { category: string | null; parent: boolean; income: boolean }) {
   const icons: Record<string, string> = {
     Moradia: "🏘️", Alimentação: "🥗", Transporte: "🚗", Saúde: "💊",
@@ -246,12 +246,12 @@ export default function Ledger({
                 </button>
                 {pending.has(row.id) && <small className="entry-tag" role="status">classificando…</small>}
                 {row.subcategoria_pais ? (
-                  <small className="entry-tag">Pais · fora da conta</small>
+                  <small className="entry-tag">Pais</small>
                 ) : row.categoria_macro === "Aportes" ? (
                   <small className="entry-tag">Aporte · fora da conta</small>
                 ) : row.categoria === "reembolso_pais" ? (
                   <small className="entry-tag">
-                    Reembolso dos Pais · fora da conta
+                    Reembolso dos Pais
                   </small>
                 ) : null}
               </article>

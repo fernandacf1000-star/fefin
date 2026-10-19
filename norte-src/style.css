@@ -976,10 +976,6 @@ nav button {
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
-.month-summary .parents-summary {
-  color: var(--muted);
-  font-size: 13px;
-}
 progress.care-progress {
   color: var(--attention);
 }

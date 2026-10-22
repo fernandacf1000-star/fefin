@@ -158,7 +158,7 @@ export default function App() {
     [busy, setBusy] = useState(false),
     [sheetError, setSheetError] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(
-    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12),
+    () => new Date(now.getFullYear(), now.getMonth() + 1, 1, 12),
   );
   const period = monthPeriod(selectedMonth, now);
   const selectedDate = period === "current" ? now : selectedMonth;
@@ -229,16 +229,41 @@ export default function App() {
     void load();
   }, [load]);
   useEffect(() => {
+    let wasHidden = document.visibilityState === "hidden";
+    const openNextMonth = () => {
+      const today = new Date();
+      setNow(today);
+      setSelectedMonth(new Date(today.getFullYear(), today.getMonth() + 1, 1, 12));
+      setTab("Mês");
+      setCategoryFilter(null);
+    };
     const refresh = () => {
       setNow(new Date());
       if (document.visibilityState === "visible") void load();
     };
+    const visibilityChanged = () => {
+      if (document.visibilityState === "hidden") {
+        wasHidden = true;
+        return;
+      }
+      if (wasHidden) openNextMonth();
+      wasHidden = false;
+      refresh();
+    };
+    const pageShown = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        openNextMonth();
+        refresh();
+      }
+    };
     window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
+    document.addEventListener("visibilitychange", visibilityChanged);
+    window.addEventListener("pageshow", pageShown);
     const timer = window.setInterval(() => setNow(new Date()), 60000);
     return () => {
       window.removeEventListener("focus", refresh);
-      document.removeEventListener("visibilitychange", refresh);
+      document.removeEventListener("visibilitychange", visibilityChanged);
+      window.removeEventListener("pageshow", pageShown);
       clearInterval(timer);
     };
   }, [load]);

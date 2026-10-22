@@ -176,9 +176,16 @@ beforeEach(() => {
   });
 });
 afterEach(cleanup);
+// Existing transaction flows exercise the current month explicitly.
+async function currentMonth() {
+  const region = await screen.findByRole("region", { name: "Resumo do mês" });
+  const today = screen.queryByRole("button", { name: "Hoje" });
+  if (today) fireEvent.click(today);
+  return region;
+}
 async function open() {
   render(<App />);
-  await screen.findByRole("region", { name: "Resumo do mês" });
+  await currentMonth();
   fireEvent.click(screen.getByRole("button", { name: "Anotar" }));
 }
 describe("fluxos do Norte", () => {
@@ -277,7 +284,7 @@ describe("fluxos do Norte", () => {
       }),
     ];
     render(<App />);
-    await screen.findByRole("region", { name: "Resumo do mês" });
+    await currentMonth();
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     expect(screen.queryByRole("combobox", { name: "Categoria do lançamento" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Editar .*/ }));
@@ -298,7 +305,7 @@ describe("fluxos do Norte", () => {
   it("permite apenas subcategorias fixas do FeFin e grava a escolha", async () => {
     state.rows = [entry()];
     render(<App />);
-    await screen.findByRole("region", { name: "Resumo do mês" });
+    await currentMonth();
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     expect(screen.queryByRole("combobox", { name: "Subcategoria do lançamento" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Editar .*/ }));
@@ -364,7 +371,7 @@ it("soma mercado dos Pais ao gasto do mês de vencimento do cartão", async () =
     data: "2026-10-18", mes_referencia: "2026-11", forma_pagamento: "credito", cartao_id: "master",
   })];
   render(<App />);
-  const month = await screen.findByRole("region", { name: "Resumo do mês" });
+  const month = await currentMonth();
   expect(within(month).getByText("Gastou").nextElementSibling?.textContent).toMatch(/0,00/);
   fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
   expect(within(month).getByText("Gastou").nextElementSibling?.textContent).toMatch(/711,07/);
@@ -404,7 +411,7 @@ it("pede à IA a subcategoria quando a categoria já foi reconhecida", async () 
 it("mostra orçamento estourado com valor positivo e só os três totais", async () => {
   state.rows = [entry({ tipo: "receita", valor: 100 }), entry({ valor: 250 })];
   const { container } = render(<App />);
-  const month = await screen.findByRole("region", { name: "Resumo do mês" });
+  const month = await currentMonth();
   expect(
     within(month).getByRole("heading", { name: "Orçamento estourado em" }),
   ).toBeTruthy();
@@ -431,7 +438,7 @@ it("mostra orçamento estourado com valor positivo e só os três totais", async
 });
 it("compartilha mês nas três abas e mantém Anotar com IA primeiro", async () => {
   render(<App />);
-  await screen.findByRole("region", { name: "Resumo do mês" });
+  await currentMonth();
   const selector = screen.getByRole("group", { name: "Mês selecionado" });
   expect(within(selector).queryByRole("button", { name: "Hoje" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
@@ -483,7 +490,7 @@ it("tocar categoria do gráfico abre só esses gastos e permite limpar o filtro"
     }),
   ];
   const { container } = render(<App />);
-  await screen.findByRole("region", { name: "Resumo do mês" });
+  await currentMonth();
   fireEvent.click(screen.getByRole("button", { name: "Gráfico" }));
   expect(
     screen.getByRole("img", { name: "Ganhou e gastou nos últimos seis meses" }),
@@ -542,7 +549,7 @@ it("lista 80 itens, carrega mais, filtra e confirma exclusão de uma só parcela
     }),
   );
   render(<App />);
-  await screen.findByRole("region", { name: "Resumo do mês" });
+  await currentMonth();
   fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
   expect(
     screen.getAllByRole("button", { name: /Ver detalhes de/ }),
@@ -589,7 +596,7 @@ it("mostra ícone de idoso para Pais e selo na última parcela", async () => {
     entry({ id: "fim", descricao: "Sofá", categoria_macro: "Moradia", data: dateKey(new Date(new Date().getFullYear(), new Date().getMonth() - 2, 15, 12)), is_parcelado: true, parcela_atual: 3, parcela_total: 3, parcelamento_id: "parcelas" }),
   ];
   render(<App />);
-  await screen.findByRole("region", { name: "Resumo do mês" });
+  await currentMonth();
   fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
   const pais = screen.getByRole("button", { name: "Ver detalhes de Farmácia dos Pais" });
   expect(pais.querySelector(".ledger-category-icon")).toBeTruthy();
@@ -602,7 +609,7 @@ it("mostra ícone de idoso para Pais e selo na última parcela", async () => {
 
 it("Norte inicia vazio e envia à IA somente seu próprio histórico", async () => {
   render(<App />);
-  const month = await screen.findByRole("region", { name: "Resumo do mês" });
+  const month = await currentMonth();
   expect(month.querySelector(".big-number")?.textContent).toMatch(/0,00/);
   expect(
     within(month)
@@ -861,7 +868,7 @@ describe("swipe, editar e excluir", () => {
   it("arrastar para a esquerda revela Editar/Excluir; edita descrição, valor e data", async () => {
     state.rows = [entry({ id: "s1", descricao: "Padaria", valor: 20, data: dateKey(new Date()) })];
     render(<App />);
-    await screen.findByRole("region", { name: "Resumo do mês" });
+    await currentMonth();
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     const c = content("Padaria");
     expect(c.getAttribute("data-open")).toBe("false");
@@ -882,7 +889,7 @@ describe("swipe, editar e excluir", () => {
   it("Excluir pelo swipe abre a confirmação e apaga", async () => {
     state.rows = [entry({ id: "s2", descricao: "Cinema", valor: 40, data: dateKey(new Date()) })];
     render(<App />);
-    await screen.findByRole("region", { name: "Resumo do mês" });
+    await currentMonth();
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     swipeLeft(content("Cinema"));
     fireEvent.click(screen.getByRole("button", { name: "Excluir Cinema" }));
@@ -894,7 +901,7 @@ describe("swipe, editar e excluir", () => {
   it("rolar na vertical não abre as ações; valor inválido é recusado", async () => {
     state.rows = [entry({ id: "s3", descricao: "Café", valor: 8, data: dateKey(new Date()) })];
     render(<App />);
-    await screen.findByRole("region", { name: "Resumo do mês" });
+    await currentMonth();
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     const c = content("Café");
     fireEvent.pointerDown(c, { clientX: 300, clientY: 100, pointerId: 1 });
@@ -915,7 +922,7 @@ describe("swipe, editar e excluir", () => {
     const d = dateKey(new Date());
     state.rows = [1, 2, 3].map((n) => entry({ id: `p${n}`, descricao: "Sofá", valor: 100, data: d, is_parcelado: true, parcela_atual: n, parcela_total: 3, parcelamento_id: "G" }));
     render(<App />);
-    await screen.findByRole("region", { name: "Resumo do mês" });
+    await currentMonth();
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     swipeLeft(content("Sofá"));
     fireEvent.click(screen.getByRole("button", { name: "Editar Sofá" }));
@@ -935,7 +942,7 @@ describe("swipe, editar e excluir", () => {
       is_parcelado: true, parcela_atual: index + 1, parcela_total: 6, parcelamento_id: "clara",
     }));
     render(<App />);
-    await screen.findByRole("region", { name: "Resumo do mês" });
+    await currentMonth();
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     fireEvent.click(screen.getByRole("button", { name: "Editar Clara Artebrum" }));
     const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
@@ -953,7 +960,7 @@ describe("swipe, editar e excluir", () => {
       is_parcelado: true, parcela_atual: n, parcela_total: 2, parcelamento_id: "single",
     }));
     render(<App />);
-    await screen.findByRole("region", { name: "Resumo do mês" });
+    await currentMonth();
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     fireEvent.click(screen.getByRole("button", { name: "Editar Assinatura" }));
     const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
@@ -969,7 +976,7 @@ describe("swipe, editar e excluir", () => {
       is_parcelado: true, parcela_atual: n, parcela_total: 3, parcelamento_id: "next",
     }));
     render(<App />);
-    await screen.findByRole("region", { name: "Resumo do mês" });
+    await currentMonth();
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
     fireEvent.click(screen.getByRole("button", { name: "Editar Sofá" }));
@@ -987,7 +994,7 @@ describe("aviso de lançamento apagado", () => {
   it("some sozinho depois de alguns segundos e pode ser fechado", async () => {
     state.rows = [entry({ id: "n1", descricao: "Lanche", valor: 10, data: dateKey(new Date()) })];
     render(<App />);
-    await screen.findByRole("region", { name: "Resumo do mês" });
+    await currentMonth();
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     fireEvent.click(screen.getByRole("button", { name: "Ver detalhes de Lanche" }));
     const dlg = screen.getByRole("dialog", { name: "Detalhes do lançamento" });
@@ -999,7 +1006,7 @@ describe("aviso de lançamento apagado", () => {
   it("o botão × fecha o aviso na hora", async () => {
     state.rows = [entry({ id: "n2", descricao: "Lanche", valor: 10, data: dateKey(new Date()) })];
     render(<App />);
-    await screen.findByRole("region", { name: "Resumo do mês" });
+    await currentMonth();
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     fireEvent.click(screen.getByRole("button", { name: "Ver detalhes de Lanche" }));
     const dlg = screen.getByRole("dialog", { name: "Detalhes do lançamento" });
@@ -1008,5 +1015,52 @@ describe("aviso de lançamento apagado", () => {
     await screen.findByText("Lançamento apagado.");
     fireEvent.click(screen.getByRole("button", { name: "Fechar aviso" }));
     expect(screen.queryByText("Lançamento apagado.")).toBeNull();
+  });
+});
+
+
+describe("mês ao entrar no Norte", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
+  });
+
+  it.each([
+    ["2026-10-31T12:00:00", "novembro de 2026"],
+    ["2026-12-31T12:00:00", "janeiro de 2027"],
+  ])("abre no mês seguinte em %s", async (date, expected) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(date));
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    expect(within(screen.getByRole("group", { name: "Mês selecionado" })).getByText(expected)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Previsto" })).toBeTruthy();
+  });
+
+  it("volta do segundo plano na aba Mês e recalcula o próximo mês", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-31T23:59:00"));
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Hoje" }));
+    fireEvent.click(screen.getByRole("button", { name: "Gráfico" }));
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: "hidden" });
+    fireEvent(document, new Event("visibilitychange"));
+    vi.setSystemTime(new Date("2026-11-01T00:01:00"));
+    Object.defineProperty(document, "visibilityState", { configurable: true, value: "visible" });
+    fireEvent(document, new Event("visibilitychange"));
+    expect(within(screen.getByRole("group", { name: "Mês selecionado" })).getByText("dezembro de 2026")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mês" }).getAttribute("aria-current")).toBe("page");
+    expect(await screen.findByRole("region", { name: "Resumo do mês" })).toBeTruthy();
+  });
+
+  it("mantém a navegação manual ao receber foco sem sair do app", async () => {
+    render(<App />);
+    await currentMonth();
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    const selected = screen.getByRole("group", { name: "Mês selecionado" }).textContent;
+    fireEvent.focus(window);
+    expect(screen.getByRole("group", { name: "Mês selecionado" }).textContent).toBe(selected);
+    expect(screen.getByRole("button", { name: "Lançamentos" }).getAttribute("aria-current")).toBe("page");
   });
 });

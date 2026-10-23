@@ -322,7 +322,7 @@ export default function Ledger({
                   setECategory(cat);
                   if (!isSubcategoryOf(eSubcategory, cat)) setESubcategory(null);
                 }} />
-              {editing.tipo === "despesa" && <>
+              {<>
                 <label htmlFor="edit-subcategory">Subcategoria</label>
                 <SubcategorySelect id="edit-subcategory" category={eCategory} value={eSubcategory} disabled={eBusy}
                   onChange={setESubcategory} />
@@ -505,3 +505,4 @@ export default function Ledger({
 function isMacro(value: string | null): value is Exclude<Category, "Pais"> {
   return value !== null && value !== "Pais" && ["Moradia", "Alimentação", "Transporte", "Saúde", "Pessoal", "Lazer", "Aportes"].includes(value);
 }
+

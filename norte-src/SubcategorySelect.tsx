@@ -25,7 +25,7 @@ export default function SubcategorySelect({
         if (choices.includes(event.target.value)) onChange(event.target.value);
       }}
     >
-      <option value="">Sem subcategoria</option>
+      <option value="" disabled>Escolher subcategoria</option>
       {choices.map((item) => (
         <option key={item} value={item}>
           {item}
@@ -34,3 +34,4 @@ export default function SubcategorySelect({
     </select>
   );
 }
+

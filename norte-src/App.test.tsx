@@ -140,7 +140,7 @@ const entry = (extras: Partial<Entry> = {}): Entry => ({
   tipo: "despesa",
   categoria: "despesa",
   categoria_macro: "Alimentação",
-  subcategoria: null,
+  subcategoria: "Supermercado",
   subcategoria_pais: null,
   data: dateKey(new Date()),
   mes_referencia: dateKey(new Date()).slice(0, 7),
@@ -160,7 +160,11 @@ beforeEach(() => {
   state.calls = [];
   state.session = true;
   state.ai.mockReset();
-  state.ai.mockResolvedValue({ data: null, error: { message: "offline" } });
+  state.ai.mockImplementation(async (_name, { body }) => {
+    const categories = body.items.map((item: { category?: string }) => item.category ?? "Alimentação");
+    const choices: Record<string, string> = { Alimentação: "Supermercado", Lazer: "Assinaturas", Pessoal: "Presentes", Moradia: "Casa", Transporte: "Uber/Taxi", Saúde: "Farmácia", Pais: "Supermercado", Aportes: "Aportes" };
+    return { data: { categories, subcategories: categories.map((cat: string) => choices[cat]) }, error: null };
+  });
   localStorage.clear();
   Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
     configurable: true,
@@ -189,30 +193,17 @@ async function open() {
   fireEvent.click(screen.getByRole("button", { name: "Anotar" }));
 }
 describe("fluxos do Norte", () => {
-  it("salva antes de classificar, mantém gasto se IA falha e desfaz", async () => {
+  it("impede salvar sem classificação quando a IA falha e mantém o texto", async () => {
+    state.ai.mockResolvedValue({ data: null, error: { message: "offline" } });
     await open();
     fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
-    fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), {
-      target: { value: "45,50" },
-    });
-    fireEvent.change(screen.getByLabelText("Com o quê?"), {
-      target: { value: "Café novo" },
-    });
+    fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "45,50" } });
+    fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Café novo" } });
     fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
-    await screen.findByText("Gasto anotado.");
-    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
-    await screen.findByText("Café novo");
-    expect(state.calls[0].kind).toBe("insert");
-    await waitFor(() => expect(screen.queryByText("classificando…")).toBeNull());
-    expect(screen.queryByRole("combobox", { name: "Categoria do lançamento" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Editar Café novo" }));
-    expect(
-      screen.getByRole("combobox", { name: "Categoria do lançamento" }).textContent,
-    ).toContain("Escolher categoria");
-    expect(state.rows[0].valor).toBe(45.5);
-    fireEvent.click(screen.getByRole("button", { name: "Desfazer" }));
-    await waitFor(() => expect(state.rows).toHaveLength(0));
-    expect(screen.queryByText("Café novo")).toBeNull();
+    await screen.findByText("A IA está fora do ar agora, tente de novo");
+    expect(state.calls).toHaveLength(0);
+    expect(state.rows).toHaveLength(0);
+    expect(screen.getByLabelText("Com o quê?")).toHaveProperty("value", "Café novo");
   });
   it("memória vence IA e correção antes de salvar é preservada", async () => {
     state.rows = [
@@ -221,7 +212,7 @@ describe("fluxos do Norte", () => {
     state.ai.mockResolvedValue({
       data: {
         items: [
-          { kind: "despesa", label: "Mercado", amount: 45, category: "Lazer", dayOffset: 0 },
+          { kind: "despesa", label: "Mercado", amount: 45, category: "Lazer", subcategory: "Assinaturas", dayOffset: 0 },
         ],
       },
       error: null,
@@ -238,6 +229,7 @@ describe("fluxos do Norte", () => {
     }) as HTMLSelectElement;
     expect(select.value).toBe("Alimentação");
     fireEvent.change(select, { target: { value: "Pessoal" } });
+    fireEvent.change(within(dialog).getByLabelText("Subcategoria do lançamento"), { target: { value: "Presentes" } });
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Salvar gasto" }),
     );
@@ -247,7 +239,7 @@ describe("fluxos do Norte", () => {
         "Pessoal",
       ),
     );
-    expect(state.ai).toHaveBeenCalledTimes(2);
+    expect(state.ai).toHaveBeenCalledTimes(1);
   });
   it("usa lançamentos recorrentes como uma única referência de categoria e subcategoria", async () => {
     state.rows = [1, 2, 3].map((n) => entry({
@@ -359,7 +351,10 @@ it("preserva subcategoria do parse sem chamar classify e mostra no card limpo", 
   await waitFor(() => expect(state.rows[0]?.subcategoria).toBe("Supermercado"));
   expect(state.ai).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
-  fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
+  const current = new Date();
+  const target = String(state.rows[0].mes_referencia).split("-").map(Number);
+  const steps = (target[0] - current.getFullYear()) * 12 + target[1] - 1 - current.getMonth();
+  for (let step = 0; step < steps; step++) fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
   expect(screen.getByText(/Supermercado · Master/)).toBeTruthy();
   expect(screen.queryByRole("combobox", { name: "Categoria do lançamento" })).toBeNull();
 });
@@ -621,7 +616,7 @@ it("Norte inicia vazio e envia à IA somente seu próprio histórico", async () 
   state.ai.mockResolvedValue({
     data: {
       items: [
-        { kind: "despesa", label: "Mercado", amount: 10, category: "Alimentação", dayOffset: 0 },
+        { kind: "despesa", label: "Mercado", amount: 10, category: "Alimentação", subcategory: "Supermercado", dayOffset: 0 },
       ],
     },
     error: null,
@@ -675,10 +670,10 @@ it("parcelado: valor cheio dividido em centavos, prévia e uma linha por parcela
 it("uma compra extraída do texto pode ser parcelada", async () => {
   state.ai
     .mockResolvedValueOnce({
-      data: { items: [{ kind: "despesa", amount: 1200, label: "Notebook", category: "Pessoal", dayOffset: 0 }] },
+      data: { items: [{ kind: "despesa", amount: 1200, label: "Notebook", category: "Pessoal", subcategory: null, dayOffset: 0 }] },
       error: null,
     })
-    .mockResolvedValueOnce({ data: { categories: ["Pessoal"] }, error: null });
+    .mockResolvedValueOnce({ data: { categories: ["Pessoal"], subcategories: ["Educação"] }, error: null });
   await open();
   fireEvent.change(screen.getByLabelText("O que aconteceu?"), {
     target: { value: "Notebook 1200 em 3x" },
@@ -731,10 +726,10 @@ it("gasto recorrente manual permite escolher Master e usa a fatura", async () =>
 });
 
 it("receita com IA mantém categorias ajustáveis e memória, sem cartão", async () => {
-  state.rows = [entry({ descricao: "Venda", categoria_macro: "Pessoal", data: "2026-01-01" })];
+  state.rows = [entry({ tipo: "receita", subcategoria: "Presentes", descricao: "Venda", categoria_macro: "Pessoal", data: "2026-01-01" })];
   state.ai.mockResolvedValue({ data: { items: [
-    { kind: "receita", amount: 300, label: "Venda", category: "Lazer", dayOffset: 0 },
-    { kind: "receita", amount: 100, label: "Reembolso mãe", category: "Pessoal", dayOffset: 0 },
+    { kind: "receita", amount: 300, label: "Venda", category: "Lazer", subcategory: "Assinaturas", dayOffset: 0 },
+    { kind: "receita", amount: 100, label: "Reembolso mãe", category: "Pessoal", subcategory: "Presentes", dayOffset: 0 },
   ] }, error: null });
   await open();
   fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "Recebi 300 da venda e 100 de reembolso da minha mãe" } });
@@ -744,6 +739,7 @@ it("receita com IA mantém categorias ajustáveis e memória, sem cartão", asyn
   const selects = within(screen.getByRole("dialog")).getAllByRole("combobox", { name: "Categoria do lançamento" });
   expect((selects[0] as HTMLSelectElement).value).toBe("Pessoal");
   fireEvent.change(selects[0], { target: { value: "Moradia" } });
+  fireEvent.change(within(screen.getByRole("dialog")).getAllByLabelText("Subcategoria do lançamento")[0], { target: { value: "Casa" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar receitas" }));
   await screen.findByText("Receitas anotadas.");
   expect(state.rows[0]).toMatchObject({ tipo: "receita", categoria_macro: "Moradia", cartao_id: null });
@@ -753,8 +749,8 @@ it("receita com IA mantém categorias ajustáveis e memória, sem cartão", asyn
 
 it("IA detecta receita e gasto no mesmo comando, com pagamento só no gasto", async () => {
   state.ai.mockResolvedValue({ data: { items: [
-    { kind: "receita", amount: 500, label: "Venda", category: "Pessoal", dayOffset: 0 },
-    { kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", dayOffset: 0, cardId: "master" },
+    { kind: "receita", amount: 500, label: "Venda", category: "Pessoal", subcategory: "Presentes", dayOffset: 0 },
+    { kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", subcategory: "Supermercado", dayOffset: 0, cardId: "master" },
   ] }, error: null });
   await open();
   expect(screen.queryByRole("button", { name: "Receita" })).toBeNull();
@@ -813,7 +809,7 @@ it("permite escolher Visa em gasto manual e salva na fatura correta", async () =
 
 it("permite corrigir o cartão da IA antes de salvar", async () => {
   state.ai.mockResolvedValueOnce({ data: { items: [
-    { kind: "despesa", amount: 60, label: "Cinema", category: "Lazer", dayOffset: 0, cardId: null },
+    { kind: "despesa", amount: 60, label: "Cinema", category: "Lazer", subcategory: "Assinaturas", dayOffset: 0, cardId: null },
   ] }, error: null });
   await open();
   fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "Cinema 60 no Visa" } });
@@ -831,7 +827,7 @@ it.each([
   ["model", 503, "A IA ainda não está configurada"],
   ["provider_unavailable", 503, "A IA está fora do ar agora, tente de novo"],
   ["auth", 401, "Entre de novo para usar a IA"],
-])("mostra erro %s do SDK e mantém lançamento manual", async (code, status, expected) => {
+])("mostra erro %s do SDK e impede lançamento incompleto", async (code, status, expected) => {
   state.ai.mockResolvedValue({ data: null, error: { context: new Response(JSON.stringify({ code }), { status: Number(status) }) } });
   await open();
   fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "45 café" } });
@@ -842,7 +838,9 @@ it.each([
   fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "45" } });
   fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Café" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
-  await waitFor(() => expect(state.rows).toHaveLength(1));
+  await screen.findByText(String(expected));
+  expect(state.rows).toHaveLength(0);
+  expect(state.calls).toHaveLength(0);
 });
 
 class TestPointerEvent extends MouseEvent {
@@ -1064,3 +1062,4 @@ describe("mês ao entrar no Norte", () => {
     expect(screen.getByRole("button", { name: "Lançamentos" }).getAttribute("aria-current")).toBe("page");
   });
 });
+

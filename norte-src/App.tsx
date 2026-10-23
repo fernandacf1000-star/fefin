@@ -8,10 +8,7 @@ import {
   knownMacro,
   isCategory,
   categoryOf,
-  categoryPatch,
   categoryPatchWithSubcategory,
-  memory,
-  memorySubcategory,
   memoryExamples,
   parentRule,
   dateKey,
@@ -25,11 +22,11 @@ import {
   groupScope,
   splitInstallments,
   isInstallmentCount,
-  normalize,
   parseDate,
   navigateMonth,
 } from "./domain";
 import type { Entry, Card, Category } from "./domain";
+import { completeClassifications, historicalClassification } from "./classification";
 import CategorySelect from "./CategorySelect";
 import SubcategorySelect from "./SubcategorySelect";
 import MonthSelector from "./MonthSelector";
@@ -137,7 +134,7 @@ export default function App() {
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [noticeMonth, setNoticeMonth] = useState<string | null>(null),
-    [pending, setPending] = useState<Set<string>>(new Set());
+    [pending] = useState<Set<string>>(new Set());
   const [now, setNow] = useState(new Date()),
     [undo, setUndo] = useState<string[]>([]),
     [undoBusy, setUndoBusy] = useState(false);
@@ -318,10 +315,14 @@ export default function App() {
       patch.mes_referencia = card ? cardDates(card, d).reference : monthKey(d);
     }
     const category = parentRule(edits.descricao) ? "Pais" : edits.category;
-    const subcategory = row.tipo === "despesa" && isSubcategoryOf(edits.subcategory, category)
+    const subcategory = isSubcategoryOf(edits.subcategory, category)
       ? edits.subcategory : null;
     const categoryChanged = category !== categoryOf(row) || subcategory !== (row.subcategoria ?? null);
-    const categoryUpdate = category ? categoryPatchWithSubcategory(category, row, subcategory) : null;
+    const [classified] = await completeClassifications([{
+      label: edits.descricao, amount: edits.valor, kind: row.tipo === "receita" ? "receita" : "despesa",
+      category, subcategory, edited: true,
+    }], rows, askAI);
+    const categoryUpdate = categoryPatchWithSubcategory(classified.category!, row, classified.subcategory);
     const editTotal = !!(row.is_parcelado && row.parcelamento_id && scope !== "one");
     const ordered = [...targets].sort((a, b) => (a.parcela_atual ?? 0) - (b.parcela_atual ?? 0));
     const parts = editTotal ? splitInstallments(edits.valor, ordered.length) : [];
@@ -342,7 +343,7 @@ export default function App() {
         throw error ?? new Error("Alteração não confirmada");
       setRows((old) => old.map((r) => update.ids.includes(r.id) ? { ...r, ...update.patch } as Entry : r));
     }
-    if (categoryChanged && categoryUpdate) {
+    if (categoryChanged || classified.category !== categoryOf(row) || classified.subcategory !== row.subcategoria) {
       const related = groupScope(rows, row, "all").map((r) => r.id);
       const result = await sb!.from("norte_lancamentos")
         .update(categoryUpdate).eq("user_id", uid).in("id", related).select("id");
@@ -391,13 +392,9 @@ export default function App() {
           const label = String(v.label ?? "").trim().slice(0, 120);
           if (v.kind !== "despesa" && v.kind !== "receita")
             throw new Error("Não identifiquei se é gasto ou receita. Tente explicar de outro jeito.");
-          const category = memory(label, rows) ?? (isCategory(v.category) ? v.category : null);
-          const remembered = memorySubcategory(label, rows);
-          const subcategory = isSubcategoryOf(remembered, category)
-            ? remembered
-            : isSubcategoryOf(v.subcategory, category)
-              ? v.subcategory
-              : null;
+          const remembered = historicalClassification(label, v.kind, rows);
+          const category = parentRule(label) ? "Pais" : remembered?.category ?? (isCategory(v.category) ? v.category : null);
+          const subcategory = remembered?.subcategory ?? (isSubcategoryOf(v.subcategory, category) ? v.subcategory : null);
           return {
             amount: Number(v.amount),
             label,
@@ -417,99 +414,11 @@ export default function App() {
         );
       if (!items.length)
         throw new Error("Não identifiquei um lançamento. Inclua valor e descrição.");
-      setDrafts(items);
+      setDrafts(await completeClassifications(items, rows, askAI));
     } catch (e) {
       setSheetError(message(e));
     } finally {
       setBusy(false);
-    }
-  }
-  async function classify(inserted: Entry[], before: Entry[]) {
-    setPending((s) => new Set([...s, ...inserted.map((r) => r.id)]));
-    try {
-      const unknown = inserted.filter((r) => {
-        const cat = categoryOf(r) ?? memory(r.descricao, before);
-        return !cat || (r.tipo === "despesa" &&
-          !isSubcategoryOf(r.subcategoria, cat) &&
-          !isSubcategoryOf(memorySubcategory(r.descricao, before), cat));
-      });
-      // A compra parcelada cria várias linhas iguais. A IA recebe cada
-      // descrição uma vez, mantendo a chamada dentro do limite de 10 itens.
-      const guesses = new Map<string, { category: Category; subcategory: string | null }>();
-      const guessKey = (type: string, label: string) => `${type}|${normalize(label)}`;
-      const uniqueUnknown = unknown.filter(
-        (row, index) => unknown.findIndex(
-          (other) => other.tipo === row.tipo && normalize(other.descricao) === normalize(row.descricao),
-        ) === index,
-      );
-      for (const entryKind of ["despesa", "receita"] as const) {
-        const group = uniqueUnknown.filter((row) => row.tipo === entryKind);
-        if (!group.length) continue;
-        try {
-          const data = await askAI({
-            task: "classify",
-            kind: entryKind,
-            items: group.map((r) => ({
-              label: r.descricao,
-              amount: r.valor,
-              ...(categoryOf(r) ?? memory(r.descricao, before)
-                ? { category: categoryOf(r) ?? memory(r.descricao, before) }
-                : {}),
-            })),
-            examples: memoryExamples(before)
-              .map((r) => `${r.descricao}${r.recorrencia_id ? " (recorrente)" : ""} → ${categoryOf(r)}${r.subcategoria ? ` / ${r.subcategoria}` : ""}`),
-          });
-          const categories = Array.isArray(data.categories) ? data.categories : [];
-          const subcategories = Array.isArray(data.subcategories) ? data.subcategories : [];
-          group.forEach((row, index) => {
-            const category = categories[index];
-            if (isCategory(category))
-              guesses.set(guessKey(row.tipo, row.descricao), {
-                category,
-                subcategory: isSubcategoryOf(subcategories[index], category)
-                  ? subcategories[index]
-                  : null,
-              });
-          });
-        } catch (e) {
-          setNotice(`${message(e)}. Lançamento salvo; corrija pelo swipe se precisar.`);
-        }
-      }
-      for (const r of inserted) {
-        if (cancelled.current.has(r.id)) continue;
-        const guess = guesses.get(guessKey(r.tipo, r.descricao));
-        const cat =
-          categoryOf(r) ??
-          memory(r.descricao, before) ??
-          guess?.category ??
-          null;
-        if (!cat) continue;
-        const remembered = memorySubcategory(r.descricao, before);
-        const aiSubcategory = guess?.category === cat ? guess.subcategory : null;
-        const subcategory = r.tipo === "despesa"
-          ? isSubcategoryOf(r.subcategoria, cat) ? r.subcategoria
-            : isSubcategoryOf(remembered, cat) ? remembered
-              : isSubcategoryOf(aiSubcategory, cat) ? aiSubcategory : null
-          : null;
-        const patch = categoryPatchWithSubcategory(cat, r, subcategory);
-        const { error } = await sb!
-          .from("norte_lancamentos")
-          .update(patch)
-          .eq("id", r.id)
-          .eq("user_id", r.user_id);
-        if (error) throw error;
-        if (!cancelled.current.has(r.id))
-          setRows((old) =>
-            old.map((x) => (x.id === r.id ? { ...x, ...patch } : x)),
-          );
-      }
-    } catch {
-      setNotice("Lançamento salvo. Confira a categoria pelo swipe se precisar.");
-    } finally {
-      setPending(
-        (s) =>
-          new Set([...s].filter((id) => !inserted.some((r) => r.id === id))),
-      );
     }
   }
   async function save() {
@@ -517,7 +426,7 @@ export default function App() {
     setBusy(true);
     setSheetError("");
     try {
-      const items =
+      let items =
         mode === "Valor"
           ? [
               {
@@ -539,6 +448,7 @@ export default function App() {
       )
         throw new Error("Preencha uma descrição e um valor maior que zero.");
       const before = rows;
+      items = await completeClassifications(items, before, askAI);
       const supportsPlan =
         mode === "Valor" ||
         (mode === "Texto com IA" && items.length === 1 && items[0].kind === "despesa");
@@ -548,11 +458,7 @@ export default function App() {
       let payload: Record<string, unknown>[];
       if (isPlanned) {
         const d = items[0];
-        const cat = parentRule(d.label)
-          ? "Pais"
-          : d.edited
-            ? d.category
-            : (memory(d.label, before) ?? d.category);
+        const cat = d.category;
         const base = {
           user_id: uid,
           descricao: d.label,
@@ -561,7 +467,7 @@ export default function App() {
           categoria_macro: cat === "Pais"
             ? (isSubcategoryOf(d.subcategory, cat) ? subcategoryCategory(d.subcategory) : knownMacro(d.label, before))
             : cat,
-          subcategoria: d.kind === "despesa" && isSubcategoryOf(d.subcategory, isCategory(cat) ? cat : null) ? d.subcategory : null,
+          subcategoria: isSubcategoryOf(d.subcategory, isCategory(cat) ? cat : null) ? d.subcategory : null,
           subcategoria_pais: cat === "Pais" ? "Pais" : null,
         };
         const group = crypto.randomUUID();
@@ -588,11 +494,7 @@ export default function App() {
           12,
         );
         const card = d.kind === "despesa" ? cards.find((c) => c.id === d.cardId) : undefined;
-        const cat = parentRule(d.label)
-          ? "Pais"
-          : d.edited
-            ? d.category
-            : (memory(d.label, before) ?? d.category);
+        const cat = d.category;
         return {
           user_id: uid,
           descricao: d.label,
@@ -602,7 +504,7 @@ export default function App() {
           categoria_macro: cat === "Pais"
             ? (isSubcategoryOf(d.subcategory, cat) ? subcategoryCategory(d.subcategory) : knownMacro(d.label, before))
             : cat,
-          subcategoria: d.kind === "despesa" && isSubcategoryOf(d.subcategory, isCategory(cat) ? cat : null) ? d.subcategory : null,
+          subcategoria: isSubcategoryOf(d.subcategory, isCategory(cat) ? cat : null) ? d.subcategory : null,
           subcategoria_pais: cat === "Pais" ? "Pais" : null,
           data: dateKey(day),
           mes_referencia: card ? cardDates(card, day).reference : monthKey(day),
@@ -641,10 +543,10 @@ export default function App() {
         : expenseCount > 1 ? "Gastos anotados." : "Gasto anotado.");
       dialog.current?.close();
       opener.current?.focus();
-      void classify(inserted, before);
+
     } catch (e) {
       setSheetError(
-        e instanceof Error && /Preencha|Cartão indisponível/.test(e.message)
+        e instanceof Error
           ? e.message
           : "Não consegui salvar. Seu texto continua aqui para tentar novamente.",
       );
@@ -930,14 +832,14 @@ export default function App() {
                             ))}
                           />
                         )}
-                        {d.kind === "despesa" && (
+                        {(
                           <SubcategorySelect
                             category={d.category}
                             value={d.subcategory}
-                            disabled={busy || parentRule(d.label)}
+                            disabled={busy}
                             onChange={(subcategory) =>
                               setDrafts((old) => old.map((x, j) =>
-                                j === i ? { ...x, subcategory } : x,
+                                j === i ? { ...x, subcategory, edited: true } : x,
                               ))
                             }
                           />
@@ -1125,3 +1027,4 @@ function Login() {
     </main>
   );
 }
+

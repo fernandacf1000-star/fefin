@@ -179,7 +179,7 @@ beforeEach(() => {
     },
   });
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 // Existing transaction flows exercise the current month explicitly.
 async function currentMonth() {
   const region = await screen.findByRole("region", { name: "Resumo do mês" });
@@ -375,6 +375,8 @@ it("soma mercado dos Pais ao gasto do mês de vencimento do cartão", async () =
 });
 
 it("classifica mercado dos Pais e oferece atalho para o mês da fatura", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-18T12:00:00"));
   state.ai.mockResolvedValueOnce({ data: { items: [
     { kind: "despesa", amount: 711.07, label: "Mercado dos Pais", category: "Pais", subcategory: "Supermercado", dayOffset: -1, cardId: "master" },
   ] }, error: null });

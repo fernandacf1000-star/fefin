@@ -27,6 +27,7 @@ import {
 } from "./domain";
 import type { Entry, Card, Category } from "./domain";
 import { completeClassifications, historicalClassification } from "./classification";
+import { convertToInstallments } from "./installment-edit";
 import CategorySelect from "./CategorySelect";
 import SubcategorySelect from "./SubcategorySelect";
 import MonthSelector from "./MonthSelector";
@@ -297,7 +298,7 @@ export default function App() {
   }
   async function editEntry(
     row: Entry,
-    edits: { descricao: string; valor: number; data?: string; category: Category | null; subcategory: string | null },
+    edits: { descricao: string; valor: number; data?: string; installments?: number; category: Category | null; subcategory: string | null },
     scope: "one" | "next" | "all",
   ) {
     if (!uid) throw new Error("Sessão encerrada");
@@ -323,6 +324,19 @@ export default function App() {
       category, subcategory, edited: true,
     }], rows, askAI);
     const categoryUpdate = categoryPatchWithSubcategory(classified.category!, row, classified.subcategory);
+    if (edits.installments !== undefined) {
+      const payload = await convertToInstallments(row, {
+        ...patch, ...categoryUpdate, data: edits.data ?? row.data,
+      }, edits.valor, edits.installments, cards);
+      const { data, error } = await sb!.from("norte_lancamentos")
+        .upsert(payload, { onConflict: "id" }).select(fields);
+      if (error) throw error;
+      if (data?.length !== payload.length) throw new Error("Parcelamento não confirmado. Atualize antes de tentar novamente.");
+      setRows((old) => [...old.filter((r) => !data.some((part) => part.id === r.id)), ...data as Entry[]]);
+      setUndo((old) => old.filter((id) => id !== row.id));
+      setNotice(`Lançamento atualizado em ${data.length} parcelas.`);
+      return;
+    }
     const editTotal = !!(row.is_parcelado && row.parcelamento_id && scope !== "one");
     const ordered = [...targets].sort((a, b) => (a.parcela_atual ?? 0) - (b.parcela_atual ?? 0));
     const parts = editTotal ? splitInstallments(edits.valor, ordered.length) : [];

@@ -9,6 +9,8 @@ import {
   monthSummary,
   parseDate,
   sumMoney,
+  isInstallmentCount,
+  splitInstallments,
 } from "./domain";
 import type { Entry, Card, Category, EntryFilter } from "./domain";
 import CategorySelect from "./CategorySelect";
@@ -45,7 +47,7 @@ export default function Ledger({
   onDelete: (r: Entry, scope: "one" | "next" | "all") => Promise<void>;
   onEdit: (
     r: Entry,
-    edits: { descricao: string; valor: number; data?: string; category: Category | null; subcategory: string | null },
+    edits: { descricao: string; valor: number; data?: string; installments?: number; category: Category | null; subcategory: string | null },
     scope: "one" | "next" | "all",
   ) => Promise<void>;
   categoryFilter: Category | null;
@@ -62,6 +64,8 @@ export default function Ledger({
     [eDesc, setEDesc] = useState(""),
     [eValue, setEValue] = useState(""),
     [eDate, setEDate] = useState(""),
+    [ePlan, setEPlan] = useState<"uma" | "parcelado">("uma"),
+    [eInstallments, setEInstallments] = useState("2"),
     [eCategory, setECategory] = useState<Category | null>(null),
     [eSubcategory, setESubcategory] = useState<string | null>(null),
     [eScope, setEScope] = useState<"one" | "next" | "all">("one"),
@@ -102,6 +106,8 @@ export default function Ledger({
     setEDesc(row.descricao);
     setEValue(String(Number(row.valor)).replace(".", ","));
     setEDate(row.data);
+    setEPlan("uma");
+    setEInstallments("2");
     setECategory(categoryOf(row));
     setESubcategory(row.subcategoria);
     setEScope("one");
@@ -110,6 +116,10 @@ export default function Ledger({
   }
   const editing = rows.find((r) => r.id === editId);
   const grouped = !!(editing?.parcelamento_id || editing?.recorrencia_id);
+  const canSplit = !!editing && !grouped && !editing.is_parcelado && !displayAsIncome(editing);
+  const converting = canSplit && ePlan === "parcelado";
+  const preview = converting && isInstallmentCount(Number(eInstallments))
+    ? splitInstallments(parseMoney(eValue), Number(eInstallments)) : [];
   const totalInstallments = !!(editing?.is_parcelado && editing.parcelamento_id && eScope !== "one");
   function chooseEditScope(next: "one" | "next" | "all") {
     if (!editing) return;
@@ -127,19 +137,23 @@ export default function Ledger({
       setEError("Preencha uma descrição e um valor maior que zero.");
       return;
     }
+    if (converting && (!isInstallmentCount(Number(eInstallments)) || !preview.length || preview.some((value) => value <= 0))) {
+      setEError("Informe de 2 a 360 parcelas, com valor de pelo menos R$ 0,01 cada.");
+      return;
+    }
     const withDate = !grouped && /^\d{4}-\d{2}-\d{2}$/.test(eDate);
     setEBusy(true);
     setEError("");
     try {
       await onEdit(
         editing,
-        { descricao: eDesc.trim(), valor, category: eCategory, subcategory: eSubcategory, ...(withDate ? { data: eDate } : {}) },
+        { descricao: eDesc.trim(), valor, category: eCategory, subcategory: eSubcategory, ...(withDate ? { data: eDate } : {}), ...(converting ? { installments: Number(eInstallments) } : {}) },
         eScope,
       );
       editSheet.current?.close();
       setEditId(null);
-    } catch {
-      setEError("Não consegui salvar a edição. Tente novamente.");
+    } catch (error) {
+      setEError(error instanceof Error ? error.message : "Não consegui salvar a edição. Tente novamente.");
     } finally {
       setEBusy(false);
     }
@@ -311,11 +325,30 @@ export default function Ledger({
               <input id="edit-desc" maxLength={120} value={eDesc}
                 onChange={(e) => setEDesc(e.target.value)} disabled={eBusy} />
               <label htmlFor="edit-value">
-                {totalInstallments ? "Valor total das parcelas selecionadas (R$)"
+                {converting ? "Valor total da compra (R$)" : totalInstallments ? "Valor total das parcelas selecionadas (R$)"
                   : grouped && editing.is_parcelado ? "Valor desta parcela (R$)" : "Valor (R$)"}
               </label>
               <input id="edit-value" inputMode="decimal" value={eValue}
                 onChange={(e) => setEValue(e.target.value)} disabled={eBusy} />
+              {canSplit && <>
+                <div className="sheet-tabs" role="group" aria-label="Parcelamento">
+                  {([["uma", "Uma vez"], ["parcelado", "Parcelado"]] as const).map(([value, label]) => (
+                    <button type="button" key={value} aria-pressed={ePlan === value} disabled={eBusy}
+                      onClick={() => { setEPlan(value); setEError(""); }}>{label}</button>
+                  ))}
+                </div>
+                {converting && <>
+                  <label htmlFor="edit-installments">Em quantas parcelas?</label>
+                  <input id="edit-installments" inputMode="numeric" value={eInstallments}
+                    onChange={(e) => setEInstallments(e.target.value)} disabled={eBusy} />
+                  <small>Informe acima o valor total da compra. A primeira parcela usa a data e o cartão deste lançamento.</small>
+                  {preview.length > 1 && <p className="muted">
+                    {preview.length}x de {money(preview[0])}
+                    {preview.at(-1) !== preview[0] ? ` (última ${money(preview.at(-1)!)})` : ""}
+                    {" · total "}{money(parseMoney(eValue))}
+                  </p>}
+                </>}
+              </>}
               <label htmlFor="edit-category">Categoria</label>
               <CategorySelect id="edit-category" value={eCategory} disabled={eBusy}
                 onChange={(cat) => {
@@ -353,7 +386,7 @@ export default function Ledger({
               )}
               {eError && <p className="alert" role="alert">{eError}</p>}
               <button className="primary" disabled={eBusy}>
-                {eBusy ? "Salvando…" : "Salvar edição"}
+                {eBusy ? "Salvando…" : converting ? "Salvar parcelas" : "Salvar edição"}
               </button>
             </form>
           )}

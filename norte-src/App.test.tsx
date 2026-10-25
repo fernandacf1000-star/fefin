@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
+import { webcrypto } from "node:crypto";
 import { beforeAll, beforeEach, afterEach, describe, it, expect, vi } from "vitest";
 import {
   render,
@@ -16,6 +17,7 @@ const state = vi.hoisted(() => ({
   calls: [] as { kind: string; body: Record<string, unknown> }[],
   ai: vi.fn(),
   session: true,
+  upsertFails: false,
 }));
 vi.mock("./supabase", () => {
   class Query {
@@ -48,6 +50,11 @@ vi.mock("./supabase", () => {
     }
     insert(body: Record<string, unknown>[]) {
       this.op = "insert";
+      this.body = body;
+      return this;
+    }
+    upsert(body: Record<string, unknown>[]) {
+      this.op = "upsert";
       this.body = body;
       return this;
     }
@@ -90,6 +97,12 @@ vi.mock("./supabase", () => {
         }));
         state.rows = [...data, ...state.rows];
         state.calls.push({ kind: "insert", body: { rows: data } });
+      }
+      if (this.op === "upsert") {
+        if (state.upsertFails) return Promise.resolve({ data: null, error: new Error("Falha ao gravar parcelas") }).then(resolve);
+        data = this.body as Record<string, unknown>[];
+        state.rows = [...state.rows.filter((r) => !data.some((part) => part.id === r.id)), ...data];
+        state.calls.push({ kind: "upsert", body: { rows: data } });
       }
       if (this.op === "update") {
         state.calls.push({
@@ -156,6 +169,8 @@ const entry = (extras: Partial<Entry> = {}): Entry => ({
   ...extras,
 });
 beforeEach(() => {
+  Object.defineProperty(globalThis, "crypto", { configurable: true, value: webcrypto });
+  state.upsertFails = false;
   state.rows = [];
   state.calls = [];
   state.session = true;
@@ -884,6 +899,52 @@ describe("swipe, editar e excluir", () => {
     fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
     await screen.findByText("Lançamento atualizado.");
     expect(state.rows[0]).toMatchObject({ descricao: "Padaria nova", valor: 35.9, data: "2026-10-02", mes_referencia: "2026-10" });
+  });
+
+  it("converte gasto único em parcelas, preserva cartão e fatura e remove o valor cheio", async () => {
+    state.rows = [entry({ id: "single", descricao: "Compra", valor: 100, cartao_id: "master", forma_pagamento: "credito", pago: false })];
+    render(<App />);
+    await currentMonth();
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    swipeLeft(content("Compra"));
+    fireEvent.click(screen.getByRole("button", { name: "Editar Compra" }));
+    const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Parcelado" }));
+    fireEvent.change(within(dlg).getByLabelText("Em quantas parcelas?"), { target: { value: "3" } });
+    expect(within(dlg).getByLabelText("Valor total da compra (R$)")).toHaveProperty("value", "100");
+    state.upsertFails = true;
+    fireEvent.click(within(dlg).getByRole("button", { name: "Salvar parcelas" }));
+    expect(await within(dlg).findByRole("alert")).toHaveProperty("textContent", "Falha ao gravar parcelas");
+    expect(state.rows).toHaveLength(1);
+    expect(state.rows[0].valor).toBe(100);
+    state.upsertFails = false;
+    fireEvent.click(within(dlg).getByRole("button", { name: "Salvar parcelas" }));
+    await screen.findByText("Lançamento atualizado em 3 parcelas.");
+    expect(state.rows.map((r) => r.valor)).toEqual([33.33, 33.33, 33.34]);
+    expect(state.rows.map((r) => r.parcela_atual)).toEqual([1, 2, 3]);
+    expect(state.rows.every((r) => r.cartao_id === "master" && r.forma_pagamento === "credito" && r.parcelamento_id === "single" && r.subcategoria === "Supermercado")).toBe(true);
+    expect(new Set(state.rows.map((r) => r.mes_referencia)).size).toBe(3);
+    expect(state.calls.filter((c) => c.kind === "upsert")).toHaveLength(1);
+  });
+
+  it("não grava parcelamento com quantidade inválida ou centavos insuficientes", async () => {
+    state.rows = [entry({ descricao: "Compra" })];
+    render(<App />);
+    await currentMonth();
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    swipeLeft(content("Compra"));
+    fireEvent.click(screen.getByRole("button", { name: "Editar Compra" }));
+    const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Parcelado" }));
+    for (const count of ["1", "361", "2.5"]) {
+      fireEvent.change(within(dlg).getByLabelText("Em quantas parcelas?"), { target: { value: count } });
+      fireEvent.click(within(dlg).getByRole("button", { name: "Salvar parcelas" }));
+      expect(within(dlg).getByRole("alert")).toBeTruthy();
+    }
+    fireEvent.change(within(dlg).getByLabelText("Em quantas parcelas?"), { target: { value: "3" } });
+    fireEvent.change(within(dlg).getByLabelText("Valor total da compra (R$)"), { target: { value: "0,02" } });
+    fireEvent.click(within(dlg).getByRole("button", { name: "Salvar parcelas" }));
+    expect(state.calls).toHaveLength(0);
   });
 
   it("Excluir pelo swipe abre a confirmação e apaga", async () => {

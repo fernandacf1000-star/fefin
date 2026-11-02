@@ -10,3 +10,8 @@ verify_jwt = false
 # Independent Norte SMS ingestion; same x-sms-key authentication, separate records.
 [functions.norte-sms-lancamento]
 verify_jwt = false
+
+# Server-to-server ingestion; handler authenticates x-giacomoney-key.
+[functions.norte-giacomoney]
+verify_jwt = false
+

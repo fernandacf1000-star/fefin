@@ -45,6 +45,34 @@ const CLASSIFICATION_RULES = `Pares permitidos de categoria e subcategoria: ${JS
 Categoria e subcategoria são obrigatórias em TODOS os lançamentos, inclusive receitas. Nunca use null, vazio, nomes novos ou uma subcategoria de outra categoria. Primeiro procure o mesmo estabelecimento ou lançamento no histórico e repita o par completo; sem correspondência, analise a natureza e escolha o par existente mais apropriado. Não use uma opção genérica só para preencher.`;
 
 
+// Explicit schemas prevent prose, missing fields and invented classification names.
+function responseSchema(task: string, cards: { id: string }[]) {
+  const category = { type: "string", enum: [...CATEGORIES] };
+  const subcategory = { type: "string", enum: SUBCATEGORIES };
+  return task === "parse" ? {
+    type: "object", additionalProperties: false, required: ["items"],
+    properties: { items: { type: "array", minItems: 1, maxItems: 10, items: {
+      type: "object", additionalProperties: false,
+      required: ["kind", "amount", "label", "category", "subcategory", "dayOffset", "cardId"],
+      properties: {
+        kind: { type: "string", enum: ["despesa", "receita"] },
+        amount: { type: "number", exclusiveMinimum: 0 },
+        label: { type: "string", minLength: 1, maxLength: 120 },
+        category, subcategory,
+        dayOffset: { type: "integer", minimum: -30, maximum: 0 },
+        cardId: { anyOf: [{ type: "null" }, ...(cards.length ? [{ type: "string", enum: cards.map((c) => c.id) }] : [])] },
+      },
+    } } },
+  } : {
+    type: "object", additionalProperties: false, required: ["categories", "subcategories"],
+    properties: {
+      categories: { type: "array", items: category },
+      subcategories: { type: "array", items: subcategory },
+    },
+  };
+}
+
+
 export function createHandler(deps: Dependencies) {
   return async (req: Request): Promise<Response> => {
     if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -86,34 +114,47 @@ ${rules}`
 Se um item já trouxer categoria, mantenha essa categoria e escolha uma subcategoria compatível.
 ${rules}`;
       const user = task === "parse" ? `"""${b.text}"""` : b.items.map((it: { label: string; amount: number; category?: Category }, i: number) => `${i + 1}. """${it.label.slice(0, 120)}""" (R$ ${it.amount})${it.category ? ` categoria: ${it.category}` : ""}`).join("\n");
-      const response = await deps.fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST", signal: AbortSignal.timeout(25000),
-        headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model, max_tokens: 1400, temperature: 0, system, messages: [{ role: "user", content: user }] }),
-      });
-      providerStatus = response.status;
-      if (!response.ok) {
-        const code = response.status === 401 || response.status === 403 ? "provider_auth" : response.status === 404 ? "model" : "provider_unavailable";
-        throw new Failure(code, response.status);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const response = await deps.fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST", signal: AbortSignal.timeout(25000),
+          headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+          body: JSON.stringify({ model, max_tokens: 3000, temperature: 0,
+            system: system + (attempt ? "\nA resposta anterior não passou na validação. Complete todos os campos e confira cada par de categoria/subcategoria permitido, sem inventar nomes." : ""),
+            tools: [{ name: "norte_result", description: "Retorne os lançamentos ou classificações completos e válidos.", input_schema: responseSchema(task, availableCards) }],
+            tool_choice: { type: "tool", name: "norte_result" },
+            messages: [{ role: "user", content: user }] }),
+        });
+        providerStatus = response.status;
+        if (!response.ok) {
+          const code = response.status === 401 || response.status === 403 ? "provider_auth" : response.status === 404 ? "model" : "provider_unavailable";
+          throw new Failure(code, response.status);
+        }
+        const data = await response.json();
+        try {
+          const tool = data.content?.find((part: { type: string; name?: string }) => part.type === "tool_use" && part.name === "norte_result");
+          const out = tool ? tool.input : extractJson(data.content?.filter((part: { type: string }) => part.type === "text").map((part: { text: string }) => part.text).join("\n") ?? "");
+          if (task === "parse") {
+            if (!Array.isArray(out?.items) || out.items.length === 0 || out.items.length > 10 || out.items.some((it: { kind?: unknown; amount: number; label: string; category: unknown; subcategory?: unknown; dayOffset: number; cardId?: unknown } | null) => !it || (it.kind !== undefined && it.kind !== "despesa" && it.kind !== "receita") || (!b.kind && it.kind !== "despesa" && it.kind !== "receita") || !Number.isFinite(it.amount) || it.amount <= 0 || typeof it.label !== "string" || !it.label.trim() || !isCategory(it.category) || (it.subcategory != null && !isSubcategory(it.subcategory)) || !Number.isInteger(it.dayOffset) || it.dayOffset < -30 || it.dayOffset > 0 || (it.cardId !== undefined && it.cardId !== null && !availableCards.some((c) => c.id === it.cardId)))) throw new Failure("provider_unavailable");
+            return json({ items: out.items.map((it: { kind?: "despesa" | "receita"; amount: number; label: string; category: string; subcategory?: string | null; dayOffset: number; cardId?: string | null }) => {
+              const category: Category = parentRule(it.label) ? "Pais" : it.category as Category;
+              const kind = b.kind ?? it.kind;
+              if (!isSubcategoryOf(it.subcategory, category)) throw new Failure("provider_unavailable");
+              return { kind, amount: it.amount, label: it.label, category, subcategory: it.subcategory, dayOffset: it.dayOffset, cardId: kind === "despesa" ? (it.cardId === undefined ? b.defaultCardId ?? null : it.cardId) : null };
+            }) });
+          }
+          if (!Array.isArray(out?.categories) || out.categories.length !== b.items.length || out.categories.some((cat: unknown) => !isCategory(cat)) || !Array.isArray(out?.subcategories) || out.subcategories.length !== b.items.length || out.subcategories.some((sub: unknown) => sub != null && !isSubcategory(sub))) throw new Failure("provider_unavailable");
+          const categories = out.categories.map((cat: Category, i: number): Category => parentRule(b.items[i].label) ? "Pais" : b.items[i].category ?? cat);
+          const subcategories = out.subcategories.map((sub: string | null, i: number) => {
+            if (!isSubcategoryOf(sub, categories[i])) throw new Failure("provider_unavailable");
+            return sub;
+          });
+          return json({ categories, subcategories });
+        } catch (error) {
+          // Retry only malformed/invalid model output; never bypass classification validation.
+          if (attempt === 1) throw error;
+        }
       }
-      const data = await response.json();
-      const out = extractJson(data.content?.filter((part: { type: string }) => part.type === "text").map((part: { text: string }) => part.text).join("\n") ?? "");
-      if (task === "parse") {
-        if (!Array.isArray(out?.items) || out.items.length > 10 || out.items.some((it: { kind?: unknown; amount: number; label: string; category: unknown; subcategory?: unknown; dayOffset: number; cardId?: unknown } | null) => !it || (it.kind !== undefined && it.kind !== "despesa" && it.kind !== "receita") || (!b.kind && it.kind !== "despesa" && it.kind !== "receita") || !Number.isFinite(it.amount) || it.amount <= 0 || typeof it.label !== "string" || !it.label.trim() || !isCategory(it.category) || (it.subcategory != null && !isSubcategory(it.subcategory)) || !Number.isInteger(it.dayOffset) || it.dayOffset < -30 || it.dayOffset > 0 || (it.cardId !== undefined && it.cardId !== null && !availableCards.some((c) => c.id === it.cardId)))) throw new Failure("provider_unavailable");
-        return json({ items: out.items.map((it: { kind?: "despesa" | "receita"; amount: number; label: string; category: string; subcategory?: string | null; dayOffset: number; cardId?: string | null }) => {
-          const category: Category = parentRule(it.label) ? "Pais" : it.category as Category;
-          const kind = b.kind ?? it.kind;
-          if (!isSubcategoryOf(it.subcategory, category)) throw new Failure("provider_unavailable");
-          return { kind, amount: it.amount, label: it.label, category, subcategory: it.subcategory, dayOffset: it.dayOffset, cardId: kind === "despesa" ? (it.cardId === undefined ? b.defaultCardId ?? null : it.cardId) : null };
-        }) });
-      }
-      if (!Array.isArray(out?.categories) || out.categories.length !== b.items.length || out.categories.some((cat: unknown) => !isCategory(cat)) || !Array.isArray(out?.subcategories) || out.subcategories.length !== b.items.length || out.subcategories.some((sub: unknown) => sub != null && !isSubcategory(sub))) throw new Failure("provider_unavailable");
-      const categories = out.categories.map((cat: Category, i: number): Category => parentRule(b.items[i].label) ? "Pais" : b.items[i].category ?? cat);
-      const subcategories = out.subcategories.map((sub: string | null, i: number) => {
-        if (!isSubcategoryOf(sub, categories[i])) throw new Failure("provider_unavailable");
-        return sub;
-      });
-      return json({ categories, subcategories });
+      throw new Failure("provider_unavailable");
     } catch (error) {
       const failure = error instanceof Failure ? error : new Failure("provider_unavailable");
       deps.log({ code: failure.code, provider_status: failure.providerStatus ?? providerStatus, task });

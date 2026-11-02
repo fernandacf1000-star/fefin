@@ -47,15 +47,15 @@ describe("norte-ai: contrato e erros sem dados sensíveis", () => {
     const parse = setup(); const r = await parse.call({ task: "parse", kind, text: "45 mercado" });
     const parsed = await r.json();
     expect(r.status).toBe(200); expect(parsed.items[0].category).toBe("Alimentação");
-    expect(parsed.items[0].subcategory).toBe(kind === "despesa" ? "Supermercado" : null);
+    expect(parsed.items[0].subcategory).toBe("Supermercado");
     const classify = setup(200, { categories: ["Pessoal"], subcategories: ["Presentes"] });
     const c = await classify.call({ task: "classify", kind, items: [{ label: "Amélia", amount: 50 }] });
-    expect(c.status).toBe(200); expect(await c.json()).toEqual({ categories: ["Pais"], subcategories: [kind === "despesa" ? "Presentes" : null] });
+    expect(c.status).toBe(200); expect(await c.json()).toEqual({ categories: ["Pais"], subcategories: ["Presentes"] });
   });
   it("detecta automaticamente receita e despesa no mesmo texto", async () => {
     const { call } = setup(200, { items: [
-      { kind: "receita", amount: 300, label: "Venda", category: "Pessoal", dayOffset: 0 },
-      { kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", dayOffset: -1 },
+      { kind: "receita", amount: 300, label: "Venda", category: "Pessoal", subcategory: "Presentes", dayOffset: 0 },
+      { kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", subcategory: "Supermercado", dayOffset: -1 },
     ] });
     const r = await call({ task: "parse", text: "Recebi 300 da venda e gastei 45 no mercado ontem" });
     expect(r.status).toBe(200);
@@ -66,10 +66,10 @@ describe("norte-ai: contrato e erros sem dados sensíveis", () => {
   });
   it("retorna o cartão padrão para o gasto sem pagamento informado e respeita Pix explícito", async () => {
     const cards = [{ id: "master", name: "Master" }];
-    const standard = setup(200, { items: [{ kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", dayOffset: 0 }] });
+    const standard = setup(200, { items: [{ kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", subcategory: "Supermercado", dayOffset: 0 }] });
     const defaultCard = await standard.call({ task: "parse", text: "45 mercado", cards, defaultCardId: "master" });
     expect((await defaultCard.json()).items[0].cardId).toBe("master");
-    const pix = setup(200, { items: [{ kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", dayOffset: 0, cardId: null }] });
+    const pix = setup(200, { items: [{ kind: "despesa", amount: 45, label: "Mercado", category: "Alimentação", subcategory: "Supermercado", dayOffset: 0, cardId: null }] });
     const explicitPix = await pix.call({ task: "parse", text: "45 no pix no mercado", cards, defaultCardId: "master" });
     expect((await explicitPix.json()).items[0].cardId).toBeNull();
   });
@@ -92,5 +92,54 @@ describe("norte-ai: contrato e erros sem dados sensíveis", () => {
     expect(request.messages[0].content).toContain("categoria: Alimentação");
     const invalid = setup();
     expect((await invalid.call({ ...body, items: [{ ...body.items[0], category: "Outro" }] })).status).toBe(400);
+  });
+});
+
+
+describe("respostas estruturadas e recuperação da IA", () => {
+  const valid = { items: [{ kind: "despesa", amount: 66.3, label: "iFood", category: "Alimentação", subcategory: "Delivery", dayOffset: 0, cardId: null }] };
+  const response = (input: unknown) => new Response(JSON.stringify({ content: [{ type: "tool_use", name: "norte_result", input }] }), { status: 200 });
+  it("pede campos e categorias explícitos e lê o resultado estruturado", async () => {
+    const { deps, call } = setup();
+    deps.fetch.mockResolvedValue(response(valid));
+    const r = await call();
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual(valid);
+    const request = JSON.parse(String(deps.fetch.mock.calls[0][1]?.body));
+    expect(request.tool_choice).toEqual({ type: "tool", name: "norte_result" });
+    expect(request.tools[0].input_schema.properties.items.items.required).toContain("subcategory");
+  });
+  it.each([
+    { items: [{ ...valid.items[0], subcategory: null }] },
+    { items: [{ ...valid.items[0], subcategory: "Farmácia" }] },
+    { items: [] },
+  ])("refaz uma resposta incompleta ou incompatível sem aceitar classificação inválida", async (invalid) => {
+    const { deps, call } = setup();
+    deps.fetch.mockResolvedValueOnce(response(invalid)).mockResolvedValueOnce(response(valid));
+    const r = await call();
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual(valid);
+    expect(deps.fetch).toHaveBeenCalledTimes(2);
+  });
+  it("refaz JSON truncado e aceita a resposta completa", async () => {
+    const { deps, call } = setup();
+    deps.fetch.mockResolvedValueOnce(new Response(JSON.stringify({ content: [{ type: "text", text: '{"items":[' }] }))).mockResolvedValueOnce(response(valid));
+    expect((await call()).status).toBe(200);
+    expect(deps.fetch).toHaveBeenCalledTimes(2);
+  });
+  it("limita as tentativas e não registra conteúdo financeiro", async () => {
+    const { deps, call } = setup();
+    deps.fetch.mockImplementation(async () => response({ items: [{ ...valid.items[0], subcategory: "Inventada" }] }));
+    expect((await call()).status).toBe(503);
+    expect(deps.fetch).toHaveBeenCalledTimes(2);
+    expect(JSON.stringify(deps.log.mock.calls)).not.toMatch(/iFood|66.3|Inventada/);
+  });
+  it("recupera subcategoria ausente na classificação preservando categoria conhecida", async () => {
+    const { deps, call } = setup();
+    deps.fetch.mockResolvedValueOnce(response({ categories: ["Alimentação"], subcategories: [null] }))
+      .mockResolvedValueOnce(response({ categories: ["Alimentação"], subcategories: ["Delivery"] }));
+    const r = await call({ task: "classify", items: [{ label: "iFood", amount: 66.3, category: "Alimentação" }] });
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ categories: ["Alimentação"], subcategories: ["Delivery"] });
   });
 });

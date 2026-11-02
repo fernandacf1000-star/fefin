@@ -347,7 +347,7 @@ it("classifica categoria e subcategoria sugeridas pela IA ao salvar manualmente"
   });
   await open();
   fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
-  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "48" } });
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "4800" } });
   fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Bistrô novo" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
   await waitFor(() => expect(state.rows[0]).toMatchObject({ categoria_macro: "Alimentação", subcategoria: "Restaurantes" }));
@@ -669,7 +669,7 @@ it("anota receita por valor, soma só em Ganhou e permite desfazer", async () =>
 it("parcelado: valor cheio dividido em centavos, prévia e uma linha por parcela", async () => {
   await open();
   fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
-  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "100" } });
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "10000" } });
   fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Geladeira" } });
   fireEvent.click(screen.getByRole("button", { name: "Parcelado" }));
   expect(state.rows).toHaveLength(0);
@@ -787,7 +787,7 @@ it("mostra melhor cartão hoje e leva compra no crédito para o mês da fatura",
   await open();
   expect(screen.getByRole("complementary", { name: "Melhor cartão hoje" }).textContent).toMatch(/Master|Visa/);
   fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
-  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "90" } });
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "9000" } });
   fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Compra cartão" } });
   const payment = screen.getByRole("group", { name: "Pago com" });
   expect(within(payment).getByRole("radio", { name: "Pix/dinheiro" })).toHaveProperty("checked", true);
@@ -852,7 +852,7 @@ it.each([
   await screen.findByText(String(expected));
   expect((screen.getByLabelText("O que aconteceu?") as HTMLTextAreaElement).value).toBe("45 café");
   fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
-  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "45" } });
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "4500" } });
   fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Café" } });
   fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
   await screen.findByText(String(expected));
@@ -911,7 +911,7 @@ describe("swipe, editar e excluir", () => {
     const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
     fireEvent.click(within(dlg).getByRole("button", { name: "Parcelado" }));
     fireEvent.change(within(dlg).getByLabelText("Em quantas parcelas?"), { target: { value: "3" } });
-    expect(within(dlg).getByLabelText("Valor total da compra (R$)")).toHaveProperty("value", "100");
+    expect(within(dlg).getByLabelText("Valor total da compra (R$)")).toHaveProperty("value", "100,00");
     state.upsertFails = true;
     fireEvent.click(within(dlg).getByRole("button", { name: "Salvar parcelas" }));
     expect(await within(dlg).findByRole("alert")).toHaveProperty("textContent", "Falha ao gravar parcelas");
@@ -991,7 +991,7 @@ describe("swipe, editar e excluir", () => {
     expect(within(dlg).queryByLabelText("Data")).toBeNull();
     fireEvent.click(within(dlg).getByRole("button", { name: "Todos" }));
     expect(within(dlg).getByLabelText("Valor total das parcelas selecionadas (R$)")).toHaveProperty("value", "300,00");
-    fireEvent.change(within(dlg).getByLabelText("Valor total das parcelas selecionadas (R$)"), { target: { value: "120" } });
+    fireEvent.change(within(dlg).getByLabelText("Valor total das parcelas selecionadas (R$)"), { target: { value: "12000" } });
     fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
     await screen.findByText("3 lançamentos atualizados.");
     expect(state.rows.every((r) => r.valor === 40)).toBe(true);
@@ -1025,7 +1025,7 @@ describe("swipe, editar e excluir", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
     fireEvent.click(screen.getByRole("button", { name: "Editar Assinatura" }));
     const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
-    fireEvent.change(within(dlg).getByLabelText("Valor desta parcela (R$)"), { target: { value: "45" } });
+    fireEvent.change(within(dlg).getByLabelText("Valor desta parcela (R$)"), { target: { value: "4500" } });
     fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
     await screen.findByText("Lançamento atualizado.");
     expect(state.rows.map((r) => r.valor)).toEqual([45, 50]);
@@ -1044,7 +1044,7 @@ describe("swipe, editar e excluir", () => {
     const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
     fireEvent.click(within(dlg).getByRole("button", { name: "Este e os próximos" }));
     expect(within(dlg).getByLabelText("Valor total das parcelas selecionadas (R$)")).toHaveProperty("value", "100,00");
-    fireEvent.change(within(dlg).getByLabelText("Valor total das parcelas selecionadas (R$)"), { target: { value: "90" } });
+    fireEvent.change(within(dlg).getByLabelText("Valor total das parcelas selecionadas (R$)"), { target: { value: "9000" } });
     fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
     await screen.findByText("2 lançamentos atualizados.");
     expect(state.rows.map((r) => r.valor)).toEqual([50, 45, 45]);
@@ -1126,3 +1126,34 @@ describe("mês ao entrar no Norte", () => {
   });
 });
 
+it("coloca vírgula ao digitar, apagar e colar valores e preserva centavos ao salvar", async () => {
+  await open();
+  fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+  const input = screen.getByLabelText("Quanto foi? (R$)");
+  expect(input.getAttribute("inputmode")).toBe("numeric");
+  for (const [typed, formatted] of [["6", "0,06"], ["0,066", "0,66"], ["0,663", "6,63"], ["6,630", "66,30"], ["66,3", "6,63"], ["", ""], ["R$ 1.234,56", "1.234,56"], ["6630", "66,30"]]) {
+    fireEvent.change(input, { target: { value: typed } });
+    expect(input).toHaveProperty("value", formatted);
+  }
+  fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Mercado" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
+  await screen.findByText("Gasto anotado.");
+  expect(state.rows[0].valor).toBe(66.3);
+});
+
+it("formata o valor existente e os centavos digitados na edição", async () => {
+  state.rows = [entry({ descricao: "Mercado", valor: 100 })];
+  render(<App />);
+  await currentMonth();
+  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  fireEvent.click(screen.getByRole("button", { name: "Ver detalhes de Mercado" }));
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Editar" }));
+  const dlg = screen.getByRole("dialog", { name: "Editar lançamento" });
+  const input = within(dlg).getByLabelText("Valor (R$)");
+  expect(input).toHaveProperty("value", "100,00");
+  fireEvent.change(input, { target: { value: "19157" } });
+  expect(input).toHaveProperty("value", "191,57");
+  fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
+  await screen.findByText("Lançamento atualizado.");
+  expect(state.rows[0].valor).toBe(191.57);
+});

@@ -17,6 +17,7 @@ import CategorySelect from "./CategorySelect";
 import SubcategorySelect from "./SubcategorySelect";
 import SwipeRow from "./SwipeRow";
 import { parseMoney } from "./domain";
+import { formatMoneyInput } from "./money-input";
 const money = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     n,
@@ -104,7 +105,7 @@ export default function Ledger({
   function openEdit(row: Entry) {
     setEditId(row.id);
     setEDesc(row.descricao);
-    setEValue(String(Number(row.valor)).replace(".", ","));
+    setEValue(formatMoneyInput(Number(row.valor).toFixed(2)));
     setEDate(row.data);
     setEPlan("uma");
     setEInstallments("2");
@@ -128,7 +129,7 @@ export default function Ledger({
     const value = editing.is_parcelado && editing.parcelamento_id && next !== "one"
       ? sumMoney(targets.map((r) => Number(r.valor)))
       : Number(editing.valor);
-    setEValue(value.toFixed(2).replace(".", ","));
+    setEValue(formatMoneyInput(value.toFixed(2)));
   }
   async function saveEdit() {
     if (!editing) return;
@@ -328,8 +329,8 @@ export default function Ledger({
                 {converting ? "Valor total da compra (R$)" : totalInstallments ? "Valor total das parcelas selecionadas (R$)"
                   : grouped && editing.is_parcelado ? "Valor desta parcela (R$)" : "Valor (R$)"}
               </label>
-              <input id="edit-value" inputMode="decimal" value={eValue}
-                onChange={(e) => setEValue(e.target.value)} disabled={eBusy} />
+              <input id="edit-value" inputMode="numeric" value={eValue}
+                onChange={(e) => setEValue(formatMoneyInput(e.target.value))} disabled={eBusy} />
               {canSplit && <>
                 <div className="sheet-tabs" role="group" aria-label="Parcelamento">
                   {([["uma", "Uma vez"], ["parcelado", "Parcelado"]] as const).map(([value, label]) => (

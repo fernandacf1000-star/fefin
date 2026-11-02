@@ -34,6 +34,7 @@ import MonthSelector from "./MonthSelector";
 import Ledger from "./Ledger";
 import MonthView from "./MonthView";
 import Charts from "./Charts";
+import { formatMoneyInput } from "./money-input";
 const money = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     n,
@@ -876,10 +877,10 @@ export default function App() {
                 <label htmlFor="amount">{kind === "receita" ? "Quanto entrou? (R$)" : "Quanto foi? (R$)"}</label>
                 <input
                   id="amount"
-                  inputMode="decimal"
+                  inputMode="numeric"
                   placeholder="0,00"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => setAmount(formatMoneyInput(e.target.value))}
                   required
                   disabled={busy}
                 />

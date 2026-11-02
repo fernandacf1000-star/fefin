@@ -24,6 +24,17 @@ const money = (n: number) =>
     n,
   );
 const displayAsIncome = (row: Entry) => row.tipo === "receita" || row.categoria === "salario" || row.categoria === "reembolso_pais";
+const displayDate = (row: Entry) => {
+  if (row.forma_pagamento !== "credito" && !row.cartao_id) return dateKey(entryDate(row));
+  if (!row.created_at) return row.data;
+  const date = new Date(row.created_at);
+  if (Number.isNaN(date.getTime())) return row.data;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(date);
+  const part = (type: string) => parts.find((item) => item.type === type)!.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+};
 function CategoryIcon({ category, parent, income }: { category: string | null; parent: boolean; income: boolean }) {
   const icons: Record<string, string> = {
     Moradia: "🏘️", Alimentação: "🥗", Transporte: "🚗", Saúde: "💊",
@@ -82,11 +93,12 @@ export default function Ledger({
       (r) => !categoryFilter || categoryOf(r) === categoryFilter,
     ),
     recent = [...filtered].sort((a, b) =>
-      (b.created_at ?? b.data).localeCompare(a.created_at ?? a.data) ||
+      displayDate(b).localeCompare(displayDate(a)) ||
+      (b.created_at ?? "").localeCompare(a.created_at ?? "") ||
       b.id.localeCompare(a.id),
     ),
     groups = recent.slice(0, limit).reduce<{ date: string; entries: Entry[] }[]>((acc, row) => {
-      const date = dateKey(entryDate(row));
+      const date = displayDate(row);
       const last = acc[acc.length - 1];
       if (last?.date === date) last.entries.push(row);
       else acc.push({ date, entries: [row] });

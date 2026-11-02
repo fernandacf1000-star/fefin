@@ -399,6 +399,7 @@ it("classifica mercado dos Pais e oferece atalho para o mês da fatura", async (
   fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "711,07 mercado dos meus pais ontem no Master" } });
   fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
   await screen.findByText("Confira antes de anotar.");
+  expect(screen.getByText(/Gasto · 17\/10\/2026 · Master/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
   await waitFor(() => expect(state.rows[0]).toMatchObject({
     categoria_macro: "Alimentação", subcategoria: "Supermercado", subcategoria_pais: "Pais", mes_referencia: "2026-11",
@@ -1154,6 +1155,19 @@ it("coloca vírgula ao digitar, apagar e colar valores e preserva centavos ao sa
   fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
   await screen.findByText("Gasto anotado.");
   expect(state.rows[0].valor).toBe(66.3);
+});
+
+it("mostra a data no lançamento manual e grava a data escolhida", async () => {
+  await open();
+  fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+  const date = screen.getByLabelText("Data do lançamento");
+  expect(date).toHaveProperty("value", dateKey(new Date()));
+  fireEvent.change(date, { target: { value: "2026-10-31" } });
+  fireEvent.change(screen.getByLabelText("Quanto foi? (R$)"), { target: { value: "1278" } });
+  fireEvent.change(screen.getByLabelText("Com o quê?"), { target: { value: "Veneno cochonilha" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar gasto" }));
+  await screen.findByText("Gasto anotado.");
+  expect(state.rows[0]).toMatchObject({ data: "2026-10-31", valor: 12.78 });
 });
 
 it("formata o valor existente e os centavos digitados na edição", async () => {

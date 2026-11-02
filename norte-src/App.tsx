@@ -147,6 +147,7 @@ export default function App() {
   const [mode, setMode] = useState("Texto com IA"),
     [text, setText] = useState(""),
     [amount, setAmount] = useState(""),
+    [manualDate, setManualDate] = useState(() => dateKey(new Date())),
     [label, setLabel] = useState(""),
     [drafts, setDrafts] = useState<Draft[]>([]),
     [payment, setPayment] = useState("dinheiro"),
@@ -375,6 +376,7 @@ export default function App() {
     setKind("despesa");
     setText("");
     setAmount("");
+    setManualDate(dateKey(new Date()));
     setLabel("");
     setPlan("uma");
     setInstallments("2");
@@ -462,6 +464,9 @@ export default function App() {
         )
       )
         throw new Error("Preencha uma descrição e um valor maior que zero.");
+      const selectedDate = parseDate(manualDate);
+      if (mode === "Valor" && (Number.isNaN(selectedDate.getTime()) || dateKey(selectedDate) !== manualDate))
+        throw new Error("Escolha uma data válida para o lançamento.");
       const before = rows;
       items = await completeClassifications(items, before, askAI);
       const supportsPlan =
@@ -491,18 +496,19 @@ export default function App() {
           if (!isInstallmentCount(n))
             throw new Error("Preencha parcelas entre 2 e 360.");
           const card = d.kind === "despesa" ? (cards.find((c) => c.id === (mode === "Texto com IA" ? d.cardId : payment)) ?? null) : null;
-          payload = installmentRows(base, d.amount, n, now, card, group);
+          const start = mode === "Valor" ? selectedDate : new Date(now.getFullYear(), now.getMonth(), now.getDate() + d.dayOffset, 12);
+          payload = installmentRows(base, d.amount, n, start, card, group);
         } else {
           const day = Number(recDay), months = Number(recMonths);
           if (!Number.isInteger(day) || day < 1 || day > 31 || !Number.isInteger(months) || months < 2 || months > 36)
             throw new Error("Preencha dia (1 a 31) e meses (2 a 36).");
           const card = d.kind === "despesa" ? cards.find((c) => c.id === payment) ?? null : null;
-          payload = recurringRows(base, d.amount, now, day, months, group, card);
+          payload = recurringRows(base, d.amount, selectedDate, day, months, group, card);
         }
         if (!payload.length) throw new Error("Preencha uma descrição e um valor maior que zero.");
       } else
       payload = items.map((d) => {
-        const day = new Date(
+        const day = mode === "Valor" ? selectedDate : new Date(
           now.getFullYear(),
           now.getMonth(),
           now.getDate() + d.dayOffset,
@@ -806,11 +812,7 @@ export default function App() {
                         </div>
                         <small>
                           {d.kind === "receita" ? "Receita · " : "Gasto · "}
-                          {d.dayOffset === 0
-                            ? "Hoje"
-                            : d.dayOffset === -1
-                              ? "Ontem"
-                              : `${Math.abs(d.dayOffset)} dias atrás`}
+                          {new Date(now.getFullYear(), now.getMonth(), now.getDate() + d.dayOffset, 12).toLocaleDateString("pt-BR")}
           {d.kind === "despesa" && ` · ${cards.find((c) => c.id === d.cardId)?.nome ?? "Pix ou dinheiro"}`}
                         </small>
                         <CategorySelect
@@ -894,6 +896,9 @@ export default function App() {
                   required
                   disabled={busy}
                 />
+                <label htmlFor="manual-date">Data do lançamento</label>
+                <input id="manual-date" type="date" value={manualDate}
+                  onChange={(e) => setManualDate(e.target.value)} required disabled={busy} />
                 {kind === "despesa" && (
                   <PaymentChoices
                     cards={ranked}

@@ -868,6 +868,17 @@ class TestPointerEvent extends MouseEvent {
   }
 }
 describe("swipe, editar e excluir", () => {
+  it("mostra primeiro o lançamento adicionado por último, mesmo com data de compra anterior", async () => {
+    state.rows = [
+      entry({ id: "first", descricao: "Compra antiga", data: dateKey(new Date()), created_at: "2026-11-01T10:00:00Z" }),
+      entry({ id: "latest", descricao: "Compra registrada agora", data: dateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), created_at: "2026-11-02T10:00:00Z" }),
+    ];
+    render(<App />);
+    await currentMonth();
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    const labels = screen.getAllByRole("button", { name: /Ver detalhes de/ }).map((button) => button.getAttribute("aria-label"));
+    expect(labels).toEqual(["Ver detalhes de Compra registrada agora", "Ver detalhes de Compra antiga"]);
+  });
   beforeAll(() => {
     (globalThis as unknown as { PointerEvent: unknown }).PointerEvent = TestPointerEvent;
     (window as unknown as { PointerEvent: unknown }).PointerEvent = TestPointerEvent;

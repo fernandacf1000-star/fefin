@@ -3,7 +3,8 @@ import {
   groupScope,
   categoryOf,
   filterEntries,
-  groupEntriesByDay,
+  entryDate,
+  dateKey,
   isSubcategoryOf,
   monthEntries,
   monthSummary,
@@ -80,7 +81,17 @@ export default function Ledger({
     filtered = filterEntries(month, filter).filter(
       (r) => !categoryFilter || categoryOf(r) === categoryFilter,
     ),
-    groups = groupEntriesByDay(filtered.slice(0, limit)),
+    recent = [...filtered].sort((a, b) =>
+      (b.created_at ?? b.data).localeCompare(a.created_at ?? a.data) ||
+      b.id.localeCompare(a.id),
+    ),
+    groups = recent.slice(0, limit).reduce<{ date: string; entries: Entry[] }[]>((acc, row) => {
+      const date = dateKey(entryDate(row));
+      const last = acc[acc.length - 1];
+      if (last?.date === date) last.entries.push(row);
+      else acc.push({ date, entries: [row] });
+      return acc;
+    }, []),
     totals = monthSummary(month, selected);
   const monthName = selected.toLocaleDateString("pt-BR", { month: "long" });
   useEffect(() => {
@@ -218,8 +229,8 @@ export default function Ledger({
       ) : !filtered.length ? (
         <p className="empty">Nenhum lançamento neste filtro.</p>
       ) : (
-        groups.map((group) => (
-          <section className="day-group" key={group.date}>
+        groups.map((group, index) => (
+          <section className="day-group" key={`${group.date}-${index}`}>
             <h2>
               {parseDate(group.date)
                 .toLocaleDateString("pt-BR", {
@@ -286,7 +297,7 @@ export default function Ledger({
           </section>
         ))
       )}
-      {filtered.length > limit && (
+      {recent.length > limit && (
         <button className="see-more" onClick={() => setLimit((n) => n + 80)}>
           Ver mais
         </button>

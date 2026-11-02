@@ -10,3 +10,7 @@ verify_jwt = false
 # Independent Norte SMS ingestion; same x-sms-key authentication, separate records.
 [functions.norte-sms-lancamento]
 verify_jwt = false
+
+# Called only by the private scheduler using a server-side shared secret.
+[functions.norte-giacomoney-sync]
+verify_jwt = false

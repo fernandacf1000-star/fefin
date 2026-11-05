@@ -27,6 +27,7 @@ import {
 } from "./domain";
 import type { Entry, Card, Category } from "./domain";
 import { completeClassifications, historicalClassification } from "./classification";
+import { convertToRecurringIncome } from "./recurring-edit";
 import { convertToInstallments } from "./installment-edit";
 import CategorySelect from "./CategorySelect";
 import SubcategorySelect from "./SubcategorySelect";
@@ -273,7 +274,7 @@ export default function App() {
     .sort((a, b) => b.days - a.days || a.nome.localeCompare(b.nome));
   const canChoosePlan =
     mode === "Valor" ||
-    (mode === "Texto com IA" && drafts.length === 1 && drafts[0].kind === "despesa");
+    (mode === "Texto com IA" && drafts.length === 1);
   const planAmount = mode === "Valor" ? parseMoney(amount) : drafts[0]?.amount ?? NaN;
   const installmentCount = Number(installments);
   const installmentPreview = isInstallmentCount(installmentCount)
@@ -300,7 +301,7 @@ export default function App() {
   }
   async function editEntry(
     row: Entry,
-    edits: { descricao: string; valor: number; data?: string; installments?: number; category: Category | null; subcategory: string | null },
+    edits: { descricao: string; valor: number; data?: string; installments?: number; recurrence?: { day: number; months: number }; category: Category | null; subcategory: string | null },
     scope: "one" | "next" | "all",
   ) {
     if (!uid) throw new Error("Sessão encerrada");
@@ -326,6 +327,17 @@ export default function App() {
       category, subcategory, edited: true,
     }], rows, askAI);
     const categoryUpdate = categoryPatchWithSubcategory(classified.category!, row, classified.subcategory);
+    if (edits.recurrence) {
+      const payload = await convertToRecurringIncome(row, { ...patch, ...categoryUpdate }, edits.recurrence);
+      const { data, error } = await sb!.from("norte_lancamentos")
+        .upsert(payload, { onConflict: "id" }).select(fields);
+      if (error) throw error;
+      if (data?.length !== payload.length) throw new Error("Recorrência não confirmada. Atualize antes de tentar novamente.");
+      setRows((old) => [...old.filter((r) => !data.some((part) => part.id === r.id)), ...data as Entry[]]);
+      setUndo((old) => old.filter((id) => id !== row.id));
+      setNotice(`Receita atualizada para repetir por ${data.length} meses.`);
+      return;
+    }
     if (edits.installments !== undefined) {
       const payload = await convertToInstallments(row, {
         ...patch, ...categoryUpdate, data: edits.data ?? row.data,
@@ -471,7 +483,7 @@ export default function App() {
       items = await completeClassifications(items, before, askAI);
       const supportsPlan =
         mode === "Valor" ||
-        (mode === "Texto com IA" && items.length === 1 && items[0].kind === "despesa");
+        (mode === "Texto com IA" && items.length === 1);
       const isPlanned = supportsPlan && plan !== "uma" && items.length === 1;
       if (items.some((d) => d.kind === "despesa" && d.cardId && !cards.some((c) => c.id === d.cardId && c.ativo)))
         throw new Error("Cartão indisponível. Escolha outra forma de pagamento.");
@@ -492,6 +504,7 @@ export default function App() {
         };
         const group = crypto.randomUUID();
         if (plan === "parcelado") {
+          if (d.kind !== "despesa") throw new Error("Receitas podem ser únicas ou mensais.");
           const n = Number(installments);
           if (!isInstallmentCount(n))
             throw new Error("Preencha parcelas entre 2 e 360.");
@@ -502,8 +515,9 @@ export default function App() {
           const day = Number(recDay), months = Number(recMonths);
           if (!Number.isInteger(day) || day < 1 || day > 31 || !Number.isInteger(months) || months < 2 || months > 36)
             throw new Error("Preencha dia (1 a 31) e meses (2 a 36).");
-          const card = d.kind === "despesa" ? cards.find((c) => c.id === payment) ?? null : null;
-          payload = recurringRows(base, d.amount, selectedDate, day, months, group, card);
+          const card = d.kind === "despesa" ? cards.find((c) => c.id === (mode === "Texto com IA" ? d.cardId : payment)) ?? null : null;
+          const start = mode === "Valor" ? selectedDate : new Date(now.getFullYear(), now.getMonth(), now.getDate() + d.dayOffset, 12);
+          payload = recurringRows(base, d.amount, start, day, months, group, card);
         }
         if (!payload.length) throw new Error("Preencha uma descrição e um valor maior que zero.");
       } else
@@ -914,9 +928,9 @@ export default function App() {
             {canChoosePlan && (
               <>
                 <div className="sheet-tabs" role="group" aria-label="Frequência">
-                  {(mode === "Valor"
-                    ? [["uma", "Uma vez"], ["parcelado", "Parcelado"], ["recorrente", "Todo mês"]]
-                    : [["uma", "Uma vez"], ["parcelado", "Parcelado"]]
+                  {((mode === "Valor" ? kind : drafts[0]?.kind) === "receita"
+                    ? [["uma", "Uma vez"], ["recorrente", "Todo mês"]]
+                    : [["uma", "Uma vez"], ["parcelado", "Parcelado"], ["recorrente", "Todo mês"]]
                   ).map(([v, t]) => (
                     <button type="button" key={v} aria-pressed={plan === v} disabled={busy}
                       onClick={() => { setPlan(v as "uma" | "parcelado" | "recorrente"); setSheetError(""); }}>
@@ -942,7 +956,7 @@ export default function App() {
                     ) : null}
                   </>
                 )}
-                {mode === "Valor" && plan === "recorrente" && (
+                {plan === "recorrente" && (
                   <>
                     <label htmlFor="rec-day">Dia do mês (1 a 31)</label>
                     <input id="rec-day" inputMode="numeric" value={recDay}
@@ -951,7 +965,7 @@ export default function App() {
                     <input id="rec-months" inputMode="numeric" value={recMonths}
                       onChange={(e) => setRecMonths(e.target.value)} disabled={busy} />
                     <p className="muted">
-                      {kind === "receita" ? "Entra" : "Sai"} {money(parseMoney(amount) || 0)} todo mês, a partir deste mês.
+                      {(mode === "Valor" ? kind : drafts[0]?.kind) === "receita" ? "Entra" : "Sai"} {money(planAmount || 0)} todo mês, a partir do mês da data do lançamento.
                     </p>
                   </>
                 )}
@@ -969,7 +983,7 @@ export default function App() {
                   ? "Entender texto"
                   : canChoosePlan && plan === "parcelado"
                   ? "Salvar parcelas"
-                  : canChoosePlan && mode === "Valor" && plan === "recorrente"
+                  : canChoosePlan && plan === "recorrente"
                     ? "Salvar todo mês"
                     : mode === "Texto com IA" && drafts.some((d) => d.kind === "receita") && drafts.some((d) => d.kind === "despesa")
                       ? "Salvar lançamentos"
@@ -1047,4 +1061,5 @@ function Login() {
     </main>
   );
 }
+
 

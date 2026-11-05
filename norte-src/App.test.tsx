@@ -375,6 +375,8 @@ it("preserva subcategoria do parse sem chamar classify e mostra no card limpo", 
 });
 
 it("soma mercado dos Pais ao gasto do mês de vencimento do cartão", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-18T12:00:00"));
   state.rows = [entry({
     id: "parent-market", descricao: "Pão de Açúcar", valor: 711.07,
     categoria_macro: "Alimentação", subcategoria: "Supermercado", subcategoria_pais: "Pais",
@@ -450,6 +452,8 @@ it("mostra orçamento estourado com valor positivo e só os três totais", async
   ]);
 });
 it("compartilha mês nas três abas e mantém Anotar com IA primeiro", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-18T12:00:00"));
   render(<App />);
   await currentMonth();
   const selector = screen.getByRole("group", { name: "Mês selecionado" });
@@ -1185,4 +1189,75 @@ it("formata o valor existente e os centavos digitados na edição", async () => 
   fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
   await screen.findByText("Lançamento atualizado.");
   expect(state.rows[0].valor).toBe(191.57);
+});
+
+
+it.each(["manual", "IA"])("cadastra receita recorrente por %s sem cartão ou parcelamento", async (mode) => {
+  state.ai.mockResolvedValueOnce({ data: { items: [{ kind: "receita", amount: 5000, label: "Salário", category: "Pessoal", subcategory: "Presentes", dayOffset: 0, cardId: "master" }] }, error: null });
+  await open();
+  if (mode === "manual") {
+    state.ai.mockReset();
+    state.ai.mockResolvedValue({ data: { categories: ["Pessoal"], subcategories: ["Presentes"] }, error: null });
+    fireEvent.click(screen.getByRole("tab", { name: "Valor" }));
+    fireEvent.click(screen.getByRole("button", { name: "Receita" }));
+    fireEvent.change(screen.getByLabelText("Quanto entrou? (R$)"), { target: { value: "500000" } });
+    fireEvent.change(screen.getByLabelText("De onde veio?"), { target: { value: "Salário" } });
+    fireEvent.change(screen.getByLabelText("Data do lançamento"), { target: { value: "2027-01-01" } });
+  } else {
+    fireEvent.change(screen.getByLabelText("O que aconteceu?"), { target: { value: "Recebi salário 5000" } });
+    fireEvent.click(screen.getByRole("button", { name: "Entender texto" }));
+    await screen.findByText("Confira antes de anotar.");
+  }
+  expect(screen.queryByRole("button", { name: "Parcelado" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Todo mês" }));
+  fireEvent.change(screen.getByLabelText(/Dia do mês/), { target: { value: "31" } });
+  fireEvent.change(screen.getByLabelText(/Por quantos meses/), { target: { value: "3" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar todo mês" }));
+  await screen.findByText("Lançamento anotado por 3 meses.");
+  expect(state.rows).toHaveLength(3);
+  expect(state.rows.every((r) => r.tipo === "receita" && r.valor === 5000 && r.cartao_id === null && !r.is_parcelado)).toBe(true);
+  expect(new Set(state.rows.map((r) => r.recorrencia_id)).size).toBe(1);
+  if (mode === "manual") expect(state.rows.map((r) => r.data)).toEqual(["2027-01-31", "2027-02-28", "2027-03-31"]);
+});
+
+it("converte receita única em recorrente sem duplicar e preserva o formulário após falha", async () => {
+  state.rows = [entry({ id: "income", descricao: "Salário", tipo: "receita", categoria: "receita", valor: 5000 })];
+  render(<App />);
+  await currentMonth();
+  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  fireEvent.click(screen.getByRole("button", { name: "Editar Salário" }));
+  const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+  fireEvent.click(within(dlg).getByRole("button", { name: "Todo mês" }));
+  fireEvent.change(within(dlg).getByLabelText(/Por quantos meses/), { target: { value: "1" } });
+  fireEvent.click(within(dlg).getByRole("button", { name: "Salvar todo mês" }));
+  expect(await within(dlg).findByRole("alert")).toHaveProperty("textContent", "Preencha dia (1 a 31) e meses (2 a 36).");
+  expect(state.rows).toHaveLength(1);
+  fireEvent.change(within(dlg).getByLabelText(/Por quantos meses/), { target: { value: "3" } });
+  state.upsertFails = true;
+  fireEvent.click(within(dlg).getByRole("button", { name: "Salvar todo mês" }));
+  await within(dlg).findByText("Falha ao gravar parcelas");
+  expect(state.rows).toHaveLength(1);
+  state.upsertFails = false;
+  fireEvent.click(within(dlg).getByRole("button", { name: "Salvar todo mês" }));
+  await screen.findByText("Receita atualizada para repetir por 3 meses.");
+  expect(state.rows).toHaveLength(3);
+  expect(state.rows.filter((r) => r.id === "income")).toHaveLength(1);
+  expect(state.rows.every((r) => r.recorrencia_id === "income" && r.valor === 5000 && r.tipo === "receita")).toBe(true);
+});
+
+it.each(["Só este", "Este e os próximos", "Todos"])("edita receita recorrente: %s", async (scope) => {
+  const now = new Date();
+  const dates = [1, 2, 3].map((day) => dateKey(new Date(now.getFullYear(), now.getMonth(), day)));
+  state.rows = dates.map((data, i) => entry({ id: `income-${i}`, descricao: `Salário ${i}`, tipo: "receita", categoria: "receita", valor: 5000, data, recorrencia_id: "income-series" }));
+  render(<App />);
+  await currentMonth();
+  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  fireEvent.click(screen.getByRole("button", { name: "Editar Salário 1" }));
+  const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+  fireEvent.click(within(dlg).getByRole("button", { name: scope }));
+  fireEvent.change(within(dlg).getByLabelText("Valor (R$)"), { target: { value: "600000" } });
+  fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
+  await waitFor(() => expect(state.rows.filter((r) => r.valor === 6000)).toHaveLength(scope === "Todos" ? 3 : scope === "Este e os próximos" ? 2 : 1));
+  expect(state.rows.map((r) => r.data)).toEqual(dates);
+  expect(state.rows.every((r) => r.recorrencia_id === "income-series" && r.tipo === "receita")).toBe(true);
 });

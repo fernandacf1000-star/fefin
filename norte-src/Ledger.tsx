@@ -60,7 +60,7 @@ export default function Ledger({
   onDelete: (r: Entry, scope: "one" | "next" | "all") => Promise<void>;
   onEdit: (
     r: Entry,
-    edits: { descricao: string; valor: number; data?: string; installments?: number; category: Category | null; subcategory: string | null },
+    edits: { descricao: string; valor: number; data?: string; installments?: number; recurrence?: { day: number; months: number }; category: Category | null; subcategory: string | null },
     scope: "one" | "next" | "all",
   ) => Promise<void>;
   categoryFilter: Category | null;
@@ -77,8 +77,10 @@ export default function Ledger({
     [eDesc, setEDesc] = useState(""),
     [eValue, setEValue] = useState(""),
     [eDate, setEDate] = useState(""),
-    [ePlan, setEPlan] = useState<"uma" | "parcelado">("uma"),
+    [ePlan, setEPlan] = useState<"uma" | "parcelado" | "recorrente">("uma"),
     [eInstallments, setEInstallments] = useState("2"),
+    [eRecDay, setERecDay] = useState("1"),
+    [eRecMonths, setERecMonths] = useState("12"),
     [eCategory, setECategory] = useState<Category | null>(null),
     [eSubcategory, setESubcategory] = useState<string | null>(null),
     [eScope, setEScope] = useState<"one" | "next" | "all">("one"),
@@ -130,7 +132,9 @@ export default function Ledger({
     setEDesc(row.descricao);
     setEValue(formatMoneyInput(Number(row.valor).toFixed(2)));
     setEDate(row.data);
-    setEPlan("uma");
+    setEPlan(row.recorrencia_id ? "recorrente" : "uma");
+    setERecDay(String(parseDate(row.data).getDate()));
+    setERecMonths("12");
     setEInstallments("2");
     setECategory(categoryOf(row));
     setESubcategory(row.subcategoria);
@@ -141,6 +145,8 @@ export default function Ledger({
   const editing = rows.find((r) => r.id === editId);
   const grouped = !!(editing?.parcelamento_id || editing?.recorrencia_id);
   const canSplit = !!editing && !grouped && !editing.is_parcelado && !displayAsIncome(editing);
+  const canRecur = !!editing && !grouped && !editing.is_parcelado && displayAsIncome(editing);
+  const makingRecurring = canRecur && ePlan === "recorrente";
   const converting = canSplit && ePlan === "parcelado";
   const preview = converting && isInstallmentCount(Number(eInstallments))
     ? splitInstallments(parseMoney(eValue), Number(eInstallments)) : [];
@@ -165,13 +171,17 @@ export default function Ledger({
       setEError("Informe de 2 a 360 parcelas, com valor de pelo menos R$ 0,01 cada.");
       return;
     }
+    if (makingRecurring && (!Number.isInteger(Number(eRecDay)) || Number(eRecDay) < 1 || Number(eRecDay) > 31 || !Number.isInteger(Number(eRecMonths)) || Number(eRecMonths) < 2 || Number(eRecMonths) > 36)) {
+      setEError("Preencha dia (1 a 31) e meses (2 a 36).");
+      return;
+    }
     const withDate = !grouped && /^\d{4}-\d{2}-\d{2}$/.test(eDate);
     setEBusy(true);
     setEError("");
     try {
       await onEdit(
         editing,
-        { descricao: eDesc.trim(), valor, category: eCategory, subcategory: eSubcategory, ...(withDate ? { data: eDate } : {}), ...(converting ? { installments: Number(eInstallments) } : {}) },
+        { descricao: eDesc.trim(), valor, category: eCategory, subcategory: eSubcategory, ...(withDate ? { data: eDate } : {}), ...(converting ? { installments: Number(eInstallments) } : {}), ...(makingRecurring ? { recurrence: { day: Number(eRecDay), months: Number(eRecMonths) } } : {}) },
         eScope,
       );
       editSheet.current?.close();
@@ -354,6 +364,22 @@ export default function Ledger({
               </label>
               <input id="edit-value" inputMode="numeric" value={eValue}
                 onChange={(e) => setEValue(formatMoneyInput(e.target.value))} disabled={eBusy} />
+              {canRecur && <>
+                <div className="sheet-tabs" role="group" aria-label="Frequência">
+                  {([["uma", "Uma vez"], ["recorrente", "Todo mês"]] as const).map(([value, label]) => (
+                    <button type="button" key={value} aria-pressed={ePlan === value} disabled={eBusy}
+                      onClick={() => { setEPlan(value); setEError(""); }}>{label}</button>
+                  ))}
+                </div>
+                {makingRecurring && <>
+                  <label htmlFor="edit-rec-day">Dia do mês (1 a 31)</label>
+                  <input id="edit-rec-day" inputMode="numeric" value={eRecDay} onChange={(e) => setERecDay(e.target.value)} disabled={eBusy} />
+                  <label htmlFor="edit-rec-months">Por quantos meses? (2 a 36)</label>
+                  <input id="edit-rec-months" inputMode="numeric" value={eRecMonths} onChange={(e) => setERecMonths(e.target.value)} disabled={eBusy} />
+                  <small>O valor se repete a cada mês, a partir do mês da data abaixo. Este lançamento será a primeira receita da série.</small>
+                </>}
+              </>}
+              {editing.recorrencia_id && <p className="muted">Todo mês · lançamento recorrente. Escolha abaixo quais lançamentos alterar.</p>}
               {canSplit && <>
                 <div className="sheet-tabs" role="group" aria-label="Parcelamento">
                   {([["uma", "Uma vez"], ["parcelado", "Parcelado"]] as const).map(([value, label]) => (
@@ -410,7 +436,7 @@ export default function Ledger({
               )}
               {eError && <p className="alert" role="alert">{eError}</p>}
               <button className="primary" disabled={eBusy}>
-                {eBusy ? "Salvando…" : converting ? "Salvar parcelas" : "Salvar edição"}
+                {eBusy ? "Salvando…" : converting ? "Salvar parcelas" : makingRecurring ? "Salvar todo mês" : "Salvar edição"}
               </button>
             </form>
           )}
@@ -562,4 +588,5 @@ export default function Ledger({
 function isMacro(value: string | null): value is Exclude<Category, "Pais"> {
   return value !== null && value !== "Pais" && ["Moradia", "Alimentação", "Transporte", "Saúde", "Pessoal", "Lazer", "Aportes"].includes(value);
 }
+
 

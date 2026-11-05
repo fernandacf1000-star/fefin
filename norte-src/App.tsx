@@ -305,28 +305,30 @@ export default function App() {
     scope: "one" | "next" | "all",
   ) {
     if (!uid) throw new Error("Sessão encerrada");
+    const income = row.tipo === "receita" || row.categoria === "salario" || row.categoria === "reembolso_pais";
     const targets = groupScope(rows, row, scope);
     const ids = targets.map((r) => r.id);
     const patch: Record<string, unknown> = {
       descricao: edits.descricao,
       valor: Math.round(edits.valor * 100) / 100,
+      ...(income ? { tipo: "receita" } : {}),
     };
     if (edits.data && targets.length === 1 && !row.parcelamento_id && !row.recorrencia_id) {
       const d = parseDate(edits.data);
       if (Number.isNaN(d.getTime()) || dateKey(d) !== edits.data) throw new Error("Data inválida");
       patch.data = edits.data;
-      const card = row.cartao_id ? cards.find((c) => c.id === row.cartao_id) : undefined;
+      const card = !income && row.cartao_id ? cards.find((c) => c.id === row.cartao_id) : undefined;
       patch.mes_referencia = card ? cardDates(card, d).reference : monthKey(d);
     }
     const category = parentRule(edits.descricao) ? "Pais" : edits.category;
     const subcategory = isSubcategoryOf(edits.subcategory, category)
       ? edits.subcategory : null;
     const categoryChanged = category !== categoryOf(row) || subcategory !== (row.subcategoria ?? null);
-    const [classified] = await completeClassifications([{
+    const [classified] = income ? [] : await completeClassifications([{
       label: edits.descricao, amount: edits.valor, kind: row.tipo === "receita" ? "receita" : "despesa",
       category, subcategory, edited: true,
     }], rows, askAI);
-    const categoryUpdate = categoryPatchWithSubcategory(classified.category!, row, classified.subcategory);
+    const categoryUpdate = classified ? categoryPatchWithSubcategory(classified.category!, row, classified.subcategory) : {};
     if (edits.recurrence) {
       const payload = await convertToRecurringIncome(row, { ...patch, ...categoryUpdate }, edits.recurrence);
       const { data, error } = await sb!.from("norte_lancamentos")
@@ -371,7 +373,7 @@ export default function App() {
         throw error ?? new Error("Alteração não confirmada");
       setRows((old) => old.map((r) => update.ids.includes(r.id) ? { ...r, ...update.patch } as Entry : r));
     }
-    if (categoryChanged || classified.category !== categoryOf(row) || classified.subcategory !== row.subcategoria) {
+    if (classified && (categoryChanged || classified.category !== categoryOf(row) || classified.subcategory !== row.subcategoria)) {
       const related = groupScope(rows, row, "all").map((r) => r.id);
       const result = await sb!.from("norte_lancamentos")
         .update(categoryUpdate).eq("user_id", uid).in("id", related).select("id");

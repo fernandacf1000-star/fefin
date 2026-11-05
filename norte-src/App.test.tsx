@@ -1226,7 +1226,7 @@ it("converte receita única em recorrente sem duplicar e preserva o formulário 
   await currentMonth();
   fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
   fireEvent.click(screen.getByRole("button", { name: "Editar Salário" }));
-  const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+  const dlg = await screen.findByRole("dialog", { name: "Editar receita" });
   fireEvent.click(within(dlg).getByRole("button", { name: "Todo mês" }));
   fireEvent.change(within(dlg).getByLabelText(/Por quantos meses/), { target: { value: "1" } });
   fireEvent.click(within(dlg).getByRole("button", { name: "Salvar todo mês" }));
@@ -1253,11 +1253,36 @@ it.each(["Só este", "Este e os próximos", "Todos"])("edita receita recorrente:
   await currentMonth();
   fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
   fireEvent.click(screen.getByRole("button", { name: "Editar Salário 1" }));
-  const dlg = await screen.findByRole("dialog", { name: "Editar lançamento" });
+  const dlg = await screen.findByRole("dialog", { name: "Editar receita" });
   fireEvent.click(within(dlg).getByRole("button", { name: scope }));
-  fireEvent.change(within(dlg).getByLabelText("Valor (R$)"), { target: { value: "600000" } });
+  fireEvent.change(within(dlg).getByLabelText("Quanto entrou? (R$)"), { target: { value: "600000" } });
   fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
   await waitFor(() => expect(state.rows.filter((r) => r.valor === 6000)).toHaveLength(scope === "Todos" ? 3 : scope === "Este e os próximos" ? 2 : 1));
   expect(state.rows.map((r) => r.data)).toEqual(dates);
   expect(state.rows.every((r) => r.recorrencia_id === "income-series" && r.tipo === "receita")).toBe(true);
+});
+
+it.each([
+  { tipo: "receita" as const, categoria: "receita" },
+  { tipo: "despesa" as const, categoria: "salario" },
+  { tipo: "despesa" as const, categoria: "reembolso_pais" },
+])("edita $categoria como receita sem categorias de gastos nem IA", async ({ tipo, categoria }) => {
+  state.rows = [entry({ descricao: "Recebimento", tipo, categoria, categoria_macro: null, subcategoria: null })];
+  state.ai.mockResolvedValue({ data: null, error: { message: "offline" } });
+  render(<App />);
+  await currentMonth();
+  fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+  fireEvent.click(screen.getByRole("button", { name: "Editar Recebimento" }));
+  const dlg = await screen.findByRole("dialog", { name: "Editar receita" });
+  expect(within(dlg).queryByRole("combobox")).toBeNull();
+  expect(within(dlg).queryByRole("button", { name: "Parcelado" })).toBeNull();
+  expect(within(dlg).getByRole("button", { name: "Todo mês" })).toBeTruthy();
+  fireEvent.change(within(dlg).getByLabelText("De onde veio?"), { target: { value: "Recebimento corrigido" } });
+  fireEvent.change(within(dlg).getByLabelText("Quanto entrou? (R$)"), { target: { value: "150000" } });
+  fireEvent.change(within(dlg).getByLabelText("Data do recebimento"), { target: { value: "2026-11-05" } });
+  fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
+  await screen.findByText("Lançamento atualizado.");
+  expect(state.ai).not.toHaveBeenCalled();
+  expect(state.rows[0]).toMatchObject({ descricao: "Recebimento corrigido", tipo: "receita", categoria, valor: 1500, categoria_macro: null, subcategoria: null, data: "2026-11-05" });
+  expect(state.calls).toHaveLength(1);
 });

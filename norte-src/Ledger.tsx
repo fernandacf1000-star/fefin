@@ -143,6 +143,7 @@ export default function Ledger({
     editSheet.current?.showModal();
   }
   const editing = rows.find((r) => r.id === editId);
+  const editingIncome = !!editing && displayAsIncome(editing);
   const grouped = !!(editing?.parcelamento_id || editing?.recorrencia_id);
   const canSplit = !!editing && !grouped && !editing.is_parcelado && !displayAsIncome(editing);
   const canRecur = !!editing && !grouped && !editing.is_parcelado && displayAsIncome(editing);
@@ -335,7 +336,7 @@ export default function Ledger({
       >
         <div className="sheet">
           <div className="sheet-top">
-            <h2 id="edit-title">Editar lançamento</h2>
+            <h2 id="edit-title">{editingIncome ? "Editar receita" : "Editar lançamento"}</h2>
             <button
               className="icon-button"
               aria-label="Fechar edição"
@@ -355,11 +356,11 @@ export default function Ledger({
                 void saveEdit();
               }}
             >
-              <label htmlFor="edit-desc">Descrição</label>
+              <label htmlFor="edit-desc">{editingIncome ? "De onde veio?" : "Descrição"}</label>
               <input id="edit-desc" maxLength={120} value={eDesc}
                 onChange={(e) => setEDesc(e.target.value)} disabled={eBusy} />
               <label htmlFor="edit-value">
-                {converting ? "Valor total da compra (R$)" : totalInstallments ? "Valor total das parcelas selecionadas (R$)"
+                {editingIncome ? "Quanto entrou? (R$)" : converting ? "Valor total da compra (R$)" : totalInstallments ? "Valor total das parcelas selecionadas (R$)"
                   : grouped && editing.is_parcelado ? "Valor desta parcela (R$)" : "Valor (R$)"}
               </label>
               <input id="edit-value" inputMode="numeric" value={eValue}
@@ -379,7 +380,7 @@ export default function Ledger({
                   <small>O valor se repete a cada mês, a partir do mês da data abaixo. Este lançamento será a primeira receita da série.</small>
                 </>}
               </>}
-              {editing.recorrencia_id && <p className="muted">Todo mês · lançamento recorrente. Escolha abaixo quais lançamentos alterar.</p>}
+              {editing.recorrencia_id && <p className="muted">{editingIncome ? "Todo mês · receita recorrente." : "Todo mês · gasto recorrente."} Escolha abaixo quais lançamentos alterar.</p>}
               {canSplit && <>
                 <div className="sheet-tabs" role="group" aria-label="Parcelamento">
                   {([["uma", "Uma vez"], ["parcelado", "Parcelado"]] as const).map(([value, label]) => (
@@ -399,6 +400,7 @@ export default function Ledger({
                   </p>}
                 </>}
               </>}
+              {!editingIncome && <>
               <label htmlFor="edit-category">Categoria</label>
               <CategorySelect id="edit-category" value={eCategory} disabled={eBusy}
                 onChange={(cat) => {
@@ -410,10 +412,11 @@ export default function Ledger({
                 <SubcategorySelect id="edit-subcategory" category={eCategory} value={eSubcategory} disabled={eBusy}
                   onChange={setESubcategory} />
               </>}
-              {editing.tipo === "despesa" && <small>Para corrigir outra parcela, a categoria será atualizada na série toda.</small>}
+              <small>Para corrigir outra parcela, a categoria será atualizada na série toda.</small>
+              </>}
               {!grouped ? (
                 <>
-                  <label htmlFor="edit-date">Data</label>
+                  <label htmlFor="edit-date">{editingIncome ? "Data do recebimento" : "Data"}</label>
                   <input id="edit-date" type="date" value={eDate}
                     onChange={(e) => setEDate(e.target.value)} disabled={eBusy} />
                 </>

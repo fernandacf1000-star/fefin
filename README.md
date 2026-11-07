@@ -34,9 +34,25 @@ Fontes em `supabase/functions/`, compartilhando calendário, memória e parsing 
 
 - `norte-ai`: `verify_jwt=true`, valida usuário com `getUser`, tarefas `parse` e `classify`, categorias fixas e `ANTHROPIC_API_KEY` no servidor.
 - `norte-sms-lancamento`: novo endpoint exclusivo do Norte, gravando e classificando somente `norte_lancamentos`. O atalho do iPhone precisa apontar para `/functions/v1/norte-sms-lancamento` para alimentar o Norte. O endpoint antigo `sms-lancamento` continua inalterado e exclusivo do FeFin.
+- `norte-pix-itau`: importa avisos de Pix recebido como receitas únicas em `norte_lancamentos`. Usa o dia da notificação no fuso de São Paulo para a data e o mês do lançamento. Reenvios do mesmo aviso usam o mesmo ID e o CPF/CNPJ é descartado.
 - `sms-lancamento` (legado do FeFin): `verify_jwt=false` exclusivamente porque o webhook autentica por `x-sms-key` com `SMS_SECRET`. Preserva o usuário e os cartões existentes, `dry_run`, os formatos Master/pais/Visa e a divisão de centavos na última parcela. A deduplicação compara estabelecimento, cartão, data, valor e quantidade de parcelas dos últimos dez minutos. Mensagens irrelevantes são ignoradas.
 
 As chaves privadas ficam nos secrets já existentes do Supabase. A migração `isolate_norte_data` cria apenas as duas tabelas do Norte, com políticas de acesso e índices próprios; as tabelas e os dados históricos do FeFin permanecem intactos. A nova tabela de lançamentos não recebe cópia de qualquer histórico anterior.
+
+### Atalho para Pix recebido no Itaú
+
+1. No app Atalhos do iPhone com iOS 27 ou posterior, crie um atalho e, em **Editar → Automação**, selecione **Notificação** e escolha o app **Itaú**. Use o filtro de título `Pix recebido`, habilite o gatilho e selecione a execução automática quando disponível.
+2. Em **Formatar Data**, selecione **Notificação → Data**, com formato personalizado `yyyy-MM-dd'T'HH:mm:ss.SSSXXX`. Use o resultado no campo `notified_at`.
+3. Em **Substituir Texto**, use o **Corpo** da notificação e substitua `(?i)(?:\s*[,;]\s*|\s+)(?:CPF|CNPJ)\b[\s\S]*$` por vazio. Ative **Expressão Regular**. Use o texto resultante no campo `text`.
+4. Em **Obter Conteúdo de URL**, use `https://zhzaiphsnfqcgvtckdgv.supabase.co/functions/v1/norte-pix-itau`, método **POST** e corpo **JSON**. Em Cabeçalhos, inclua `x-sms-key` com a mesma chave usada no atalho de SMS do Norte.
+
+| Campo JSON | Valor |
+| --- | --- |
+| `title` | Notificação → Título |
+| `text` | Texto resultante de Substituir Texto |
+| `notified_at` | Resultado de Formatar Data |
+
+Para testar sem gravar uma receita, inclua `dry_run` como booleano `true`. A resposta mostra o valor e o dia do lançamento. Remova `dry_run` para importar os próximos avisos.
 
 ## Vercel
 

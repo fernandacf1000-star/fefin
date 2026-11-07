@@ -10,3 +10,7 @@ verify_jwt = false
 # Independent Norte SMS ingestion; same x-sms-key authentication, separate records.
 [functions.norte-sms-lancamento]
 verify_jwt = false
+
+# The iPhone shortcut authenticates through x-sms-key / SMS_SECRET.
+[functions.norte-pix-itau]
+verify_jwt = false

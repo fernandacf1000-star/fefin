@@ -235,11 +235,17 @@ export function sumMoney(values: number[]): number {
 }
 export const countsAsIncome = (r: Entry) =>
   r.tipo === "receita" || r.categoria === "salario" || r.categoria === "reembolso_pais";
+export const INVOICE_CREDIT_CATEGORY = "credito_fatura";
+export const isInvoiceCredit = (r: Entry) =>
+  r.tipo === "receita" && r.categoria === INVOICE_CREDIT_CATEGORY;
+const invoiceCreditMonth = (r: Entry) =>
+  isInvoiceCredit(r) ? r.mes_referencia : null;
 export function monthIncome(rows: Entry[], today: Date) {
+  const month = monthKey(today);
   return sumMoney(
     rows
       .filter(
-        (r) => countsAsIncome(r) && r.data.slice(0, 7) === monthKey(today),
+        (r) => countsAsIncome(r) && (invoiceCreditMonth(r) ?? r.data.slice(0, 7)) === month,
       )
       .map((r) => Number(r.valor)),
   );
@@ -341,8 +347,9 @@ export const entryDate = (r: Entry) =>
     ? parseDate(r.data)
     : effectiveDate(r);
 export function monthEntries(rows: Entry[], selected: Date) {
+  const month = monthKey(selected);
   return rows
-    .filter((r) => monthKey(entryDate(r)) === monthKey(selected))
+    .filter((r) => (invoiceCreditMonth(r) ?? monthKey(entryDate(r))) === month)
     .sort(
       (a, b) =>
         dateKey(entryDate(b)).localeCompare(dateKey(entryDate(a))) ||

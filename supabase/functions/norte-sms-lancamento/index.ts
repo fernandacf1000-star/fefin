@@ -28,6 +28,19 @@ Deno.serve(createSmsHandler({
     const { error } = await client().from('norte_lancamentos').insert(rows);
     if (error) throw error;
   },
+  card: async (id) => {
+    const { data, error } = await client().from('norte_cartoes')
+      .select('id,nome,dia_fechamento,dia_vencimento,ativo')
+      .eq('user_id', USER_ID).eq('id', id).single();
+    if (error) throw error;
+    return data;
+  },
+  saveCredit: async (row) => {
+    const { data, error } = await client().from('norte_lancamentos')
+      .upsert(row, { onConflict: 'id', ignoreDuplicates: true }).select('id');
+    if (error) throw error;
+    return data.length === 1;
+  },
   ask: async (body) => {
     for (let attempt = 0; attempt < 2; attempt++) {
       const response = await classify(new Request('https://internal.invalid/classify', { method: 'POST',

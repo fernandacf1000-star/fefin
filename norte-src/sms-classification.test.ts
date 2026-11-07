@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createSmsHandler } from '../supabase/functions/norte-sms-lancamento/handler.ts';
 import { createHandler } from '../supabase/functions/norte-ai/handler.ts';
-import type { Entry } from './domain';
+import { dateKey, entryDate, monthEntries, monthSummary, type Entry } from './domain';
+import { SMS_CARDS } from '../supabase/functions/_shared/sms.ts';
 
 const text = 'Compra aprovada no PERSONNALITE THE ONE final 1234 - SACOLAO PERDIZES valor R$ 85,00 em 25/10/2026';
 const now = () => new Date('2026-10-25T12:00:00Z');
@@ -12,6 +13,7 @@ const entry = (extra = {}) => ({ id: 'a', user_id: 'u', descricao: 'SACOLAO PERD
   subcategoria: 'Supermercado', subcategoria_pais: null, data: '2026-10-24', created_at: '2026-10-24T12:00:00Z', ...extra } as Entry);
 function setup(history: Entry[] = []) {
   const deps = { secret: () => 'secret', userId: 'u', now, history: vi.fn().mockResolvedValue(history), save: vi.fn().mockResolvedValue(undefined),
+    card: vi.fn().mockResolvedValue(SMS_CARDS.master), saveCredit: vi.fn().mockResolvedValue(true),
     ask: vi.fn().mockResolvedValue({ categories: ['Alimentação'], subcategories: ['Supermercado'] }) };
   return { deps, handler: createSmsHandler(deps) };
 }
@@ -74,5 +76,43 @@ describe('SMS usa a mesma classificação obrigatória do app', () => {
     });
     expect((await createSmsHandler(deps)(request({}))).status).toBe(200);
     expect(deps.save.mock.calls[0][0][0].subcategoria).toBe('Supermercado');
+  });
+});
+
+describe('Crédito de fatura por SMS', () => {
+  const creditText = 'O credito de     8,99 na fatura do Personnalite The One e referente a compra de 10/04/2026 em Pg *ifc Malwee Malwee Sao Paulo Bra     .';
+  it('usa a data do SMS em São Paulo e contabiliza somente no mês da fatura', async () => {
+    const { deps, handler } = setup();
+    const response = await handler(request({ text: creditText, notified_at: '2026-11-23T01:00:00Z' }));
+    expect(response.status).toBe(200);
+    expect(deps.card).toHaveBeenCalledWith(SMS_CARDS.master.id);
+    expect(deps.history).not.toHaveBeenCalled();
+    expect(deps.ask).not.toHaveBeenCalled();
+    expect(deps.save).not.toHaveBeenCalled();
+    const row = deps.saveCredit.mock.calls[0][0] as Entry;
+    expect(row).toMatchObject({
+      tipo: 'receita', categoria: 'credito_fatura', valor: 8.99, data: '2026-11-22',
+      mes_referencia: '2026-12', cartao_id: SMS_CARDS.master.id, forma_pagamento: 'credito',
+    });
+    expect(dateKey(entryDate(row))).toBe('2026-11-22');
+    expect(monthEntries([row], new Date(2026, 10, 1))).toEqual([]);
+    expect(monthEntries([row], new Date(2026, 11, 1))).toEqual([row]);
+    expect(monthSummary([row], new Date(2026, 10, 1)).income).toBe(0);
+    expect(monthSummary([row], new Date(2026, 11, 1))).toMatchObject({ income: 8.99, spent: 0, balance: 8.99 });
+  });
+  it('mantém a mesma chave no reenvio e usa a fatura seguinte após o fechamento', async () => {
+    const { deps, handler } = setup();
+    deps.saveCredit.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    await handler(request({ text: creditText, notified_at: '2026-11-23T17:08:00-03:00' }));
+    const retry = await handler(request({ text: creditText, notified_at: '2026-11-23T20:08:00Z' }));
+    expect(await retry.json()).toEqual({ ok: true, duplicate: true });
+    expect(deps.saveCredit.mock.calls[0][0]).toEqual(deps.saveCredit.mock.calls[1][0]);
+    expect(deps.saveCredit.mock.calls[0][0].mes_referencia).toBe('2027-01');
+  });
+  it('aceita o atalho existente com apenas o texto e simula sem gravar', async () => {
+    const { deps, handler } = setup();
+    const result = await (await handler(request({ text: creditText, dry_run: true }))).json();
+    expect(result.rows[0]).toMatchObject({ data: '2026-10-25', mes_referencia: '2026-12' });
+    expect(deps.saveCredit).not.toHaveBeenCalled();
   });
 });

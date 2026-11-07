@@ -16,6 +16,7 @@ import {
   effectiveDate,
   parseMoney,
   cardDates,
+  isInvoiceCredit,
   monthPeriod,
   installmentRows,
   recurringRows,
@@ -307,6 +308,7 @@ export default function App() {
   ) {
     if (!uid) throw new Error("Sessão encerrada");
     const income = row.tipo === "receita" || row.categoria === "salario" || row.categoria === "reembolso_pais";
+    const invoiceCredit = isInvoiceCredit(row);
     const targets = groupScope(rows, row, scope);
     const ids = targets.map((r) => r.id);
     const patch: Record<string, unknown> = {
@@ -318,11 +320,12 @@ export default function App() {
       patch.categoria = edits.parentsRefund ? "reembolso_pais" : "receita";
       patch.subcategoria_pais = edits.parentsRefund ? "Pais" : null;
     }
-    if (edits.data && targets.length === 1 && !row.parcelamento_id && !row.recorrencia_id) {
+    if (edits.data && (!invoiceCredit || edits.data !== row.data) && targets.length === 1 && !row.parcelamento_id && !row.recorrencia_id) {
       const d = parseDate(edits.data);
       if (Number.isNaN(d.getTime()) || dateKey(d) !== edits.data) throw new Error("Data inválida");
       patch.data = edits.data;
-      const card = !income && row.cartao_id ? cards.find((c) => c.id === row.cartao_id) : undefined;
+      const card = (!income || invoiceCredit) && row.cartao_id ? cards.find((c) => c.id === row.cartao_id) : undefined;
+      if (invoiceCredit && !card) throw new Error("Cartão indisponível para recalcular a fatura.");
       patch.mes_referencia = card ? cardDates(card, d).reference : monthKey(d);
     }
     const category = parentRule(edits.descricao) ? "Pais" : edits.category;

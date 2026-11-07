@@ -1,13 +1,16 @@
 import { completeClassifications } from '../_shared/classification.ts';
-import { subcategoryCategory } from '../_shared/norte.ts';
-import type { Entry } from '../_shared/norte.ts';
-import { parseSms, smsRows } from '../_shared/sms.ts';
+import { cardDates, INVOICE_CREDIT_CATEGORY, parseDate, subcategoryCategory } from '../_shared/norte.ts';
+import type { Card, Entry } from '../_shared/norte.ts';
+import { notificationDate, notificationId, saoPauloDate } from '../_shared/notification.ts';
+import { parseInvoiceCreditSms, parseSms, smsRows } from '../_shared/sms.ts';
 
 type Dependencies = {
   secret: () => string | undefined;
   userId: string;
   history: () => Promise<Entry[]>;
   save: (rows: Record<string, unknown>[]) => Promise<void>;
+  card: (id: string) => Promise<Card>;
+  saveCredit: (row: Record<string, unknown>) => Promise<boolean>;
   ask: (body: Record<string, unknown>) => Promise<any>;
   now?: () => Date;
 };
@@ -18,15 +21,46 @@ export function createSmsHandler(deps: Dependencies) {
     if (req.method !== 'POST') return json({ error: 'use POST' }, 405);
     const secret = deps.secret();
     if (!secret || req.headers.get('x-sms-key') !== secret) return json({ error: 'unauthorized' }, 401);
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body.text !== 'string') return json({ error: 'Envie o texto do SMS.' }, 400);
+    const now = deps.now?.() ?? new Date();
+    const credit = parseInvoiceCreditSms(body.text);
+    if (credit) {
+      const received = body.notified_at == null ? now : notificationDate(body.notified_at);
+      if (!received) return json({ error: 'Envie a data do SMS em ISO 8601 com fuso horário.' }, 422);
+      const data = saoPauloDate.format(received);
+      try {
+        const card = await deps.card(credit.card.id);
+        const row = {
+          id: await notificationId(['norte-sms-credit', deps.userId,
+            body.notified_at == null ? data : received.toISOString(), credit.text]),
+          user_id: deps.userId,
+          descricao: `Crédito na fatura · ${credit.merchant}`,
+          valor: credit.cents / 100,
+          tipo: 'receita',
+          categoria: INVOICE_CREDIT_CATEGORY,
+          data,
+          mes_referencia: cardDates(card, parseDate(data)).reference,
+          forma_pagamento: 'credito',
+          cartao_id: card.id,
+          pago: true,
+        };
+        if (body.dry_run) return json({ ok: true, dry_run: true, rows: [row] });
+        const inserted = await deps.saveCredit(row);
+        return json(inserted
+          ? { ok: true, inserted: 1, descricao: row.descricao, valor: row.valor, data, mes_referencia: row.mes_referencia }
+          : { ok: true, duplicate: true });
+      } catch {
+        return json({ ok: false, error: 'Não consegui lançar o crédito. Reenvie o SMS com a data original.' }, 503);
+      }
+    }
     try {
-      const body = await req.json();
-      const now = deps.now?.() ?? new Date();
-      const purchase = parseSms(String(body.text ?? ''), now);
+      const purchase = parseSms(body.text, now);
       if (!purchase) return json({ ok: false, ignored: true });
       const history = await deps.history();
       const rawRows = smsRows(purchase, deps.userId, null, purchase.installments > 1 ? crypto.randomUUID() : null);
       const since = new Date(now.getTime() - 600000).toISOString();
-      const duplicate = history.some((row) => row.created_at && row.created_at >= since &&
+      const duplicate = history.some((row) => row.tipo === 'despesa' && row.created_at && row.created_at >= since &&
         row.descricao === purchase.merchant && row.data === purchase.date && row.cartao_id === purchase.card.id &&
         Number(row.valor) === rawRows[0].valor && (row.parcela_total ?? 1) === purchase.installments);
       if (duplicate && !body.dry_run) return json({ ok: true, duplicate: true });

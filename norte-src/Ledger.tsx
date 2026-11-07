@@ -6,6 +6,7 @@ import {
   entryDate,
   dateKey,
   isSubcategoryOf,
+  isInvoiceCredit,
   monthEntries,
   monthSummary,
   parseDate,
@@ -35,6 +36,7 @@ export type EntryEdit = {
   parentsRefund?: boolean;
 };
 const displayDate = (row: Entry) => {
+  if (isInvoiceCredit(row)) return row.data;
   if (row.forma_pagamento !== "credito" && !row.cartao_id) return dateKey(entryDate(row));
   if (!row.created_at) return row.data;
   const date = new Date(row.created_at);
@@ -156,9 +158,10 @@ export default function Ledger({
   }
   const editing = rows.find((r) => r.id === editId);
   const editingIncome = !!editing && displayAsIncome(editing);
+  const editingInvoiceCredit = !!editing && isInvoiceCredit(editing);
   const grouped = !!(editing?.parcelamento_id || editing?.recorrencia_id);
   const canSplit = !!editing && !grouped && !editing.is_parcelado && !displayAsIncome(editing);
-  const canRecur = !!editing && !grouped && !editing.is_parcelado && displayAsIncome(editing);
+  const canRecur = !!editing && !grouped && !editing.is_parcelado && editingIncome && !editingInvoiceCredit;
   const makingRecurring = canRecur && ePlan === "recorrente";
   const converting = canSplit && ePlan === "parcelado";
   const preview = converting && isInstallmentCount(Number(eInstallments))
@@ -315,7 +318,7 @@ export default function Ledger({
                       {row.recorrencia_id && !row.is_parcelado && <span className="entry-pill">recorrente</span>}
                     </span>
                     <span className="ledger-category-line">
-                      {row.subcategoria ?? categoryOf(row) ?? "Escolher categoria"} · {cardName(row)}
+                      {isInvoiceCredit(row) ? "Receita" : row.subcategoria ?? categoryOf(row) ?? "Escolher categoria"} · {cardName(row)}
                     </span>
                   </span>
                   <span className={displayAsIncome(row) ? "ledger-amount income-value" : row.subcategoria_pais ? "ledger-amount parent-value" : "ledger-amount"}>
@@ -381,7 +384,7 @@ export default function Ledger({
               </label>
               <input id="edit-value" inputMode="numeric" value={eValue}
                 onChange={(e) => setEValue(formatMoneyInput(e.target.value))} disabled={eBusy} />
-              {editingIncome && <>
+              {editingIncome && !editingInvoiceCredit && <>
                 <label htmlFor="edit-income-category">Classificação da receita</label>
                 <select id="edit-income-category" value={eParentsRefund ? "reembolso_pais" : "receita"} disabled={eBusy}
                   onChange={(e) => setEParentsRefund(e.target.value === "reembolso_pais")}>
@@ -502,7 +505,7 @@ export default function Ledger({
                   <dd>{money(Number(detail.valor))}</dd>
                 </div>
                 <div>
-                  <dt>Data da compra</dt>
+                  <dt>{isInvoiceCredit(detail) ? "Data do SMS" : "Data da compra"}</dt>
                   <dd>{parseDate(detail.data).toLocaleDateString("pt-BR")}</dd>
                 </div>
                 <div>
@@ -520,7 +523,7 @@ export default function Ledger({
                 <div>
                   <dt>Categoria</dt>
                   <dd>
-                    {categoryOf(detail) ??
+                    {isInvoiceCredit(detail) ? "Crédito na fatura" : categoryOf(detail) ??
                       detail.categoria_macro ??
                       detail.categoria}
                   </dd>

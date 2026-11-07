@@ -11,7 +11,7 @@ import {
   within,
 } from "@testing-library/react";
 import App from "./App";
-import { dateKey, Entry } from "./domain";
+import { addMonths, dateKey, Entry, monthKey } from "./domain";
 const state = vi.hoisted(() => ({
   rows: [] as Record<string, unknown>[],
   calls: [] as { kind: string; body: Record<string, unknown> }[],
@@ -882,6 +882,33 @@ class TestPointerEvent extends MouseEvent {
   }
 }
 describe("swipe, editar e excluir", () => {
+  it("mostra o crédito como receita na fatura e preserva a referência ao editar", async () => {
+    const now = new Date();
+    const smsDate = dateKey(new Date(now.getFullYear(), now.getMonth(), 7));
+    const invoiceMonth = monthKey(addMonths(now, 1));
+    state.rows = [entry({
+      descricao: "Crédito na fatura · Malwee", valor: 8.99, tipo: "receita",
+      categoria: "credito_fatura", categoria_macro: null, subcategoria: null,
+      data: smsDate, mes_referencia: invoiceMonth, cartao_id: "master",
+      forma_pagamento: "credito",
+    })];
+    render(<App />);
+    await screen.findByRole("region", { name: "Resumo do mês" });
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    const row = screen.getByRole("button", { name: "Ver detalhes de Crédito na fatura · Malwee" });
+    expect(row.textContent).toContain("Receita · Master");
+    fireEvent.click(row);
+    const detail = screen.getByRole("dialog", { name: "Detalhes do lançamento" });
+    expect(within(detail).getByText("Data do SMS").nextElementSibling?.textContent).toBe(smsDate.split("-").reverse().join("/"));
+    expect(within(detail).getByText("Mês da fatura").nextElementSibling?.textContent).toBe(invoiceMonth.split("-").reverse().join("/"));
+    fireEvent.click(within(detail).getByRole("button", { name: "Editar" }));
+    const edit = screen.getByRole("dialog", { name: "Editar receita" });
+    fireEvent.change(within(edit).getByLabelText("Quanto entrou? (R$)"), { target: { value: "999" } });
+    fireEvent.click(within(edit).getByRole("button", { name: "Salvar edição" }));
+    await screen.findByText("Lançamento atualizado.");
+    expect(state.rows[0]).toMatchObject({ valor: 9.99, data: smsDate, mes_referencia: invoiceMonth, categoria: "credito_fatura" });
+  });
+
   it("ordena por data informada no Pix e pelo dia do cadastro no cartão", async () => {
     const first = dateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     const second = dateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 2));

@@ -32,6 +32,10 @@ export default function MonthView({
           <dt>Gastou</dt>
           <dd>{money(month.spent)}</dd>
         </div>
+        <div>
+          <dt>Pais</dt>
+          <dd>{money(month.parentsNet)}</dd>
+        </div>
       </dl>
       <progress
         className={month.spent > month.income ? "care-progress" : ""}

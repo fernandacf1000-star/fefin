@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import React from "react";
 import { webcrypto } from "node:crypto";
 import { beforeAll, beforeEach, afterEach, describe, it, expect, vi } from "vitest";
@@ -374,19 +373,27 @@ it("preserva subcategoria do parse sem chamar classify e mostra no card limpo", 
   expect(screen.queryByRole("combobox", { name: "Categoria do lançamento" })).toBeNull();
 });
 
-it("soma mercado dos Pais ao gasto do mês de vencimento do cartão", async () => {
+it("mostra o gasto dos Pais no mês da fatura e desconta só os reembolsos dos Pais do mês selecionado", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-18T12:00:00"));
-  state.rows = [entry({
-    id: "parent-market", descricao: "Pão de Açúcar", valor: 711.07,
-    categoria_macro: "Alimentação", subcategoria: "Supermercado", subcategoria_pais: "Pais",
-    data: "2026-10-18", mes_referencia: "2026-11", forma_pagamento: "credito", cartao_id: "master",
-  })];
+  state.rows = [
+    entry({
+      id: "parent-market", descricao: "Pão de Açúcar", valor: 711.07,
+      categoria_macro: "Alimentação", subcategoria: "Supermercado", subcategoria_pais: "Pais",
+      data: "2026-10-18", mes_referencia: "2026-11", forma_pagamento: "credito", cartao_id: "master",
+    }),
+    entry({ id: "refund-oct", valor: 100, tipo: "receita", categoria: "reembolso_pais", data: "2026-10-20" }),
+    entry({ id: "refund-nov", valor: 350, tipo: "receita", categoria: "reembolso_pais", data: "2026-11-01" }),
+    entry({ id: "other-refund", valor: 25, tipo: "receita", categoria: "reembolso_adriano", data: "2026-11-01" }),
+  ];
   render(<App />);
   const month = await currentMonth();
   expect(within(month).getByText("Gastou").nextElementSibling?.textContent).toMatch(/0,00/);
+  expect(within(month).getByText("Pais").nextElementSibling?.textContent).toMatch(/-R\$\s*100,00/);
   fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
   expect(within(month).getByText("Gastou").nextElementSibling?.textContent).toMatch(/711,07/);
+  expect(within(month).getByText("Ganhou").nextElementSibling?.textContent).toMatch(/375,00/);
+  expect(within(month).getByText("Pais").nextElementSibling?.textContent).toMatch(/361,07/);
   fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
   expect(screen.getByText(/Supermercado · Master/)).toBeTruthy();
 });
@@ -423,7 +430,7 @@ it("pede à IA a subcategoria quando a categoria já foi reconhecida", async () 
   expect(state.ai.mock.calls[1][1].body.items[0].category).toBe("Alimentação");
 });
 
-it("mostra orçamento estourado com valor positivo e só os três totais", async () => {
+it("mostra orçamento estourado com valor positivo e inclui Pais no resumo", async () => {
   state.rows = [entry({ tipo: "receita", valor: 100 }), entry({ valor: 250 })];
   const { container } = render(<App />);
   const month = await currentMonth();
@@ -440,7 +447,8 @@ it("mostra orçamento estourado com valor positivo e só os três totais", async
   expect(
     screen.getByRole("progressbar").classList.contains("care-progress"),
   ).toBe(true);
-  expect(within(month).getAllByRole("definition")).toHaveLength(2);
+  expect(within(month).getAllByRole("definition")).toHaveLength(3);
+  expect(within(month).getByText("Pais").nextElementSibling?.textContent).toMatch(/0,00/);
   expect(screen.queryByText(/Ritmo diário/)).toBeNull();
   expect(screen.getByText("Melhor cartão hoje")).toBeTruthy();
   expect(screen.queryByLabelText("Valor mensal (R$)")).toBeNull();

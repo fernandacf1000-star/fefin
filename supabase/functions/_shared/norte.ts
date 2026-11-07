@@ -382,6 +382,8 @@ export function monthPeriod(selected: Date, now: Date) {
 }
 export function monthPresentation(rows: Entry[], selected: Date, now: Date) {
   const totals = monthSummary(rows, selected);
+  const parentsSpent = monthSpending(rows.filter((row) => categoryOf(row) === "Pais"), selected);
+  const parentsRefunded = monthIncome(rows.filter((row) => row.categoria === "reembolso_pais"), selected);
   const period = monthPeriod(selected, now);
   const over = totals.balance < 0;
   const monthName = selected.toLocaleDateString("pt-BR", { month: "long" });
@@ -397,6 +399,7 @@ export function monthPresentation(rows: Entry[], selected: Date, now: Date) {
           : "Falta gastar";
   return {
     ...totals,
+    parentsNet: sumMoney([parentsSpent, -parentsRefunded]),
     period,
     over,
     label,

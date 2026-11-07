@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import React from "react";
 import { webcrypto } from "node:crypto";
 import { beforeAll, beforeEach, afterEach, describe, it, expect, vi } from "vitest";
@@ -1264,10 +1265,13 @@ it.each(["Só este", "Este e os próximos", "Todos"])("edita receita recorrente:
   const dlg = await screen.findByRole("dialog", { name: "Editar receita" });
   fireEvent.click(within(dlg).getByRole("button", { name: scope }));
   fireEvent.change(within(dlg).getByLabelText("Quanto entrou? (R$)"), { target: { value: "600000" } });
+  fireEvent.change(within(dlg).getByLabelText("Classificação da receita"), { target: { value: "reembolso_pais" } });
   fireEvent.click(within(dlg).getByRole("button", { name: "Salvar edição" }));
   await waitFor(() => expect(state.rows.filter((r) => r.valor === 6000)).toHaveLength(scope === "Todos" ? 3 : scope === "Este e os próximos" ? 2 : 1));
   expect(state.rows.map((r) => r.data)).toEqual(dates);
   expect(state.rows.every((r) => r.recorrencia_id === "income-series" && r.tipo === "receita")).toBe(true);
+  expect(state.rows.filter((r) => r.categoria === "reembolso_pais" && r.subcategoria_pais === "Pais").map((r) => r.id))
+    .toEqual(scope === "Todos" ? ["income-0", "income-1", "income-2"] : scope === "Este e os próximos" ? ["income-1", "income-2"] : ["income-1"]);
 });
 
 it.each([
@@ -1282,7 +1286,8 @@ it.each([
   fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
   fireEvent.click(screen.getByRole("button", { name: "Editar Recebimento" }));
   const dlg = await screen.findByRole("dialog", { name: "Editar receita" });
-  expect(within(dlg).queryByRole("combobox")).toBeNull();
+  expect(within(dlg).getByRole("combobox", { name: "Classificação da receita" })).toHaveProperty("value", categoria === "reembolso_pais" ? "reembolso_pais" : "receita");
+  expect(within(dlg).queryByLabelText("Subcategoria")).toBeNull();
   expect(within(dlg).queryByRole("button", { name: "Parcelado" })).toBeNull();
   expect(within(dlg).getByRole("button", { name: "Todo mês" })).toBeTruthy();
   fireEvent.change(within(dlg).getByLabelText("De onde veio?"), { target: { value: "Recebimento corrigido" } });
@@ -1293,4 +1298,33 @@ it.each([
   expect(state.ai).not.toHaveBeenCalled();
   expect(state.rows[0]).toMatchObject({ descricao: "Recebimento corrigido", tipo: "receita", categoria, valor: 1500, categoria_macro: null, subcategoria: null, data: "2026-11-05" });
   expect(state.calls).toHaveLength(1);
+});
+
+it("marca e desmarca um Pix recebido como reembolso dos Pais e recalcula o mês", async () => {
+  state.rows = [
+    entry({ id: "expense", descricao: "Mercado dos pais", valor: 500, subcategoria_pais: "Pais" }),
+    entry({ id: "pix", descricao: "Pix recebido de Antonio", valor: 350, tipo: "receita", categoria: "receita" }),
+  ];
+  render(<App />);
+  await currentMonth();
+  const openPix = async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Editar Pix recebido de Antonio" }));
+    return within(await screen.findByRole("dialog", { name: "Editar receita" }));
+  };
+  const edit = await openPix();
+  fireEvent.change(edit.getByLabelText("Classificação da receita"), { target: { value: "reembolso_pais" } });
+  fireEvent.click(edit.getByRole("button", { name: "Salvar edição" }));
+  await screen.findByText("Reembolso dos Pais", { selector: "small" });
+  expect(state.rows[1]).toMatchObject({ tipo: "receita", categoria: "reembolso_pais", subcategoria_pais: "Pais", valor: 350 });
+  fireEvent.click(screen.getByRole("button", { name: "Mês" }));
+  const month = within(screen.getByRole("region", { name: "Resumo do mês" }));
+  expect(month.getByText("Pais").nextElementSibling?.textContent).toMatch(/150,00/);
+
+  const reopen = await openPix();
+  expect(reopen.getByLabelText("Classificação da receita")).toHaveProperty("value", "reembolso_pais");
+  fireEvent.change(reopen.getByLabelText("Classificação da receita"), { target: { value: "receita" } });
+  fireEvent.click(reopen.getByRole("button", { name: "Salvar edição" }));
+  await waitFor(() => expect(state.rows[1]).toMatchObject({ categoria: "receita", subcategoria_pais: null }));
+  expect(state.ai).not.toHaveBeenCalled();
 });

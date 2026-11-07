@@ -33,6 +33,7 @@ import CategorySelect from "./CategorySelect";
 import SubcategorySelect from "./SubcategorySelect";
 import MonthSelector from "./MonthSelector";
 import Ledger from "./Ledger";
+import type { EntryEdit } from "./Ledger";
 import MonthView from "./MonthView";
 import Charts from "./Charts";
 import { formatMoneyInput } from "./money-input";
@@ -301,7 +302,7 @@ export default function App() {
   }
   async function editEntry(
     row: Entry,
-    edits: { descricao: string; valor: number; data?: string; installments?: number; recurrence?: { day: number; months: number }; category: Category | null; subcategory: string | null },
+    edits: EntryEdit,
     scope: "one" | "next" | "all",
   ) {
     if (!uid) throw new Error("Sessão encerrada");
@@ -313,6 +314,10 @@ export default function App() {
       valor: Math.round(edits.valor * 100) / 100,
       ...(income ? { tipo: "receita" } : {}),
     };
+    if (income && edits.parentsRefund !== undefined) {
+      patch.categoria = edits.parentsRefund ? "reembolso_pais" : "receita";
+      patch.subcategoria_pais = edits.parentsRefund ? "Pais" : null;
+    }
     if (edits.data && targets.length === 1 && !row.parcelamento_id && !row.recorrencia_id) {
       const d = parseDate(edits.data);
       if (Number.isNaN(d.getTime()) || dateKey(d) !== edits.data) throw new Error("Data inválida");

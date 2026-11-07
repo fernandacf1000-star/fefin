@@ -24,6 +24,16 @@ const money = (n: number) =>
     n,
   );
 const displayAsIncome = (row: Entry) => row.tipo === "receita" || row.categoria === "salario" || row.categoria === "reembolso_pais";
+export type EntryEdit = {
+  descricao: string;
+  valor: number;
+  data?: string;
+  installments?: number;
+  recurrence?: { day: number; months: number };
+  category: Category | null;
+  subcategory: string | null;
+  parentsRefund?: boolean;
+};
 const displayDate = (row: Entry) => {
   if (row.forma_pagamento !== "credito" && !row.cartao_id) return dateKey(entryDate(row));
   if (!row.created_at) return row.data;
@@ -60,7 +70,7 @@ export default function Ledger({
   onDelete: (r: Entry, scope: "one" | "next" | "all") => Promise<void>;
   onEdit: (
     r: Entry,
-    edits: { descricao: string; valor: number; data?: string; installments?: number; recurrence?: { day: number; months: number }; category: Category | null; subcategory: string | null },
+    edits: EntryEdit,
     scope: "one" | "next" | "all",
   ) => Promise<void>;
   categoryFilter: Category | null;
@@ -83,6 +93,7 @@ export default function Ledger({
     [eRecMonths, setERecMonths] = useState("12"),
     [eCategory, setECategory] = useState<Category | null>(null),
     [eSubcategory, setESubcategory] = useState<string | null>(null),
+    [eParentsRefund, setEParentsRefund] = useState(false),
     [eScope, setEScope] = useState<"one" | "next" | "all">("one"),
     [eBusy, setEBusy] = useState(false),
     [eError, setEError] = useState("");
@@ -138,6 +149,7 @@ export default function Ledger({
     setEInstallments("2");
     setECategory(categoryOf(row));
     setESubcategory(row.subcategoria);
+    setEParentsRefund(row.categoria === "reembolso_pais");
     setEScope("one");
     setEError("");
     editSheet.current?.showModal();
@@ -182,7 +194,13 @@ export default function Ledger({
     try {
       await onEdit(
         editing,
-        { descricao: eDesc.trim(), valor, category: eCategory, subcategory: eSubcategory, ...(withDate ? { data: eDate } : {}), ...(converting ? { installments: Number(eInstallments) } : {}), ...(makingRecurring ? { recurrence: { day: Number(eRecDay), months: Number(eRecMonths) } } : {}) },
+        {
+          descricao: eDesc.trim(), valor, category: eCategory, subcategory: eSubcategory,
+          ...(withDate ? { data: eDate } : {}),
+          ...(converting ? { installments: Number(eInstallments) } : {}),
+          ...(makingRecurring ? { recurrence: { day: Number(eRecDay), months: Number(eRecMonths) } } : {}),
+          ...(editingIncome && eParentsRefund !== (editing.categoria === "reembolso_pais") ? { parentsRefund: eParentsRefund } : {}),
+        },
         eScope,
       );
       editSheet.current?.close();
@@ -305,14 +323,12 @@ export default function Ledger({
                   </span>
                 </button>
                 {pending.has(row.id) && <small className="entry-tag" role="status">classificando…</small>}
-                {row.subcategoria_pais ? (
+                {row.categoria === "reembolso_pais" ? (
+                  <small className="entry-tag">Reembolso dos Pais</small>
+                ) : row.subcategoria_pais ? (
                   <small className="entry-tag">Pais</small>
                 ) : row.categoria_macro === "Aportes" ? (
                   <small className="entry-tag">Aporte · fora da conta</small>
-                ) : row.categoria === "reembolso_pais" ? (
-                  <small className="entry-tag">
-                    Reembolso dos Pais
-                  </small>
                 ) : null}
               </article>
               </SwipeRow>
@@ -365,6 +381,14 @@ export default function Ledger({
               </label>
               <input id="edit-value" inputMode="numeric" value={eValue}
                 onChange={(e) => setEValue(formatMoneyInput(e.target.value))} disabled={eBusy} />
+              {editingIncome && <>
+                <label htmlFor="edit-income-category">Classificação da receita</label>
+                <select id="edit-income-category" value={eParentsRefund ? "reembolso_pais" : "receita"} disabled={eBusy}
+                  onChange={(e) => setEParentsRefund(e.target.value === "reembolso_pais")}>
+                  <option value="receita">Receita</option>
+                  <option value="reembolso_pais">Reembolso dos Pais</option>
+                </select>
+              </>}
               {canRecur && <>
                 <div className="sheet-tabs" role="group" aria-label="Frequência">
                   {([["uma", "Uma vez"], ["recorrente", "Todo mês"]] as const).map(([value, label]) => (

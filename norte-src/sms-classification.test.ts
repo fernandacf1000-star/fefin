@@ -115,4 +115,20 @@ describe('Crédito de fatura por SMS', () => {
     expect(result.rows[0]).toMatchObject({ data: '2026-10-25', mes_referencia: '2026-12' });
     expect(deps.saveCredit).not.toHaveBeenCalled();
   });
+  it.each([
+    ['Visa', '2026-11-10', '2026-11'],
+    ['Personnalité Visa Infinite', '2026-11-11', '2026-12'],
+    ['seu cartão Itaú Personnalité Visa Infinite final 3979', '2026-11-11', '2026-12'],
+  ])('usa a fatura em aberto do Visa para %s', async (label, date, invoiceMonth) => {
+    const { deps, handler } = setup();
+    deps.card.mockResolvedValue(SMS_CARDS.visa);
+    const text = creditText.replace('Personnalite The One', label);
+    const result = await handler(request({ text, notified_at: `${date}T17:08:00-03:00` }));
+    expect(result.status).toBe(200);
+    expect(deps.card).toHaveBeenCalledWith(SMS_CARDS.visa.id);
+    expect(deps.saveCredit.mock.calls[0][0]).toMatchObject({
+      tipo: 'receita', valor: 8.99, cartao_id: SMS_CARDS.visa.id, data: date,
+      mes_referencia: invoiceMonth,
+    });
+  });
 });

@@ -25,7 +25,7 @@ export const SMS_CARDS: Record<string, Card> = {
 };
 export function parseInvoiceCreditSms(text: string) {
   const clean = text.replace(/\s+/g, " ").trim();
-  const match = /^o cr[eé]dito de (?:r\$\s*)?(\d{1,12}|\d{1,3}(?:\.\d{3}){1,3}),(\d{2}) na fatura do (personnalit[eé] the one|(?:personnalit[eé] )?visa(?: infinite)?) [eé] referente [aà] compra de \d{2}\/\d{2}\/\d{4} em (.+)$/iu.exec(clean);
+  const match = /^o cr[eé]dito de (?:r\$\s*)?(\d{1,12}|\d{1,3}(?:\.\d{3}){1,3}),(\d{2}) na fatura do (?:seu )?(?:cart[aã]o )?(?:ita[uú] )?(personnalit[eé] the one|(?:personnalit[eé] )?visa(?: infinite)?)(?: final \d{4})? [eé] referente [aà] compra de \d{2}\/\d{2}\/\d{4} em (.+)$/iu.exec(clean);
   if (!match) return null;
   const cents = Number(match[1].replaceAll(".", "") + match[2]);
   const merchant = match[4].replace(/\s+bra\s*\.?$|[.]+$/gi, "").trim();

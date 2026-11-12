@@ -389,8 +389,18 @@ export function monthPeriod(selected: Date, now: Date) {
 }
 export function monthPresentation(rows: Entry[], selected: Date, now: Date) {
   const totals = monthSummary(rows, selected);
-  const parentsSpent = monthSpending(rows.filter((row) => categoryOf(row) === "Pais"), selected);
-  const parentsRefunded = monthIncome(rows.filter((row) => row.categoria === "reembolso_pais"), selected);
+  // Saldo líquido dos Pais: tudo que foi pago por eles até o mês selecionado menos tudo que devolveram.
+  const upToMonth = monthKey(selected);
+  const parentsSpent = sumMoney(
+    rows
+      .filter((row) => countsAsSpending(row) && categoryOf(row) === "Pais" && monthKey(effectiveDate(row)) <= upToMonth)
+      .map((row) => Number(row.valor)),
+  );
+  const parentsRefunded = sumMoney(
+    rows
+      .filter((row) => row.categoria === "reembolso_pais" && (invoiceCreditMonth(row) ?? row.data.slice(0, 7)) <= upToMonth)
+      .map((row) => Number(row.valor)),
+  );
   const period = monthPeriod(selected, now);
   const over = totals.balance < 0;
   const monthName = selected.toLocaleDateString("pt-BR", { month: "long" });

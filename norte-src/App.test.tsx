@@ -374,7 +374,7 @@ it("preserva subcategoria do parse sem chamar classify e mostra no card limpo", 
   expect(screen.queryByRole("combobox", { name: "Categoria do lançamento" })).toBeNull();
 });
 
-it("mostra o gasto dos Pais no mês da fatura e desconta só os reembolsos dos Pais do mês selecionado", async () => {
+it("mostra o líquido dos Pais: tudo que foi pago até o mês selecionado menos todos os reembolsos dos Pais", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-18T12:00:00"));
   state.rows = [
@@ -394,7 +394,7 @@ it("mostra o gasto dos Pais no mês da fatura e desconta só os reembolsos dos P
   fireEvent.click(screen.getByRole("button", { name: "Próximo mês" }));
   expect(within(month).getByText("Gastou").nextElementSibling?.textContent).toMatch(/711,07/);
   expect(within(month).getByText("Ganhou").nextElementSibling?.textContent).toMatch(/375,00/);
-  expect(within(month).getByText("Pais").nextElementSibling?.textContent).toMatch(/361,07/);
+  expect(within(month).getByText("Pais").nextElementSibling?.textContent).toMatch(/261,07/);
   fireEvent.click(screen.getByRole("button", { name: "Lançamentos" }));
   expect(screen.getByText(/Supermercado · Master/)).toBeTruthy();
 });

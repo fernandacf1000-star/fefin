@@ -583,6 +583,18 @@ describe("resumo simples e gráficos", () => {
       balance: -50,
     });
   });
+  it("linha Pais mostra só o líquido do mês (gasto menos reembolso), sem acumular", () => {
+    const rows = [
+      entry({ id: "p-sep", data: "2026-09-10", valor: 500, subcategoria_pais: "Pais" }),
+      entry({ id: "p-oct", data: "2026-10-05", valor: 300, subcategoria_pais: "Pais" }),
+      entry({ id: "r-oct", data: "2026-10-20", valor: 100, tipo: "receita", categoria: "reembolso_pais", subcategoria_pais: "Pais" }),
+      entry({ id: "p-nov", data: "2026-11-03", valor: 200, subcategoria_pais: "Pais" }),
+    ];
+    const month = (m: number) => monthPresentation(rows, new Date(2026, m, 1), now).parentsNet;
+    expect(month(8)).toBe(500);
+    expect(month(9)).toBe(200);
+    expect(month(10)).toBe(200);
+  });
   it("categorias incluem Pais e excluem aportes", () => {
     const rows = [
       entry({ valor: 60 }),

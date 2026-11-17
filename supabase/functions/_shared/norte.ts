@@ -389,16 +389,16 @@ export function monthPeriod(selected: Date, now: Date) {
 }
 export function monthPresentation(rows: Entry[], selected: Date, now: Date) {
   const totals = monthSummary(rows, selected);
-  // Saldo líquido dos Pais: tudo que foi pago por eles até o mês selecionado menos tudo que devolveram.
+  // Líquido dos Pais no mês selecionado: gastos realizados no mês menos reembolsos recebidos no mês (sem acumular).
   const upToMonth = monthKey(selected);
   const parentsSpent = sumMoney(
     rows
-      .filter((row) => countsAsSpending(row) && categoryOf(row) === "Pais" && monthKey(effectiveDate(row)) <= upToMonth)
+      .filter((row) => countsAsSpending(row) && categoryOf(row) === "Pais" && monthKey(effectiveDate(row)) === upToMonth)
       .map((row) => Number(row.valor)),
   );
   const parentsRefunded = sumMoney(
     rows
-      .filter((row) => row.categoria === "reembolso_pais" && (invoiceCreditMonth(row) ?? row.data.slice(0, 7)) <= upToMonth)
+      .filter((row) => row.categoria === "reembolso_pais" && (invoiceCreditMonth(row) ?? row.data.slice(0, 7)) === upToMonth)
       .map((row) => Number(row.valor)),
   );
   const period = monthPeriod(selected, now);
